@@ -223,13 +223,15 @@ jobs:
           MATERIOS_WITNESS_LOOKBACK: 768
           MATERIOS_BLOCK_BATCH_SIZE: 64
 
-      - name: Upload real GRANDPA witness
+      - name: Upload real GRANDPA witness or RPC capability diagnostic
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: materios-real-grandpa-witness
-          path: poc/materios-grandpa/out/MateriosRealGrandpaWitness.json
-          if-no-files-found: error
+          name: materios-grandpa-witness-diagnostic
+          path: |
+            poc/materios-grandpa/out/MateriosRealGrandpaWitness.json
+            poc/materios-grandpa/out/MateriosGrandpaRpcCapabilityDiagnostic.json
+          if-no-files-found: warn
 
   live-storage-proof:
     if: github.event_name != 'pull_request'
