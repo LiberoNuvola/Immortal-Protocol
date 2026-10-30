@@ -254,7 +254,6 @@ jobs:
         run: npx tsx src/capture-storage-proof.ts
         env:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
-          MATERIOS_FIREHOSE: https://materios.fluxpointstudios.com/api/firehose/stream
           MATERIOS_EVENTS: https://materios.fluxpointstudios.com/preprod-events
 
       - uses: dtolnay/rust-toolchain@stable
