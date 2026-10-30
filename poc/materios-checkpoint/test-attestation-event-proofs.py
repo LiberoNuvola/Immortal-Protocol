@@ -102,6 +102,21 @@ class AttestationEventProofTests(unittest.TestCase):
             expected,
         )
 
+    def test_metadata_event_ss58_prefix_zero_normalizes_to_indexer_prefix_42(self):
+        event_addresses = [
+            "12ZQfEbRqNNUoz1hcD9oNi7HAG31SiYiqnE8dMt7xguuhAqa",
+            "14JvUwUadZVSLQVTxRSb6QgJkjnTWLsAqGHG5kZuyYWvRRzX",
+            "14EGrpPCPy1RoGk5pSTKktLBdtyZzApzU3VsGagpvGym19Za",
+        ]
+        expected = [
+            MODULE.ss58_account_id(address)
+            for address in SIGNERS
+        ]
+        self.assertEqual(
+            [MODULE.account_id_from_event_value(address) for address in event_addresses],
+            expected,
+        )
+
     def test_attester_event_hex_and_ss58_normalize_to_same_account_id(self):
         account_id = MODULE.ss58_account_id(SIGNERS[0])
         self.assertEqual(
