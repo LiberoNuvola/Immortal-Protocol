@@ -13,7 +13,8 @@
     "test": "MOCK_PORT=9955 tsx src/test-mock.ts > /tmp/mock.log 2>&1 & MOCK_PID=$!; sleep 2; MATERIOS_RPC=http://127.0.0.1:9955 MATERIOS_CHAIN_ID=materios_dev tsx src/index.ts; kill $MOCK_PID 2>/dev/null || true",
     "capture:finalized": "tsx src/capture-finalized.ts",
     "capture:anchor": "tsx src/capture-anchor.ts",
-    "capture:verify:execution": "tsx src/capture-verify-execution-proof.ts"
+    "capture:verify:execution": "tsx src/capture-verify-execution-proof.ts",
+    "test:attestation-evidence": "node --import tsx --test test-attestationEvidence.ts"
   },
   "dependencies": {
     "tsx": "^4.19.0",
