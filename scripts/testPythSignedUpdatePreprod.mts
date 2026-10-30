@@ -26,13 +26,13 @@ import {
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
+import { Client, preprod } from '@evolution-sdk/evolution'
 import { PythLazerClient } from '@pythnetwork/pyth-lazer-sdk'
 import {
   PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
   validatePythPreprodPolicyId,
 } from './pythPreprodConfig.mts'
 import {
-  createReadClient,
   getPythScriptHash,
   getPythState,
 } from '@pythnetwork/pyth-lazer-cardano-js'
@@ -134,10 +134,10 @@ async function main(): Promise<void> {
   const signedUpdate = await fetchSignedUpdate(lazerToken)
   const stateUnit = policyId + Buffer.from('Pyth State', 'utf8').toString('hex')
 
-  // Use the read-client factory exported by the same Pyth SDK package that
-  // decodes the State NFT. This avoids crossing SDK module instances if npm
-  // installs more than one Evolution SDK copy in the runner.
-  const readClient = createReadClient('preprod')
+  // Use the exact Evolution SDK release pinned by the official Pyth JS SDK.
+  const readClient = Client.make(preprod).withKoios({
+    baseUrl: 'https://preprod.koios.rest/api/v1',
+  })
   const pythState = await getPythState(policyId, readClient)
 
   let pythWithdrawScriptHash: string
