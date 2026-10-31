@@ -6895,3 +6895,16 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Added Float/Koios/Minswap API identity-and-coverage reconciler scripts/reconcileFloatUsdmReadOnly.mjs (commit 45ec264d0750a8913390f3960429f5ebe7f2fd96) and dependent workflow job reconcile-float-indexer (commit 24f9dff93c2e66895fca93c96dac49b2bce47f61). The automated result is pending.
 - Float is a separate indexer/data plane associated with Sundae Labs, not a separate DEX venue or independent fiat oracle. The collector uses quote=ada and preserves raw reserves; it does not use Float's USD conversion or assert a USDM/USD peg.
 - No V3, Reveal, Materios, Kernel, EEV, R1/Kc, wallet, signing, transaction, oracle refresh, deployment, or chain-write action.
+
+
+## 10.71 Agent A — corrected multi-venue cross-reference rerun green (2026-10-31)
+
+- Run [41239270654](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239270654) completed all jobs successfully, including decoder fixtures, Minswap/Koios reconciliation, Sundae V3, WingRiders V2, MuesliSwap, Danogo CLMM, CSWAP discovery, ADA/USD CEX references, Saturn CLOB acquisition and cross-reference derivation.
+- Corrected summary: **6 direct DEX pools = 4 constant-product + 2 concentrated-liquidity**, 5 DEX venues, 3 successful ADA/USD CEX references, **18 primary cross-rates**.
+- ADA/USDM marginal spot range: `4.99999919`–`5.27796218`. Indicative USDM/USD range: `0.96181734`–`1.01547992`. CEX mids: Coinbase `0.19240000`, Kraken `0.19236350`, Bitstamp `0.19240000` USD/ADA.
+- Pool source age range at calculation: 130–159,026 seconds (~44.2 hours). No freshness threshold, averaging, peg band or outlier filter is applied. Some pools are materially older than CEX observations.
+- Danogo: 12/12 structural matches, two direct ADA/USDM pools included using official SDK virtual reserves, three direct ADA/USDM pools excluded for unresolved ADA rewards, seven other pairs excluded.
+- CSWAP: one provisional SDK-only pool; three separate provisional cross-rates `1.00495658`–`1.00514727`, excluded from primary 18.
+- Cross-reference artifact ID `13056533033`, ZIP digest `5b7c8895d8cc6131d0e27374c96b003c239dae5dfb604718a4f836b9f4425009`, JSON digest `8bad2dac7b34cd4eada0bde7ebb4c12bf78b14468ede818e6371cd3e4603cc7f`.
+- Saturn CLOB remains partial despite successful read job: 20,026 order UTxOs scanned; zero direct ADA/USDM orders detected in scanned rows; 8 invalid rows; 4% runoff deployment incomplete; no best bid/ask. Do not infer zero orders from partial coverage.
+- This remains research cross-reference only, not a peg/oracle/EEV/deployment qualification. No chain writes, wallet, signing, oracle refresh or economic changes.
