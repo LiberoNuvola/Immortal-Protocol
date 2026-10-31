@@ -38,10 +38,10 @@ function poolPrice(assetA, assetB, reserveARaw, reserveBRaw) {
   const reserveB = BigInt(String(reserveBRaw))
   if (reserveA <= 0n || reserveB <= 0n) throw new Error('POOL_RESERVE_NONPOSITIVE')
   if (a === ADA_UNIT && b === USDM_UNIT) {
-    return { adaReserveRaw: reserveA.toString(), usdmReserveRaw: reserveB.toString(), priceScaled: reserveA * SCALE / reserveB, orientation: 'ADA_ASSET_A_USDM_ASSET_B' }
+    return { adaReserveRaw: reserveA.toString(), usdmReserveRaw: reserveB.toString(), priceScaledRaw: (reserveA * SCALE / reserveB).toString(), orientation: 'ADA_ASSET_A_USDM_ASSET_B' }
   }
   if (a === USDM_UNIT && b === ADA_UNIT) {
-    return { adaReserveRaw: reserveB.toString(), usdmReserveRaw: reserveA.toString(), priceScaled: reserveB * SCALE / reserveA, orientation: 'USDM_ASSET_A_ADA_ASSET_B' }
+    return { adaReserveRaw: reserveB.toString(), usdmReserveRaw: reserveA.toString(), priceScaledRaw: (reserveB * SCALE / reserveA).toString(), orientation: 'USDM_ASSET_A_ADA_ASSET_B' }
   }
   return null
 }
@@ -115,7 +115,7 @@ async function main() {
   for (const pool of dexPools) {
     for (const ref of cex) {
       const adaUsdMid = parseScaled(ref.midUsd)
-      const cross = mulScaled(pool.priceScaled, adaUsdMid)
+      const cross = mulScaled(parseScaled(pool.priceAdaPerUsdm), adaUsdMid)
       crossRates.push({
         dexVenue: pool.venue,
         poolUtxoRef: pool.utxoRef,
