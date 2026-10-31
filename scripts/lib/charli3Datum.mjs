@@ -69,14 +69,14 @@ export function decodeCharli3Datum(value) {
   }
   if (priceMaps.length === 0) throw new Error('CHARLI3_PRICE_DATA_MISSING')
   const prices = priceMaps.map((map, index) => {
-    const required = [0, 1, 2, 3]
+    const required = [0, 1, 2]
     for (const key of required) if (!map.has(key)) throw new Error('CHARLI3_PRICE_MAP_REQUIRED_FIELD_MISSING:' + key)
     return {
       index,
       priceRaw: integer(map.get(0), 'price').toString(),
       timestampMs: integer(map.get(1), 'timestamp').toString(),
       expiryMs: integer(map.get(2), 'expiry').toString(),
-      precision: Number(integer(map.get(3), 'precision')),
+      precision: map.has(3) ? Number(integer(map.get(3), 'precision')) : null,
       baseIdHex: map.has(4) ? bytes(map.get(4), 'base_id') : null,
       quoteIdHex: map.has(5) ? bytes(map.get(5), 'quote_id') : null,
       baseSymbol: map.has(6) ? textBytes(map.get(6), 'base_symbol') : null,
