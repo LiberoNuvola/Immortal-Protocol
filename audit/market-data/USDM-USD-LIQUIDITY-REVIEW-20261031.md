@@ -24,10 +24,10 @@ The ADA/USD comparison set contains five direct CEX spot references (Coinbase, K
 
 For the four constant-product pools with structurally qualified ADA/USDM reserves, the following gross, fee-free sensitivity was calculated from the captured reserves:
 
-- Spot marginal price: (P_0 = R_{ADA}/R_{USDM}).
+- Spot marginal price: P0 = ADA_reserve / USDM_reserve.
 - Gross ADA output for a hypothetical USDM input (q): (ADA_{out}=R_{ADA}\times q/(R_{USDM}+q)).
-- Average execution rate: (ADA_{out}/q).
-- Price impact: (1-(ADA_{out}/q)/P_0).
+- Average execution rate: ADA_out / q.
+- Price impact: 1 - (ADA_out / q) / P0.
 
 All quantities are converted from raw units using the asset decimal scales in the source observation. No transaction was built, signed, submitted, or simulated against a live protocol.
 
