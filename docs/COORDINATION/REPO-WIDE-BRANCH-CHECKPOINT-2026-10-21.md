@@ -6727,3 +6727,15 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Direct exact-USDM Koios observer added for both official Muesli AMM pool addresses. Initial run `41226732468` is queued behind Saturn; a new workflow ordering now moves Muesli before Sundae and places the long Saturn CLOB scan last.
 - Updated DAG: Minswap -> WingRiders -> Danogo -> Muesli on-chain -> Sundae V3 on-chain -> SaturnSwap CLOB. The USDM/USD cross-reference can complete after Sundae and does not wait on the slow/incomplete Saturn orderbook scan. This avoids one partial CLOB scan blocking the main pool/price research pipeline.
 - Workflow DAG commit `7317cb18a8cce8b0f9e581c725923f1a5825e3b2`; run pending.
+
+
+## 10.47 Agent A — MuesliSwap exact Pool NFT discovery (2026-10-31)
+
+- Official MuesliSwap pool deployment files pin Pool payment credential `7045237d1eb0199c84dffe58fe6df7dc5d255eb4d418e4146d5721f8` and NFT policy `909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f`.
+- Static address-only Koios query returned zero; SuperCardano's exact-USDM pool keys exposed three NFT units under the official NFT policy. The key is 56-hex policy + 64-hex asset name (not 56+56); parser corrected at `50e8b7896af124d87ac7bcec2376ff2834e554b4`.
+- Actions run 41231687131 completed exact NFT `/asset_utxos` acquisition: 3 discovered NFT units, 3 current UTxOs, all 3 carry exactly one Pool NFT and exact USDM; 2/3 match official pool payment credential, 1/3 is a different credential and remains unqualified. All three only had datum hashes, no inline datum.
+- Artifact ID `13053384226`, ZIP SHA-256 `f0700936497e9a5d6f3f171d6210b29911c4c026e8f6be7309099c6b26c178ef`, JSON SHA-256 `936eb06482df7dbd7d6d04e3a58859d74461ef841f464c4f24a098c96b87fb84`.
+- MuesliSwap API collector queried both token orientations and verified/unfiltered modes; all four requests failed DNS with `ENOTFOUND api.muesliswap.com`, classification `SOURCE_UNAVAILABLE` (not zero pools).
+- Added separate Muesli evidence document `docs/COORDINATION/MUESLISWAP_USDM_READONLY_RECONCILIATION.md` at `edddf34a80ecfcae2701cfc6ddb950e0f91dd734`.
+- Observer then extended at `58a0d6906f227d684414e2b967c3d340d97eabab` to resolve datum hashes via Koios `/datum_info`; the rerun is pending. No Muesli datum decoder or reserve qualification yet.
+- No wallet, signing, transaction, chain write, oracle refresh, EEV, deployment, V3, Reveal, Materios, Kernel or R1/Kc change.
