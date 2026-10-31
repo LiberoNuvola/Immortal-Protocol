@@ -187,3 +187,14 @@ The initial observer treated `datum.reserve_a/b == Value reserve_a/b` as mandato
 The observer now uses a fail-closed lower-bound rule: `Value reserve >= datum reserve` for both pair assets, and records the non-negative difference as `valueSurplusARaw` / `valueSurplusBRaw`. If Value is below datum reserve, the candidate is unqualified. For an ADA pair, lovelace must be at least `min_pool_ada + datum ADA reserve`; for a non-ADA pair, lovelace must equal `min_pool_ada` exactly. The output Value still must contain only ADA, the two pair assets, the derived LP asset and exactly one Pool NFT.
 
 The previous 7 MATCH / 24 UNQUALIFIED classification from run 41203746686 used the superseded equality check. Do not use those counts as current qualification results. The updated focused CI and Mainnet observer run will supersede them.
+
+
+## 14. First successful Mainnet V2 pool reconciliation snapshot
+
+Actions run [41204050705](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204050705) completed both the focused decoder suite and the exact-USDM/address-filtered Koios observer successfully. The decoder suite reports **12/12 tests passed**, including the real Koios fixture and fee-surplus/ADA cases. The observer acquired **31** current USDM UTxOs at the official V2 pool address, with 31 transaction contexts; the corrected structural validator reports **31 MATCH, 0 UNQUALIFIED** and no validation reasons.
+
+Evidence artifact: [minswap-v2-usdm-mainnet-readonly-41204050705](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204050705/artifacts/13043641385), artifact ID `13043641385`, ZIP SHA-256 `38ee9388333e85a1765493cbc879b48bca2a42e9758534893e4897eac86acacc`. JSON body SHA-256 `db5b109eb4638eac10434f5b3d120b57c526d55f2d4f7de837c8aea1434ecbcb`. Snapshot window `2026-10-31T13:06:23.028Z`–`13:08:30.233Z`; Koios response timestamp and raw-body hash are preserved per page in the artifact.
+
+**Interpretation limit:** `MATCH` means exact asset pair membership, official V2 payment script, batching Script credential, Pool NFT, derived LP asset, supported datum shape, positive reserves, allowed Value composition, and Value-reserve lower bounds all passed. It does **not** mean Minswap API market data has been reconciled, nor that any USDM/USD price, peg, oracle source, EEV or deployment is qualified. Minswap API collection remains a separate next step; Minswap API and GeckoTerminal are the same DEX venue, not independent venues.
+
+A follow-up source correction at commit `3c500e192389c16c87eee2e3bb3db9534876f498` makes the per-candidate `qualification` label reflect the structural MATCH without implying oracle qualification. Its workflow rerun is pending at the time of this record.
