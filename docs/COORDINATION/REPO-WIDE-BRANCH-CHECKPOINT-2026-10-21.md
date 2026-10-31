@@ -6159,3 +6159,24 @@ The Materios `partnerchain/Cargo.lock` pins `sc-consensus-grandpa 0.30.0` to Pol
 This gives a concrete mechanism for the observed split: a restored DB can load voter/authority auxiliary state at set 4343 while the runtime state at the same chain height reports 4434, because the startup loader trusts the persisted GRANDPA AuxStore state and performs no runtime-set consistency check. The snapshot log's `Starting new voter with set ID 4343` is therefore consistent with the aux-store value being used as the voter set. Combined with the upstream preflight's explicit warp/state-sync warning, stale or divergent GRANDPA auxiliary authority state is now the leading root-cause hypothesis.
 
 **What remains unproven:** we have not extracted the exact `AUTHORITY_SET_KEY` bytes from the published snapshot RocksDB, nor identified the event/import/warp-sync path that left them at 4343 while runtime storage reached 4434. The isolated snapshot log is a strong observation of the loaded voter set, not a raw AuxStore proof. The next test should capture the aux key and decoded voter state from the snapshot DB itself, then compare it byte-for-byte with runtime `Grandpa.CurrentSetId` and the active-set chain. Do not "repair" the snapshot or synthesize a new set ID; keep B3-A OPEN until the source of divergence is proven.
+
+
+### AuxStore key semantics confirmed against the exact pinned SDK source
+
+A further read-only inspection of paritytech/polkadot-sdk at the exact Materios lockfile commit c455194a2ae2f613c1c671e00dbf397b83ed8171, file substrate/client/consensus/grandpa/src/aux_schema.rs, confirms the exact persisted data contract:
+
+- VERSION_KEY = b'grandpa_schema_version' stores the GRANDPA AuxStore schema version; current version is 3.
+- AUTHORITY_SET_KEY = b'grandpa_voters' stores SCALE-encoded AuthoritySet<Block::Hash, NumberFor<Block>>. Its decoded set_id, current authority list, and pending standard/forced changes are the key evidence needed.
+- SET_STATE_KEY = b'grandpa_completed_round' stores SCALE-encoded VoterSetState<Block>, including the completed-round state used to restart the voter.
+- Both are loaded through AuxStore::get_aux(key); the loader does not read these values from runtime storage.
+- On schema version 3, load_persistent decodes grandpa_voters and grandpa_completed_round and returns the persisted values. The genesis authority provider is used only when no supported persisted authority set is found. The version-3 path contains no comparison against runtime Grandpa.CurrentSetId.
+
+This confirms the correct extraction target and prevents a misleading approach: state_getStorage cannot expose these AuxStore keys, and a generic search of runtime pallet storage is not the right test. The exact raw key/value bytes should be read from the snapshot's database through the matching SDK backend's AuxStore::get_aux implementation, or through a small read-only diagnostic linked to the exact pinned sc-client-db/SDK revision. Do not assume a raw RocksDB column/key layout until the pinned backend implementation and database source configuration have been checked.
+
+**Next bounded action:** obtain an already-local copy of the published snapshot (no new request/download to Flux Point), identify the exact database backend/configuration and use a read-only AuxStore reader to dump:
+1. schema version;
+2. raw and SHA-256 digests of grandpa_voters and grandpa_completed_round;
+3. decoded authority-set set_id, current authorities, and pending changes;
+4. decoded voter state and last completed round.
+
+The diagnostic must not open the database for writes, run migrations, or mutate the snapshot. If a safe read-only backend cannot be established, stop and request a local copy/export from the operator rather than using RocksDB repair/open tools on the original. Compare the decoded aux set ID to the independently observed runtime set ID 4434 and the exact-target justification candidate 4343. Keep B3-A OPEN; this establishes the extraction method, not the root cause.
