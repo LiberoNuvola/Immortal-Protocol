@@ -94,6 +94,44 @@ describe('economic Cardano submission boundary', () => {
     expect(lucid.submitTx).toHaveBeenCalledWith('signed')
   })
 
+  it('submits the pinned legacy lucid-cardano TxComplete through its native signing API', async () => {
+    const references = candidateInputs
+    const inputs = references.map((reference) => {
+      const [txHash, outputIndex] = reference.split('#')
+      return {
+        transaction_id: () => ({ to_hex: () => txHash }),
+        // lucid-cardano 0.10.11 CML exposes input.index() as BigNum.
+        index: () => ({ to_str: () => outputIndex }),
+      }
+    })
+    const submit = vi.fn().mockResolvedValue('tx-legacy-lucid')
+    const complete = vi.fn().mockResolvedValue({ submit })
+    const sign = vi.fn().mockReturnValue({ complete })
+    const tx = {
+      txComplete: {
+        body: () => ({
+          inputs: () => ({
+            len: () => inputs.length,
+            get: (index: number) => inputs[index],
+          }),
+        }),
+      },
+      sign,
+    }
+    // Match src/wallet.ts: the actual Lucid instance exposes these methods
+    // under wallet and has no top-level signTx/submitTx methods.
+    const lucid = { wallet: { getUtxos: vi.fn() } }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(tx, admission, candidateInputs, [pool0]),
+    ).resolves.toEqual({ transactionRef: 'tx-legacy-lucid' })
+
+    expect(sign).toHaveBeenCalledTimes(1)
+    expect(complete).toHaveBeenCalledTimes(1)
+    expect(submit).toHaveBeenCalledTimes(1)
+  })
+
   it('rejects if completed spending inputs change during the asynchronous wallet classification', async () => {
     const walletInput = '33'.repeat(32) + '#0'
     const replacementInput = '44'.repeat(32) + '#1'
