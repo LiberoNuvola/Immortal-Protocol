@@ -46,14 +46,19 @@ type CmlInputListLike = {
   get: (index: number) => CmlInputLike
 }
 
-type CmlTransactionLike = {
-  body: () => {
-    inputs: () => CmlInputListLike
-  }
+type CmlSerializableLike = {
   /** Legacy lucid-cardano exact serialization. */
   to_bytes?: () => Uint8Array
   /** Lucid Evolution exact, non-canonical CBOR serialization. */
   to_cbor_hex?: () => string
+}
+
+type CmlTransactionBodyLike = CmlSerializableLike & {
+  inputs: () => CmlInputListLike
+}
+
+type CmlTransactionLike = CmlSerializableLike & {
+  body: () => CmlTransactionBodyLike
 }
 
 type CompletedLucidTransactionLike = {
@@ -240,7 +245,32 @@ async function assertAdmissionInputsAreClassified(
   return actualInputs
 }
 
-function readCompletedTransactionBytes(tx: unknown): Uint8Array {
+function readExactCmlSerialization(
+  value: CmlSerializableLike,
+  label: string,
+): Uint8Array {
+  if (typeof value.to_bytes === 'function') {
+    const bytes = value.to_bytes()
+    if (!(bytes instanceof Uint8Array)) {
+      throw new Error(`${label} returned malformed CML bytes`)
+    }
+    return Uint8Array.from(bytes)
+  }
+  if (typeof value.to_cbor_hex === 'function') {
+    const hex = value.to_cbor_hex()
+    if (typeof hex !== 'string' || hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
+      throw new Error(`${label} returned malformed CML CBOR hex`)
+    }
+    const bytes = new Uint8Array(hex.length / 2)
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16)
+    }
+    return bytes
+  }
+  throw new Error(`${label} does not expose exact CML serialization`)
+}
+
+function readCompletedCmlTransaction(tx: unknown): CmlTransactionLike {
   if (!tx || typeof tx !== 'object') {
     throw new Error('Economic submission requires a completed Lucid transaction')
   }
@@ -253,37 +283,67 @@ function readCompletedTransactionBytes(tx: unknown): Uint8Array {
       'Economic submission requires a completed Lucid transaction with toTransaction() or txComplete',
     )
   }
+  try {
+    const transaction =
+      typeof candidate.toTransaction === 'function'
+        ? candidate.toTransaction()
+        : candidate.txComplete
+    if (!transaction || typeof transaction.body !== 'function') {
+      throw new Error('transaction body is unavailable')
+    }
+    return transaction
+  } catch {
+    throw new Error('Unable to access completed Lucid transaction for integrity snapshot')
+  }
+}
+
+function readCompletedTransactionBytes(tx: unknown): Uint8Array {
+  return readExactCmlSerialization(
+    readCompletedCmlTransaction(tx),
+    'Completed Lucid transaction',
+  )
+}
+
+function readCompletedTransactionBodyBytes(tx: unknown): Uint8Array {
+  return readExactCmlSerialization(
+    readCompletedCmlTransaction(tx).body(),
+    'Completed Lucid transaction body',
+  )
+}
+
+function readSignedTransactionBodyBytes(signedTx: unknown): Uint8Array | undefined {
+  if (!signedTx || typeof signedTx !== 'object') return undefined
+  const candidate = signedTx as {
+    toTransaction?: () => CmlTransactionLike
+    txSigned?: CmlTransactionLike
+  }
   let transaction: CmlTransactionLike | undefined
   try {
     transaction =
       typeof candidate.toTransaction === 'function'
         ? candidate.toTransaction()
-        : candidate.txComplete
+        : candidate.txSigned
   } catch {
-    throw new Error('Unable to access completed Lucid transaction for integrity snapshot')
+    throw new Error('Unable to inspect the signed Lucid transaction body')
   }
-  if (!transaction) {
-    throw new Error('Completed Lucid transaction does not expose exact CML bytes')
+  if (!transaction || typeof transaction.body !== 'function') return undefined
+  return readExactCmlSerialization(
+    transaction.body(),
+    'Signed Lucid transaction body',
+  )
+}
+
+function assertByteSequencesEqual(
+  actual: Uint8Array,
+  expected: Uint8Array,
+  errorMessage: string,
+): void {
+  if (
+    actual.length !== expected.length ||
+    actual.some((byte, index) => byte !== expected[index])
+  ) {
+    throw new Error(errorMessage)
   }
-  if (typeof transaction.to_bytes === 'function') {
-    const bytes = transaction.to_bytes()
-    if (!(bytes instanceof Uint8Array)) {
-      throw new Error('Completed Lucid transaction returned malformed CML bytes')
-    }
-    return Uint8Array.from(bytes)
-  }
-  if (typeof transaction.to_cbor_hex === 'function') {
-    const hex = transaction.to_cbor_hex()
-    if (typeof hex !== 'string' || hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
-      throw new Error('Completed Lucid transaction returned malformed CML CBOR hex')
-    }
-    const bytes = new Uint8Array(hex.length / 2)
-    for (let i = 0; i < bytes.length; i += 1) {
-      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16)
-    }
-    return bytes
-  }
-  throw new Error('Completed Lucid transaction does not expose exact CML bytes')
 }
 
 function assertCompletedInputReferencesUnchanged(
@@ -303,12 +363,11 @@ function assertCompletedInputReferencesUnchanged(
   // an economic action fingerprint. This closes re-binding/mutation of other
   // body fields during the asynchronous wallet UTxO classification.
   const currentBytes = readCompletedTransactionBytes(tx)
-  if (
-    currentBytes.length !== validatedTransactionBytes.length ||
-    currentBytes.some((byte, index) => byte !== validatedTransactionBytes[index])
-  ) {
-    throw new Error('Completed transaction bytes changed after economic admission validation')
-  }
+  assertByteSequencesEqual(
+    currentBytes,
+    validatedTransactionBytes,
+    'Completed transaction bytes changed after economic admission validation',
+  )
 }
 
 async function signCompletedTransaction(
@@ -400,6 +459,7 @@ export function createCardanoExecutionAdapter(
       // wallet classification. This is an integrity guard only; it is not an
       // economic action fingerprint or a semantic authorization profile.
       const validatedTransactionBytes = readCompletedTransactionBytes(tx)
+      const validatedTransactionBodyBytes = readCompletedTransactionBodyBytes(tx)
       const validatedInputReferences =
         await assertAdmissionInputsAreClassified(tx, inputReferences, lucid)
       // The wallet UTxO lookup above is asynchronous. Re-read inputs and exact
@@ -409,7 +469,23 @@ export function createCardanoExecutionAdapter(
         validatedInputReferences,
         validatedTransactionBytes,
       )
-      return this.submitInfrastructure(tx)
+
+      const signedTx = await signCompletedTransaction(lucid, tx)
+      const signedBodyBytes = readSignedTransactionBodyBytes(signedTx)
+      if (signedBodyBytes) {
+        assertByteSequencesEqual(
+          signedBodyBytes,
+          validatedTransactionBodyBytes,
+          'Signed transaction body changed after economic admission validation',
+        )
+      } else if (typeof lucid.signTx !== 'function') {
+        throw new Error('Native Lucid signing result does not expose inspectable CML transaction body bytes')
+      }
+      const transactionRef = await submitSignedTransaction(lucid, signedTx)
+      if (!transactionRef.trim()) {
+        throw new Error('Cardano submission returned an empty transaction reference')
+      }
+      return { transactionRef }
     },
   }
 }
