@@ -6,7 +6,7 @@
 
 ## Inputs
 
-Four structurally checked constant-product pools from four distinct Cardano DEX venues:
+Four structurally checked constant-product pools from four distinct Cardano DEX venues (the snapshot predates the Danogo CLMM math integration):
 
 | DEX venue | Pool spot (ADA per USDM) | Pool UTxO age at calculation |
 |---|---:|---:|
@@ -47,12 +47,26 @@ Artifact ID `13054296365`; ZIP SHA-256 `f058af4c0cadfd36a89ba2a0907e3aa6e7fc1ea2
 4. MuesliSwap's public API DNS was unavailable. Its on-chain spot was validated against its official pool datum/value rules; the second Muesli pool is USDM/USADA and not a direct ADA/USDM quote.
 5. SaturnSwap CLOB is a separate venue but its first scan had incomplete pagination and no direct orders in the scanned rows; it is not included in the cross-rate.
 6. SuperCardano, GeckoTerminal and DexScreener are indexers/aggregators, not additional DEX venues. They are not counted as independent markets.
-7. Danogo CLMM and SundaeSwap stable pools remain excluded until their curve-specific math and reserve semantics are independently implemented and tested.
+7. Danogo CLMM is now wired to a separate official-SDK virtual-reserve marginal-price calculator; its live inclusion is pending the next CI run. Pools with unresolved current-epoch ADA rewards remain excluded. SundaeSwap stable pools remain excluded until their curve-specific math and reserve semantics are independently implemented and tested.
 8. No USDM/USD peg, redemption guarantee, issuer reserve backing, oracle suitability, EEV valuation, economic parameter, or deployment approval is asserted.
 
 ## Next work
 
 - Preserve age and timestamp per pool; do not silently average.
 - Finish SaturnSwap CLOB pagination/coverage classification before using its orderbook as market evidence.
-- Add Danogo CLMM only after curve-specific price math and validation are reviewed.
+- Verify the new Danogo CLMM official-SDK virtual-reserve calculation in CI and against live same-run pool evidence; keep reward-unresolved ADA pools excluded.
 - Keep aggregator observations separate from actual venue observations.
+
+
+## Danogo CLMM curve math implementation — pending live CI
+
+The official [`dano-finance/clmm-sdk`](https://github.com/dano-finance/clmm-sdk) `src/utils.ts` implements `calculateConcentratedPoolSwap` using active reserves and virtual reserves derived from the pool's lower/upper square-root price bounds. Its internal formula is:
+
+- `L = calcLiquidity(activeX, activeY, lower, upper)` (exact integer numerator/denominator);
+- `virtualX = ceil(L / upper) + activeX`;
+- `virtualY = ceil(L × lower) + activeY`;
+- marginal `Y per X = virtualY / virtualX` (invert when the pool's X/Y orientation is ADA/USDM rather than USDM/ADA).
+
+Added `scripts/lib/danogoClmmMath.mjs` as an integer-only read-only port, with tests in `scripts/lib/danogoClmmMath.test.mjs`. The cross-reference now reads the same-run Danogo observer artifact and includes only direct ADA/USDM pools passing structural MATCH. If `rewardEpochBehind` is true, the pool is excluded unless a reward amount was actually read and applied; the current observer does not yet resolve that amount, so it remains fail-closed. The new CI rerun is required before publishing any Danogo CLMM price.
+
+The resulting value is a marginal spot before trade execution fees/slippage, not a finite-size executable quote. No Danogo pool is included in the prior four-DEX snapshot above.
