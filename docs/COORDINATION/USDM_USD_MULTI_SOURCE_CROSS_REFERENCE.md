@@ -222,7 +222,7 @@ Corrective work now joins the API through the candidate's full LP unit and adds 
 
 The first live Charli3 attempt [41240028319](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41240028319) found the exact mainnet ADA/USD feed UTxO (one OracleFeed NFT at the pinned address), but the decoder initially required precision and asset-symbol fields that the Charli3 standard explicitly marks optional. The captured datum contains only price, timestamp and expiry keys; it omits precision and symbols. The decoder now accepts that documented minimal form, records the pair as identified by the pinned mainnet feed address/NFT, and leaves decimal price conversion null when precision is absent. It does not invent a six-decimal scale.
 
-The captured raw values were price integer 239761, timestamp 2026-05-26T20:01:30.404Z, expiry 2026-05-27T02:01:30.404Z. At capture on 2026-10-31, the statement was expired by more than five months. Therefore Charli3 is a validly identified on-chain oracle feed but **not a current price reference** in this snapshot. A corrected observer/test rerun is pending; even after the rerun, the feed remains stale unless a newer statement is published.
+The captured raw values were price integer 239761, timestamp 2026-05-27T05:21:30.404Z, expiry 2026-05-27T11:21:30.404Z. At capture on 2026-10-31, the statement was expired by more than five months. Therefore Charli3 is a validly identified on-chain oracle feed but **not a current price reference** in this snapshot. A corrected observer/test rerun is pending; even after the rerun, the feed remains stale unless a newer statement is published.
 
 
 The Float reconciliation's API-side pair join now normalizes Minswap API `currency_symbol`/`token_name` separately from Plutus datum `policyId`/`assetNameHex`; the earlier draft used the datum schema for API objects and could not produce a meaningful API pair comparison. This schema correction is covered by a focused unit test. The workflow also serializes same-branch evidence runs, cancelling superseded pending/in-progress runs so the newest snapshot is the one that completes. Corrected Float/API/reserve results remain pending the next CI run.
@@ -247,3 +247,15 @@ The registry is version `2026.05.18.0001`. Orcfax's consumer documentation speci
 This is a distinct Cardano-native oracle publication path, but its upstream data is still aggregated CEX data for ADA/USD and DEX data for ADA/USDM. It is therefore not an independent market venue and the ADA-USDM feed is not issuer redemption or a direct USDM/USD peg. The new read-only observer validates the FSP/FS token and payment credentials, exact feed prefixes, positive rational and provider heartbeat. It records both feeds separately; no ratio/orientation conversion is applied until the published pair convention is confirmed from actual feed statements and documentation.
 
 The observer/workflow has been added, but no successful live artifact has yet been inspected. The next run must establish current UTxO, feed timestamps, rational values, finality context and freshness for both feeds before they can be included as an additional on-chain reference.
+
+
+### Ten-source ADA/USD reference run
+
+The expanded collector succeeded in run [41240334298](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41240334298): **8/10** references available — 5/7 direct CEX sources and 3/3 market aggregators. Gemini returned HTTP 404 and Bitfinex HTTP 500; they remain explicit unavailable rows, not silently removed.
+
+- CEX bid/ask midpoint range (five venues with both sides): 0.19240900–0.19245500 USD/ADA.
+- Last-price range across all eight successful sources: 0.19238600–0.19276400 USD/ADA. This is a range, not an average or consensus.
+- Direct CEX successful: Coinbase, Kraken, Bitstamp, Crypto.com, BTSE. BTSE has last/index only, so it is not in the midpoint range.
+- Aggregators successful: CoinPaprika, CoinLore, CoinGecko. CoinLore has no provider timestamp; its capture timestamp is not a provider freshness guarantee.
+
+Artifact ID 13057132705, ZIP SHA-256 1f9cc9756474ced7ae5be8e82fc2408715d3faf31cd4e8ec56da5a4e989ca82a, extracted JSON SHA-256 8e298c6cc47021f0f0a8074e1e8548621d1c496954f1cc37dd031de345ab31c2. These are ADA/USD references only and do not establish USDM/USD.
