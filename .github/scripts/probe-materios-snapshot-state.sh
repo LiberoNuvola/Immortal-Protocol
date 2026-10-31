@@ -160,7 +160,7 @@ nohup env \
   CARDANO_ACTIVE_SLOTS_COEFF=0.05 \
   BLOCK_STABILITY_MARGIN=0 \
   "$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$NODE_BASE_PATH" \
-  --name immortal-b3-snapshot-probe --rpc-addr 127.0.0.1 --rpc-port 9945 --rpc-methods unsafe \
+  --name immortal-b3-snapshot-probe --rpc-port 9945 --rpc-methods unsafe \
   --state-pruning 256 --reserved-only --in-peers 0 --out-peers 0 --in-peers-light 0 \
   --listen-addr /ip4/127.0.0.1/tcp/0 --no-mdns --no-telemetry --no-prometheus -linfo \
   >"$LOG" 2>&1 </dev/null &
@@ -169,7 +169,8 @@ echo "Waiting for local RPC (maximum five minutes)"
 READY=false
 READY_DEADLINE=$((SECONDS+300))
 while (( SECONDS < READY_DEADLINE )); do
-  kill -0 "$NODE_PID" 2>/dev/null || break
+  NODE_STATE="$(ps -p "$NODE_PID" -o stat= 2>/dev/null | tr -d ' ' || true)"
+  [[ -z "$NODE_STATE" || "$NODE_STATE" == Z* ]] && break
   if curl --fail --silent --show-error --max-time 2 -H 'content-type: application/json' \
     --data '{"jsonrpc":"2.0","id":1,"method":"system_health","params":[]}' \
     http://127.0.0.1:9945 >/dev/null 2>&1; then
