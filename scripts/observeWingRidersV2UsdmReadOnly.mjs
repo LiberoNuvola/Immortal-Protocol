@@ -215,8 +215,12 @@ async function main() {
   ])
   const factoryTokenRows = poolResponse.json.filter((row) => quantityOf(row, factoryTokenUnit) > 0n)
   const factoryTokenTotal = factoryTokenRows.reduce((sum, row) => sum + quantityOf(row, factoryTokenUnit), 0n)
-  if (factoryTokenRows.length !== 1 || factoryTokenTotal !== 1n) {
-    throw Object.assign(new Error('WINGRIDERS_FACTORY_TOKEN_F_CARDINALITY_OR_QUANTITY_INVALID'), {
+  // Factory split operations can leave multiple live factory UTxOs. The
+  // on-chain validator mints one additional F token per split, so cardinality
+  // greater than one is expected; require every discovered factory output to
+  // carry exactly one F token instead of assuming a single factory UTxO.
+  if (factoryTokenRows.length === 0 || factoryTokenRows.some((row) => quantityOf(row, factoryTokenUnit) !== 1n)) {
+    throw Object.assign(new Error('WINGRIDERS_FACTORY_TOKEN_F_MISSING_OR_NONUNIT'), {
       evidence: {
         policyId: observedPolicyId,
         factoryTokenUnit,
@@ -224,12 +228,14 @@ async function main() {
           utxoRef: String(row.tx_hash) + '#' + String(row.tx_index),
           quantityRaw: quantityOf(row, factoryTokenUnit).toString(),
           address: row.address ?? null,
+          paymentCredential: row.payment_cred ?? null,
+          datumHash: row.datum_hash ?? null,
         })),
         poolAssetResponse: poolResponse.evidence,
       },
     })
   }
-  const factoryTokenUtxo = factoryTokenRows[0]
+  const factoryTokenUtxoCount = factoryTokenRows.length
   const byShare = new Map()
   for (const row of poolResponse.json) {
     for (const a of row.asset_list ?? []) {
