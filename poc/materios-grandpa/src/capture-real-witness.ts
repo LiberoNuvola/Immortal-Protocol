@@ -1264,6 +1264,35 @@ async function main(): Promise<void> {
   );
   const parentStateEndpoint = snapshotWindowBindingValid ? AUTHORITY_RPC : RPC;
 
+  const observeGrandpaRoundState = async (endpoint: string) => {
+    try {
+      const rawResult = await rpc<unknown>("grandpa_roundState", [], endpoint);
+      const record = typeof rawResult === "object" && rawResult !== null
+        ? rawResult as Record<string, unknown>
+        : null;
+      const rawSetId = record?.setId ?? record?.set_id ?? null;
+      return {
+        status: "OBSERVED_UNTRUSTED",
+        set_id: rawSetId === null || rawSetId === undefined ? null : String(rawSetId),
+        raw_result: rawResult,
+        trust_scope: "Untrusted live GRANDPA voter RPC observation; not authority provenance",
+      };
+    } catch (error) {
+      return {
+        status: "UNAVAILABLE",
+        error: error instanceof Error ? error.message : String(error),
+        trust_scope: "Untrusted live GRANDPA voter RPC observation; not authority provenance",
+      };
+    }
+  };
+
+  const grandpaRoundStateDiagnostic = {
+    public_http_rpc: await observeGrandpaRoundState(RPC),
+    local_snapshot_rpc: snapshotWindowBindingValid
+      ? await observeGrandpaRoundState(AUTHORITY_RPC)
+      : { status: "NOT_AVAILABLE_NO_VERIFIED_LOCAL_SNAPSHOT" },
+  };
+
   if (cryptoVerification.status === "FAIL") {
     try {
       const parentNumber = Number(witness.blockNumber - 1n);
@@ -1466,6 +1495,7 @@ async function main(): Promise<void> {
     },
     parent_state_diagnostic: parentStateDiagnostic,
     authority_set_state_window: authoritySetStateWindow,
+    grandpa_round_state_diagnostic: grandpaRoundStateDiagnostic,
     authority_state: {
       source_block_hash: authorityStateSource,
       source_kind: authorityStateFallback ? "CURRENT_FINALIZED_STATE_FALLBACK" : "EXACT_PROOF_TARGET_STATE",
