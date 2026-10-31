@@ -236,3 +236,102 @@ Updated status:
 - Per-issuance/per-holding issuer discriminator: **NOT ESTABLISHED**
 - Current reserve qualification / holder redemption proof: **NOT ESTABLISHED**
 - Option B remains observational only; EEV / first Issue remains blocked.
+
+
+---
+
+## 7. Major evidence update: NBX EU whitepaper retrieved and parsed
+
+The official NBX page labels the EU issuer whitepaper as updated 24 September 2026 and links both PDF and XHTML/iXBRL ZIP. The PDF was successfully retrieved and parsed through an independent document extraction path. The XHTML/iXBRL ZIP remains unavailable in this inspection environment.
+
+Official landing page: https://nbx.com/en/usdm
+PDF: https://cdn.prod.website-files.com/6152dfaed2ce58d94ef37b88/6ab4e90ceb46558d48fc093a_USDM%20White%20Paper%20-%20Modified%20version%202026-09-24.pdf
+XHTML/iXBRL ZIP: https://cdn.prod.website-files.com/6152dfaed2ce58c94ef37b88/6ab4e9329383c7b9695de62d_WhitePaper-USDM-5493004WNVZP9EMYI834-NO-260915122610-en.zip
+
+The PDF's cover identifies it as a draft/modified version notified to Finanstilsynet on 24 September 2026 and explicitly states that it has not been approved by any competent authority in an EU Member State. This is an issuer-authored disclosure, not regulatory approval.
+
+### 7.1 Legal issuer / technical operator model now reconciled
+
+The whitepaper states:
+- NBX is the sole legal issuer of USDM within the EEA; Moneta is the separate legal issuer outside the EEA.
+- NBX and Moneta are parallel, legally and economically distinct issuers, not co-issuers of the same liability.
+- Moneta developed USDM and owns the smart contracts used for minting and burning. NBX relies on Moneta's participation in the shared smart contracts.
+- For NBX issuance, NBX constructs and signs a mint transaction, sends it to Moneta, and Moneta applies the required co-signature and delivers the minted USDM to NBX's registered Cardano address. NBX transfers matching USD into the EU NBX USDM Reserve and sends transfer evidence to Moneta.
+- The whitepaper says the Moneta co-signing/contract role is an operational dependency and does not make Moneta the legal issuer or reserve-liability bearer for NBX-issued USDM.
+
+This resolves the earlier apparent conflict at the legal/technical role level: one shared Moneta-owned/co-controlled minting contract can serve two parallel legal issuers. The asset does not need separate policy IDs for each issuer.
+
+### 7.2 Counter UTxO: what it stores, and what it does not establish
+
+Section 3.2 says the counter UTxO datum stores total USDM outstanding. Mint and burn transactions spend the counter UTxO and add/subtract the minted/burned amount. It also describes controller-NFT authorization, reserve-oracle checks, a no-USDM-input condition for minting, a specified destination address, and protocol lockdown protection.
+
+Crucially, the whitepaper does **not** state that the counter datum itself stores issuer-specific balances. Instead, issuer attribution is described separately in Sections 3.1 and 4.4 as a source-attribution methodology based on:
+- internal issuance controls;
+- the relevant mint transactions; and
+- subsequent on-chain transaction history.
+
+The whitepaper says NBX may attribute a UTxO wholly to NBX, wholly to Moneta, or in defined shares to both. If attribution cannot be conclusively established, redemption of the unresolved portion is deferred until attribution is established or corresponding settled Moneta funds have been received. This means the counter UTxO is a global supply counter, not (on the evidence disclosed) a self-contained issuer-provenance register.
+
+### 7.3 NBX mint path
+
+Section 4.3 describes two NBX customer paths:
+1. NBX may draw NBX-issued/NBX-attributable USDM from its internal liquidity pool; this does not change total supply or the reserve.
+2. If pool liquidity is insufficient, NBX initiates on-chain minting after transferring corresponding USD into the EU NBX USDM Reserve and obtaining reserve verification. NBX constructs/signs the transaction and Moneta co-signs it under the shared contract, then USDM is delivered to NBX's registered Cardano address.
+
+This creates a plausible on-chain starting point for NBX-origin lots (the registered NBX address), but the whitepaper does not publish that address or the complete attribution algorithm. Do not infer the address from a transaction explorer without issuer-authenticated binding.
+
+### 7.4 Redemption and mixed-origin UTxOs
+
+Section 4.4 states that NBX determines issuer attribution by reference to relevant mint transactions and subsequent on-chain transaction history. A UTxO can be fully NBX-attributable, fully Moneta-attributable, or split into defined shares. For mixed-origin UTxOs, NBX redeems the NBX share from the EU NBX Reserve and the Moneta share only after cleared Moneta funds have arrived. Unresolved shares are deferred.
+
+Section 5.1 states that subsequent holders inherit the redemption right applicable to the issuer attribution of the USDM they hold, subject to eligibility, issuer-attribution verification and AML checks. It also says NBX is not generally obliged to track or determine provenance of holder balances except where required for issuer-attribution verification, redemption, AML/CFT or applicable law.
+
+Implication: a third-party DEX/AMM observer cannot assume that a pooled USDM balance is fully NBX-attributable, fully Moneta-attributable, or readily redeemable. A public price or aggregate supply number cannot establish the issuer composition of a specific pool UTxO.
+
+### 7.5 On-chain exemplar: counter continuation matches a USDM mint
+
+Cardanoscan's transaction detail for:
+https://cardanoscan.io/transaction/f3f62b62dc7b3a4dc6036b6e7810719597d246d7df70c92253fed6f14f7e4e4d?tab=tokenmint
+
+shows a mainnet transaction labelled "USDM Mint", timestamp 11 March 2026 00:45:39 UTC, block 13,143,082, minting 25,050.000000 USDM.
+
+The same transaction:
+- consumes a UTxO at counter-script address `addr1wxwgnqps79qf8h4dnvrfr5w9qsepkycqr0rtj7802n7uueqshn6tg` carrying one `USDM_COUNT` singleton and datum hash `d27836d660b1140d986db27ab9344e93a88d3f50c93ec6aced53edcdd623092e`;
+- recreates the singleton at the same address in output #1 with datum hash `e80fb60dd9af1d73748189bf32146583249bdd2458fb94a4ff9fd5c69abdca93`;
+- the datum CBOR shown by the explorer changes from `d879821b00000e760a10c140d87980` to `d879821b00000e7bdf296bc0d87980`.
+
+The first integer in those CBOR data decodes to 15,900,137.8 and 15,925,187.8 respectively (USDM units after dividing by 1,000,000), a delta of exactly 25,050.0 USDM. This is a single reproducible exemplar that the counter datum tracks aggregate outstanding supply and advances by the mint amount. It does **not** identify the issuer-attributed share of that mint.
+
+### 7.6 Historical counter locator from DeFiLlama adapter — not current-state proof
+
+A DeFiLlama adapter commit dated 18 October 2024 identifies the counter NFT asset ID as:
+`e319d8e6629ff7991c8ae4f8aec2e0f10463ebdf29b57d26d34914f65553444d5f434f554e54`
+(policy `e319d8e6629ff7991c8ae4f8aec2e0f10463ebdf29b57d26d34914f6`, asset name `5553444d5f434f554e54` = `USDM_COUNT`), and a then-used counter address:
+`addr1wyl82v9qy06hsz50hqqdy0u6xw9hdewy7twjahgek2tpp7c0qajez`.
+
+The March 2026 Cardanoscan exemplar above shows the singleton at a different address (`addr1wxwgn...`). The 2024 adapter address must therefore be treated as historical/possibly superseded, not a current locator. A full continuity trace and current singleton UTxO still need to be established.
+
+Source commit: https://github.com/DefiLlama/DefiLlama-Adapters/commit/730af7bbfc6858103a1ab3a8fae612a70220d7aa
+Current adapter file: https://raw.githubusercontent.com/DefiLlama/DefiLlama-Adapters/master/projects/moneta/index.js
+
+### 7.7 Open technical evidence gaps after this discovery
+
+1. Retrieve and inspect the machine-readable XHTML/iXBRL archive (PDF content is now available).
+2. Identify the current `USDM_COUNT` singleton UTxO and reconstruct its full successor chain from the latest indexed block.
+3. Retrieve the deployed minting policy, count validator and controller NFT policy; verify script hashes against the deployed policy IDs and the whitepaper's described rules.
+4. Reconstruct all mainnet USDM mint/burn events and join each to its counter input/output, redeemer, transaction metadata, controller-NFT evidence and destination address.
+5. Obtain the exact NBX registered Cardano address and Moneta issuance destination(s) from issuer-authenticated documentation or the whitepaper's machine-readable attachments/issuer record.
+6. Obtain NBX's actual source-attribution methodology (algorithm, handling of merges/splits, rounding, missing history and DEX pool commingling) or an issuer-authenticated attribution feed. The whitepaper names the methodology but does not publish enough detail to reproduce it.
+7. Test a mixed-origin path end-to-end using transaction history and compare the reconstructed shares with an issuer-authenticated reference. No inferred address clustering or FIFO assumption is acceptable.
+
+Updated status:
+- Official NBX EU whitepaper PDF: **RETRIEVED AND PARSED; draft, not regulatory-approved**
+- Legal issuer split: **DOCUMENTED**
+- Shared minting-contract ownership/co-control by Moneta; NBX operational dependency: **DOCUMENTED**
+- Counter UTxO aggregate supply role: **DOCUMENTED AND ONE MAINNET MINT DELTA RECONCILED**
+- Historical counter singleton identity/address: **IDENTIFIED; address changed by March 2026**
+- Current counter singleton UTxO: **NOT YET ESTABLISHED**
+- Issuer attribution method: **DESCRIBED AT HIGH LEVEL; NOT REPRODUCIBLE FROM PUBLIC MATERIALS**
+- Per-UTxO issuer share for arbitrary pool balances: **NOT ESTABLISHED**
+- Holder redemption eligibility / current reserve qualification: **NOT ESTABLISHED**
+- Option B remains observational only; EEV / first Issue remains blocked.
