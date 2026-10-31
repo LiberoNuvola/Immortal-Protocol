@@ -6288,3 +6288,18 @@ Current official Pyth access guidance:
 Issue #37 evidence record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6540317004.
 
 **Disposition unchanged:** Option B selected; no qualified USD/USDM unit-price source; EEV direct-USDM remains independent; no production code, Oracle schema, consumer, Kernel, V3, Reveal, EEV approval, deployment, signature, or on-chain state changed.
+
+
+## Agent C — GRANDPA historical-state workflow classifier correction; prior green run invalid for state classification (2026-10-31)
+
+Re-inspected GitHub Actions run [#41176475742](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41176475742), whose head commit was `257c151a7aa7835b3f4211bb3b9116d1557a8605`.
+
+- All five matrix jobs completed successfully, but this only confirmed that each job produced and uploaded an artifact.
+- The artifact for target block 2,509,824 (#13033610786; SHA-256 `5a454df8a158d82828f3ec8a14a314ff7467546aa8c12035acb68db1505ca44b`) contained `UnknownBlock: State already discarded` for all three parent and target reads: `GrandpaApi_current_set_id`, `GrandpaApi_grandpa_authorities`, and `Grandpa.CurrentSetId`.
+- Despite those failures, the old workflow wrote top-level `status: "CAPTURED"` and omitted per-block `state_status`. Therefore run #41176475742 is **not** evidence that historical state was captured; its green conclusion must not be used as a state-availability result.
+- Commit `7b6cd4d5322ccc3ea1fc3225b379adfc08ea6c81` corrects the classifier: each parent/target is classified as `STATE_CAPTURED`, `HISTORICAL_STATE_PRUNED`, or `PARTIAL_STATE_UNAVAILABLE`; the top-level status is derived from both. This is an evidence-integrity correction only.
+- Added a workflow comment clarifying that job success means artifact capture, while `evidence.status` carries the state result. Commit `cf5b41f86bb69c5e277d52cfbb91d933e4148cdd` was pushed to `work/b3-materios-provenance-evidence` to trigger a fresh run on the corrected workflow. A new run/artifact has **not yet been independently observed** in this checkpoint.
+
+The historical-state blocker remains: public RPC can return historical headers, but its historical runtime/storage state is pruned. The raw snapshot AuxStore remains the required next evidence source. No source snapshot was downloaded or modified; no request was sent to Flux Point; no Materios runtime, GRANDPA, V3, Reveal, chain, or protocol semantics were changed.
+
+**Disposition:** B3-A remains OPEN. The stale-AuxStore hypothesis remains leading but unproven until the original AuxStore bytes are read and decoded. Do not treat the prior green workflow run as proof of historical state capture.
