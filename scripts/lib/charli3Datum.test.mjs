@@ -34,7 +34,7 @@ describe('Charli3 standard oracle datum decoder', () => {
 
   it('rejects unknown constructors, malformed maps and missing price fields', () => {
     expect(() => decodeCharli3Datum(c(0, [c(3, [])]))).toThrow('CHARLI3_ORACLE_FIELD_CONSTRUCTOR_UNSUPPORTED')
-    expect(() => decodeCharli3Datum(c(0, [c(2, [{ map: [] }])]))).toThrow('CHARLI3_PRICE_DATA_MISSING')
+    expect(() => decodeCharli3Datum(c(0, [c(2, [{ map: [] }])]))).toThrow('CHARLI3_PRICE_MAP_REQUIRED_FIELD_MISSING:0')
     expect(() => decodeCharli3Datum(c(0, [c(2, [map([[0, i(1)]])])]))).toThrow('CHARLI3_PRICE_MAP_REQUIRED_FIELD_MISSING')
   })
 })
