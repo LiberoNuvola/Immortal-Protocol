@@ -6884,3 +6884,14 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Cross-reference artifact ID `13056627144`, ZIP SHA-256 `734820927de6375a0d80b7bbdcd2d7e2a8644da15f82dba8dad90e7c767acfac`; extracted JSON SHA-256 `e3bcb527ca8fb2991e3bcf89ffa5c98a61335c42750531f7a557a6b5ee3001fe`.
 - The output summary initially mislabeled the six total pools as `directConstantProductPools`; corrected source commit `9910b08334f9c511af92afd8f70c97375db0d9a4` now separates `directDexPools`, `directConstantProductPools` and `directConcentratedLiquidityPools`. A rerun is in progress as run 41239270654; use its artifact for the corrected summary when complete.
 - This remains observational research only, not a redemption quote, USDM/USD peg proof, qualified oracle, EEV evidence or deployment approval. No wallet/transaction/signing/chain write, oracle refresh or economic rule change.
+
+
+## 10.70 Agent A — Float confirmed-chain USDM indexer added (2026-10-31)
+
+- Added read-only collector scripts/collectFloatUsdmReadOnly.mjs (commit a2453d927cfcb69f0612a795730481d488af280e) and workflow job read-only-float-indexer-observation (commit d1b817f61beaa8efae2147b81cd68e947a08310b).
+- First live run [41239314212](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239314212) succeeded. Float reported exact USDM identity, decimals 6, HTTP 200, provider finality confirmed, chain watermark height 14,141,197 / slot 201,912,408.
+- Float returned 58 exact-USDM market rows across 12 venue families. Direct ADA/USDM pair rows: 18 total, 12 not marked stale, 6 marked stale. Counts are provider census only; not all rows are executable or qualified quotes.
+- Artifact ID 13057135662, ZIP digest 9c9b6126d3c56524af457a133afcff8460314302b5063c53b4510114263a6083; extracted JSON digest c6c39376f31a6831fb12318c9fb9a8a86c3be272587adb1b30226aa2a6272900; raw response SHA-256 295331e0878c1f9b6529fff100671bda89c3d7ddb9ef5ae76f07193aa3eb5e8f.
+- Added Float/Koios/Minswap API identity-and-coverage reconciler scripts/reconcileFloatUsdmReadOnly.mjs (commit 45ec264d0750a8913390f3960429f5ebe7f2fd96) and dependent workflow job reconcile-float-indexer (commit 24f9dff93c2e66895fca93c96dac49b2bce47f61). The automated result is pending.
+- Float is a separate indexer/data plane associated with Sundae Labs, not a separate DEX venue or independent fiat oracle. The collector uses quote=ada and preserves raw reserves; it does not use Float's USD conversion or assert a USDM/USD peg.
+- No V3, Reveal, Materios, Kernel, EEV, R1/Kc, wallet, signing, transaction, oracle refresh, deployment, or chain-write action.
