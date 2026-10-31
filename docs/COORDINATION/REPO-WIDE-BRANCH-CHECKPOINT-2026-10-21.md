@@ -6707,3 +6707,15 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Live observer artifact ID `13051323349`, ZIP digest `8d7f9695567386e96e936e39f4cb59f74bb95e09193ce42c1537e6e0fb607669`. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41226055552
 - This is structural pool/API evidence for Sundae V3 only. The 2 Sundae Stableswaps and 1 V1 API pools remain unqualified. No price/peg/oracle/EEV/deployment qualification is implied.
 - Subsequent code changes add the validated Sundae V3 constant-product reserve ratio to the cross-reference calculator (`f7cf66536fbc1e440c2a2d2649130fce4457c0fa`) and workflow dependencies/artifact transfer (`c8856b2f96ba3ad3b0bd818a7eb7ea9ae37b9cc2`). The resulting cross-reference rerun is pending.
+
+
+## 10.62 Agent A — Danogo, SaturnSwap, indexer and MuesliSwap paths (2026-10-31)
+
+- Run 41226055552 artifacts inspected:
+  - Danogo CLMM: 12 exact-USDM pool NFTs; 12/12 current UTxOs, payment credentials, NFT identities and active-reserve matches against SuperCardano. Pair census: 5 ADA/USDM, 2 USDM/USDCx, 1 USDM/USDA, 4 USDM/other. Three ADA pools have potential unverified reward amounts; CLMM price/tick math remains unqualified. Artifact 13051933069.
+  - SaturnSwap CLOB: 3 deployments queried; 20,026 order UTxOs scanned; no direct USDM/ADA order rows found. 4%-runoff deployment reached 20,000-row cap (pagination incomplete) with 20 invalid rows; V3 had 8 invalid rows. Do not infer zero liquidity. Artifact 13051103586.
+  - GeckoTerminal: 20 exact-USDM pairs, 19 Minswap and 1 SaturnSwap — secondary indexer, not 20 independent venues. Artifact 13050998396.
+  - DexScreener: 6/31 exact Minswap V2 pair lookups matched; 25 missing. Secondary indexer only. Artifact 13052042341.
+  - MuesliSwap API: DNS `ENOTFOUND api.muesliswap.com`, no pool data; `SOURCE_UNAVAILABLE`, not zero pools. Artifact 13051492777.
+- Muesli official contract repository publishes mainnet pool addresses `addr1z9cy...` and `addr1w9cy...`, pool NFT policy `909133...`, LP policy `af3d70...`; `PoolDatum` is four fields `(coinA, coinB, totalLiquidity, swapFee)` and the pool uses a constant-product invariant. Added direct exact-USDM Koios UTxO observer for both official pool addresses at commit `082d61dc29f0e48c7c438a4746cf48a4075687c8`, workflow job at `7f7d6857af7e49471507816598d6342f096d0a4d`. Its live run is pending.
+- Added Sundae V3 to the USDM/USD cross-reference pipeline. First run failed because the calculator loaded but did not bind the `sundae` artifact; fixed at `d5034304baf15b1a6283f8bc092ce9505acc9b4d`. New run 41226789902 pending. No averaging, peg decision, or economic change.
