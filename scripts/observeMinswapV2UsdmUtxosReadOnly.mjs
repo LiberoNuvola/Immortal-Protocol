@@ -112,7 +112,7 @@ function plutusOptionInt(value, label) {
   throw new Error('PLUTUS_OPTION_INT_SHAPE_INVALID:' + label)
 }
 
-function decodeV2PoolDatum(value) {
+export function decodeV2PoolDatum(value) {
   const root = plutusConstr(value, 'PoolDatum')
   if (root.constructor !== 0 || root.fields.length !== 10) {
     throw new Error('MIN_SWAP_V2_POOL_DATUM_SHAPE_UNSUPPORTED')
