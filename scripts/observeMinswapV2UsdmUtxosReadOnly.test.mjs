@@ -5,7 +5,7 @@ import {
   validateV2Candidate,
 } from './observeMinswapV2UsdmUtxosReadOnly.mjs'
 
-const STAKE = '52563c5410bff6a0d43ccebb7c37e1f69f5eb260552521adff33b9c2'
+const STAKE = '1eae96baf29e27682ea3f815aba361a0c6059d45e4bfbe95bbd2f44a'
 const USDM = {
   policyId: 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad',
   assetNameHex: '0014df105553444d',
@@ -23,7 +23,7 @@ const int = (value) => ({ int: String(value) })
 
 function fixtureDatum(overrides = {}) {
   return constr(0, [
-    constr(0, [constr(0, [bytes(STAKE)])]),
+    constr(0, [constr(1, [bytes(STAKE)])]),
     constr(0, [bytes(USDM.policyId), bytes(USDM.assetNameHex)]),
     constr(0, [bytes(OTHER.policyId), bytes(OTHER.assetNameHex)]),
     int(15_000_000),
@@ -59,7 +59,7 @@ function candidate(overrides = {}) {
 describe('Minswap V2 PoolDatum decoder (synthetic fixtures)', () => {
   it('decodes the published 10-field PoolDatum and preserves integer precision', () => {
     const decoded = decodeV2PoolDatum(fixtureDatum())
-    expect(decoded.poolBatchingStakeKeyHash).toBe(STAKE)
+    expect(decoded.poolBatchingStakeScriptHash).toBe(STAKE)
     expect(decoded.assetA).toEqual(USDM)
     expect(decoded.assetB).toEqual(OTHER)
     expect(decoded.reserveA).toBe(RESERVE_A)
