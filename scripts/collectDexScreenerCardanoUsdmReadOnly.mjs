@@ -40,13 +40,16 @@ async function request(path) {
   catch { return { evidence, json: null, parseError: true } }
 }
 
-function tokenUnit(token) {
-  return String(token?.address ?? '').toLowerCase()
+function tokenUnit(token, chainId = 'cardano') {
+  const address = String(token?.address ?? '').toLowerCase()
+  // DEX Screener represents Cardano ADA as "0x"; on-ledger ADA unit is empty.
+  if (chainId === 'cardano' && address === '0x' && String(token?.symbol ?? '').toUpperCase() === 'ADA') return ''
+  return address
 }
 
 function pairSummary(pair, requestedPairId, apiPool) {
-  const baseUnit = tokenUnit(pair.baseToken)
-  const quoteUnit = tokenUnit(pair.quoteToken)
+  const baseUnit = tokenUnit(pair.baseToken, pair.chainId)
+  const quoteUnit = tokenUnit(pair.quoteToken, pair.chainId)
   const apiA = String(apiPool.assetA?.currency_symbol ?? '').toLowerCase() +
     String(apiPool.assetA?.token_name ?? '').toLowerCase()
   const apiB = String(apiPool.assetB?.currency_symbol ?? '').toLowerCase() +
@@ -99,7 +102,7 @@ async function main() {
   const tokenPairs = await request('/token-pairs/v1/cardano/' + encodeURIComponent(ASSET_UNIT))
   const discoveredPairs = Array.isArray(tokenPairs.json) ? tokenPairs.json : []
   const exactUnitPairs = discoveredPairs.filter((pair) =>
-    tokenUnit(pair.baseToken) === ASSET_UNIT || tokenUnit(pair.quoteToken) === ASSET_UNIT
+    tokenUnit(pair.baseToken, pair.chainId) === ASSET_UNIT || tokenUnit(pair.quoteToken, pair.chainId) === ASSET_UNIT
   )
 
   // Resolve every Minswap V2 pair already proven by the same-run API/on-chain census.
@@ -119,6 +122,11 @@ async function main() {
     })
   }
 
+  const venueCounts = exactUnitPairs.reduce((counts, pair) => {
+    const venue = String(pair.dexId ?? 'UNKNOWN')
+    counts[venue] = (counts[venue] ?? 0) + 1
+    return counts
+  }, {})
   const evidence = {
     schema: 'immortal-dexscreener-cardano-usdm-readonly-v1',
     classification: 'SECONDARY_DEX_INDEXER_OBSERVATION_NOT_INDEPENDENT_VENUE_OR_ORACLE',
@@ -134,6 +142,7 @@ async function main() {
       request: tokenPairs.evidence,
       returnedPairCount: discoveredPairs.length,
       exactUnitPairCount: exactUnitPairs.length,
+      venueCounts,
       exactUnitPairs,
       note: 'If token address encoding differs from the Cardano policy+asset-name unit, zero exactUnitPairCount is inconclusive; known pair lookups are still retained separately.',
     },
