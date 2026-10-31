@@ -6862,3 +6862,11 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - The run's CSWAP exact-USDM observer also completed and uploaded its artifact successfully. Its result remains one candidate, official payment credential match, datum decoded, full pagination. Pricing stays provisional only.
 - Mainnet Minswap acquisition and SundaeSwap V3 observation were still in progress when this entry was written; Danogo/updated cross-reference job remains downstream. Do not state any new Danogo live spot until its artifact and dependent cross-reference are complete.
 - No transaction, wallet, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
+
+
+## 10.69 Agent A — SundaeSwap V3 5/5 resnapshot recovered after transient Koios timeout (2026-10-31)
+
+- In run 41238599020 the SundaeSwap V3 observer timed out at 45 seconds; this was classified as source unavailable/incomplete.
+- New run [41238996378](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238996378) succeeded: 5 UTxO rows, 5 payment credential matches, 5 inline datums, 5 structural matches, 0 unqualified, 5 API matches, 0 API mismatches, 0 API-only pools.
+- Artifact ID `13056956033`, ZIP digest `a368f846268a65c5ef131edfd3672045b4aafacb88a9254c6904fe347e19cb19`, JSON digest `1e1577af21e3b7bd83fda706c937218c8aaf49e2bb4aa9e50b4d29e433355f87`.
+- The latest successful structural/API snapshot supersedes the transient timeout. It is still a same-venue API vs on-chain identity/reserve reconciliation, not an independent market source or peg proof. The full cross-reference job is pending other dependencies.
