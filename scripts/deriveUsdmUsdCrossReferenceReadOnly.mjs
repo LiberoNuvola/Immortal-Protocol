@@ -9,6 +9,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { deriveDanogoClmmSpotPrice } from './lib/danogoClmmMath.mjs'
+import { deriveCswapProvisionalSpot } from './lib/cswapAmmMath.mjs'
 
 const ADA_UNIT = ''
 const USDM_UNIT = 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d'
@@ -59,15 +60,17 @@ async function main() {
   const muesliPath = arg('--muesli', 'audit/muesliswap/muesliswap-usdm-utxos-readonly.json')
   const adaUsdPath = arg('--ada-usd', 'audit/ada-usd/ada-usd-public-references-readonly.json')
   const danogoPath = arg('--danogo', 'audit/danogo/danogo-clmm-usdm-readonly.json')
+  const cswapPath = arg('--cswap', 'audit/cswap/cswap-usdm-pool-readonly.json')
   const outPath = arg('--out', 'audit/oracles/usdm-usd-cross-reference-readonly.json')
   const calculationStartedAt = new Date().toISOString()
-  const [onchain, sundae, wing, muesli, adaUsd, danogo] = await Promise.all([
+  const [onchain, sundae, wing, muesli, adaUsd, danogo, cswap] = await Promise.all([
     readFile(onchainPath, 'utf8').then(JSON.parse),
     readFile(sundaePath, 'utf8').then(JSON.parse),
     readFile(wingPath, 'utf8').then(JSON.parse),
     readFile(muesliPath, 'utf8').then(JSON.parse),
     readFile(adaUsdPath, 'utf8').then(JSON.parse),
     readFile(danogoPath, 'utf8').then(JSON.parse),
+    readFile(cswapPath, 'utf8').then(JSON.parse),
   ])
 
   if (onchain.network !== 'cardano-mainnet' || wing.network !== 'cardano-mainnet' || muesli.network !== 'cardano-mainnet') {
@@ -75,6 +78,7 @@ async function main() {
   }
   if (adaUsd.pair !== 'ADA/USD') throw new Error('ADA_USD_PAIR_MISMATCH')
   if (danogo.network !== 'cardano-mainnet') throw new Error('DANOGO_NETWORK_MISMATCH')
+  if (cswap.network !== 'cardano-mainnet') throw new Error('CSWAP_NETWORK_MISMATCH')
 
   const dexPools = []
   for (const candidate of onchain.candidates ?? []) {
@@ -211,6 +215,29 @@ async function main() {
     }
   }
 
+
+  // CSWAP is kept in a separate provisional channel: the pricing model comes
+  // from a third-party SDK and has not been verified against the deployed V3
+  // validator. Never merge this observation into the structurally qualified
+  // DEX venue set above.
+  const cswapProvisionalPools = []
+  const cswapExcluded = []
+  for (const candidate of cswap.candidates ?? []) {
+    try {
+      const quote = deriveCswapProvisionalSpot(candidate)
+      if (quote) cswapProvisionalPools.push(quote)
+      else cswapExcluded.push({
+        utxoRef: candidate.utxoRef ?? null,
+        reason: 'POOL_CREDENTIAL_PAIR_OR_LP_IDENTITY_NOT_MATCHED',
+      })
+    } catch (error) {
+      cswapExcluded.push({
+        utxoRef: candidate.utxoRef ?? null,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   const cex = (adaUsd.sources ?? []).filter((x) => x.status === 'MATCHED' && x.midUsd)
   const crossRates = []
   for (const pool of dexPools) {
@@ -239,6 +266,31 @@ async function main() {
     }
   }
 
+
+  const provisionalCswapCrossRates = []
+  for (const pool of cswapProvisionalPools) {
+    for (const ref of cex) {
+      const adaUsdMid = parseScaled(ref.midUsd)
+      const cross = mulScaled(parseScaled(pool.priceAdaPerUsdm), adaUsdMid)
+      provisionalCswapCrossRates.push({
+        classification: 'PROVISIONAL_THIRD_PARTY_SDK_FORMULA_NOT_PLUTUSV3_VERIFIED',
+        dexVenue: 'CSWAP',
+        poolUtxoRef: pool.utxoRef,
+        adaPerUsdmSpot: pool.priceAdaPerUsdm,
+        adaUsdVenue: ref.venue,
+        adaUsdBid: ref.bidUsd,
+        adaUsdAsk: ref.askUsd,
+        adaUsdMid: ref.midUsd,
+        indicativeUsdmUsd: formatScaled(cross),
+        cexObservedAt: ref.observedAt,
+        cexSourceTime: ref.sourceTime,
+        feeNumeratorRaw: pool.feeNumeratorRaw,
+        feeDenominatorRaw: pool.feeDenominatorRaw,
+        priceMethod: pool.priceMethod,
+      })
+    }
+  }
+
   const dexPrices = dexPools.map((p) => parseScaled(p.priceAdaPerUsdm))
   const priceSpread = dexPrices.length > 1
     ? {
@@ -263,6 +315,7 @@ async function main() {
       wingridersOnchain: { startedAt: wing.startedAt, completedAt: wing.completedAt },
       muesliswapOnchain: { startedAt: muesli.startedAt, completedAt: muesli.completedAt, summary: muesli.summary },
       danogoClmmOnchain: { startedAt: danogo.startedAt, completedAt: danogo.completedAt, summary: danogo.summary },
+      cswapOnchain: { startedAt: cswap.startedAt, completedAt: cswap.completedAt, summary: cswap.summary },
       adaUsdReferences: { startedAt: adaUsd.startedAt, completedAt: adaUsd.completedAt, summary: adaUsd.summary },
     },
     summary: {
@@ -271,11 +324,16 @@ async function main() {
       successfulAdaUsdReferences: cex.length,
       danogoClmmDirectAdaUsdmPools: danogoPricePools.length,
       danogoClmmExcludedPools: danogoExcluded.length,
+      provisionalCswapPoolCount: cswapProvisionalPools.length,
+      provisionalCswapExcludedCount: cswapExcluded.length,
+      provisionalCswapCrossRateCount: provisionalCswapCrossRates.length,
       crossRateCount: crossRates.length,
       adaPerUsdmSpotRange: priceSpread,
     },
     dexPools,
     danogoClmm: { included: danogoPricePools, excluded: danogoExcluded },
+    cswapProvisional: { included: cswapProvisionalPools, excluded: cswapExcluded },
+    provisionalCswapCrossRates,
     adaUsdReferences: cex,
     indicativeCrossRates: crossRates,
     limitations: [
@@ -285,6 +343,7 @@ async function main() {
       'MuesliSwap public API DNS was unavailable in the captured run; its direct on-chain pool observation is validated against the official MuesliSwap pool contract source. A separate MuesliSwap USDM/USADA pool is not a direct ADA/USDM quote and is not included in this cross-rate.',
       'The ADA/USD and USDM/ADA observations have separate timestamps and are not an atomic cross-market snapshot.',
       'Pool UTxO ages are reported for transparency only; no freshness threshold or automatic pool exclusion is introduced by this observer.',
+      'CSWAP provisional spot is kept in a separate section and is based on a third-party SDK model; it is not included in the qualified DEX pool set or primary cross-rate series until PlutusV3 fee, datum and reserve semantics are independently verified.',
       'No averaging, outlier threshold, peg band, confidence threshold, redemption claim, issuer reserve claim, EEV valuation, or deployment qualification is performed.',
       'The resulting USDM/USD values are indicative cross-rates only. They do not establish USDM/USD parity or oracle suitability.',
     ],
