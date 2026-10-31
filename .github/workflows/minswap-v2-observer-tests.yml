@@ -308,7 +308,7 @@ jobs:
   read-only-saturnswap-orderbook:
     if: ${{ github.event_name == 'push' }}
     needs:
-      - read-only-muesliswap-onchain-observation
+      - read-only-sundaeswap-v3-mainnet-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -424,7 +424,6 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     needs:
       - read-only-sundaeswap-api-observation
-      - read-only-saturnswap-orderbook
       - read-only-muesliswap-onchain-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
