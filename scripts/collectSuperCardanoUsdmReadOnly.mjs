@@ -117,7 +117,18 @@ async function main() {
       freshnessByVenue[venue][pool.freshnessAtSourceAsOf] += 1
     }
     const tradeByVenue = {}
-    for (const trade of trades) tradeByVenue[trade.venue ?? 'UNKNOWN'] = (tradeByVenue[trade.venue ?? 'UNKNOWN'] ?? 0) + 1
+    const tradeLevelsByVenue = {}
+    const flaggedTradeCountByFlag = {}
+    for (const trade of trades) {
+      const venue = trade.venue ?? 'UNKNOWN'
+      tradeByVenue[venue] = (tradeByVenue[venue] ?? 0) + 1
+      tradeLevelsByVenue[venue] ??= {}
+      const level = String(trade.level ?? 'UNKNOWN')
+      tradeLevelsByVenue[venue][level] = (tradeLevelsByVenue[venue][level] ?? 0) + 1
+      for (const flag of trade.flags ?? []) {
+        flaggedTradeCountByFlag[flag] = (flaggedTradeCountByFlag[flag] ?? 0) + 1
+      }
+    }
 
     const result = {
       schema: 'immortal-supercardano-usdm-readonly-v1',
@@ -136,6 +147,8 @@ async function main() {
       sourceMeta: {
         token: poolsResponse.json.meta ?? null,
         trades: tradesResponse.json.meta ?? null,
+        asOfBlockHeight: poolsResponse.json.meta?.asOf?.height ?? null,
+        asOfUnixTime: poolsResponse.json.meta?.asOf?.time ?? null,
       },
       summary: {
         tokenPoolCount: pools.length,
@@ -144,6 +157,8 @@ async function main() {
         tradeRowsReturned: tradesData.rows.length,
         exactUsdmTradeRows: trades.length,
         exactUsdmTradeRowsByVenue: tradeByVenue,
+        tradeLevelsByVenue,
+        flaggedTradeCountByFlag,
         tokenPriceAda: tokenData.price ?? null,
         tokenLiquidityRaw: tokenData.liquidity ?? null,
         tokenChange24h: tokenData.change24h ?? null,
