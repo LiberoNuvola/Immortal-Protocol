@@ -226,3 +226,10 @@ The captured raw values were price integer 239761, timestamp 2026-05-26T20:01:30
 
 
 The Float reconciliation's API-side pair join now normalizes Minswap API `currency_symbol`/`token_name` separately from Plutus datum `policyId`/`assetNameHex`; the earlier draft used the datum schema for API objects and could not produce a meaningful API pair comparison. This schema correction is covered by a focused unit test. The workflow also serializes same-branch evidence runs, cancelling superseded pending/in-progress runs so the newest snapshot is the one that completes. Corrected Float/API/reserve results remain pending the next CI run.
+
+
+## Additional public ADA/USD market aggregators
+
+The same read-only reference collector has been expanded with three public aggregator endpoints: CoinPaprika, CoinLore and CoinGecko. These are kept in a separate MARKET_DATA_AGGREGATOR category, distinct from the seven direct CEX spot venues. CoinPaprika provides a provider update timestamp; CoinGecko can provide last_updated_at; CoinLore's current ticker response provides no provider timestamp, so its capture time is not a freshness guarantee.
+
+These three aggregators may reuse or weight the same underlying CEX/DEX venue data. They are useful independent API observations, but not independent trading venues and not decentralized oracle networks. Their values must not be counted as three more CEX venues or averaged blindly with the seven spot sources. The ten-source live rerun is pending.
