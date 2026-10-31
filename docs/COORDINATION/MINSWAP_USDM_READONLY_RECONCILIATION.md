@@ -60,7 +60,8 @@ Do not infer reserves from API TVL or displayed USD values. Do not infer a datum
 The official Minswap DEX V2 repository publishes:
 
 - pool script hash: `ea07b733d932129c378af627436e7cbc2ef0bf96e0036bb51b3bde6b`;
-- pool stake key credential hash in `deployed/mainnet/params.json`: `52563c5410bff6a0d43ccebb7c37e1f69f5eb260552521adff33b9c2`;
+- pool address stake credential in `deployed/mainnet/params.json` is a **Key** credential with hash `52563c5410bff6a0d43ccebb7c37e1f69f5eb260552521adff33b9c2`;
+- pool batching credential in `deployed/mainnet/script.json` is a **Script** credential with hash `1eae96baf29e27682ea3f815aba361a0c6059d45e4bfbe95bbd2f44a` (also the credential encoded in `poolBatchingAddress`). These are distinct credentials and must not be conflated.
 - official pool creation address, also shown in the repository README:
   `addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a`.
 
@@ -77,7 +78,7 @@ For V2, the contract source describes `PoolDatum` asset pair and reserve fields 
 
 ## V2 decoder implementation status
 
-The read-only observer now implements a strict V2 PoolDatum JSON decoder for the published 10-field constructor and validates the configured batching stake key credential, canonical ordered asset pair, exact USDM membership, exact Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed output Value composition, and datum reserve quantities against output Value. The ADA reserve comparison follows the validator's `min_pool_ada = 4,500,000 lovelace` adjustment. Unsupported/missing datum JSON remains unqualified.
+The read-only observer now implements a strict V2 PoolDatum JSON decoder for the published 10-field constructor and validates the configured pool batching Script credential, canonical ordered asset pair, exact USDM membership, exact Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed output Value composition, and datum reserve quantities against output Value. The ADA reserve comparison follows the validator's `min_pool_ada = 4,500,000 lovelace` adjustment. Unsupported/missing datum JSON remains unqualified.
 
 This is a source implementation awaiting fixtures and runtime verification, not a live qualification.
 
@@ -154,7 +155,7 @@ Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic Plutus
 
 **Important evidence boundary:** these fixtures are synthetic, not copied from a real Koios response. The Vitest suite has been added to the repository but has not been executed in this environment. Therefore no runtime/test-pass claim is made, and the Koios `inline_datum.value` serialization shape remains to be confirmed against a captured Mainnet fixture.
 
-The implementation constants were cross-checked against the official Minswap V2 source: `PoolDatum` has ten fields; `min_pool_ada` is 4,500,000 lovelace; `compute_lp_asset_name` uses SHA3-256 over each concatenated policy/name pair and then over the two hashes; the deployed Mainnet batching stake key hash and Pool NFT identity match the pinned values already recorded above. See the official [Minswap V2 repository](https://github.com/minswap/minswap-dex-v2), particularly `lib/amm_dex_v2/types.ak`, `lib/amm_dex_v2/utils.ak`, and `deployed/mainnet/params.json`.
+The implementation constants were cross-checked against the official Minswap V2 source: `PoolDatum` has ten fields; `min_pool_ada` is 4,500,000 lovelace; `compute_lp_asset_name` uses SHA3-256 over each concatenated policy/name pair and then over the two hashes; the deployed Mainnet pool batching Script credential (`1eae…`) and Pool NFT identity match the pinned values already recorded above. The separate pool address Key stake credential (`5256…`) is not the datum's batching credential. See the official [Minswap V2 repository](https://github.com/minswap/minswap-dex-v2), particularly `lib/amm_dex_v2/types.ak`, `lib/amm_dex_v2/utils.ak`, and `deployed/mainnet/params.json`.
 
 **CI harness added:** `.github/workflows/minswap-v2-observer-tests.yml` runs the focused Vitest suite on relevant pushes to `work/immortal-green-closure` and pull requests. Workflow commit: `58188c06c4dc26a9707699bd6933f5502da3e9aa`. Its first run is green: Actions run 41203141441, job decoder-fixtures; logs confirm 9/9 synthetic tests passed on Node 22.23.4 / Vitest 1.6.1.
 
@@ -168,3 +169,12 @@ The implementation constants were cross-checked against the official Minswap V2 
 The first live read-only execution was attempted in Actions run [41203284220](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41203284220). Koios `/address_utxos` timed out with HTTP 504 on the first page after approximately 121 seconds. The raw error body and SHA-256 were preserved in the job log; no rows or datum were returned. This is classified as `SOURCE_UNAVAILABLE`, not as zero matching pools.
 
 To avoid enumerating every UTxO at the shared V2 validator address, the observer now uses Koios `POST /asset_utxos` with the exact USDM policy/name pair and a PostgREST `address=eq.<official-address>` filter, retaining `_extended: true` and the same explicit pagination. Official Koios examples document the `_asset_list` pair structure and extended UTxO fields. The exact-asset/address-filtered retry is queued automatically by the observer workflow; its outcome must be recorded separately. No fallback to ticker or approximate asset identity is allowed.
+
+
+## 12. Real Mainnet datum fixture and credential correction
+
+The first successful targeted Koios capture exposed the actual Plutus Data constructor for `PoolDatum.pool_batching_stake_credential`: `Inline` constructor 0 wrapping `ScriptCredential` constructor 1, hash `1eae96baf29e27682ea3f815aba361a0c6059d45e4bfbe95bbd2f44a`. The previous decoder incorrectly assumed a VerificationKey credential and compared it with `52563c…`.
+
+Official deployment files distinguish the two identities: `deployed/mainnet/script.json` declares `poolBatchingCredential` as Script hash `1eae…` and `poolBatchingAddress` as `stake17y…`; `deployed/mainnet/params.json` separately declares `poolStakeCredential` as Key hash `52563c…`. The captured UTxO's own `stake_address` decodes to the latter Key hash. The decoder now validates the former Script hash in the datum. A real datum fixture is preserved at `scripts/fixtures/minswap-v2-usdm-mainnet-2026-10-31.json` with Koios response provenance and raw CBOR.
+
+This correction is based on the actual Mainnet datum and official deployment configuration. The real fixture is expected to validate as a candidate only after the focused CI suite reruns; no result is asserted until that run completes.
