@@ -6462,3 +6462,13 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - **Not runtime-verified:** no Node fixture/test run and no live Koios query in this session. Koios `inline_datum.value` representation must be checked against captured fixtures; unsupported/missing data stays unqualified. No pool count/reserve/API-chain match is claimed.
 - Issue #37 update: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6542398466
 - Option B remains UNQUALIFIED. No wallet, signature, transaction, refresh, deployment, chain write, Oracle consumer, EEV/R1-Kc, Kernel, V3, Reveal or Materios change.
+
+
+## 10.39 Agent A — Minswap V2 decoder fixture harness (2026-10-31)
+
+- Pure Minswap V2 decoder and candidate validator are now exported from `scripts/observeMinswapV2UsdmUtxosReadOnly.mjs`; a direct-execution guard prevents import-time network activity.
+- Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic fixtures covering the 10-field PoolDatum shape, exact-USDM candidate, batching stake credential, Pool NFT quantity, derived LP asset, reserve/Value mismatch, unexpected assets and missing USDM.
+- Official-source cross-check: Minswap V2 `PoolDatum` has ten fields; `min_pool_ada=4,500,000`; LP asset name derivation uses SHA3-256; deployed Mainnet params confirm the batching stake key hash. Official source paths are documented in `docs/COORDINATION/MINSWAP_USDM_READONLY_RECONCILIATION.md`.
+- **Evidence limit:** fixture suite is committed but not executed here; fixtures are synthetic, not a captured Koios response. Koios `inline_datum.value` compatibility and any live UTxO/API reconciliation remain unverified.
+- Current commits: observer export/guard `edb75e3c2a524eb34c7deb04323de501cface042`; synthetic test file `a77a96c2268d1131bf7e4525aacc6fe2e5ac8083`, test correction `3de91c44ccead5ad4b4125c1ef24e3c4be61cd35`; reconciliation spec `d29da344907b5344e9922817fa62dd66f621c90d`.
+- Scope unchanged: Agent A only. No V3, Reveal, Materios, Kernel, Oracle consumer, EEV, R1/Kc, wallet, deployment, transaction, oracle refresh or chain-write changes. Option B remains unqualified.
