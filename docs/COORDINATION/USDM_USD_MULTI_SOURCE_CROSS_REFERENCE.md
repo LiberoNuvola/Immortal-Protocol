@@ -207,3 +207,12 @@ Artifact ID 13056972087, ZIP SHA-256 7586d6f1f9568d9b591d05e587ed48e3b8dd9f85688
 The unauthenticated direct ADA/USD collector now includes seven exchange endpoints: Coinbase, Kraken, Bitstamp, Gemini, Bitfinex, Crypto.com Exchange and BTSE Spot. Crypto.com exposes last/bid/ask plus a ticker timestamp; BTSE exposes last and index prices but no bid/ask, so it is recorded without manufacturing a midpoint. The collector now permits absent bid/ask fields and reports midpoint ranges only for venues that actually provide both sides.
 
 This remains **CEX market data**, not a decentralized oracle. ADA/USDT and ADA/USDC markets are intentionally not counted as USD pairs; any conversion through those stablecoins would require a separately qualified USDT/USD or USDC/USD reference. First seven-source live run pending.
+
+
+## Float confirmed-chain indexer — 58 markets across 12 venues
+
+Float's read-only API returned an exact Moneta USDM record with 6 decimals, provider confidence `high`, finality `confirmed`, and an `as_of` watermark at block height `14,141,207` / slot `201,912,620` (`2026-10-31T20:35:11Z`). The response contained **58 exact-USDM markets across 12 DEX venue labels**. Of these, **18 were direct ADA/USDM pairs: 12 provider-marked fresh and 6 provider-marked stale**. The provider's stale flag is preserved; it is not treated as live liquidity.
+
+Same-run Float/Koios/Minswap API reconciliation initially found 14 Float Minswap V2 market keys matching Koios UTxO pool names and exact asset pairs; there were 0 Float-only keys, 17 Koios-only keys, 0 pair mismatches and 0 duplicate Float keys. This indicates incomplete Float coverage (14 of 31 Minswap V2 pools), not missing on-chain pools. The initial API identity join was not valid: Float keys are pool/LP-name suffixes, whereas Minswap API exposes the full LP policy+asset-name unit. The first reconciliation therefore did not establish API matches despite reporting zero API pair mismatches.
+
+Corrective work now joins the API through the candidate's full LP unit and adds exact Float-reserve-vs-PoolDatum reserve comparison (including reversed pair orientation). Six focused tests cover the identity join and reserve comparison. The new CI run is pending; no reserve-equality or API-match count is asserted until that rerun completes. Float remains an indexer of existing DEX venues, not a 13th independent market venue or a second node quorum.
