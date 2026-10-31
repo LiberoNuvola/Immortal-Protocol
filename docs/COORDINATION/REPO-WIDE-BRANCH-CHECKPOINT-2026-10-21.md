@@ -6539,3 +6539,12 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Metrics-only collection succeeded in run 41204489438: exact verified USDM (decimals 6); 43 total pools (31 MinswapV2, 8 Minswap V1, 4 Stable). History deliberately deferred. API artifact ID `13044046954`, ZIP digest `f716856f91f59b521accc4749a25673ef067037fbdf57af6fc107c7bd6346a0e`.
 - Manual same-run artifact comparison against Koios found 31/31 MinswapV2 LP identity matches and 31/31 exact unordered pair matches. This is not a price or oracle qualification.
 - Added deterministic reconciler `scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs` (commit `13662f56fdf44834bb76967e73e5baba7bb2295a`) and same-run dependent workflow job (commit `d4283fe12e25d315165c88379e9db99d5d372564`). Automated result pending.
+
+
+## 10.47 Agent A — automated 31/31 Minswap API / Koios reconciliation (2026-10-31)
+
+- Same-run automated workflow 41204657669 succeeded on source commit `d4283fe12e25d315165c88379e9db99d5d372564`. The dependent reconciler downloaded the API and Koios artifacts and compared exact LP asset IDs plus unordered asset-pair identity.
+- Summary: Koios candidates 31; structurally matched 31; API pools all protocols 43; API MinswapV2 31; matched 31; on-chain only 0; API only 0; pair mismatch 0; unqualified 0; duplicate API LP IDs 0.
+- Reconciliation artifact ID `13044411182`, ZIP digest `b0c2d9b3c93f9e4c6098eb7c7303ad080ed30d77fbac7cc959617ec87ebfc339`; JSON digest `c01872590804b698dd5ad6adb1328809ea4139467320bdc5abf50a4bbbc07c80`.
+- Source windows: API 13:14:27.946Z–13:14:28.758Z; Koios 13:14:29.034Z–13:15:46.121Z. Near-aligned but not atomic. Raw response hashes and times are retained in source artifacts.
+- This closes the first V2 pool-set/asset-pair identity reconciliation. It does not qualify API USD metrics, price/peg, independent venue/oracle, EEV or deployment. Minswap API + GeckoTerminal are one DEX venue; Koios is an indexer view of the same ledger, not another market venue. Historical price/volume series remain deferred due rate limiting.
