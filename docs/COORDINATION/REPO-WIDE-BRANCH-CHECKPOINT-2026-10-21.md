@@ -6219,6 +6219,12 @@ The arithmetic difference between the displayed values is **1,961,891.13 USD (~2
 - Feed 3326 does not close Option B (USD/USDM per unit), does not establish issuer redemption parity, and does not alter direct-USDM EEV qualification. VerifiedUSDM remains the qualified token quantity physically present in the exact B1 PrizePool UTxO.
 - Do not confuse Pyth Pro numeric feed IDs with Pyth Core 32-byte Hermes IDs; the Pyth Pro Cardano guide documents the pull/update flow and requires consumer-side freshness checks: https://developers.cardano.org/docs/build/integrate/oracles/pyth/.
 
+### Exact read-only acquisition path if Pyth grants the feed
+
+Pyth Pro documents `POST https://pyth-lazer.dourolabs.app/v1/latest_price` as the authenticated latest-update endpoint. A feed-3326 read should request channel `fixed_rate@200ms` (its catalog minimum) and capture at least `price`, `exponent`, `publisherCount` and `feedUpdateTimestamp`, plus the signed payload format actually supported by the existing Cardano verifier. Pyth documents 403 as credentials not granting access to the requested feed; the previous feed-16 403 therefore cannot be generalized as a result for ID 3326. No API request was made because current entitlement for the NAV feed is not established. Do not expose or paste API secrets into chat, and do not modify the existing Agent B runner merely to probe this candidate.
+
+API references: https://docs.pyth.network/pro/api/rest · https://docs.pyth.network/api-reference/real-time-prices/latest-price.
+
 **Disposition:** Moneta reserve NAV feed **IDENTIFIED / NOT QUALIFIED FOR ECONOMIC USE**; Moneta USDM/USD unit feed **NOT FOUND IN THE PUBLIC CATALOG QUERY**; Option B **OPEN**. Preserve existing branch ownership: no duplicate Pyth consumer or new converter, and no Agent B/V3/Reveal changes.
 
 Issue #37 record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6540194166.
