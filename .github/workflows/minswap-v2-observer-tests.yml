@@ -19,6 +19,7 @@ on:
       - "scripts/fixtures/sundaeswap-v3-usdm-mainnet-2026-10-31.json"
       - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
       - "scripts/observeDanogoClmmUsdmReadOnly.mjs"
+      - "scripts/observeCswapUsdmPoolReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs"
       - "scripts/collectAdaUsdPublicReferencesReadOnly.mjs"
@@ -67,6 +68,7 @@ jobs:
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
           node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
           node --check scripts/observeDanogoClmmUsdmReadOnly.mjs
+          node --check scripts/observeCswapUsdmPoolReadOnly.mjs
           node --check scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs
           node --check scripts/observeWingRidersV2UsdmReadOnly.mjs
       - name: Run synthetic decoder fixtures
@@ -488,4 +490,25 @@ jobs:
         with:
           name: muesliswap-usdm-utxos-readonly-${{ github.run_id }}
           path: audit/oracles/muesliswap-usdm-utxos-readonly.json
+          if-no-files-found: warn
+
+  read-only-cswap-pool-observation:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Observe exact-USDM CSWAP ADA pool (read-only)
+        run: node scripts/observeCswapUsdmPoolReadOnly.mjs --out audit/cswap/cswap-usdm-pool-readonly.json
+      - name: Upload CSWAP pool evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cswap-usdm-pool-readonly-${{ github.run_id }}
+          path: audit/cswap/cswap-usdm-pool-readonly.json
           if-no-files-found: warn
