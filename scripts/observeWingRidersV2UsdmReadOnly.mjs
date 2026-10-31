@@ -210,9 +210,17 @@ async function main() {
     String(x.tx_hash).toLowerCase() + '#' + String(x.tx_index) === FACTORY_TOKEN_UTXO)
   if (!factoryUtxo) throw new Error('WINGRIDERS_OFFICIAL_FACTORY_TOKEN_UTXO_NOT_FOUND')
   const factoryToken = (factoryUtxo.asset_list ?? []).find((a) =>
-    String(a.asset_name ?? '').toLowerCase() === FACTORY_TOKEN_NAME_HEX &&
-    BigInt(String(a.quantity ?? '0')) === 1n)
-  if (!factoryToken) throw new Error('WINGRIDERS_FACTORY_TOKEN_F_NOT_FOUND')
+    String(a.asset_name ?? '').toLowerCase() === FACTORY_TOKEN_NAME_HEX)
+  if (!factoryToken) {
+    throw Object.assign(new Error('WINGRIDERS_FACTORY_TOKEN_F_NOT_FOUND'), {
+      evidence: { factoryResponse: factoryResponse.evidence, factoryUtxo },
+    })
+  }
+  if (BigInt(String(factoryToken.quantity ?? '0')) !== 1n) {
+    throw Object.assign(new Error('WINGRIDERS_FACTORY_TOKEN_F_QUANTITY_NOT_ONE'), {
+      evidence: { factoryResponse: factoryResponse.evidence, factoryToken },
+    })
+  }
   const officialPolicyId = String(factoryToken.policy_id).toLowerCase()
   const byShare = new Map()
   for (const row of poolResponse.json) {
