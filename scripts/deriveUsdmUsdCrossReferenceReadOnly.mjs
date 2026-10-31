@@ -56,6 +56,7 @@ async function main() {
   const wingPath = arg('--wingriders', 'audit/wingriders/wingriders-v2-usdm-readonly.json')
   const adaUsdPath = arg('--ada-usd', 'audit/ada-usd/ada-usd-public-references-readonly.json')
   const outPath = arg('--out', 'audit/oracles/usdm-usd-cross-reference-readonly.json')
+  const calculationStartedAt = new Date().toISOString()
   const [onchain, wing, adaUsd] = await Promise.all([
     readFile(onchainPath, 'utf8').then(JSON.parse),
     readFile(wingPath, 'utf8').then(JSON.parse),
@@ -78,8 +79,8 @@ async function main() {
       venue: 'Minswap V2',
       poolType: 'CONSTANT_PRODUCT',
       utxoRef: candidate.utxoRef,
-      sourceBlockHeight: candidate.blockHeight ?? null,
-      sourceBlockTime: candidate.blockTime ?? null,
+      sourceBlockHeight: candidate.transactionContext?.blockHeight ?? candidate.blockHeight ?? null,
+      sourceBlockTime: candidate.transactionContext?.blockTime ?? candidate.blockTime ?? null,
       ...price,
       baseFeeANumeratorRaw: d.baseFeeANumeratorRaw ?? null,
       baseFeeBNumeratorRaw: d.baseFeeBNumeratorRaw ?? null,
@@ -116,6 +117,9 @@ async function main() {
     for (const ref of cex) {
       const adaUsdMid = parseScaled(ref.midUsd)
       const cross = mulScaled(parseScaled(pool.priceAdaPerUsdm), adaUsdMid)
+      const poolUtxoAgeSecondsAtCalculation = pool.sourceBlockTime === null || pool.sourceBlockTime === undefined
+        ? null
+        : Math.max(0, Math.floor(Date.parse(calculationStartedAt) / 1000 - Number(pool.sourceBlockTime)))
       crossRates.push({
         dexVenue: pool.venue,
         poolUtxoRef: pool.utxoRef,
@@ -125,7 +129,10 @@ async function main() {
         adaUsdAsk: ref.askUsd,
         adaUsdMid: ref.midUsd,
         indicativeUsdmUsd: formatScaled(cross),
-        onchainSourceTime: pool.sourceBlockTime,
+        poolUtxoBlockTime: pool.sourceBlockTime,
+        poolUtxoUpdatedAt: pool.sourceBlockTime === null || pool.sourceBlockTime === undefined
+          ? null : new Date(Number(pool.sourceBlockTime) * 1000).toISOString(),
+        poolUtxoAgeSecondsAtCalculation,
         cexObservedAt: ref.observedAt,
         cexSourceTime: ref.sourceTime,
       })
@@ -142,6 +149,7 @@ async function main() {
 
   const evidence = {
     schema: 'immortal-usdm-usd-cross-reference-readonly-v1',
+    calculationStartedAt,
     classification: 'OBSERVATIONAL_AMM_SPOT_X_CEX_ADA_USD_CROSS_NOT_PEG_OR_ORACLE_QUALIFICATION',
     network: 'cardano-mainnet-plus-public-cex-market-data',
     exactAsset: {
@@ -169,6 +177,7 @@ async function main() {
       'Only verified constant-product USDM/ADA pools are used. CLMM and stableswap pools are deliberately excluded until their official curve math is implemented.',
       'Each CEX midpoint is a separate centralized-exchange market reference. It is not a decentralized oracle and may be stale, thin, or venue-specific.',
       'The ADA/USD and USDM/ADA observations have separate timestamps and are not an atomic cross-market snapshot.',
+      'Pool UTxO ages are reported for transparency only; no freshness threshold or automatic pool exclusion is introduced by this observer.'
       'No averaging, outlier threshold, peg band, confidence threshold, redemption claim, issuer reserve claim, EEV valuation, or deployment qualification is performed.',
       'The resulting USDM/USD values are indicative cross-rates only. They do not establish USDM/USD parity or oracle suitability.',
     ],
