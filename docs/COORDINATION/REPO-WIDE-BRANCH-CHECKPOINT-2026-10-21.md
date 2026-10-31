@@ -6921,3 +6921,12 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - CI: Adapter Sale Conformance for the intermediate commits was cancelled as newer commits landed; no green result is claimed for this bridge yet. Latest run [41239497393](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239497393) on the branch was queued when checked. Related portability/declaration jobs do not prove the adapter bridge.
 - Full completed-body semantic authorization remains open: this patch restores the supported SDK boundary and spending-input inspection only. It does not implement an approved output/datum/redeemer/mint/fee/validity predicate profile. V08/V09 remain open. The earlier synthetic body-mutation test is not evidence that the real legacy CML object is mutably exploitable; CML aliasing/mutability remains a separate verification item.
 - No new branch, wallet key operation, transaction submission, chain write, economic rule change, V3 edit, Reveal semantic change, Materios edit, or Oracle/EEV change.
+
+
+## 10.72 Agent B — legacy Lucid bridge conformance steps observed (2026-10-31)
+
+- On branch commit `1f8d149f3c1af50edafade1d446433e4568c4d0a`, which already included the adapter bridge and legacy-shaped regression test, Actions run [41239547673](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239547673) executed the `frontend-build` job successfully (`npm run build` passed).
+- Its `economic-conformance` job successfully ran the targeted Vitest list containing `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` (**26 tests passed**) and `src/__tests__/cardano-execution-adapter.test.ts` (**5 tests passed**); the job's remaining conformance steps and RF8 boundary audit also reported success.
+- The workflow run itself ended `cancelled` as later commits superseded it. Report the observed build/test steps as passed, but do not label the entire Adapter Sale workflow green. A subsequent current-HEAD Adapter Sale run was queued after the checkpoint update.
+- This validates the adapter compatibility bridge against its regression shape and the repository conformance suite; it is not yet an end-to-end CIP-30 wallet signing/submission or Preprod transaction observation.
+- At checkpoint write time, branch HEAD was `dba6de21e665275054b93c4b2aff247c44736be4`. No new code or protocol semantics changed in this addendum.
