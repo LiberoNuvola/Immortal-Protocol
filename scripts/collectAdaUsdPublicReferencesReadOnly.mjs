@@ -113,6 +113,28 @@ const SOURCES = [
       }
     },
   },
+
+  {
+    id: 'dia-free-api-test',
+    venue: 'DIA Free Aggregated Reference API (test-only)',
+    sourceType: 'ORACLE_REFERENCE_API_TEST_ONLY',
+    url: 'https://api.diadata.org/v1/assetQuotation/cardano/0x0000000000000000000000000000000000000000',
+    parse(data) {
+      if (String(data.Blockchain ?? '').toLowerCase() !== 'cardano' ||
+          String(data.Symbol ?? '').toUpperCase() !== 'ADA' ||
+          String(data.Address ?? '').toLowerCase() !== '0x0000000000000000000000000000000000000000') {
+        throw new Error('DIA_CARDANO_NATIVE_ADA_SHAPE_INVALID')
+      }
+      return {
+        last: data.Price,
+        bid: null,
+        ask: null,
+        sourceTime: data.Time ?? null,
+        volume24hUsd: data.VolumeYesterdayUSD ?? null,
+        providerSource: data.Source ?? null,
+      }
+    },
+  },
 ]
 
 const sha256 = (raw) => createHash('sha256').update(raw, 'utf8').digest('hex')
@@ -171,6 +193,7 @@ async function collect(source) {
       midUsd: bid === null || ask === null ? null : fromScaled((bid + ask) / 2n),
       indexUsd: index === null ? null : fromScaled(index),
       volume24hUsd: parsed.volume24hUsd ?? null,
+      providerSource: parsed.providerSource ?? null,
       bidAskAvailable: bid !== null && ask !== null,
       evidence,
     }
@@ -209,6 +232,7 @@ async function main() {
       unavailableSourceCount: results.length - successful.length,
       successfulCexSourceCount: successful.filter((x) => x.sourceType === 'CEX_SPOT').length,
       successfulAggregatorSourceCount: successful.filter((x) => x.sourceType === 'MARKET_DATA_AGGREGATOR').length,
+      successfulOracleApiReferenceCount: successful.filter((x) => x.sourceType === 'ORACLE_REFERENCE_API_TEST_ONLY').length,
       bySourceType: Object.fromEntries([...new Set(results.map((x) => x.sourceType ?? 'CEX_SPOT'))].map((type) => [
         type,
         { total: results.filter((x) => (x.sourceType ?? 'CEX_SPOT') === type).length, successful: successful.filter((x) => x.sourceType === type).length },
@@ -231,6 +255,7 @@ async function main() {
       'CEX spot tickers and market aggregators are separate source classes; aggregators may reuse or weight the same CEX/DEX venue data and are not independent exchanges.',
       'Each exchange is a separate venue, but all may share correlated global crypto market conditions.',
       'CoinPaprika, CoinLore and CoinGecko are aggregator references, not independent oracle networks or direct venue quotes.',
+      'DIA free API is a multi-exchange oracle-reference API intended for testing/evaluation only; it is not a production oracle feed and may share underlying CEX/DEX trades with other references.',
       'Aggregator timestamps and methodologies differ; CoinLore may provide no source timestamp, so its capture time is not a provider freshness guarantee.',
       'Bid/ask midpoint and last trade are not a guaranteed executable price for a particular order size.',
       'This dataset only provides ADA/USD references. Any USDM/USD cross-rate must combine it with a separately qualified USDM/ADA venue observation and must preserve both timestamps and fees.',
