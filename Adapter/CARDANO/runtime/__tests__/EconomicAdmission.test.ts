@@ -172,6 +172,7 @@ describe('economic Cardano submission boundary', () => {
             get: (index: number) => inputs[index],
           }),
         }),
+        to_bytes: () => new TextEncoder().encode(JSON.stringify(references)),
       },
       sign,
     }
