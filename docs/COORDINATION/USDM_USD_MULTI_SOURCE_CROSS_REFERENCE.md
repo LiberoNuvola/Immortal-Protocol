@@ -233,3 +233,17 @@ The Float reconciliation's API-side pair join now normalizes Minswap API `curren
 The same read-only reference collector has been expanded with three public aggregator endpoints: CoinPaprika, CoinLore and CoinGecko. These are kept in a separate MARKET_DATA_AGGREGATOR category, distinct from the seven direct CEX spot venues. CoinPaprika provides a provider update timestamp; CoinGecko can provide last_updated_at; CoinLore's current ticker response provides no provider timestamp, so its capture time is not a freshness guarantee.
 
 These three aggregators may reuse or weight the same underlying CEX/DEX venue data. They are useful independent API observations, but not independent trading venues and not decentralized oracle networks. Their values must not be counted as three more CEX venues or averaged blindly with the seven spot sources. The ten-source live rerun is pending.
+
+
+## Orcfax on-chain CER statements — new independent publication path
+
+The current Mainnet feed registry at [`orcfax/cer-feeds`](https://github.com/orcfax/cer-feeds) declares:
+
+- `ADA-USD`: source `cex`, calculation `median`, heartbeat `3600` seconds, deviation `1%`, status `sponsored`.
+- `ADA-USDM`: source `dex`, calculation `weighted mean`, heartbeat `3600` seconds, deviation `2%`, status `sponsored`.
+
+The registry is version `2026.05.18.0001`. Orcfax's consumer documentation specifies the on-chain trust chain: resolve the FS script hash through the FSP state NFT; verify the FS token UTxO; check the feed-id prefix (including trailing slash); then read the CER rational numerator/denominator and statement `created_at`. The FS token authenticates the statement, while the feed registry documents the upstream sourcing/calculation methodology.
+
+This is a distinct Cardano-native oracle publication path, but its upstream data is still aggregated CEX data for ADA/USD and DEX data for ADA/USDM. It is therefore not an independent market venue and the ADA-USDM feed is not issuer redemption or a direct USDM/USD peg. The new read-only observer validates the FSP/FS token and payment credentials, exact feed prefixes, positive rational and provider heartbeat. It records both feeds separately; no ratio/orientation conversion is applied until the published pair convention is confirmed from actual feed statements and documentation.
+
+The observer/workflow has been added, but no successful live artifact has yet been inspected. The next run must establish current UTxO, feed timestamps, rational values, finality context and freshness for both feeds before they can be included as an additional on-chain reference.
