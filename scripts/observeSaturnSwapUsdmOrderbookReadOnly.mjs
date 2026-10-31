@@ -175,9 +175,9 @@ async function readAddress(address, deployment) {
       bodySha256: sha256(raw), bodyBytes: Buffer.byteLength(raw), rawBody: raw,
     }
     pages.push(evidence)
-    if (!response.ok) throw Object.assign(new Error('KOIOS_ADDRESS_UTXOS_HTTP_' + response.status), { pages })
+    if (!response.ok) throw Object.assign(new Error('KOIOS_CREDENTIAL_UTXOS_HTTP_' + response.status), { pages })
     const json = JSON.parse(raw)
-    if (!Array.isArray(json)) throw Object.assign(new Error('KOIOS_ADDRESS_UTXOS_SHAPE_INVALID'), { pages })
+    if (!Array.isArray(json)) throw Object.assign(new Error('KOIOS_CREDENTIAL_UTXOS_SHAPE_INVALID'), { pages })
     rows.push(...json)
     if (json.length < PAGE_SIZE) return { rows, pages, complete: true }
   }
