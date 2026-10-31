@@ -6469,7 +6469,17 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Pure Minswap V2 decoder and candidate validator are now exported from `scripts/observeMinswapV2UsdmUtxosReadOnly.mjs`; a direct-execution guard prevents import-time network activity.
 - Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic fixtures covering the 10-field PoolDatum shape, exact-USDM candidate, batching stake credential, Pool NFT quantity, derived LP asset, reserve/Value mismatch, unexpected assets and missing USDM.
 - Official-source cross-check: Minswap V2 `PoolDatum` has ten fields; `min_pool_ada=4,500,000`; LP asset name derivation uses SHA3-256; deployed Mainnet params confirm the batching stake key hash. Official source paths are documented in `docs/COORDINATION/MINSWAP_USDM_READONLY_RECONCILIATION.md`.
-- Added isolated GitHub Actions workflow `.github/workflows/minswap-v2-observer-tests.yml` to run only the synthetic decoder suite on relevant pushes/PRs; workflow commit `58188c06c4dc26a9707699bd6933f5502da3e9aa`. Initial run/status still pending verification.
+- Added isolated GitHub Actions workflow `.github/workflows/minswap-v2-observer-tests.yml` to run only the synthetic decoder suite on relevant pushes/PRs; workflow commit `58188c06c4dc26a9707699bd6933f5502da3e9aa`. Verified green: Actions run 41203141441, job decoder-fixtures, commit 58188c06c4dc26a9707699bd6933f5502da3e9aa; logs show all 9/9 tests passed (Vitest 1.6.1, Node 22.23.4; suite duration 414 ms).
 - **Evidence limit:** fixture suite is committed but not yet evidenced as executed; fixtures are synthetic, not a captured Koios response. Koios `inline_datum.value` compatibility and any live UTxO/API reconciliation remain unverified.
 - Current commits: observer export/guard `edb75e3c2a524eb34c7deb04323de501cface042`; synthetic test file `a77a96c2268d1131bf7e4525aacc6fe2e5ac8083`, test correction `3de91c44ccead5ad4b4125c1ef24e3c4be61cd35`; reconciliation spec `d29da344907b5344e9922817fa62dd66f621c90d`.
 - Scope unchanged: Agent A only. No V3, Reveal, Materios, Kernel, Oracle consumer, EEV, R1/Kc, wallet, deployment, transaction, oracle refresh or chain-write changes. Option B remains unqualified.
+
+
+## 10.40 Agent A — Minswap V2 synthetic decoder CI result (2026-10-31)
+
+- GitHub Actions run **41203141441** for workflow .github/workflows/minswap-v2-observer-tests.yml completed with conclusion **success**.
+- Job decoder-fixtures: checkout, Node 22 setup, npm ci, and focused Vitest command all succeeded.
+- Exact source commit tested: 58188c06c4dc26a9707699bd6933f5502da3e9aa.
+- Logs confirm **1 test file passed; 9 tests passed**, Vitest 1.6.1, Node 22.23.4, suite duration 414 ms.
+- This is synthetic-fixture unit evidence only. No captured Koios Mainnet datum, real UTxO candidate, reserve snapshot, market quote, USD/USDM peg, oracle qualification, EEV qualification or deployment approval is implied.
+- Next gate: capture a real read-only Koios response (including inline datum bytes/value), verify its actual JSON shape against the decoder, then reconcile against Minswap API observations. Keep source and market evidence distinct.
