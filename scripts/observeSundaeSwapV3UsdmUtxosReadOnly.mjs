@@ -5,7 +5,8 @@
  * does not decode or qualify pool state until a real Koios fixture is reviewed.
  */
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { SUNDAE_V3_POOL_SCRIPT_HASH, validateSundaeV3PoolUtxo, reconcileSundaeV3PoolWithApi } from './lib/sundaeV3PoolDatum.mjs'
 import { dirname, resolve } from 'node:path'
 
 const KOIOS = 'https://api.koios.rest/api/v1'
@@ -65,6 +66,7 @@ async function requestPage(offset) {
 async function main() {
   const argv = process.argv.slice(2)
   const outPath = argValue(argv, '--out', 'audit/oracles/sundaeswap-v3-usdm-utxos-readonly.json')
+  const apiPath = argValue(argv, '--api', 'audit/api/sundaeswap-usdm-readonly.json')
   const startedAt = new Date().toISOString()
   const pages = []
   const rows = []
@@ -104,6 +106,13 @@ async function main() {
   }
 
   const usdmUnit = USDM.policyId + USDM.assetNameHex
+  const apiEvidence = JSON.parse(await readFile(apiPath, 'utf8'))
+  if (apiEvidence.network !== 'cardano-mainnet' || apiEvidence.exactAsset?.policyId !== USDM.policyId ||
+      apiEvidence.exactAsset?.assetNameHex !== USDM.assetNameHex) throw new Error('SUNDAE_API_ASSET_OR_NETWORK_MISMATCH')
+  const apiV3Anchor = (apiEvidence.protocolValidatorAnchors ?? []).find((x) => x.version === 'V3')
+  const apiV3PoolHash = apiV3Anchor?.validators?.find((x) => x.title === 'pool.spend')?.hash
+  if (apiV3PoolHash !== SUNDAE_V3_POOL_SCRIPT_HASH) throw new Error('SUNDAE_API_V3_SCRIPT_HASH_MISMATCH')
+  const apiV3Pools = (apiEvidence.pools ?? []).filter((pool) => pool.version === 'V3')
   const candidates = rows.map((row) => ({
     utxoRef: String(row.tx_hash).toLowerCase() + '#' + String(row.tx_index),
     address: row.address ?? null,
@@ -119,14 +128,26 @@ async function main() {
     blockHeight: row.block_height ?? null,
     blockTime: row.block_time ?? null,
     epochNo: row.epoch_no ?? null,
-  }))
+  })).map((candidate) => {
+    const datumValidation = validateSundaeV3PoolUtxo(candidate)
+    const apiPool = datumValidation.datum
+      ? apiV3Pools.find((pool) => String(pool.id).toLowerCase() === datumValidation.datum.identifier)
+      : null
+    const apiReconciliation = reconcileSundaeV3PoolWithApi(datumValidation, apiPool)
+    return { ...candidate, datumValidation, apiReconciliation }
+  })
+  const matchedPoolIds = new Set(candidates
+    .filter((candidate) => candidate.datumValidation.status === 'MATCH')
+    .map((candidate) => candidate.datumValidation.datum.identifier))
+  const apiOnlyPoolIds = apiV3Pools.filter((pool) => !matchedPoolIds.has(String(pool.id).toLowerCase()))
+    .map((pool) => pool.id)
   const evidence = {
     schema: 'immortal-sundaeswap-v3-usdm-utxo-acquisition-v1',
-    classification: 'RAW_POOL_UTXO_DISCOVERY_NOT_DATUM_OR_RESERVE_QUALIFICATION',
+    classification: 'SUNDAESWAP_V3_POOL_DATUM_VALUE_AND_API_RECONCILIATION_NOT_PRICE_QUALIFICATION',
     network: 'cardano-mainnet',
     exactAsset: USDM,
     poolScriptHash: V3_POOL_SCRIPT_HASH,
-    source: 'Koios Mainnet exact-asset UTxO query',
+    source: 'Koios Mainnet exact-asset UTxO query + same-run official SundaeSwap API',
     startedAt,
     completedAt: new Date().toISOString(),
     acquisition: {
@@ -138,17 +159,31 @@ async function main() {
       completePagination: complete,
       rawPages: pages,
     },
+    apiSource: {
+      startedAt: apiEvidence.startedAt,
+      completedAt: apiEvidence.completedAt,
+      exactUsdmPoolCount: apiEvidence.exactUsdmPoolCount,
+      v3PoolCount: apiV3Pools.length,
+      queryEvidence: apiEvidence.queryEvidence,
+    },
     summary: {
       rowCount: rows.length,
       paymentCredentialMatchCount: candidates.filter((x) => x.paymentCredentialMatchesOfficial).length,
       inlineDatumCount: candidates.filter((x) => x.inlineDatumJson).length,
       datumHashCount: candidates.filter((x) => x.datumHash).length,
+      structuralMatchCount: candidates.filter((x) => x.datumValidation.status === 'MATCH').length,
+      unqualifiedCount: candidates.filter((x) => x.datumValidation.status !== 'MATCH').length,
+      apiMatchedCount: candidates.filter((x) => x.apiReconciliation.status === 'MATCH').length,
+      apiMismatchCount: candidates.filter((x) => x.apiReconciliation.status !== 'MATCH').length,
+      apiV3PoolCount: apiV3Pools.length,
+      apiOnlyPoolCount: apiOnlyPoolIds.length,
     },
+    apiOnlyPoolIds,
     candidates,
     limitations: [
       'This observer only captures exact-USDM UTxOs at the official SundaeSwap V3 pool payment script hash.',
-      'No PoolDatum decode, pool NFT identity validation, reserve validation, fee calculation, or API reconciliation is performed in this first-stage acquisition.',
-      'Raw inline datum JSON and CBOR are preserved to establish the actual Koios wire shape before implementing the decoder.',
+      'The strict V3 PoolDatum decoder validates the 8-field datum, CIP-68 222 pool NFT, canonical asset pair, exact USDM, protocol-fee treatment and exact pool Value composition.',
+      'Same-run official API reconciliation checks pool identifier, CIP-68 333 LP asset identity, pair, reserve quantities and circulating LP supply.',
       'No price, peg, oracle, EEV or deployment qualification is produced.',
       'Read-only public Koios query only; no wallet, signing, transaction submission or chain write.',
     ],
@@ -156,7 +191,7 @@ async function main() {
   await mkdir(dirname(outPath), { recursive: true })
   await writeFile(outPath, JSON.stringify(evidence, null, 2) + '\n', 'utf8')
   console.log(JSON.stringify({
-    status: 'READ_ONLY_SUNDAESWAP_V3_USDM_UTXO_ACQUISITION_COMPLETE',
+    status: 'READ_ONLY_SUNDAESWAP_V3_USDM_RECONCILIATION_COMPLETE',
     output: outPath,
     summary: evidence.summary,
     completedAt: evidence.completedAt,
