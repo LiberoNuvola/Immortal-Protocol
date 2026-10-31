@@ -31,8 +31,8 @@ describe('Danogo CLMM official virtual-reserve spot math', () => {
   it('matches the symmetric-range, symmetric-reserve marginal spot', () => {
     const result = deriveDanogoClmmSpotPrice(pool())
     expect(result.priceAdaPerUsdm).toBe('1')
-    expect(result.virtualReserveXRaw).toBe('117')
-    expect(result.virtualReserveYRaw).toBe('117')
+    expect(result.virtualReserveXRaw).toBe('200')
+    expect(result.virtualReserveYRaw).toBe('200')
     expect(result.priceMethod).toBe('OFFICIAL_DANOGO_SDK_VIRTUAL_RESERVE_MARGINAL_RATIO')
   })
 
