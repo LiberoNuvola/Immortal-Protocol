@@ -64,6 +64,8 @@ The official Minswap DEX V2 repository publishes:
 - official pool creation address, also shown in the repository README:
   `addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a`.
 
+The official `deployed/mainnet/script.json` additionally identifies `poolAuthenAsset` as policy `f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c` + asset name `4d5350` (`MSP`), and `lpPolicyId` as the same policy. The observer records the raw Pool NFT quantity and whether it is exactly 1; this is not yet a full pool qualification.
+
 The address is a discovery anchor, not by itself proof that every returned UTxO is a valid pool. Candidate UTxOs must be filtered by the exact USDM policy/name and validated against the V2 validator's actual datum/value rules and deployed reference material.
 
 Official source files:
