@@ -6185,3 +6185,40 @@ The diagnostic must not open the database for writes, run migrations, or mutate 
 ### Evidence-status correction in the Agent C state-window workflow
 
 Commit `7b6cd4d5322ccc3ea1fc3225b379adfc08ea6c81` updates `.github/workflows/materios-grandpa-state-window.yml` so the artifact no longer labels a run `CAPTURED` when all historical state reads failed. Each parent/target record now classifies its result as `STATE_CAPTURED`, `HISTORICAL_STATE_PRUNED`, or `PARTIAL_STATE_UNAVAILABLE`; the top-level status is derived from both records. This is an evidence-integrity correction only: no RPC scope, target heights, chain state, runtime behavior, or protocol semantics changed. The push-triggered workflow result must be checked before treating this patch as CI-verified.
+
+
+## Agent A addendum — Pyth Pro Moneta reserve feed identified; no USD/USDM unit feed (2026-10-31)
+
+**Scope:** read-only catalog reconciliation for P-02 / USD-USDM Option B. No code, economic parameter, workflow, wallet, or on-chain state changed.
+
+### Public Pyth Pro Symbology result
+
+A read-only query to the public Symbology & Reference Data endpoint `GET https://pyth.dourolabs.app/v1/symbols?query=USDM` returned these relevant rows:
+
+| Feed | Pyth Pro ID | Exact description | State | Type | Quote | Min publishers | Min channel |
+|---|---:|---|---|---|---|---:|---|
+| `Crypto.NAV.USDM/RESERVES` | **3326** | US DOLLAR MONETA / RESERVES | stable | NAV | USD | 2 | fixed_rate@200ms |
+| `Crypto.USDM/USD` | **609** | MOUNTAIN PROTOCOL USD / US DOLLAR | inactive | crypto | USD | 1 | fixed_rate@200ms |
+| `Crypto.NAV.USDM1/USD` | **3324** | US DOLLAR M1 / US DOLLAR | stable | NAV | USD | 2 | fixed_rate@200ms |
+
+Feed 3326 metadata: exponent -8; 24/7 schedule; Terminal page https://app.pyth.com/explore/Crypto.NAV.USDM%2FRESERVES; catalog endpoint https://pyth.dourolabs.app/v1/symbols?query=USDM%2FRESERVES. Pyth's Symbology documentation defines `nav` as net asset values of tokenized funds: https://docs.pyth.network/pro/symbology-reference. It is therefore not a unit spot quote for one USDM token.
+
+Feed 609 is explicitly Mountain Protocol USD, not Moneta USDM, and is inactive. Feed 3324 is US Dollar M1, not the Moneta token. No active public catalog row for a Moneta `Crypto.USDM/USD` unit-price feed was found in this query.
+
+### Reserve value reconciliation warning
+
+During the same 2026-10-31 inspection, Pyth Terminal showed approximately **11,571,398.61 USD** for feed 3326, while Moneta's own Proof of Reserves page showed **9,609,507.48 USD** total reserve balance and **9,609,507.48 USDM** circulating supply, with verification labelled "today": https://moneta.global/transparency/.
+
+The displayed difference is **1,961,891.13 USD (~20.42%)**. Do not classify this as a confirmed oracle error yet: the rendered sources do not expose sufficiently precise, matching observation timestamps or a full definition of the NAV field to prove the values represent the same measure at the same instant. Treat it as a material unresolved reconciliation discrepancy. Neither value may be converted into a USD-per-USDM price by assumption.
+
+### Relation to existing Pyth probe and IMMORTAL
+
+- Existing exact-head native Pyth probe #41008762196 tested feed ID 16 (ADA/USD) and failed closed with `403 FEED_ENTITLEMENT_REQUIRED`; it did not establish entitlement for the NAV asset class or feed ID 3326. No further authenticated endpoint call or workflow dispatch was made.
+- Existing Pyth carrier feasibility remains software-only. `plutus/MintPolicy.hs` still consumes the legacy Oracle State quote; no Pyth production binding to MintPolicy is evidenced.
+- Feed 3326 may be investigated as a reserve-attestation cross-check only after raw signed update, source/publisher provenance, exact timestamps, freshness and the 20.42% displayed divergence are reconciled.
+- Feed 3326 does not close Option B (USD/USDM per unit), does not establish issuer redemption parity, and does not alter direct-USDM EEV qualification. VerifiedUSDM remains the qualified token quantity physically present in the exact B1 PrizePool UTxO.
+- Do not confuse Pyth Pro numeric feed IDs with Pyth Core 32-byte Hermes IDs; the Pyth Pro Cardano guide documents the pull/update flow and requires consumer-side freshness checks: https://developers.cardano.org/docs/build/integrate/oracles/pyth/.
+
+**Disposition:** Moneta reserve NAV feed **IDENTIFIED / NOT QUALIFIED FOR ECONOMIC USE**; Moneta USDM/USD unit feed **NOT FOUND IN THE PUBLIC CATALOG QUERY**; Option B **OPEN**. Preserve existing branch ownership: no duplicate Pyth consumer or new converter, and no Agent B/V3/Reveal changes.
+
+Issue #37 record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6540194166.
