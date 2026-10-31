@@ -8,6 +8,7 @@ on:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
       - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
+      - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
       - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
       - "scripts/observeDanogoClmmUsdmReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs"
@@ -376,4 +377,25 @@ jobs:
         with:
           name: usdm-usd-cross-reference-readonly-${{ github.run_id }}
           path: audit/oracles/usdm-usd-cross-reference-readonly.json
+          if-no-files-found: warn
+
+  read-only-sundaeswap-api-observation:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect exact-USDM SundaeSwap GraphQL observations
+        run: node scripts/collectSundaeSwapUsdmReadOnly.mjs --out audit/oracles/sundaeswap-usdm-readonly.json
+      - name: Upload SundaeSwap API evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sundaeswap-usdm-api-readonly-${{ github.run_id }}
+          path: audit/oracles/sundaeswap-usdm-readonly.json
           if-no-files-found: warn
