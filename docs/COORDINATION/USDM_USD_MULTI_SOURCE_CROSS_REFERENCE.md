@@ -79,3 +79,12 @@ A separate exact-USDM Koios scan at the official CSWAP ADA pool address complete
 This is only a candidate discovery. The current parser is based on reverse-engineered field positions. The deployed PlutusV3 fee denominator, swap arithmetic, balance semantics, LP token name encoding and pool Value invariants are not independently validated. Do not calculate or include a CSWAP ADA/USDM spot until those are resolved against contract behavior. Third-party references report an 0.85% pool fee for this pair, but that does not replace contract-level verification.
 
 The same Actions run's SundaeSwap V3 observer timed out during Koios acquisition after 45 seconds; the result is `SOURCE_UNAVAILABLE_OR_INCOMPLETE`. Earlier 5/5 structural evidence remains the last successful snapshot and is not refreshed by this failed attempt.
+
+
+## CSWAP provisional AMM spot — third-party SDK reconstruction only
+
+Reviewed the MIT-licensed [Flux-Point-Studios Dexter SDK](https://github.com/Flux-Point-Studios/dexter), specifically `src/dex/cswap.ts`, `src/pricing/cswap-pricing.ts` and `src/dex/definitions/cswap/pool.ts`. Its pool parser expects an eight-field datum (`lp`, `lp_fee_10k`, token A/B policy/name, LP policy/name), accepts ADA as token A, subtracts 2 ADA minimum pool deposit from the lovelace balance, treats `lp_fee_10k` as a 10,000-basis denominator, and computes a constant-product reserve ratio. The SDK separately documents 690,000 lovelace batcher fee, 2 ADA order deposit, and 15/10,000 platform fee on target minimum output.
+
+For the captured Mainnet candidate, this reconstruction yields active reserve ADA `1,039.525670`, USDM reserve `198.980533`, datum fee numerator `85` (0.85% per the SDK), and marginal reserve-ratio spot `5.22425814 ADA/USDM`. This is emitted only in `cswapProvisional` and `provisionalCswapCrossRates`, never in the qualified `dexPools` or primary `indicativeCrossRates` series.
+
+**Important boundary:** Dexter is a third-party SDK, not CSWAP's official PlutusV3 source. Its math/field interpretation has not been verified by contract execution or a source-level audit of the deployed script. The balance field semantics, pool NFT, LP name and reserve invariants remain unverified. Treat this as a provisional reference only; it cannot contribute to Oracle/EEV qualification until those gaps are closed.
