@@ -385,7 +385,7 @@ function decodeSetId(hex: string): bigint {
 }
 
 const GRANDPA_CURRENT_SET_ID_STORAGE_KEY =
-  "0x5f9cc45b7a00c5898a2d09463effcc78";
+  "0x5f9cc45b7a00c5899361e1c6099678dc8a2d09463effcc78a22d75b9cb87dffc";
 
 function decodeStorageU64(hex: string): bigint {
   const bytes = hexToBytes(hex, "Grandpa.CurrentSetId storage");
