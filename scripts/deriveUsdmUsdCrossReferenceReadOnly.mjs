@@ -86,7 +86,7 @@ async function main() {
       feeSharingNumeratorRaw: d.feeSharingNumeratorRaw ?? null,
       allowDynamicFee: d.allowDynamicFee ?? null,
       feeBasis: '10000',
-      priceAdaPerUsdm: formatScaled(price.priceScaled),
+      priceAdaPerUsdm: formatScaled(BigInt(price.priceScaledRaw)),
     })
   }
   for (const pool of wing.pools ?? []) {
@@ -106,7 +106,7 @@ async function main() {
       projectFeeInBasis: d.projectFeeInBasis ?? null,
       reserveFeeInBasis: d.reserveFeeInBasis ?? null,
       feeBasis: d.feeBasis ?? '10000',
-      priceAdaPerUsdm: formatScaled(price.priceScaled),
+      priceAdaPerUsdm: formatScaled(BigInt(price.priceScaledRaw)),
     })
   }
 
