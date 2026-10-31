@@ -53,12 +53,14 @@ async function main() {
     return i >= 0 && argv[i + 1] ? resolve(argv[i + 1]) : resolve(fallback)
   }
   const onchainPath = arg('--onchain', 'audit/onchain/minswap-v2-usdm-utxos-readonly.json')
+  const sundaePath = arg('--sundae', 'audit/onchain/sundaeswap-v3-usdm-utxos-readonly.json')
   const wingPath = arg('--wingriders', 'audit/wingriders/wingriders-v2-usdm-readonly.json')
   const adaUsdPath = arg('--ada-usd', 'audit/ada-usd/ada-usd-public-references-readonly.json')
   const outPath = arg('--out', 'audit/oracles/usdm-usd-cross-reference-readonly.json')
   const calculationStartedAt = new Date().toISOString()
-  const [onchain, wing, adaUsd] = await Promise.all([
+  const [onchain, sundae, wing, adaUsd] = await Promise.all([
     readFile(onchainPath, 'utf8').then(JSON.parse),
+    readFile(sundaePath, 'utf8').then(JSON.parse),
     readFile(wingPath, 'utf8').then(JSON.parse),
     readFile(adaUsdPath, 'utf8').then(JSON.parse),
   ])
@@ -180,6 +182,7 @@ async function main() {
     },
     sources: {
       minswapOnchain: { startedAt: onchain.startedAt, completedAt: onchain.completedAt },
+      sundaeswapV3Onchain: { startedAt: sundae.startedAt, completedAt: sundae.completedAt, summary: sundae.summary },
       wingridersOnchain: { startedAt: wing.startedAt, completedAt: wing.completedAt },
       adaUsdReferences: { startedAt: adaUsd.startedAt, completedAt: adaUsd.completedAt, summary: adaUsd.summary },
     },
