@@ -222,10 +222,10 @@ async function main() {
   for (let page = 0; page < MAX_UTXO_PAGES; page += 1) {
     const offset = page * PAGE_SIZE
     const response = await readJson(
-      '/address_utxos?limit=' + PAGE_SIZE + '&offset=' + offset,
-      { _addresses: [ADDRESS], _extended: true },
+      '/asset_utxos?address=eq.' + encodeURIComponent(ADDRESS) + '&limit=' + PAGE_SIZE + '&offset=' + offset,
+      { _asset_list: [[ASSET.policyId, ASSET.assetNameHex]], _extended: true },
     )
-    if (!Array.isArray(response.json)) throw new Error('KOIOS_ADDRESS_UTXOS_SHAPE_INVALID')
+    if (!Array.isArray(response.json)) throw new Error('KOIOS_ASSET_UTXOS_SHAPE_INVALID')
     utxoPages.push({
       page,
       offset,
@@ -235,7 +235,7 @@ async function main() {
     allUtxos.push(...response.json)
     if (response.json.length < PAGE_SIZE) break
     if (page === MAX_UTXO_PAGES - 1) {
-      throw new Error('KOIOS_ADDRESS_UTXOS_PAGE_CAP_REACHED_INCOMPLETE')
+      throw new Error('KOIOS_ASSET_UTXOS_PAGE_CAP_REACHED_INCOMPLETE')
     }
   }
 
@@ -312,7 +312,9 @@ async function main() {
       exactAsset: ASSET,
     },
     acquisition: {
-      endpoint: '/address_utxos',
+      endpoint: '/asset_utxos',
+      exactAssetFilter: { policyId: ASSET.policyId, assetNameHex: ASSET.assetNameHex },
+      addressFilter: ADDRESS,
       extended: true,
       requestEvidence: utxoPages.map((page) => page.response),
       returnedUtxoCount: allUtxos.length,
@@ -324,7 +326,7 @@ async function main() {
     },
     candidates: observed,
     limitations: [
-      'The validator address is a discovery boundary; a matching USDM asset does not by itself prove that an output is a valid Minswap V2 pool.',
+      'The exact-asset UTxO endpoint is address-filtered; a matching USDM asset at the validator address does not by itself prove that an output is a valid Minswap V2 pool.',
       'A candidate is MATCH only when the exact Pool NFT, canonical USDM-containing asset pair, derived LP asset, positive datum values and datum reserve-vs-Value checks all pass.',
       'The decoder supports the published 10-field Minswap V2 PoolDatum constructor shape only; unsupported or missing Koios inline datum JSON fails closed as unqualified.',
       'Koios is one indexed view of the Cardano ledger; optional Blockfrost/Maestro checks remain separate provider observations, not independent market venues.',
