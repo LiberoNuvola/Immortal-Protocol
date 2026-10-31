@@ -15,6 +15,7 @@ const NFT = Object.freeze({
 })
 const sha256 = (raw) => createHash('sha256').update(raw, 'utf8').digest('hex')
 const nftUnit = NFT.policyId + NFT.assetNameHex
+const DOCUMENTED_FRESHNESS_WINDOW_MS = 3_600_000
 
 function outputPath(argv) {
   const i = argv.indexOf('--out')
@@ -151,7 +152,8 @@ async function main() {
     const expiresAt = priceData.expiresAtMs === null ? null : Number(priceData.expiresAtMs)
     const now = Date.now()
     const activeByDatumTime = createdAt !== null && expiresAt !== null && expiresAt > now && createdAt <= now
-    const withinDocumentedFreshnessWindow = createdAt !== null && now - createdAt <= 3_600_000
+    const ageMs = createdAt === null ? null : now - createdAt
+    const withinDocumentedFreshnessWindow = ageMs !== null && ageMs >= 0 && ageMs <= DOCUMENTED_FRESHNESS_WINDOW_MS
     const exactFeedPairMatched = priceData.baseSymbol === 'USDM' && priceData.quoteSymbol === 'USD'
     return {
       utxoRef: String(row.tx_hash ?? '') + '#' + String(row.tx_index ?? ''),
@@ -171,6 +173,7 @@ async function main() {
         expiresAt: expiresAt === null ? null : new Date(expiresAt).toISOString(),
         activeByDatumTime,
         withinDocumentedFreshnessWindow,
+        ageMs,
       },
       exactFeedPairMatched,
       structuralStatus: invalidRows.length === 0 && nftQuantity === 1n &&
