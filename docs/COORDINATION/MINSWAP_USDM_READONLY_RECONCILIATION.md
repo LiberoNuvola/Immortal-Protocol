@@ -299,3 +299,25 @@ The endpoint returned **81 USDM pool records across 9 venue families**: Minswap 
 The endpoint also returned 50 latest USDM trade rows: Minswap V2 32, Danogo CLMM 13 and WingRiders V2 5; all were Level B. Flags include converted (22), multiHop (9) and batchImpact (2), so these flags must be respected when using trade rows as price evidence. The source's own token price was `5.094192535453990358` ADA/USDM, but its methodology states its own price surface currently reads Minswap V2; it is not a cross-venue consensus or independent USD quote. The USD display uses DexHunter ADA/USD and is explicitly excluded from our oracle count.
 
 This is a useful independent indexer feed for raw pool/trade observations and venue discovery. The next gate is to reconcile SuperCardano's 31 Minswap V2 pool keys and reserve values directly against the same-run Koios UTxOs and PoolDatum, then separately authenticate the non-Minswap venue pools using each venue's own on-chain contract/NFT identities.
+
+
+## 20. Automated three-source structural reconciliation — 31/31/31
+
+The corrected multi-source workflow [41221976475](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41221976475) completed successfully on commit `16cd0484482ec61a3ac24e62dafbab8847ce83f1`. All required jobs passed: decoder fixtures **12/12**, Koios exact-USDM Mainnet acquisition, Minswap API metrics collection, SuperCardano exact-unit pool/trade collection, and the dependent reconciliation.
+
+The automated reconciliation compared three same-run observations:
+
+- **Koios:** 31 exact-USDM UTxOs at the official Minswap V2 address, each structurally validated.
+- **Minswap API:** 31 V2 pool records among 43 total pools across Minswap V1/V2/Stable.
+- **SuperCardano:** 31 Minswap V2 pool records among 81 USDM pool records across 9 venue families.
+
+For the 31 Minswap V2 pools, the result is **31/31 exact LP identity + pair + reserve matches** across Koios PoolDatum/UTxO and SuperCardano's own indexer; 0 on-chain-only, 0 SuperCardano-only, 0 pair mismatches, 0 reserve mismatches, 0 duplicate IDs. The separate Minswap API reconciliation also remains 31/31 with 0 API-only, 0 on-chain-only and 0 pair mismatches. This materially strengthens the independent indexer check for Minswap V2's structural pool state.
+
+Reconciliation artifact ID `13050372165`, ZIP SHA-256 `37fb204a00072b38364b2e44662cdd6b7b20d0d7e47d12b166f0624d764bd950`; extracted JSON SHA-256 `92e2a20265ce6db8331db61ee2eb959e41fdad086cc527977be8755cbe3a4c07`.
+
+Same-run source artifacts:
+- Koios artifact ID `13050436975`, ZIP SHA-256 `74bba8e5846e3c1936bff777d0664703e917c07a283b85b8d17d3f36ba9eb09f`.
+- Minswap API artifact ID `13049768317`, ZIP SHA-256 `afb00e2af4e6103862f372d7f847546e0b43e9b7a36762a68c0f453e466d6b69`.
+- SuperCardano artifact ID `13050850055`, ZIP SHA-256 `147a61eefffab293dc52879a94456595ea517be1c966c1575dc02823571e4b5c`.
+
+**Boundary:** this validates pool identity, pair and reserve serialization for Minswap V2. It does not make SuperCardano or Minswap API independent DEX venues, does not independently validate USD conversion, USDM/USD peg, Moneta reserves, or a price oracle quorum. SuperCardano's non-Minswap pool list and trades are useful venue-discovery observations, but their freshness and venue-specific contract authenticity remain separate gates. Many of the 81 pool records are older than seven days; freshness buckets are recorded and must be used before interpreting them as live market depth.
