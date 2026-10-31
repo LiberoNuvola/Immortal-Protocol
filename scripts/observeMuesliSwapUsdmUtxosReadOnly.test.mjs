@@ -69,6 +69,9 @@ describe('MuesliSwap official PoolDatum decoder and Mainnet fixtures', () => {
   it('fails closed when the Pool NFT quantity is not exactly one', () => {
     const candidate = structuredClone(fixture.candidates[0])
     candidate.poolNftQuantityRaw = '2'
+    candidate.assets = candidate.assets.map((asset) => asset.policyId === fixture.provenance.poolNftPolicyId
+      ? { ...asset, quantityRaw: '2' }
+      : asset)
     const result = validateMuesliPoolCandidate(candidate)
     expect(result.status).toBe('UNQUALIFIED')
     expect(result.reasons).toContain('POOL_NFT_QUANTITY_NOT_ONE')
