@@ -231,7 +231,7 @@ Updated status:
 - Counter UTxO concept: **DOCUMENTED BY NBX**
 - Counter UTxO locator/schema: **NOT ESTABLISHED**
 - Exact token policy ID / asset name: **CONFIRMED**
-- Same-policy legal issuer separation mechanism: **OPEN**
+- Shared technical minting arrangement vs parallel legal issuers: **DOCUMENTED BY NBX WHITEPAPER**
 - Cardanoscan mint count (423): **INDEXER DISCOVERY LEAD ONLY**
 - Per-issuance/per-holding issuer discriminator: **NOT ESTABLISHED**
 - Current reserve qualification / holder redemption proof: **NOT ESTABLISHED**
@@ -335,3 +335,28 @@ Updated status:
 - Per-UTxO issuer share for arbitrary pool balances: **NOT ESTABLISHED**
 - Holder redemption eligibility / current reserve qualification: **NOT ESTABLISHED**
 - Option B remains observational only; EEV / first Issue remains blocked.
+
+
+### 7.8 Current indexer supply disagreement — do not use aggregate supply as a qualification input
+
+A current Cardanoscan token-page search result inspected 31 October 2026 reports approximately 11.53 million USDM and 424 mint transactions. A DefiLlama stablecoin page inspected in the same research window reports 13.44 million USDM (as of 23 October 2026). An AdaStat token-page extraction from 26 October 2026 reported 13,333,794.6 USDM. These values do not reconcile to one another.
+
+Sources:
+- Cardanoscan token page: https://cardanoscan.io/token/c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d
+- DefiLlama: https://defillama.com/stablecoin/moneta-usdm
+- AdaStat: https://adastat.net/tokens/c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d
+
+This discrepancy could reflect indexing lag, differing supply definitions, stale cache, or data error; no cause is assigned without ledger-level reconciliation. The Cardanoscan count changed from the earlier 423 discovery lead to 424 in the current search snapshot. Treat both the aggregate supply and mint count as indexer snapshots, not verified totals. The counter datum and complete mint/burn history remain the source-of-truth reconstruction target.
+
+Final updated status:
+- NBX EU whitepaper PDF: **RETRIEVED/PARSED; draft and not regulatory-approved**
+- Shared Moneta-owned/co-controlled mint/burn contract serving parallel legal issuers: **DOCUMENTED**
+- NBX mint flow and Moneta co-signing: **DOCUMENTED**
+- Counter datum as global outstanding-supply counter: **DOCUMENTED; one mainnet mint delta reconciled**
+- Issuer-specific provenance algorithm: **NAMED BUT NOT PUBLICLY REPRODUCIBLE**
+- Current counter UTxO and full continuity chain: **OPEN**
+- Full 424-event mint/burn reconstruction: **OPEN**
+- Independent aggregate supply reconciliation: **OPEN — explorer/indexer values disagree**
+- Per-UTxO issuer share in arbitrary DEX pool: **NOT ESTABLISHED**
+- Current reserve / holder-specific redemption proof: **NOT ESTABLISHED**
+- Option B observational only; EEV / first Issue remains blocked.
