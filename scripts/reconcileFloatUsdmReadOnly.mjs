@@ -5,7 +5,7 @@
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { apiMinswapLpUnit, compareFloatReservesToDatum } from './lib/floatPoolIdentity.mjs'
+import { apiAssetUnit, apiMinswapLpUnit, compareFloatReservesToDatum } from './lib/floatPoolIdentity.mjs'
 
 const USDM = 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d'
 const FLOAT_USDM = 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d'
@@ -70,7 +70,7 @@ async function main() {
       const cp=pair(datumUnit(d.assetA),datumUnit(d.assetB))
       const lp=v.lpAsset
       const ap=apiV2.get(datumUnit(lp))
-      const apair=ap?pair(datumUnit(ap.assetA),datumUnit(ap.assetB)):null
+      const apair=ap?pair(apiAssetUnit(ap.assetA),apiAssetUnit(ap.assetB)):null
       const reserveMatch=compareFloatReservesToDatum(x,d)
       const row={poolKey:k,lpAssetUnit:datumUnit(lp),utxoRef:c.utxoRef,floatMarketId:x.id,floatStale:x.stale===true,floatPair:fp,onchainPair:cp,apiPair:apair,floatReservesRaw:x.reserves??null,datumReservesRaw:{a:String(d.reserveARaw),b:String(d.reserveBRaw)},floatReservesExactlyMatchDatum:reserveMatch,apiPoolFound:Boolean(ap)}
       if(reserveMatch===true)floatReserveExactMatchCount+=1
