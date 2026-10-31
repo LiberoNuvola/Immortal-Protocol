@@ -85,7 +85,7 @@ function plutusBytes(value, label) {
 
 function plutusInt(value, label) {
   const raw = value && typeof value === 'object' && value.int !== undefined ? value.int : value
-  if (!(typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'bigint') || !/^-?\\d+$/.test(String(raw))) {
+  if (!(typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'bigint') || !/^-?\d+$/.test(String(raw))) {
     throw new Error('MIN_SWAP_V2_DATUM_INVALID_INT:' + label)
   }
   return BigInt(raw)
