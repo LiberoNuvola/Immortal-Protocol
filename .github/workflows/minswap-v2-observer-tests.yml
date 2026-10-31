@@ -48,6 +48,8 @@ jobs:
         run: |
           node --check scripts/observeMinswapV2UsdmUtxosReadOnly.mjs
           node --check scripts/collectMinswapUsdmReadOnly.mjs
+          node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
+          node --check scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
           node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
           node --check scripts/observeDanogoClmmUsdmReadOnly.mjs
