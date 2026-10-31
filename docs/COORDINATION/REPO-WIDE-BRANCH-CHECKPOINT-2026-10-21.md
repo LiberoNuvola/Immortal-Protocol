@@ -6422,3 +6422,14 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Candidate discovery only: pool NFT/authentication identity and datum/reserve consistency are not yet decoded or qualified. V1 and StableSwap scans remain open.
 - Not executed in a network-enabled runtime. No live candidate count, UTxO, slot or reserve is claimed. No reconciliation result exists yet.
 - No wallet, signature, transaction, refresh, deployment, chain write, economic rule, Kernel, Oracle consumer, EEV/R1/Kc, V3, Reveal or Materios change. Option B remains UNQUALIFIED.
+
+
+## 10.35 — Agent A: hardening Minswap V2 UTxO observation (2026-10-31)
+
+- Source review found the first Koios `address_utxos` request did not paginate explicitly; a single response could be incomplete.
+- Commit `a5d78cbf59d380c99ff93bace2680465ab99093c` adds explicit PostgREST `limit=1000` / `offset` pagination, per-page raw-body evidence and metadata, and a fail-closed 20-page safety cap.
+- Commit `71a94a06aee644a00493cd73b2ac23e4e0cd5d1e` validates every returned UTxO's exact address and payment credential against the published Minswap V2 validator hash before filtering USDM candidates.
+- Official V2 source review confirms PoolDatum asset pair and reserve fields; pool validation checks derived LP asset, pool authentication NFT, and reserve consistency with output Value (including ADA min-pool-ADA treatment). No datum decoder or Pool NFT authentication implementation has been added yet.
+- Source changes are not runtime verification. The observer remains unexecuted against live Koios in this session; no live UTxO count, reserve, slot or reconciliation result is claimed. V1 and StableSwap remain separate.
+- Issue #37 update: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6542230028
+- Option B remains UNQUALIFIED; no price/oracle consumer, EEV, R1/Kc, Kernel, V3, Reveal, Materios, wallet, signature, transaction, refresh, deployment or chain write changed.
