@@ -6131,3 +6131,17 @@ At target 2,509,824, the local snapshot independently reports runtime API and di
 This still does not prove the exact transition enactment chain or the node's internal persistence/recovery bug. The public HTTP historical state is pruned; the official snapshot uses `Constrained(256)`; the workflow confirmed `MATERIOS_ARCHIVE_RPC` is not configured. The two earlier historical target-state values cannot currently be queried from either existing public HTTP state or that snapshot's retained state window.
 
 The remaining causal question is now narrow: why does the GRANDPA voter persist/replay set 4343 while runtime state is 4434, and why do earlier raw justifications show the same approximately 92-event lag (4251 and 4342) with round 2542 before the round resets to 1253? Treat this as a probable stale GRANDPA voter auxiliary-state / catch-up defect, not as a proven root cause until a retained-state or node-internal voter-state trace demonstrates the transition path. B3-A remains OPEN.
+
+
+### Upstream Materios source cross-check — documented warp/state-sync set-ID hazard
+
+A read-only inspection of the public Materios source at commit `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` found an explicit warning in `tools/launch-preflight/README.md` (committee rule 9) and `tools/launch-preflight/launch_preflight.py:2661-2679`:
+
+- genesis must have `Grandpa.CurrentSetId = 0` and exactly one `Grandpa.SetIdSession` entry (set 0 from session 0);
+- the preflight explicitly warns that a GRANDPA client starts from genesis set ID 0, while a node that warp- or state-syncs takes the runtime's set ID and can therefore hold a different set ID from the one peers use to sign votes and justifications.
+
+The same source's `partnerchain/node/src/service.rs:228-244` unconditionally configures `WarpSyncConfig::WithProvider(warp_sync)`, with the provider built from `grandpa_link.shared_authority_set()`. Its voter startup at lines 367-395 uses `SharedVoterState::empty()` and starts `run_grandpa_voter`.
+
+This is directly relevant to the observed 4434 runtime / 4343 voter split and makes a warp/state-sync authority-set initialization mismatch a concrete upstream hypothesis, not a generic guess. It does **not** yet prove that the published snapshot was created by warp sync or that warp sync caused this exact stale auxiliary state: our snapshot probe is isolated, has no peers, runs with `Constrained(256)`, and uses a mock main-chain follower only to start local RPC.
+
+Next source-level test: trace how the pinned Substrate `sc-consensus-grandpa` version initializes `grandpa_link.shared_authority_set()` from restored auxiliary DB versus runtime/warp proof, then add a fail-closed diagnostic comparing (a) runtime `Grandpa.CurrentSetId`, (b) restored GRANDPA voter/authority-set ID, and (c) set ID carried by the exact proof. Do not modify Materios upstream, V3, Reveal, or any on-chain state. B3-A remains OPEN.
