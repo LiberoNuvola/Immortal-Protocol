@@ -88,3 +88,10 @@ Reviewed the MIT-licensed [Flux-Point-Studios Dexter SDK](https://github.com/Flu
 For the captured Mainnet candidate, this reconstruction yields active reserve ADA `1,039.525670`, USDM reserve `198.980533`, datum fee numerator `85` (0.85% per the SDK), and marginal reserve-ratio spot `5.22425814 ADA/USDM`. This is emitted only in `cswapProvisional` and `provisionalCswapCrossRates`, never in the qualified `dexPools` or primary `indicativeCrossRates` series.
 
 **Important boundary:** Dexter is a third-party SDK, not CSWAP's official PlutusV3 source. Its math/field interpretation has not been verified by contract execution or a source-level audit of the deployed script. The balance field semantics, pool NFT, LP name and reserve invariants remain unverified. Treat this as a provisional reference only; it cannot contribute to Oracle/EEV qualification until those gaps are closed.
+
+
+## Latest SundaeSwap V3 snapshot — 5/5 structurally and API reconciled
+
+The transient 45-second Koios timeout in run 41238599020 was not persistent. In run [41238996378](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238996378), the SundaeSwap V3 observer completed successfully: **5 rows, 5 payment credential matches, 5 inline datums, 5 structural matches, 0 unqualified, 5 API matches, 0 API mismatches, 0 API-only pools**. Artifact ID `13056956033`, ZIP SHA-256 `a368f846268a65c5ef131edfd3672045b4aafacb88a9254c6904fe347e19cb19`; extracted JSON SHA-256 `1e1577af21e3b7bd83fda706c937218c8aaf49e2bb4aa9e50b4d29e433355f87`.
+
+This is a new successful structural/API snapshot, not a new USD price or independent venue: it confirms the same five on-chain V3 pools match the same-run official SundaeSwap API. The downstream USDM/USD cross-reference in this run remains pending the other pool and market-data dependencies.
