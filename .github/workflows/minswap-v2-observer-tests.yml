@@ -7,6 +7,7 @@ on:
     paths:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
       - "scripts/collectMinswapUsdmReadOnly.mjs"
+      - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs"
       - ".github/workflows/minswap-v2-observer-tests.yml"
   pull_request:
@@ -77,4 +78,38 @@ jobs:
         with:
           name: minswap-usdm-api-readonly-${{ github.run_id }}
           path: audit/oracles/minswap-usdm-readonly.json
+          if-no-files-found: warn
+
+  reconcile-api-vs-onchain:
+    if: ${{ github.event_name == 'push' }}
+    needs:
+      - read-only-mainnet-observation
+      - read-only-minswap-api-observation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download Koios Mainnet evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: minswap-v2-usdm-mainnet-readonly-${{ github.run_id }}
+          path: audit/onchain
+      - name: Download Minswap API evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: minswap-usdm-api-readonly-${{ github.run_id }}
+          path: audit/api
+      - name: Reconcile exact V2 pool identities and asset pairs
+        run: node scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs --onchain audit/onchain/minswap-v2-usdm-utxos-readonly.json --api audit/api/minswap-usdm-readonly.json --out audit/oracles/minswap-v2-api-onchain-reconciliation.json
+      - name: Upload pool-set reconciliation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minswap-v2-usdm-api-onchain-reconciliation-${{ github.run_id }}
+          path: audit/oracles/minswap-v2-api-onchain-reconciliation.json
           if-no-files-found: warn
