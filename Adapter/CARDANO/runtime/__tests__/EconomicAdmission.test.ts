@@ -1,8 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import * as fs from 'node:fs'
 import { C, Lucid, TxComplete } from 'lucid-cardano'
 import { createCardanoExecutionAdapter } from '../CardanoExecutionAdapter'
 import { assertExecutableLiquidityMatchesAuthenticatedPool, assertExecutableLiquidityObservationFresh } from '../../observation/ExecutableLiquidityObservation'
 import type { EconomicAdmissionWitness } from '../EconomicAdmission'
+
+beforeAll(async () => {
+  // lucid-cardano's ESM CML loader expects fs to be injected for Node file URLs.
+  // Production browser loading is unchanged; this initializes the pinned local
+  // wasm artifact for this Vitest integration test.
+  Object.assign(globalThis, { fs })
+  if (!C.isInstantiated()) await C.instantiate()
+})
 
 const pool0 = '11'.repeat(32) + '#0'
 const pool1 = '22'.repeat(32) + '#1'
