@@ -81,6 +81,13 @@ jobs:
                 result[key + '_error'] = String(error);
               }
             }
+            const stateKeys = ['runtime_set_id', 'runtime_authorities', 'storage_set_id'];
+            const errors = stateKeys.map(key => result[key + '_error']).filter(Boolean);
+            const captured = stateKeys.filter(key => Object.prototype.hasOwnProperty.call(result, key + '_hex')).length;
+            if (errors.length === 0 && captured === stateKeys.length) result.state_status = 'STATE_CAPTURED';
+            else if (errors.length === stateKeys.length && errors.every(error => /UnknownBlock.*State already discarded/i.test(error))) {
+              result.state_status = 'HISTORICAL_STATE_PRUNED';
+            } else result.state_status = 'PARTIAL_STATE_UNAVAILABLE';
             return result;
           };
           try {
@@ -93,7 +100,9 @@ jobs:
             evidence.genesis_hash_match = true;
             evidence.parent = await inspect(target - 1, parentHash);
             evidence.target = await inspect(target, targetHash);
-            evidence.status = 'CAPTURED';
+            const states = [evidence.parent.state_status, evidence.target.state_status];
+            evidence.status = states.every(x => x === 'STATE_CAPTURED') ? 'STATE_CAPTURED' :
+              states.every(x => x === 'HISTORICAL_STATE_PRUNED') ? 'HISTORICAL_STATE_PRUNED' : 'PARTIAL_STATE_UNAVAILABLE';
           } catch (error) {
             evidence.status = 'ERROR';
             evidence.error = String(error);
