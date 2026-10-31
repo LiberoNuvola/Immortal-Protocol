@@ -165,24 +165,30 @@ export function validateV2Candidate(utxo, assets, datumJson) {
     if (unit === ADA_POLICY + ADA_NAME) return BigInt(String(utxo.value ?? '0'))
     return BigInt(assets.find((a) => a.unit === unit)?.quantityRaw ?? '0')
   }
-  const amountA = quantityOf(assetUnit(datum.assetA)) -
-    (assetUnit(datum.assetA) === ADA_POLICY + ADA_NAME ? MIN_POOL_ADA_LOVELACE : 0n)
-  const amountB = quantityOf(assetUnit(datum.assetB)) -
-    (assetUnit(datum.assetB) === ADA_POLICY + ADA_NAME ? MIN_POOL_ADA_LOVELACE : 0n)
-  if (amountA !== datum.reserveA) reasons.push('RESERVE_A_VALUE_MISMATCH')
-  if (amountB !== datum.reserveB) reasons.push('RESERVE_B_VALUE_MISMATCH')
+  const isAdaA = assetUnit(datum.assetA) === ADA_POLICY + ADA_NAME
+  const isAdaB = assetUnit(datum.assetB) === ADA_POLICY + ADA_NAME
+  const valueReserveA = quantityOf(assetUnit(datum.assetA)) - (isAdaA ? MIN_POOL_ADA_LOVELACE : 0n)
+  const valueReserveB = quantityOf(assetUnit(datum.assetB)) - (isAdaB ? MIN_POOL_ADA_LOVELACE : 0n)
+  // Minswap V2 intentionally keeps datum reserves (used for AMM pricing) separate
+  // from Value reserves (which also retain earned fees). Value may exceed datum,
+  // but it must never fall below the declared reserve.
+  if (valueReserveA < datum.reserveA) reasons.push('VALUE_RESERVE_A_BELOW_DATUM_RESERVE')
+  if (valueReserveB < datum.reserveB) reasons.push('VALUE_RESERVE_B_BELOW_DATUM_RESERVE')
   if (datum.totalLiquidity <= 0n || datum.reserveA <= 0n || datum.reserveB <= 0n) reasons.push('NONPOSITIVE_POOL_DATUM_VALUES')
 
   // Pool V2 Value must contain only ADA, the two pair assets, LP asset and Pool NFT.
   const allowedUnits = new Set([nftUnit, lpUnit])
-  if (assetUnit(datum.assetA) !== ADA_POLICY + ADA_NAME) allowedUnits.add(assetUnit(datum.assetA))
-  if (assetUnit(datum.assetB) !== ADA_POLICY + ADA_NAME) allowedUnits.add(assetUnit(datum.assetB))
+  if (!isAdaA) allowedUnits.add(assetUnit(datum.assetA))
+  if (!isAdaB) allowedUnits.add(assetUnit(datum.assetB))
   const unexpectedUnits = assets.filter((asset) => !allowedUnits.has(asset.unit))
   if (unexpectedUnits.length > 0) reasons.push('UNEXPECTED_ASSETS_IN_POOL_VALUE')
-  const expectedLovelace = MIN_POOL_ADA_LOVELACE +
-    (assetUnit(datum.assetA) === ADA_POLICY + ADA_NAME ? datum.reserveA : 0n) +
-    (assetUnit(datum.assetB) === ADA_POLICY + ADA_NAME ? datum.reserveB : 0n)
-  if (BigInt(String(utxo.value ?? '0')) !== expectedLovelace) reasons.push('POOL_LOVELACE_VALUE_MISMATCH')
+  const lovelace = BigInt(String(utxo.value ?? '0'))
+  if (isAdaA || isAdaB) {
+    const minRequired = MIN_POOL_ADA_LOVELACE + (isAdaA ? datum.reserveA : datum.reserveB)
+    if (lovelace < minRequired) reasons.push('POOL_LOVELACE_BELOW_MIN_PLUS_DATUM_RESERVE')
+  } else if (lovelace !== MIN_POOL_ADA_LOVELACE) {
+    reasons.push('POOL_LOVELACE_VALUE_MISMATCH')
+  }
 
   return {
     status: reasons.length === 0 ? 'MATCH' : 'UNQUALIFIED',
@@ -196,8 +202,10 @@ export function validateV2Candidate(utxo, assets, datumJson) {
       reserveBRaw: datum.reserveB.toString(),
     },
     lpAsset: { policyId: V2_POOL_AUTH_NFT.policyId, assetNameHex: lpAssetName, quantityRaw: lpQuantity.toString() },
-    valueReserveARaw: amountA.toString(),
-    valueReserveBRaw: amountB.toString(),
+    valueReserveARaw: valueReserveA.toString(),
+    valueReserveBRaw: valueReserveB.toString(),
+    valueSurplusARaw: (valueReserveA - datum.reserveA).toString(),
+    valueSurplusBRaw: (valueReserveB - datum.reserveB).toString(),
     poolAuthNftQuantityRaw: nftQuantity.toString(),
   }
 }
