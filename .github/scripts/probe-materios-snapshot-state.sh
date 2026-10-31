@@ -22,6 +22,7 @@ TARGET_HEADER_JSON=""
 TARGET_RUNTIME_VERSION=""
 DIGEST_WINDOW_JSON="[]"
 DIGEST_SCAN_START=""
+GRANDPA_STORAGE_JSON="{}"
 TARGET_NUMBER=""
 TARGET_HASH=""
 DB_DIR=""
@@ -44,6 +45,7 @@ finish() {
     --arg authorities "$AUTHORITY_HEX" --arg set_id "$SET_ID_HEX" \
     --arg target_header "$TARGET_HEADER_JSON" --arg runtime_version "$TARGET_RUNTIME_VERSION" \
     --arg digest_window "$DIGEST_WINDOW_JSON" --arg digest_scan_start "$DIGEST_SCAN_START" \
+    --arg grandpa_storage "$GRANDPA_STORAGE_JSON" \
     --arg rpc_url "$RPC_URL" --arg log "$(tail -n 35 "$LOG" 2>/dev/null || true)" \
     '{
       schema_version:"materios-snapshot-state-probe-v1",
@@ -66,6 +68,7 @@ finish() {
         end_block:($target_number|if .=="" then null else tonumber end),
         blocks_with_frnk_consensus_logs:($digest_window|fromjson)
       },
+      grandpa_storage_diagnostic:($grandpa_storage|fromjson),
       local_rpc_url:(if $rpc_url=="" then null else $rpc_url end),
       node_log_tail:$log,
       trust_boundary:"Isolated FULL-role diagnostic only: snapshot DB is Constrained(256); USE_MAIN_CHAIN_FOLLOWER_MOCK is used solely to start local RPC; no validator role, no peers, no block import. This proves availability only inside the retained window, not archive history. RPC authority state remains untrusted until independently authenticated."
@@ -94,6 +97,7 @@ rpc_raw() {
     http://127.0.0.1:9945
 }
 rpc_result() { local r; r="$(rpc_raw "$1" "$2")" || return 1; jq -er '.result' <<<"$r"; }
+rpc_nullable() { local r; r="$(rpc_raw "$1" "$2")" || return 1; jq -c '.result' <<<"$r"; }
 
 echo "Fetch snapshot manifest"
 curl -fsSL --retry 3 https://materios.fluxpointstudios.com/operator-snapshots/preprod/latest.json -o "$TMP/latest.json" \
@@ -245,6 +249,48 @@ SET_ID_HEX="$(rpc_result state_call "[\"GrandpaApi_current_set_id\",\"0x\",\"$TA
   || fail HISTORICAL_SET_ID_QUERY_FAILED "historical set-id state_call failed"
 [[ "$AUTHORITY_HEX" =~ ^0x([0-9a-fA-F]{2})+$ ]] || fail HISTORICAL_AUTHORITIES_ENCODING_INVALID "authority result is not non-empty SCALE hex"
 [[ "$SET_ID_HEX" =~ ^0x[0-9a-fA-F]{16}$ ]] || fail HISTORICAL_SET_ID_ENCODING_INVALID "set-id result is not u64 SCALE hex"
+
+echo "Cross-check GRANDPA runtime APIs against raw storage at the exact target state"
+GRANDPA_CURRENT_SET_ID_KEY=0x5f9cc45b7a00c5899361e1c6099678dc8a2d09463effcc78a22d75b9cb87dffc
+GRANDPA_AUTHORITIES_KEY=0x5f9cc45b7a00c5899361e1c6099678dc5e0621c4869aa60c02be9adcc98a0d1d
+GRANDPA_PENDING_CHANGE_KEY=0x5f9cc45b7a00c5899361e1c6099678dc2ff65991b1c915dd6cc8d4825eacfcb4
+GRANDPA_STALLED_KEY=0x5f9cc45b7a00c5899361e1c6099678dc7ddd013461b72c3004f9c0ca3faf9ebe
+SESSION_CURRENT_INDEX_KEY=0xcec5070d609dd3497f72bde07fc96ba072763800a36a99fdfc7c10f6415f6ee6
+STORAGE_PARAMS="$(jq -cn --arg key "$GRANDPA_CURRENT_SET_ID_KEY" --arg hash "$TARGET_HASH" '[$key,$hash]')"
+CURRENT_SET_STORAGE="$(rpc_nullable state_getStorage "$STORAGE_PARAMS")" \
+  || fail GRANDPA_CURRENT_SET_STORAGE_QUERY_FAILED "CurrentSetId raw storage query failed"
+STORAGE_PARAMS="$(jq -cn --arg key "$GRANDPA_AUTHORITIES_KEY" --arg hash "$TARGET_HASH" '[$key,$hash]')"
+AUTHORITIES_STORAGE="$(rpc_nullable state_getStorage "$STORAGE_PARAMS")" \
+  || fail GRANDPA_AUTHORITIES_STORAGE_QUERY_FAILED "Grandpa Authorities raw storage query failed"
+STORAGE_PARAMS="$(jq -cn --arg key "$GRANDPA_PENDING_CHANGE_KEY" --arg hash "$TARGET_HASH" '[$key,$hash]')"
+PENDING_CHANGE_STORAGE="$(rpc_nullable state_getStorage "$STORAGE_PARAMS")" \
+  || fail GRANDPA_PENDING_CHANGE_QUERY_FAILED "PendingChange raw storage query failed"
+STORAGE_PARAMS="$(jq -cn --arg key "$GRANDPA_STALLED_KEY" --arg hash "$TARGET_HASH" '[$key,$hash]')"
+STALLED_STORAGE="$(rpc_nullable state_getStorage "$STORAGE_PARAMS")" \
+  || fail GRANDPA_STALLED_QUERY_FAILED "Stalled raw storage query failed"
+STORAGE_PARAMS="$(jq -cn --arg key "$SESSION_CURRENT_INDEX_KEY" --arg hash "$TARGET_HASH" '[$key,$hash]')"
+SESSION_INDEX_STORAGE="$(rpc_nullable state_getStorage "$STORAGE_PARAMS")" \
+  || fail SESSION_CURRENT_INDEX_QUERY_FAILED "Session CurrentIndex raw storage query failed"
+GRANDPA_STORAGE_JSON="$(jq -cn \
+  --arg current_set_id_runtime_api "$SET_ID_HEX" \
+  --arg current_set_id_storage "$CURRENT_SET_STORAGE" \
+  --arg authorities_runtime_api "$AUTHORITY_HEX" \
+  --arg authorities_storage "$AUTHORITIES_STORAGE" \
+  --arg pending_change_storage "$PENDING_CHANGE_STORAGE" \
+  --arg stalled_storage "$STALLED_STORAGE" \
+  --arg session_current_index_storage "$SESSION_INDEX_STORAGE" \
+  '{
+    current_set_id_runtime_api:$current_set_id_runtime_api,
+    current_set_id_raw_storage:$current_set_id_storage,
+    current_set_id_api_matches_storage:($current_set_id_runtime_api==$current_set_id_storage),
+    authorities_runtime_api:$authorities_runtime_api,
+    authorities_raw_storage:$authorities_storage,
+    authorities_api_matches_storage:($authorities_runtime_api==$authorities_storage),
+    pending_change_raw_storage:($pending_change_storage|fromjson),
+    stalled_raw_storage:($stalled_storage|fromjson),
+    session_current_index_raw_storage:($session_current_index_storage|fromjson),
+    storage_key_derivation:"Twox128(pallet name) ++ Twox128(storage item name); all reads at exact target block hash"
+  }')"
 
 STATUS=PASS
 CLASSIFICATION=SNAPSHOT_WINDOW_HISTORICAL_STATE_QUERY_PASS
