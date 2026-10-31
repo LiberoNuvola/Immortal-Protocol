@@ -156,4 +156,6 @@ Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic Plutus
 
 The implementation constants were cross-checked against the official Minswap V2 source: `PoolDatum` has ten fields; `min_pool_ada` is 4,500,000 lovelace; `compute_lp_asset_name` uses SHA3-256 over each concatenated policy/name pair and then over the two hashes; the deployed Mainnet batching stake key hash and Pool NFT identity match the pinned values already recorded above. See the official [Minswap V2 repository](https://github.com/minswap/minswap-dex-v2), particularly `lib/amm_dex_v2/types.ak`, `lib/amm_dex_v2/utils.ak`, and `deployed/mainnet/params.json`.
 
-**Next gate:** execute the focused Vitest suite in CI or a verified checkout; then capture a real Koios UTxO fixture, compare its raw inline datum representation with the decoder, and only after that attempt a strictly read-only Mainnet reconciliation.
+**CI harness added:** `.github/workflows/minswap-v2-observer-tests.yml` runs the focused Vitest suite on relevant pushes to `work/immortal-green-closure` and pull requests. Workflow commit: `58188c06c4dc26a9707699bd6933f5502da3e9aa`. Its run result has not yet been verified.
+
+**Next gate:** verify the focused workflow run; then capture a real Koios UTxO fixture, compare its raw inline datum representation with the decoder, and only after that attempt a strictly read-only Mainnet reconciliation.
