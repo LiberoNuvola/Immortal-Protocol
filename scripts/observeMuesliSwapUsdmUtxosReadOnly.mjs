@@ -238,7 +238,7 @@ async function main() {
     for (const datumHash of uniqueDatumHashes) {
       const response = await fetchDatumInfo(datumHash)
       datumInfoRequests.push(response.evidence)
-      const datum = response.json.find((entry) => String(entry.hash ?? '').toLowerCase() === datumHash.toLowerCase()) ?? null
+      const datum = response.json.find((entry) => String(entry.hash ?? entry.datum_hash ?? '').toLowerCase() === datumHash.toLowerCase()) ?? null
       datumByHash.set(datumHash, datum)
     }
     for (const candidate of candidates) {
