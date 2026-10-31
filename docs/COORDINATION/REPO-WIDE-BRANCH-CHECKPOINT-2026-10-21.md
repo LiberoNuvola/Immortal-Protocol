@@ -6796,3 +6796,35 @@ The SDK proposal's sections 11.1–11.7 already provide the review inventory and
 - Integrated the calculator into `scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs` and added same-run Danogo artifact download/dependency and focused tests to `.github/workflows/minswap-v2-observer-tests.yml`.
 - Commits: math library `f926fd96b2dba23ba74a5ad60380155b861e7f86`; tests `10654987c70b85ed133321b2b60398225182979c`; reward gate fix `2d39fcc14ce3eee3180decd83f9da2e14b7761e9`; test correction `44aad39b1c598f409725bb9a0c9c64d51e35ead7`; cross-reference integration `43b9ab6e47df5da6326689fa7ced12ad4ed8e5fa`; workflow integration `066ae00691361cf5b8b7a9c3d22c486df9bba8fc`; CLI argument fix `c00b32cbb1dfb76937559581c62d92280b85d923`; documentation `74a35429ef08d22ee22efa4a50471d45549a19ba`.
 - Evidence status: **source implementation complete; CI/live calculation pending**. No Danogo spot or USDM/USD cross-rate is claimed until the workflow completes and its artifact is inspected. This is a research-only calculation; no transaction, wallet, signing, chain write, oracle refresh, EEV, deployment, or economic rule change.
+
+
+## Agent B — exact-body mutation window and Lucid dependency recheck (2026-10-31)
+
+**Re-audited branch HEAD:** `d9b020505e7690bb00929382076f62b078fd8fae`. No Agent B runtime or validator code was changed in this pass.
+
+### Pinned transaction stack and current inspection surface
+
+- Root lockfile pins `@lucid-evolution/lucid@0.6.5`, with `@anastasia-labs/cardano-multiplatform-lib-nodejs@6.2.0-1` and browser CML `6.2.0-1` as Lucid dependencies.
+- `CardanoExecutionAdapter.ts` currently inspects only `tx.toTransaction().body().inputs()`. Its local structural type does not expose reference inputs, outputs, fee, validity bounds, mint, withdrawals, certificates, collateral, redeemers or datums.
+- `submitEconomic` awaits connected-wallet UTxO enumeration when extra spending inputs exist, then re-reads only the spending-input references and immediately delegates the same `tx` object to `signTx`.
+- Existing `EconomicAdmission.test.ts` uses a synthetic CML-like object exposing only the input list. It tests input mutation during the wallet lookup, but does not test mutation of any other body component.
+- The production builders continue to create completed transactions through Lucid's `.complete()`; the same completed transaction object is passed to the adapter. Issue, Reveal, Claim and Expire role inventory remains as documented in SDK proposal §11.4.
+
+### Additional finding: mutation window is broader than the current guard
+
+When wallet UTxO enumeration awaits, the adapter's final integrity check compares only spending-input references. If the completed transaction object were mutable during that await, a change to outputs, datums, redeemers, fee, mint or validity fields would not be detected by that final check. This is a **source-level coverage gap**, not evidence that the installed Lucid implementation permits a particular exploit or that a live exploit has been observed.
+
+The required engineering distinction is:
+1. an exact-body integrity snapshot/check to ensure the object validated is the object passed to the wallet-signing port; and
+2. semantic authorization against approved, versioned per-action predicates and canonical pre-sign intent.
+
+A transaction-body byte identity may be useful for the first purpose only. It must not be substituted for the canonical economic action/pre-state/post-state fingerprints in the second purpose. The pinned dependency versions are recorded, but the exact CML/Lucid serialization/signing implementation has not yet been verified from the installed package source in this audit; no new serialization API is assumed.
+
+### Gate and next safe step
+
+- Do not claim completed-body binding or close V08/V09.
+- Before runtime integration, verify the exact pinned Lucid/CML implementation and whether the completed transaction object is immutable or can be mutated; identify the supported exact-body serialization/accessor API from that source.
+- Then add adversarial tests for mutation of each body component during the asynchronous wallet-input classification, asserting both `signTx` and `submitTx` remain uncalled. These are integrity tests only and do not define semantic predicates.
+- Separately retain the SDK proposal's approval gate for canonical producers, input/output role classification, per-action predicates and phase separation. Do not invent fingerprints, fee limits, change-address rules or output-position assumptions.
+
+**STATUS: INPUT-CLASSIFICATION GUARD PRESENT; NON-INPUT BODY MUTATION NOT COVERED BY THE FINAL RECHECK; PINNED LUCID/CML IMPLEMENTATION VERIFICATION STILL REQUIRED; FULL BODY BINDING AND V08/V09 REMAIN OPEN.**
