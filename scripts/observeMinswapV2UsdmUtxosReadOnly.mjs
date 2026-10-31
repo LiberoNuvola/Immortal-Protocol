@@ -159,7 +159,7 @@ async function main() {
 
   const out = outputPath(process.argv.slice(2))
   await mkdir(dirname(out), { recursive: true })
-  await writeFile(out, JSON.stringify(evidence, null, 2) + '\\n', 'utf8')
+  await writeFile(out, JSON.stringify(evidence, null, 2) + '\n', 'utf8')
   console.log(JSON.stringify({
     status: 'READ_ONLY_UTXO_OBSERVATION_COMPLETE',
     output: out,
