@@ -199,6 +199,40 @@ describe('economic Cardano submission boundary', () => {
     expect(submit).toHaveBeenCalledTimes(1)
   })
 
+  it('accepts Lucid Evolution exact CML CBOR hex for the integrity snapshot', async () => {
+    const references = candidateInputs
+    const inputs = references.map((reference) => {
+      const [txHash, outputIndex] = reference.split('#')
+      return {
+        transaction_id: () => ({ to_hex: () => txHash }),
+        index: () => Number(outputIndex),
+      }
+    })
+    const tx = {
+      toTransaction: () => ({
+        body: () => ({
+          inputs: () => ({
+            len: () => inputs.length,
+            get: (index: number) => inputs[index],
+          }),
+        }),
+        to_cbor_hex: () => bytesToHex(new TextEncoder().encode(JSON.stringify(references))),
+      }),
+    }
+    const lucid = {
+      signTx: vi.fn().mockResolvedValue('signed'),
+      submitTx: vi.fn().mockResolvedValue('tx-evolution-cbor'),
+    }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(tx, admission, candidateInputs, [pool0]),
+    ).resolves.toEqual({ transactionRef: 'tx-evolution-cbor' })
+
+    expect(lucid.signTx).toHaveBeenCalledWith(tx)
+    expect(lucid.submitTx).toHaveBeenCalledWith('signed')
+  })
+
   it('uses lucid-cardano 0.10.11 and a simulated CIP-30 wallet with a real CML transaction', async () => {
     const { lucid, api } = await makeSimulatedCip30Lucid()
     const tx = new TxComplete(lucid, legacyCmlTransaction([pool0]))
