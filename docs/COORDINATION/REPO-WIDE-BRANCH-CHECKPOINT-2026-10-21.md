@@ -5966,3 +5966,13 @@ The 256-block digest window had zero FRNK logs, and sampled headers at 2508824, 
 - The companion evidence-boundary workflow for SHA `493256dfa9201891396f504d9af9b60e230bc439` completed successfully, including `poc/materios-grandpa` tests and TypeScript build.
 
 **Current classification remains:** B3-A **OPEN**. `grandpa_roundState` is unavailable; runtime-vs-raw-storage comparison and genesis-anchored digest replay are pending exact-head artifacts. Do not infer or accept set ID 4343. No V3/Reveal/economic semantics, wallet or on-chain state changed.
+
+
+## Agent C live run update — snapshot probe passed, digest replay executing (2026-10-31)
+
+Exact-head run [#41175284220](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41175284220), SHA `493256dfa9201891396f504d9af9b60e230bc439`:
+
+- Both WebSocket acquisition routes completed successfully.
+- The checksum-verified snapshot probe completed **SUCCESS** using the stored `Constrained(256)` mode. It ran the runtime API and raw-storage cross-checks at the exact target block; the resulting artifact will be inspected before interpreting equality or mismatch.
+- The next step, `Reconstruct GRANDPA authority changes from genesis-anchored headers`, is currently **in progress**. It must complete before the witness verification step can consume the digest-history artifact.
+- The real witness verifier has not yet run in this exact-head job. No B3-A closure is claimed.
