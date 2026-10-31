@@ -41,7 +41,7 @@ jobs:
 
   read-only-mainnet-observation:
     # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -63,7 +63,7 @@ jobs:
 
   read-only-minswap-api-observation:
     # Public Minswap API market observations only; no transaction endpoints.
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.modified, 'scripts/collectMinswapUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -118,7 +118,7 @@ jobs:
           if-no-files-found: warn
 
   read-only-dexscreener-observation:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.modified, 'scripts/collectDexScreenerCardanoUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/collectMinswapUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs')) }}
     needs:
       - read-only-minswap-api-observation
     runs-on: ubuntu-24.04
@@ -146,7 +146,7 @@ jobs:
           if-no-files-found: warn
 
   read-only-geckoterminal-observation:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -167,7 +167,7 @@ jobs:
           if-no-files-found: warn
 
   read-only-muesliswap-observation:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'scripts/collectMuesliSwapCardanoUsdmReadOnly.mjs') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
