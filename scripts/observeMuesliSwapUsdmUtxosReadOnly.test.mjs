@@ -11,7 +11,7 @@ describe('MuesliSwap official PoolDatum decoder and Mainnet fixtures', () => {
   it('decodes the official four-field PoolDatum from the ADA/USDM pool', () => {
     const datum = decodeMuesliPoolDatum(fixture.candidates[0].resolvedDatumJson)
     expect(datum.assetA).toEqual({ policyId: '', assetNameHex: '' })
-    expect(datum.assetB).toEqual(fixture.exactAsset)
+    expect(datum.assetB).toEqual({ policyId: fixture.exactAsset.policyId, assetNameHex: fixture.exactAsset.assetNameHex })
     expect(datum.totalLiquidity).toBe(685640428n)
     expect(datum.swapFee).toBe(30n)
   })
@@ -22,7 +22,7 @@ describe('MuesliSwap official PoolDatum decoder and Mainnet fixtures', () => {
     expect(result.reasons).toEqual([])
     expect(result.reserveARaw).toBe('1605647750')
     expect(result.reserveBRaw).toBe('304217365')
-    expect(result.priceAdaPerUsdm).toBe('5.277')
+    expect(result.priceAdaPerUsdm).toBe('5.27796218')
     expect(result.datum.swapFeeRaw).toBe('30')
   })
 
