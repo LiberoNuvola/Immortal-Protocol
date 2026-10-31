@@ -5,7 +5,7 @@
  * pool-contract repository. Preserves raw datum JSON/CBOR before decoding.
  */
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
 const KOIOS = 'https://api.koios.rest/api/v1'
@@ -125,6 +125,8 @@ async function main() {
   const candidates = []
   const poolNftUtxos = []
   let complete = false
+  let discovery = null
+  let discoveredPoolNfts = []
   const addressCredentials = ADDRESSES.map((target) => ({
     ...target,
     paymentCredential: decodeAddressPaymentCredential(target.address),
@@ -132,26 +134,68 @@ async function main() {
   const uniquePaymentCredentials = [...new Set(addressCredentials.map((x) => x.paymentCredential))]
   if (uniquePaymentCredentials.length !== 1) throw new Error('MUESLI_POOL_ADDRESS_PAYMENT_CREDENTIALS_DIVERGE')
   const poolScriptHash = uniquePaymentCredentials[0]
-  const scriptRows = []
+
   try {
-    const discovery = JSON.parse(await (await import('node:fs/promises')).readFile(supercardanoPath, 'utf8'))
+    discovery = JSON.parse(await readFile(supercardanoPath, 'utf8'))
     const usdmUnit = USDM.policyId + USDM.assetNameHex
-    if (discovery.network !== 'cardano-mainnet' || discovery.unit !== usdmUnit) {
+    if (discovery.network !== 'cardano-mainnet' || String(discovery.unit ?? '').toLowerCase() !== usdmUnit) {
       throw new Error('MUESLI_SUPERCARDANO_DISCOVERY_ASSET_OR_NETWORK_MISMATCH')
     }
-    const discoveredPoolNfts = [...new Set((discovery.pools ?? [])
+
+    discoveredPoolNfts = [...new Set((discovery.pools ?? [])
       .filter((pool) => pool.venue === 'muesliswap' && String(pool.key ?? '').startsWith('muesliswap:'))
       .map((pool) => String(pool.key).slice('muesliswap:'.length).toLowerCase())
       .filter((unit) => unit.length === 112 && unit.slice(0, 56) === POOL_NFT_POLICY_ID)
       .map((unit) => unit.slice(56)))]
-    if (discoveredPoolNfts.length === 0) throw new Error('MUESLI_SUPERCARDANO_DISCOVERY_HAS_NO_VERIFIED_POOL_NFTS')
+    if (discoveredPoolNfts.length === 0) {
+      throw new Error('MUESLI_SUPERCARDANO_DISCOVERY_HAS_NO_POOL_NFTS_UNDER_OFFICIAL_POLICY')
+    }
+
     complete = true
+    const seenRefs = new Set()
     for (const assetNameHex of discoveredPoolNfts) {
       let nftComplete = false
       for (let offset = 0; offset < PAGE_SIZE * MAX_PAGES; offset += PAGE_SIZE) {
         const page = await fetchPoolNftPage({ assetNameHex }, offset)
-        pages.push(page.evidence)
-        poolNftUtxos.push(...page.json)
+        pages.push({ poolNftUnit: POOL_NFT_POLICY_ID + assetNameHex, ...page.evidence })
+        for (const row of page.json) {
+          const ref = String(row.tx_hash ?? '').toLowerCase() + '#' + String(row.tx_index ?? '')
+          if (seenRefs.has(ref)) continue
+          seenRefs.add(ref)
+          const assets = row.asset_list ?? []
+          const nftUnit = POOL_NFT_POLICY_ID + assetNameHex
+          const nftAsset = assets.find((asset) =>
+            String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === nftUnit)
+          if (!nftAsset) continue
+          const record = {
+            requestedPoolNftUnit: nftUnit,
+            utxoRef: ref,
+            address: row.address ?? null,
+            paymentCredential: String(row.payment_cred ?? '').toLowerCase(),
+            paymentCredentialMatchesOfficial: String(row.payment_cred ?? '').toLowerCase() === poolScriptHash,
+            poolNftQuantityRaw: String(nftAsset.quantity ?? '0'),
+            valueLovelaceRaw: String(row.value ?? '0'),
+            assets,
+            datumHash: row.datum_hash ?? null,
+            inlineDatumCborHex: row.inline_datum?.bytes ?? null,
+            inlineDatumJson: row.inline_datum?.value ?? null,
+            blockHeight: row.block_height ?? null,
+            blockTime: row.block_time ?? null,
+            epochNo: row.epoch_no ?? null,
+          }
+          poolNftUtxos.push(record)
+          const containsUsdm = assets.some((asset) =>
+            String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === usdmUnit)
+          if (containsUsdm) {
+            const addressTarget = addressCredentials.find((target) => target.address === row.address)
+            candidates.push({
+              ...record,
+              addressId: addressTarget?.id ?? 'pool-nft-output-at-unlisted-address',
+              exactUsdmQuantityRaw: String(assets.find((asset) =>
+                String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === usdmUnit)?.quantity ?? '0'),
+            })
+          }
+        }
         if (page.json.length < PAGE_SIZE) {
           nftComplete = true
           break
@@ -162,77 +206,31 @@ async function main() {
         throw new Error('KOIOS_MUESLI_POOL_NFT_PAGE_CAP_REACHED_INCOMPLETE:' + assetNameHex)
       }
     }
-    const seenRefs = new Set()
-    for (const row of poolNftUtxos) {
-      const ref = String(row.tx_hash ?? '').toLowerCase() + '#' + String(row.tx_index ?? '')
-      if (seenRefs.has(ref)) continue
-      seenRefs.add(ref)
-      const nftUnit = POOL_NFT_POLICY_ID + (row.asset_list ?? []).find((asset) =>
-        String(asset.policy_id ?? '').toLowerCase() === POOL_NFT_POLICY_ID)?.asset_name?.toLowerCase()
-      if (!nftUnit || nftUnit.length !== 112) continue
-      const containsUsdm = (row.asset_list ?? []).some((asset) =>
-        String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === usdmUnit)
-      if (!containsUsdm) continue
-      const addressTarget = addressCredentials.find((target) => target.address === row.address)
-      const paymentCredential = String(row.payment_cred ?? '').toLowerCase()
-      candidates.push({
-        addressId: addressTarget?.id ?? 'pool-nft-output-at-unlisted-address',
-        utxoRef: ref,
-        poolNftUnit: nftUnit,
-        poolNftQuantityRaw: String((row.asset_list ?? []).find((asset) =>
-          String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === nftUnit)?.quantity ?? '0'),
-        address: row.address ?? null,
-        paymentCredential,
-        paymentCredentialMatchesOfficial: paymentCredential === poolScriptHash,
-        valueLovelaceRaw: String(row.value ?? '0'),
-        assets: row.asset_list ?? [],
-        datumHash: row.datum_hash ?? null,
-        inlineDatumCborHex: row.inline_datum?.bytes ?? null,
-        inlineDatumJson: row.inline_datum?.value ?? null,
-        blockHeight: row.block_height ?? null,
-        blockTime: row.block_time ?? null,
-        epochNo: row.epoch_no ?? null,
-      })
-    }
-    scriptRows.push(...poolNftUtxos)
-    for (const row of scriptRows) {
-      const containsUsdm = (row.asset_list ?? []).some((asset) =>
-        String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === usdmUnit)
-      if (!containsUsdm) continue
-      const addressTarget = addressCredentials.find((target) => target.address === row.address)
-      candidates.push({
-        addressId: addressTarget?.id ?? 'same-pool-script-other-address',
-        utxoRef: String(row.tx_hash).toLowerCase() + '#' + String(row.tx_index),
-        address: row.address ?? null,
-        paymentCredential: String(row.payment_cred ?? '').toLowerCase(),
-        paymentCredentialMatchesOfficial: String(row.payment_cred ?? '').toLowerCase() === poolScriptHash,
-        valueLovelaceRaw: String(row.value ?? '0'),
-        assets: row.asset_list ?? [],
-        datumHash: row.datum_hash ?? null,
-        inlineDatumCborHex: row.inline_datum?.bytes ?? null,
-        inlineDatumJson: row.inline_datum?.value ?? null,
-        blockHeight: row.block_height ?? null,
-        blockTime: row.block_time ?? null,
-        epochNo: row.epoch_no ?? null,
-      })
-    }
   } catch (error) {
     complete = false
     const failure = {
-      schema: 'immortal-muesliswap-usdm-utxo-acquisition-v1',
+      schema: 'immortal-muesliswap-usdm-utxo-acquisition-v2',
       network: 'cardano-mainnet',
       exactAsset: USDM,
-      source: 'Koios Mainnet script UTxO query at official MuesliSwap pool addresses with exact asset filter',
+      poolNftPolicyId: POOL_NFT_POLICY_ID,
+      source: 'Koios Mainnet exact Pool NFT UTxO queries, with discovery from SuperCardano and policy pinned to official Muesli deployment',
       startedAt,
       completedAt: new Date().toISOString(),
       status: 'SOURCE_UNAVAILABLE_OR_INCOMPLETE',
       error: error instanceof Error ? error.message : String(error),
       failedRequest: error?.evidence ?? null,
+      discoverySource: discovery ? {
+        source: discovery.source,
+        startedAt: discovery.startedAt,
+        completedAt: discovery.completedAt,
+        rawResponses: discovery.rawResponses,
+      } : null,
+      discoveredPoolNfts,
       officialAddresses: addressCredentials,
-      poolScriptHash,
+      expectedPoolPaymentCredential: poolScriptHash,
       poolNftUtxoCount: poolNftUtxos.length,
-      scriptUtxoCount: scriptRows.length,
       pages,
+      poolNftUtxos,
       candidates,
     }
     await mkdir(dirname(outPath), { recursive: true })
@@ -241,45 +239,60 @@ async function main() {
     process.exitCode = 1
     return
   }
+
+  const discoveryStatus = candidates.length > 0
+    ? 'CURRENT_USDM_POOL_NFT_UTXOS_FOUND'
+    : 'NO_CURRENT_USDM_POOL_NFT_UTXOS_FOR_DISCOVERED_POOL_NFTS'
   const evidence = {
-    schema: 'immortal-muesliswap-usdm-utxo-acquisition-v1',
-    classification: 'RAW_EXACT_USDM_POOL_UTXO_DISCOVERY_NOT_DATUM_QUALIFICATION',
+    schema: 'immortal-muesliswap-usdm-utxo-acquisition-v2',
+    classification: 'RAW_EXACT_USDM_POOL_NFT_UTXO_DISCOVERY_NOT_DATUM_QUALIFICATION',
     network: 'cardano-mainnet',
     exactAsset: USDM,
-    source: 'Koios Mainnet script UTxO query at official MuesliSwap pool payment credential',
-    officialDeploymentSource: 'MuesliSwapTeam/muesliswap-cardano-pool-contracts dex/plutus/pool.addr and pool_without_stake_key.addr',
+    poolNftPolicyId: POOL_NFT_POLICY_ID,
+    source: 'Koios Mainnet exact Pool NFT UTxO queries, with discovery from SuperCardano and policy pinned to official Muesli deployment',
+    officialDeploymentSource: 'MuesliSwapTeam/muesliswap-cardano-pool-contracts dex/plutus/pool.addr, pool_without_stake_key.addr, and nft_policyid',
     startedAt,
     completedAt: new Date().toISOString(),
+    status: discoveryStatus,
+    discoverySource: {
+      name: discovery.source?.name ?? 'SuperCardano',
+      startedAt: discovery.startedAt,
+      completedAt: discovery.completedAt,
+      asOfBlockHeight: discovery.sourceMeta?.asOfBlockHeight ?? discovery.sourceMeta?.token?.asOf?.height ?? null,
+      rawResponseHashes: (discovery.rawResponses ?? []).map((x) => x.bodySha256),
+    },
     acquisition: {
       endpoint: '/asset_utxos',
-      discoverySource: 'SuperCardano exact-USDM pools; pool NFT unit independently checked against official Muesli NFT policy ID',
-      discoveredPoolNftCount: [...new Set((discovery.pools ?? []).filter((pool) => pool.venue === 'muesliswap' && String(pool.key ?? '').startsWith('muesliswap:')).map((pool) => String(pool.key).slice('muesliswap:'.length).toLowerCase()).filter((unit) => unit.length === 112 && unit.slice(0, 56) === POOL_NFT_POLICY_ID))].length,
       poolNftPolicyId: POOL_NFT_POLICY_ID,
+      discoveredPoolNftCount: discoveredPoolNfts.length,
+      queriedPoolNftUnits: discoveredPoolNfts.map((assetNameHex) => POOL_NFT_POLICY_ID + assetNameHex),
       exactAssetFilterAppliedLocally: { policyId: USDM.policyId, assetNameHex: USDM.assetNameHex },
-      derivedPaymentCredential: poolScriptHash,
+      expectedPoolPaymentCredential: poolScriptHash,
       officialAddresses: addressCredentials,
-      exactAssetFilterAppliedLocally: { policyId: USDM.policyId, assetNameHex: USDM.assetNameHex },
       pageSize: PAGE_SIZE,
       maxPages: MAX_PAGES,
       completePagination: complete,
-      officialAddresses: addressCredentials,
-      scriptUtxoCount: scriptRows.length,
+      poolNftUtxoCount: poolNftUtxos.length,
       rawPages: pages,
     },
     summary: {
-      discoveredPoolNftCount: pages.length,
+      discoveredPoolNftCount: discoveredPoolNfts.length,
+      poolNftUtxoCount: poolNftUtxos.length,
       candidateCount: candidates.length,
-      scriptUtxoCount: scriptRows.length,
-      paymentCredentialMatchCount: candidates.filter((x) => x.paymentCredentialMatchesOfficial).length,
+      exactUsdmCandidateCount: candidates.length,
+      officialPaymentCredentialMatchCount: candidates.filter((x) => x.paymentCredentialMatchesOfficial).length,
+      poolNftQuantityExactlyOneCount: candidates.filter((x) => x.poolNftQuantityRaw === '1').length,
       inlineDatumCount: candidates.filter((x) => x.inlineDatumJson).length,
       datumHashCount: candidates.filter((x) => x.datumHash).length,
       distinctAddresses: [...new Set(candidates.map((x) => x.address))].length,
     },
+    poolNftUtxos,
     candidates,
     limitations: [
-      'Pool NFT identities are discovered from SuperCardano exact-USDM pool rows and constrained to the official MuesliSwap NFT policy; current UTxOs are then queried by exact NFT unit and validated against the official pool payment credential.',
-      'PoolDatum, pool NFT, LP token, reserve and fee validation are not yet implemented; raw inline datum JSON/CBOR is preserved first.',
-      'SuperCardano is an independent indexer, not a market venue; its pool rows are discovery hints only. Every discovered NFT is re-queried against Koios Mainnet and the official payment credential before candidate classification.',
+      'SuperCardano pool rows are discovery hints only. Each exact Pool NFT unit is re-queried from Koios Mainnet before its current UTxO is recorded.',
+      'The Pool NFT policy is pinned to the official MuesliSwap deployment. Each candidate payment credential is compared with the official pool script hash decoded from both official pool addresses.',
+      'PoolDatum, LP token, reserve and fee validation are not yet implemented; raw inline datum JSON/CBOR is preserved first.',
+      'A SuperCardano pool row without a current Koios UTxO is not counted as a current pool. It may be stale, spent, or associated with an unrecognized script version.',
       'No price, peg, oracle, EEV or deployment qualification is produced.',
       'Read-only public Koios queries only; no wallet, signing, transaction submission or chain write.',
     ],
@@ -287,7 +300,7 @@ async function main() {
   await mkdir(dirname(outPath), { recursive: true })
   await writeFile(outPath, JSON.stringify(evidence, null, 2) + '\n', 'utf8')
   console.log(JSON.stringify({
-    status: 'READ_ONLY_MUESLISWAP_USDM_UTXO_ACQUISITION_COMPLETE',
+    status: discoveryStatus,
     output: outPath,
     summary: evidence.summary,
     completedAt: evidence.completedAt,
