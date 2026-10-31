@@ -236,7 +236,11 @@ async function main() {
     ],
   }
   await mkdir(dirname(outPath), { recursive: true })
-  await writeFile(outPath, JSON.stringify(evidence, null, 2) + '\n', 'utf8')
+  // Plutus datum integers are retained as BigInt during validation; serialize
+  // them as decimal strings so the raw evidence artifact is JSON-safe.
+  const serialized = JSON.stringify(evidence, (_key, value) =>
+    typeof value === 'bigint' ? value.toString() : value, 2)
+  await writeFile(outPath, serialized + '\n', 'utf8')
   console.log(JSON.stringify({ status: evidence.status, output: outPath, summary: evidence.summary, error, completedAt: evidence.completedAt }, null, 2))
 }
 
