@@ -6612,3 +6612,11 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Added `scripts/observeWingRidersV2UsdmReadOnly.mjs` at `5f8110c3bb3b94d5cd700c1a9ceda732b81ab8c8` and follow-up policy-match recording fix at `3e8ad08070bc0e0c5039b36aec236b914431c543`. Observer derives official policy from factory UTxO, queries exact share-token UTxOs, checks `L`, derives share token name from datum, checks pool payment credential by type, validates datum pair and compares active reserves to SuperCardano.
 - Added workflow job `read-only-wingriders-v2-observation` at `0d1d3c3738221d8f0349914fe95e7aacf32c67ca`; first run pending.
 - No transaction, signing, wallet, or chain write. No USD price or oracle qualification.
+
+
+## 10.53 Agent A — SaturnSwap CLOB venue discovery (2026-10-31)
+
+- Official `Flux-Point-Studios/saturnswap-filler/SPEC.md` confirms SaturnSwap is an eUTxO CLOB, not an AMM; 1% V2, 4% legacy V2 and 1% V3 deployments are pinned by script hash/address.
+- Read-only orderbook scan run 41223310574: 1% V2 address 3 UTxOs; 1% V3 address 2 UTxOs; all 5 decoded and none were direct USDM/ADA orders (they were SARA/ADA and FRENCHIE/ADA). No best bid/ask. 4% legacy address timed out in Koios; coverage partial, do not claim full book empty.
+- Artifact ID `13050900935`, ZIP SHA-256 `32b82d1047d601ba6c42ee428e9de5f4b5de373b05292b0ad4c22daadfc3736d`.
+- SaturnSwap is a separate venue and orderbook structure, but currently provides no direct USDM/ADA quote in the successfully scanned books. Retry legacy address or use a second indexer. No order operations or chain writes.
