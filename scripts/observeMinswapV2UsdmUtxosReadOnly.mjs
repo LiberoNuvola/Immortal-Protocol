@@ -95,7 +95,24 @@ export function plutusInt(value, label) {
   return BigInt(raw)
 }
 
-export function decodeV2PoolDatum(value) {
+export function plutusBool(value, label) {
+  if (!value || !Array.isArray(value.fields) || value.fields.length !== 0) {
+    throw new Error('PLUTUS_BOOL_SHAPE_INVALID:' + label)
+  }
+  if (value.constructor === 0) return false
+  if (value.constructor === 1) return true
+  throw new Error('PLUTUS_BOOL_CONSTRUCTOR_INVALID:' + label)
+}
+
+function plutusOptionInt(value, label) {
+  if (value?.constructor === 1 && Array.isArray(value.fields) && value.fields.length === 0) return null
+  if (value?.constructor === 0 && Array.isArray(value.fields) && value.fields.length === 1) {
+    return plutusInt(value.fields[0], label)
+  }
+  throw new Error('PLUTUS_OPTION_INT_SHAPE_INVALID:' + label)
+}
+
+function decodeV2PoolDatum(value) {
   const root = plutusConstr(value, 'PoolDatum')
   if (root.constructor !== 0 || root.fields.length !== 10) {
     throw new Error('MIN_SWAP_V2_POOL_DATUM_SHAPE_UNSUPPORTED')
@@ -116,6 +133,10 @@ export function decodeV2PoolDatum(value) {
     totalLiquidity: plutusInt(root.fields[3], 'totalLiquidity'),
     reserveA: plutusInt(root.fields[4], 'reserveA'),
     reserveB: plutusInt(root.fields[5], 'reserveB'),
+    baseFeeANumerator: plutusInt(root.fields[6], 'baseFeeANumerator'),
+    baseFeeBNumerator: plutusInt(root.fields[7], 'baseFeeBNumerator'),
+    feeSharingNumerator: plutusOptionInt(root.fields[8], 'feeSharingNumerator'),
+    allowDynamicFee: plutusBool(root.fields[9], 'allowDynamicFee'),
   }
 }
 
