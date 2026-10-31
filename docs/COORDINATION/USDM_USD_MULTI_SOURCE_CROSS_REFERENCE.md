@@ -177,3 +177,17 @@ Pyth's public Hermes feed directory can be queried without authentication and id
 Charli3 documents a mainnet ADA/USD oracle feed at address `addr1wyvxns52tsgz8ggvrh4np5gjyfk0g5fshqq2ytvu9t7pe8qp3adw6`, feed NFT policy `08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e`, token name `4f7261636c6546656564`. Its published network configuration uses five contributing nodes, a 60% update threshold (3/5), six-hour freshness and six-hour generation cadence, with a 15% deviation threshold and two required signatories. This is a real on-chain oracle feed, but the freshness cadence and source composition must be inspected before using it as a current reference. A separate read-only UTxO observer is still required.
 
 Source references: [Orcfax CER feed documentation](https://github.com/orcfax/docs/blob/main/docs/developer-manual/consume.md), [Orcfax mainnet feed registry](https://raw.githubusercontent.com/orcfax/cer-feeds/main/feeds/mainnet/cer-feeds.json), [Pyth Hermes feed list](https://docs.pyth.network/api-reference/hermes/price-feeds), [Pyth latest updates](https://docs.pyth.network/api-reference/hermes/latest-price-updates), [Charli3 mainnet feeds](https://docs.charli3.io/oracles/resources/networks/mainnet).
+
+
+### Float cross-indexer reconciliation result
+
+Same-run Float/Koios/Minswap API reconciliation completed successfully in Actions run [41239467040](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239467040):
+- Float exact-USDM market census: 58 markets / 12 venue families;
+- Float direct ADA/USDM: 18 rows (12 not marked stale, 6 stale);
+- Float Minswap V2 pool rows: 14;
+- Koios Minswap V2 exact-USDM UTxOs: 31;
+- Float-to-Koios Minswap V2 LP-key + unordered pair matches: **14/14**;
+- Float-only vs Koios: 0; Koios-only vs Float: **17**;
+- Float pair mismatches: 0; Minswap API pair mismatches: 0; duplicate Float keys: 0; on-chain unqualified: 0.
+
+Reconciliation artifact ID 13056244341, ZIP SHA-256 b00032a14423db2aa4824506dfa13790f4f8048409ab8ac9056f11401d836870. The 17 Koios-only rows are a **Float coverage gap**, not missing on-chain pools: the same-run Minswap API and Koios reconciliation still agree on 31/31. Float confirms all 14 rows it does expose, but its Minswap V2 list is not exhaustive. This further demonstrates why multiple indexers are useful and why an indexer's omission must never be treated as evidence of no pool.
