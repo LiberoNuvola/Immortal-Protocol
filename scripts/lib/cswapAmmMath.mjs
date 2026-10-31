@@ -63,7 +63,7 @@ export function deriveCswapProvisionalSpot(candidate) {
     minPoolAdaRemovedRaw: CSWAP_MIN_POOL_ADA_LOVELACE.toString(),
     feeNumeratorRaw: feeBps.toString(),
     feeDenominatorRaw: CSWAP_FEE_DENOMINATOR.toString(),
-    feePercent: formatScaled(feeBps * SCALE / 100n, 2),
+    feePercent: formatScaled(feeBps, 2),
     platformFeeBpsFromThirdPartySdk: CSWAP_PLATFORM_FEE_BPS.toString(),
     batcherFeeLovelaceFromThirdPartySdk: CSWAP_BATCHER_FEE_LOVELACE.toString(),
     priceNumeratorRaw: reserveAda.toString(),
