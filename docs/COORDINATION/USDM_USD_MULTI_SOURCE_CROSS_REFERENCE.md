@@ -135,3 +135,21 @@ Source boundaries:
 - Float is operated in the Sundae Labs ecosystem; its data is not independent of the underlying Cardano ledger and it is not a second DEX venue.
 - Koios, SuperCardano and Float are distinct indexer observations, but all describe the same on-chain state. Agreement is corroboration of decoding/coverage, not market independence.
 - Do not merge Float's price, deviation, liquidity USD or ADA/USD-derived fields into the primary cross-rate until reserve semantics, venue curve math, freshness and the independent ADA/USD reference are validated.
+
+
+## Latest refreshed cross-reference — Actions run 41239270654
+
+The count-label correction was rerun successfully in [Actions run 41239270654](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239270654). The corrected summary now explicitly reports **6 direct DEX pools = 4 constant-product + 2 concentrated-liquidity**, across five DEX venues, with three successful ADA/USD references and 18 primary cross-rates.
+
+Latest snapshot:
+
+- ADA/USDM marginal spot range: **4.99999919–5.27796218**.
+- Indicative USDM/USD cross-rate range: **0.96181734–1.01547992** across the 18 DEX × CEX combinations.
+- CEX mid references: Coinbase Exchange **0.19240000**, Kraken **0.19236350**, Bitstamp **0.19240000** USD/ADA.
+- Pool observation age range: **130–159,026 seconds** (~44.2 hours). The MuesliSwap and one Danogo observation are old relative to the CEX snapshot; no age threshold is applied and no averaging is performed.
+- Danogo remains 12/12 structurally matched; two direct ADA/USDM CLMM pools included, three direct ADA/USDM pools excluded for unresolved ADA rewards, and seven non-direct pairs excluded.
+- CSWAP remains one provisional SDK-only pool; its three separate cross-rates are **1.00495658–1.00514727 USD/USDM**, not included in the primary 18.
+
+Artifact ID `13056533033`, ZIP SHA-256 `5b7c8895d8cc6131d0e27374c96b003c239dae5dfb604718a4f836b9f4425009`; extracted JSON SHA-256 `8bad2dac7b34cd4eada0bde7ebb4c12bf78b14468ede818e6371cd3e4603cc7f`.
+
+The cross-rate spread is a diagnostic dispersion, not a peg band. Pool source times are materially older than the CEX observations for some venues; the output must remain an unsmoothed observation matrix until freshness, depth, venue-independence and risk policies are explicitly governed.
