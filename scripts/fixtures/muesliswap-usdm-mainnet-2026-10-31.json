@@ -1,0 +1,258 @@
+{
+  "schema": "immortal-muesliswap-usdm-mainnet-datum-fixture-v1",
+  "provenance": {
+    "provider": "Koios Mainnet",
+    "runId": 41231991708,
+    "artifactId": 13054180754,
+    "artifactZipSha256": "5e9d2a147a6efcf1f84b036737b66282f0293de523a252a8411f7dcd50135736",
+    "extractedJsonSha256": "ab886c3222701046e98af34f00fc6b0af4caecc38757c9a1b8a32a542eb7610f",
+    "capturedAt": "2026-10-31T18:59:13.145Z",
+    "poolNftPolicyId": "909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f",
+    "poolPaymentCredential": "7045237d1eb0199c84dffe58fe6df7dc5d255eb4d418e4146d5721f8",
+    "lpPolicyId": "af3d70acf4bd5b3abb319a7d75c89fb3e56eafcdd46b2e9b57a2557f",
+    "factoryPolicyId": "de9b756719341e79785aa13c164e7fe68c189ed04d61c9876b2fe53f",
+    "factoryTokenNameHex": "4d7565736c69537761705f414d4d"
+  },
+  "exactAsset": {
+    "policyId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+    "assetNameHex": "0014df105553444d",
+    "decimals": 6
+  },
+  "candidates": [
+    {
+      "utxoRef": "04f0130e2e907a48d1f8752e7a5e90ebeda91183808ab0ed3a7d50a53ed625c1#3",
+      "requestedPoolNftUnit": "909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093fd3c94acf86c65c2942a2ccd5a8c9fcecfb502a5b6c1ae8ad3ad9c2bd659e44ea",
+      "paymentCredential": "7045237d1eb0199c84dffe58fe6df7dc5d255eb4d418e4146d5721f8",
+      "paymentCredentialMatchesOfficial": true,
+      "poolNftQuantityRaw": "1",
+      "valueLovelaceRaw": "1605647750",
+      "datumHash": "3afb18f4450d38d2bfa19f9e46d8141ca08cdb59d80ce80dafbcb1c5c442b345",
+      "resolvedDatumBytes": "d8799fd8799f4040ffd8799f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dff1a28de0aec181eff",
+      "resolvedDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "bytes": ""
+              },
+              {
+                "bytes": ""
+              }
+            ]
+          },
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+              },
+              {
+                "bytes": "0014df105553444d"
+              }
+            ]
+          },
+          {
+            "int": "685640428"
+          },
+          {
+            "int": "30"
+          }
+        ]
+      },
+      "assets": [
+        {
+          "policyId": "909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f",
+          "assetNameHex": "d3c94acf86c65c2942a2ccd5a8c9fcecfb502a5b6c1ae8ad3ad9c2bd659e44ea",
+          "quantityRaw": "1"
+        },
+        {
+          "policyId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "assetNameHex": "0014df105553444d",
+          "quantityRaw": "304217365"
+        },
+        {
+          "policyId": "de9b756719341e79785aa13c164e7fe68c189ed04d61c9876b2fe53f",
+          "assetNameHex": "4d7565736c69537761705f414d4d",
+          "quantityRaw": "1"
+        }
+      ],
+      "blockHeight": 14133391,
+      "blockTime": 1793319771,
+      "exactUsdmQuantityRaw": "304217365"
+    },
+    {
+      "utxoRef": "2e23605a49dd35803eea078ebded0f3a592d7b0cdb17016f65d50f2e99f2253f#0",
+      "requestedPoolNftUnit": "909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f7e7b3375aba15f7d63d3a55ff93b992020fee9bb951b52cc58aa5b12b14e5772",
+      "paymentCredential": "4136eeede1a49030451ee3a09d900959bafeafd9b536e59345ac780f",
+      "paymentCredentialMatchesOfficial": false,
+      "poolNftQuantityRaw": "1",
+      "valueLovelaceRaw": "2096510",
+      "datumHash": "84ba3b5e2df7af71a6f6c04b116444cc38022359f1f645661da5a623394d77a8",
+      "resolvedDatumBytes": "d8799fd8799f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dffd8799f581cfe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae4564455534441ff1a013064ce181ed8799f1213ffd8799f1514ffd8799f0d1885ff05ff",
+      "resolvedDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+              },
+              {
+                "bytes": "0014df105553444d"
+              }
+            ]
+          },
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "bytes": "fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456"
+              },
+              {
+                "bytes": "55534441"
+              }
+            ]
+          },
+          {
+            "int": "19948750"
+          },
+          {
+            "int": "30"
+          },
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "int": "18"
+              },
+              {
+                "int": "19"
+              }
+            ]
+          },
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "int": "21"
+              },
+              {
+                "int": "20"
+              }
+            ]
+          },
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "int": "13"
+              },
+              {
+                "int": "133"
+              }
+            ]
+          },
+          {
+            "int": "5"
+          }
+        ]
+      },
+      "assets": [
+        {
+          "policyId": "909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f",
+          "assetNameHex": "7e7b3375aba15f7d63d3a55ff93b992020fee9bb951b52cc58aa5b12b14e5772",
+          "quantityRaw": "1"
+        },
+        {
+          "policyId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "assetNameHex": "0014df105553444d",
+          "quantityRaw": "1000000"
+        },
+        {
+          "policyId": "f33bf12af1c23d660e29ebb0d3206b0bfc56ffd87ffafe2d36c42a45",
+          "assetNameHex": "4d7565736c69537761705f634c50",
+          "quantityRaw": "1"
+        },
+        {
+          "policyId": "fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456",
+          "assetNameHex": "55534441",
+          "quantityRaw": "1000000"
+        }
+      ],
+      "blockHeight": 11589894,
+      "blockTime": 1741709017,
+      "exactUsdmQuantityRaw": "1000000"
+    },
+    {
+      "utxoRef": "b580187dfc01a1b4e09a12ecc585712bcc11468cec127247d2040c92447bbebf#1",
+      "requestedPoolNftUnit": "909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093fa9140bcc45214aa332147582673f0706bded0486f0aa85e7cdac7a8cbae377fe",
+      "paymentCredential": "7045237d1eb0199c84dffe58fe6df7dc5d255eb4d418e4146d5721f8",
+      "paymentCredentialMatchesOfficial": true,
+      "poolNftQuantityRaw": "1",
+      "valueLovelaceRaw": "2096510",
+      "datumHash": "e0f2bc2c15500537953f987e58bb8db1201f1ffa52c217f963b5cf70e090c86e",
+      "resolvedDatumBytes": "d8799fd8799f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dffd8799f581cfe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae4564455534441ff1a00dd86a5181eff",
+      "resolvedDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+              },
+              {
+                "bytes": "0014df105553444d"
+              }
+            ]
+          },
+          {
+            "constructor": 0,
+            "fields": [
+              {
+                "bytes": "fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456"
+              },
+              {
+                "bytes": "55534441"
+              }
+            ]
+          },
+          {
+            "int": "14517925"
+          },
+          {
+            "int": "30"
+          }
+        ]
+      },
+      "assets": [
+        {
+          "policyId": "909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f",
+          "assetNameHex": "a9140bcc45214aa332147582673f0706bded0486f0aa85e7cdac7a8cbae377fe",
+          "quantityRaw": "1"
+        },
+        {
+          "policyId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "assetNameHex": "0014df105553444d",
+          "quantityRaw": "14517925"
+        },
+        {
+          "policyId": "de9b756719341e79785aa13c164e7fe68c189ed04d61c9876b2fe53f",
+          "assetNameHex": "4d7565736c69537761705f414d4d",
+          "quantityRaw": "1"
+        },
+        {
+          "policyId": "fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456",
+          "assetNameHex": "55534441",
+          "quantityRaw": "14517925"
+        }
+      ],
+      "blockHeight": 14001754,
+      "blockTime": 1790653619,
+      "exactUsdmQuantityRaw": "14517925"
+    }
+  ]
+}
