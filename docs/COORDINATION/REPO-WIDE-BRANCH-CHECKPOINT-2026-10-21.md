@@ -6503,3 +6503,12 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Preserved the first real Koios datum, raw CBOR, UTxO Value/assets, datum hash, tx/block context and response provenance in `scripts/fixtures/minswap-v2-usdm-mainnet-2026-10-31.json` (commit `5a0d20505a51a84d116dfcb68f9df09d5da509aa`). Added an end-to-end real-fixture assertion to the Vitest suite (commit `6ce1eaa89156b75d9a7d857643c5d56c94e6bbe8`).
 - The corrected real-fixture test has not yet run. The latest push should trigger the focused CI and read-only observer; inspect both before classifying any candidates. 31 is an acquisition count, not a count of valid pools.
 - Scope remains Agent A only. No V3, Reveal, Materios, Kernel, Oracle consumer, EEV, R1/Kc, wallet, deployment, transaction, or chain-write changes.
+
+
+## 10.43 Agent A — Minswap V2 retained fee accounting correction (2026-10-31)
+
+- Review of official `minswap/minswap-dex-v2/lib/amm_dex_v2/order_validation.ak` shows datum reserves and Value reserves are intentionally distinct. In successful swaps, datum reserve increments by `swap_amount - earned_fee_in`, while Value reserve increments by full `swap_amount`; the difference retains earned fees in the UTxO Value.
+- The previous strict equality check was incorrect. Observer updated at `d51859c506d7384754b2f17e9f2bb237bf530548` to require Value reserve >= datum reserve, report the surplus separately, and fail closed only when Value is below the datum reserve. ADA-pair lovelace now uses the analogous lower bound; non-ADA pairs still require exact min pool ADA.
+- Tests expanded at `b7422cfa3b34a6a9e50263db249fd14bf95fff5e` to cover retained fee surplus, under-reserved Value and ADA-pair fee surplus. The real captured Mainnet datum fixture remains included.
+- The earlier 7 MATCH / 24 UNQUALIFIED classification from run 41203746686 used the superseded exact-equality rule and is withdrawn. Await run 41204050705 (latest test suite) and the corresponding read-only Mainnet observer result before stating current counts.
+- No economic kernel, DApp, V3, Reveal, Materios, Oracle consumer, EEV or R1/Kc semantics were changed.
