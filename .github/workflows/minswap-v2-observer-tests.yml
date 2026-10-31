@@ -8,6 +8,7 @@ on:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
       - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/collectFloatUsdmReadOnly.mjs"
+      - "scripts/reconcileFloatUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
       - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs"
@@ -64,6 +65,7 @@ jobs:
           node --check scripts/observeMinswapV2UsdmUtxosReadOnly.mjs
           node --check scripts/collectMinswapUsdmReadOnly.mjs
           node --check scripts/collectFloatUsdmReadOnly.mjs
+          node --check scripts/reconcileFloatUsdmReadOnly.mjs
           node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
           node --check scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs
           node --check scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs
@@ -555,4 +557,44 @@ jobs:
         with:
           name: float-usdm-readonly-${{ github.run_id }}
           path: audit/oracles/float-usdm-readonly.json
+          if-no-files-found: warn
+
+  reconcile-float-indexer:
+    if: ${{ github.event_name == 'push' }}
+    needs:
+      - read-only-mainnet-observation
+      - read-only-minswap-api-observation
+      - read-only-float-indexer-observation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download Float exact-USDM markets
+        uses: actions/download-artifact@v4
+        with:
+          name: float-usdm-readonly-${{ github.run_id }}
+          path: audit/float
+      - name: Download Koios Mainnet Minswap V2 UTxOs
+        uses: actions/download-artifact@v4
+        with:
+          name: minswap-v2-usdm-mainnet-readonly-${{ github.run_id }}
+          path: audit/onchain
+      - name: Download Minswap API pool census
+        uses: actions/download-artifact@v4
+        with:
+          name: minswap-usdm-api-readonly-${{ github.run_id }}
+          path: audit/api
+      - name: Reconcile Float market coverage and Minswap V2 identity
+        run: node scripts/reconcileFloatUsdmReadOnly.mjs --float audit/float/float-usdm-readonly.json --onchain audit/onchain/minswap-v2-usdm-utxos-readonly.json --api audit/api/minswap-usdm-readonly.json --out audit/oracles/float-usdm-cross-indexer-reconciliation.json
+      - name: Upload Float cross-indexer reconciliation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: float-usdm-cross-indexer-reconciliation-${{ github.run_id }}
+          path: audit/oracles/float-usdm-cross-indexer-reconciliation.json
           if-no-files-found: warn
