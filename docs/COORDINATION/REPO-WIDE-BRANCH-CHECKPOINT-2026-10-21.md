@@ -7068,3 +7068,13 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - DIA advertises its free REST API as no-key, aggregating direct CEX/DEX trade data across 100+ venues; free API is for testing/evaluation, not production. Classified separately as ORACLE_REFERENCE_API_TEST_ONLY, not a separate venue or production on-chain oracle.
 - Collector now contains 7 CEX, 3 market aggregators and 1 DIA test-only reference. Live CI rerun pending.
 - No DIA value is admitted to a production cross-rate or USDM peg decision.
+
+
+## 10.82 Agent A — Float reserve-aware cross-indexer reconciliation green (2026-10-31)
+
+- Corrected reserve-aware reconciler completed in run 41240680438. The Float, Koios and Minswap API artifacts all downloaded and reconciled successfully.
+- Float: 58 exact-USDM markets across 12 venue families; 18 direct ADA/USDM rows (12 not stale, 6 stale).
+- Float Minswap V2: 14 pools. Koios: 31; Minswap API: 31. Float's 14/14 LP keys and unordered pairs match Koios; Float reserve values exactly match the 14 decoded PoolDatum reserve pairs (14/14, zero mismatches).
+- Minswap API pool records found for all 14 Float rows (14/14), with 14/14 pair matches. Zero Float-only, zero pair mismatches, zero duplicate keys, zero on-chain unqualified. Koios-only vs Float: 17, classified as Float coverage gap.
+- Artifact ID 13056909111, ZIP digest 037ff05c0f3a7e42486843272a008cbb08510248c94ae37df1ebb8365ca31bbf. Run URL https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41240680438.
+- This validates the 14 Float-listed pools' identity/pair/reserve decoding, not full Float coverage, USD conversion, peg, or executable liquidity. The run's unrelated SundaeSwap V3 observation job failed; Agent A's Float/Koios/Minswap/Orcfax/Charli3/CEX jobs completed as separately recorded.
