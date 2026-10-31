@@ -360,3 +360,18 @@ Danogo artifact ID `13050861231`, ZIP SHA-256 `7f7cafed23f1e7dfa738fbe2eea2bfd5e
 **Reward limitation:** 3 ADA-paired pools have `lastWithdrawEpoch` behind the observed current epoch. The official SDK may add staking rewards to the ADA-side active reserve when a staking reference UTxO is supplied. This observer has not resolved that separate staking UTxO, so `rewardAmount=0` is explicitly assumed and the 3 pools are flagged `rewardEpochBehind`. This is a structural reserve match under the published no-reward input, not an executable CLMM quote. The other 9 pools have no such epoch-behind flag.
 
 **Freshness:** among the 12 SuperCardano Danogo pool records, 5 were updated within 24h, 2 within 1–7d, and 5 are older than 7d. Current UTxO existence does not itself prove meaningful trading liquidity; do not count old pool records as live market depth.
+
+
+## 24. WingRiders V2 official identity and share-token derivation gate
+
+The official open-source repository `WingRiders/dex-v2-contracts` provides the deployment identity path and pool datum semantics:
+
+- `scripts/ExportDEX.hs` pins Mainnet `dexUniqueRef = utxoForFactoryToken` at `914a0f1e615f41b3f462855f6052a6b37d1d291aab53918ad4c9d5f4245204ce#1`.
+- `DEX.Constants` defines factory token name `F` (hex `46`) and pool validity token name `L` (hex `4c`). The pool validity minting policy and share tokens share the same `dexSymbol`.
+- `DEX.Pool.Util.pshareTokenName` defines a unique share token name as a Blake2b-256 over the concatenation of five Blake2b-256 digests: pool type id, scale A, scale B, asset A class and asset B class. The observer re-derives this name from the live PoolDatum using the official constant-product (`0`, scales 1/1) or stableswap (`1`, datum scales) variant.
+- `Pool.hs` validates exactly one `L` validity token in the pool UTxO and requires the unique share token under the same policy.
+- `Pool.hs` / `Pool.Util.hs` define active reserves as raw Value less treasuryA/B, projectTreasuryA/B and reserveTreasuryA/B, with the 3 ADA pool oil included in asset A when asset A is ADA, or as separate minimum ADA otherwise.
+
+Mainnet payment script hashes were independently extracted from Cardanoscan addresses explicitly labelled as WingRiders V2 pool contracts: Constant Product `af97793b8702f381976cec83e303e9ce17781458c73c4bb16fe02b83` ([Cardanoscan address](https://cardanoscan.io/address/addr1zxhew7fmsup08qvhdnkg8ccra88pw7q5trrncja3dlszhqlm3e807762pklheldndtjhrk0qxzzfh9vhc9kkc706xglsv8s5nq)); Stableswap `946ae228430f2fc64aa8b3acb910ee27e9b3e47aa8f925fac27834a1` ([Cardanoscan address](https://cardanoscan.io/address/addr1wx2x4c3ggv8jl3j24ze6ewgsacn7nvly0250jf06cfurfggd7zqtl)). The read-only observer checks the live payment credential against the datum's pool type.
+
+Added `scripts/observeWingRidersV2UsdmReadOnly.mjs`: it derives the policy id from the pinned factory-token UTxO, discovers exact USDM WingRiders V2 pool share tokens from the SuperCardano same-run artifact, queries those share-token UTxOs through Koios, checks the `L` validity token, re-derives each unique share token name, validates the expected pool script credential, decodes the 21-field PoolDatum, and compares active reserves with SuperCardano. This is a structural identity/reserve check only; it does not generate an executable swap quote or USD price. First run pending.
