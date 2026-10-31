@@ -105,7 +105,7 @@ async function collectPools(protocol) {
   for (let page = 0; page < MAX_PAGES_PER_PROTOCOL; page += 1) {
     const body = {
       term: 'USDM',
-      only_verified: true,
+      only_verified: false,
       limit: LIMIT,
       sort_field: 'liquidity',
       sort_direction: 'desc',
