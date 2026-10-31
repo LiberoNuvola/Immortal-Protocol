@@ -6451,3 +6451,14 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - The spec now records explicit Koios paging/fail-closed behavior, V2 payment-credential verification, and the exact deployed Pool authentication NFT identity from official `deployed/mainnet/script.json`.
 - Remaining critical gate is still contract-bound datum decoding plus pool pair / LP identity / reserve-vs-Value validation, followed by live read-only execution and evidence capture. No decoder or live execution is claimed.
 - Option B remains UNQUALIFIED; no protocol/economic/Oracle/EEV/R1-Kc/Kernel/V3/Reveal/Materios changes or ledger actions.
+
+
+## 10.38 — Agent A: Minswap V2 PoolDatum decoding and reserve checks (2026-10-31)
+
+- Added a strict decoder for the official 10-field V2 `PoolDatum` JSON constructor and checks for the configured batching stake key credential, canonical asset ordering, exact USDM pair membership, Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed Value composition, and reserve-vs-Value consistency.
+- The reserve check uses the official V2 `min_pool_ada = 4,500,000` lovelace adjustment when ADA is one of the pair assets.
+- Relevant commits: `ff427eb` (datum decoder), `e5a08bb` (exact Value composition/reserve checks), `d756d2c` (integer parser correction), `7ff55f5` (batching stake credential validation).
+- Official source basis: V2 `types.ak`, `utils.ak`, `pool_validation.ak`, `pool_validator.ak`, and deployed Mainnet params/script files.
+- **Not runtime-verified:** no Node fixture/test run and no live Koios query in this session. Koios `inline_datum.value` representation must be checked against captured fixtures; unsupported/missing data stays unqualified. No pool count/reserve/API-chain match is claimed.
+- Issue #37 update: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6542398466
+- Option B remains UNQUALIFIED. No wallet, signature, transaction, refresh, deployment, chain write, Oracle consumer, EEV/R1-Kc, Kernel, V3, Reveal or Materios change.
