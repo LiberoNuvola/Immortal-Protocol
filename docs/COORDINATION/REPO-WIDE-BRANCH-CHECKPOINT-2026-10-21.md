@@ -5836,3 +5836,35 @@ Commit `1683b38d0ac137df81192f8910d18ee044bd513c` adds exact-target raw storage 
 Exact-head workflow [#41173729276](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173729276) is running. Its purpose is to establish whether the runtime API agrees with direct storage and whether a PendingChange/Stalled value exists at the target. Even a clean storage match does not authenticate the active GRANDPA voter set; it only establishes what the target state commits.
 
 **B3-A remains OPEN.** The absence of FRNK logs in the 256-block window plus the 91-set-ID mismatch points to a historical voter/runtime divergence or a mismatched justification attachment, but neither is proven yet. Next work depends on direct storage and pending-change evidence, then historical header/digest replay if needed. No external request, node authority action, protocol semantic change, wallet signature or on-chain transaction occurred.
+
+
+## Agent C addendum — Exact GRANDPA state/storage consistency at block 2509824 (2026-10-31)
+
+Exact-head workflow [#41173729276](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173729276), commit `84ed1ebebfb4f5d4293966c7a4d5fb32a7591018`, completed with the GRANDPA witness verification failing, while the local snapshot probe succeeded. Artifact [materios-snapshot-state-probe #13031998285](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173729276/artifacts/13031998285) provides direct storage evidence at exact target block 2509824.
+
+### Exact target storage findings
+
+- `GrandpaApi_current_set_id`: `0x5211000000000000` (SCALE little-endian u64 = **4434**).
+- Direct `Grandpa.CurrentSetId` storage at the target hash returns the same hex value.
+- `GrandpaApi_grandpa_authorities` and direct `Grandpa.Authorities` storage return the same encoded five-authority list.
+- `Grandpa.PendingChange`: absent (`null`).
+- `Grandpa.Stalled`: absent (`null`).
+- `PalletSession.CurrentIndex`: `0x52110000` (SCALE little-endian u32 = **4434**).
+- Target runtime is `specVersion=242`; source commit `ea86448d4aed4c1fc99d4e355e09ac280a3e4bbe` is the public Materios runtime source declaring spec 242.
+- The target header and preceding 255 headers contain **zero FRNK consensus digest logs**.
+
+The artifact's two booleans `current_set_id_api_matches_storage` and `authorities_api_matches_storage` are false only because the shell helper serializes JSON-RPC string results as JSON-quoted strings and the jq comparison compares quoted JSON text with raw hex. The raw values visibly match exactly. This is an evidence-formatting bug, not a state mismatch. A follow-up patch will decode the JSON string before comparing and will record the decoded storage values.
+
+### Interpretation
+
+At the target block the runtime state is internally consistent: current set ID, authorities and session index all agree; no pending authority change or stalled marker exists. Combined with no FRNK digest in the retained 256-header window, this does **not** support a one-block pending-transition explanation for the 4434/4343 discrepancy.
+
+The raw witness signatures still match set ID 4343 only as an untrusted diagnostic, whereas exact target runtime/storage state commits to 4434. Therefore the acquired FRNK payload cannot currently be accepted as a valid finality proof for this target under the committed runtime state. A stale/misbound justification attachment or a deeper runtime/voter consensus divergence remains possible; neither is yet proven.
+
+### Next bounded actions
+
+1. Correct the probe's JSON string unwrapping so API/storage equality booleans are true when raw values match.
+2. Query the same exact candidate block over both public WebSocket routes (`/preprod-rpc` and `/rpc`) and compare header hash, raw FRNK payload hash, and justification bytes. This tests whether the discrepancy is route-specific.
+3. Test whether the snapshot retains historical block headers well before the 256-block state window. If so, use the existing headers to reconstruct the GRANDPA FRNK scheduled/forced-change history from the genesis authority set; if not, keep B3-A OPEN and identify an independent historical-header source.
+
+**B3-A remains OPEN.** No 4343 promotion, no authority-set substitution, no external request, no on-chain transaction and no changes to V3, Reveal, economic rules or authority-selector semantics.
