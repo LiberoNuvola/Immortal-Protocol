@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   inspect:
-    name: Exact runtime set state around ${ matrix.target_block }
+    name: Exact runtime set state around ${{ matrix.target_block }
     runs-on: ubuntu-latest
     timeout-minutes: 5
     strategy:
@@ -30,8 +30,8 @@ jobs:
 
       - name: Read exact target and parent GRANDPA runtime/storage state
         env:
-          TARGET_BLOCK: ${ matrix.target_block }
-          OUT_PATH: ${ runner.temp }/MateriosGrandpaStateWindow-${ matrix.target_block }.json
+          TARGET_BLOCK: ${{ matrix.target_block }
+          OUT_PATH: ${{ runner.temp }/MateriosGrandpaStateWindow-${{ matrix.target_block }.json
           RPC_URL: https://materios.fluxpointstudios.com/rpc
         run: |
           node --input-type=module <<'NODE'
@@ -106,7 +106,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: materios-grandpa-state-window-${ matrix.target_block }-${ github.run_id }-${ github.run_attempt }
-          path: ${ runner.temp }/MateriosGrandpaStateWindow-${ matrix.target_block }.json
+          name: materios-grandpa-state-window-${{ matrix.target_block }-${{ github.run_id }-${{ github.run_attempt }
+          path: ${{ runner.temp }/MateriosGrandpaStateWindow-${{ matrix.target_block }.json
           if-no-files-found: warn
           retention-days: 30
