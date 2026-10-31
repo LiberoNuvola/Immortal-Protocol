@@ -68,7 +68,7 @@ async function main() {
       const d=c.datumValidation.datum
       const fp=pair(floatUnit(x.assets?.a),floatUnit(x.assets?.b))
       const cp=pair(datumUnit(d.assetA),datumUnit(d.assetB))
-      const lp=v.lpAsset
+      const lp=c.datumValidation.lpAsset
       const ap=apiV2.get(datumUnit(lp))
       const apair=ap?pair(apiAssetUnit(ap.assetA),apiAssetUnit(ap.assetB)):null
       const reserveMatch=compareFloatReservesToDatum(x,d)
