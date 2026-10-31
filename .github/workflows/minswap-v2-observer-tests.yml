@@ -7,6 +7,7 @@ on:
     paths:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
       - "scripts/collectMinswapUsdmReadOnly.mjs"
+      - "scripts/collectFloatUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
       - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs"
@@ -62,6 +63,7 @@ jobs:
         run: |
           node --check scripts/observeMinswapV2UsdmUtxosReadOnly.mjs
           node --check scripts/collectMinswapUsdmReadOnly.mjs
+          node --check scripts/collectFloatUsdmReadOnly.mjs
           node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
           node --check scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs
           node --check scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs
@@ -531,4 +533,26 @@ jobs:
         with:
           name: cswap-usdm-pool-readonly-${{ github.run_id }}
           path: audit/cswap/cswap-usdm-pool-readonly.json
+          if-no-files-found: warn
+
+  read-only-float-indexer-observation:
+    # Public confirmed-chain market data only; no wallet, signing, or transaction APIs.
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect exact-USDM Float market observation (read-only)
+        run: node scripts/collectFloatUsdmReadOnly.mjs --out audit/oracles/float-usdm-readonly.json
+      - name: Upload raw Float market evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: float-usdm-readonly-${{ github.run_id }}
+          path: audit/oracles/float-usdm-readonly.json
           if-no-files-found: warn
