@@ -50,6 +50,8 @@ type CmlTransactionLike = {
   body: () => {
     inputs: () => CmlInputListLike
   }
+  /** Exact serialization of this CML transaction, used only for in-flight integrity. */
+  to_bytes: () => Uint8Array
 }
 
 type CompletedLucidTransactionLike = {
@@ -228,9 +230,34 @@ async function assertAdmissionInputsAreClassified(
   return actualInputs
 }
 
+function readCompletedTransactionBytes(tx: unknown): Uint8Array {
+  if (!tx || typeof tx !== 'object') {
+    throw new Error('Economic submission requires a completed Lucid transaction')
+  }
+  const candidate = tx as CompletedLucidTransactionLike
+  let transaction: CmlTransactionLike | undefined
+  try {
+    transaction =
+      typeof candidate.toTransaction === 'function'
+        ? candidate.toTransaction()
+        : candidate.txComplete
+  } catch {
+    throw new Error('Unable to access completed Lucid transaction for integrity snapshot')
+  }
+  if (!transaction || typeof transaction.to_bytes !== 'function') {
+    throw new Error('Completed Lucid transaction does not expose exact CML bytes')
+  }
+  const bytes = transaction.to_bytes()
+  if (!(bytes instanceof Uint8Array)) {
+    throw new Error('Completed Lucid transaction returned malformed CML bytes')
+  }
+  return Uint8Array.from(bytes)
+}
+
 function assertCompletedInputReferencesUnchanged(
   tx: unknown,
   validatedReferences: readonly string[],
+  validatedTransactionBytes: Uint8Array,
 ): void {
   const currentReferences = readCompletedTransactionInputs(tx)
   if (
@@ -238,6 +265,17 @@ function assertCompletedInputReferencesUnchanged(
     currentReferences.some((reference, index) => reference !== validatedReferences[index])
   ) {
     throw new Error('Completed transaction spending inputs changed after economic admission validation')
+  }
+
+  // Compare the exact serialized CML transaction, not a canonicalized hash or
+  // an economic action fingerprint. This closes re-binding/mutation of other
+  // body fields during the asynchronous wallet UTxO classification.
+  const currentBytes = readCompletedTransactionBytes(tx)
+  if (
+    currentBytes.length !== validatedTransactionBytes.length ||
+    currentBytes.some((byte, index) => byte !== validatedTransactionBytes[index])
+  ) {
+    throw new Error('Completed transaction bytes changed after economic admission validation')
   }
 }
 
@@ -326,11 +364,19 @@ export function createCardanoExecutionAdapter(
       if (expectedActionClass === 'Issue') {
         assertAuthoritativeIssueAdmissionWitness(admission)
       }
+      // Capture exact CML transaction serialization before any asynchronous
+      // wallet classification. This is an integrity guard only; it is not an
+      // economic action fingerprint or a semantic authorization profile.
+      const validatedTransactionBytes = readCompletedTransactionBytes(tx)
       const validatedInputReferences =
         await assertAdmissionInputsAreClassified(tx, inputReferences, lucid)
-      // The wallet UTxO lookup above is asynchronous. Re-read the exact body
-      // inputs after that await and immediately before invoking the signing port.
-      assertCompletedInputReferencesUnchanged(tx, validatedInputReferences)
+      // The wallet UTxO lookup above is asynchronous. Re-read inputs and exact
+      // transaction bytes immediately before invoking the signing port.
+      assertCompletedInputReferencesUnchanged(
+        tx,
+        validatedInputReferences,
+        validatedTransactionBytes,
+      )
       return this.submitInfrastructure(tx)
     },
   }
