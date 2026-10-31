@@ -367,7 +367,6 @@ async function main() {
       provider: 'Koios',
       baseUrl: KOIOS,
       officialRepository: 'https://github.com/WingRiders/dex-v2-contracts',
-      officialFactoryTokenUtxo: FACTORY_TOKEN_UTXO,
       officialFactoryTokenNameHex: FACTORY_TOKEN_NAME_HEX,
       poolValidityTokenNameHex: POOL_VALIDITY_TOKEN_NAME_HEX,
       observedPolicyIdFromShareAndFactoryTokens: observedPolicyId,
@@ -408,7 +407,7 @@ async function main() {
     },
     pools: results,
     limitations: [
-      'The validity policy id is derived from the official WingRiders V2 factory-token reference UTxO pinned in the official source; each pool share-token name is re-derived from the official blake2b-256 formula and its actual PoolDatum.',
+      'The observed policy id is taken from the SuperCardano share-token unit and independently required to contain the current official factory token F and each pool validity token L; the official source pins the minting-policy seed reference UTxO. Each share-token name is re-derived from the official blake2b-256 formula and its actual PoolDatum.',
       'The mainnet pool payment script hashes are anchored by Cardanoscan pages explicitly labeled WingRiders V2 Constant Product Pool and Stableswap Pool; each observed UTxO payment credential must match its datum pool type.',
       'A MATCH confirms pool NFT/share token identity, validity token, pool script credential, pair identity and active reserve agreement with SuperCardano. It does not derive an executable swap quote or USD price.',
       'SuperCardano is an independent indexer, not a separate DEX venue or independent USD oracle.',
