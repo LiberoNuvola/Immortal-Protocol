@@ -6960,3 +6960,13 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Koios had 31 Minswap V2 pools; 17 were absent from Float's asset-market response. Classification: Float provider coverage gap, not missing on-chain pools. Minswap API/Koios remains 31/31.
 - Reconciliation artifact ID 13056244341, ZIP digest b00032a14423db2aa4824506dfa13790f4f8048409ab8ac9056f11401d836870. Run URL https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239467040.
 - Float is not exhaustive for Minswap V2 and is not a separate DEX venue or independent USD oracle. Its 18 direct ADA/USDM entries include six stale rows; none is promoted to a quote by this census.
+
+
+## 10.73 Agent A — Orcfax live feed decoded; both CER statements stale (2026-10-31)
+
+- First live observer run 41239730829 resolved FSP policy/token and FS script hash, scanned 111 FS-token UTxOs and decoded 111 statements. Five valid ADA/USD and five valid ADA/USDM statements were found; all passed token, payment credential, datum and feed-id validation.
+- Latest ADA/USD statement timestamp: 2026-06-18T21:02:22.882Z. Latest ADA/USDM: 2026-06-18T21:20:32.150Z. At capture 2026-10-31T20:37Z both were ~135 days old versus source-defined 3600-second interval. Both are stale and excluded from current price/cross-rate evidence.
+- The initial CI nonzero was due to a logic bug that treated five historical unspent FS statement UTxOs as duplicates and required exactly one row. They are five distinct historical statements, not duplicates.
+- Observer corrected at commits 84517c60e463b313c12b15cda07c72c43fb50ef6 and 4d282646448a276d498c6224bf5d872bfbaa8bab: latest age compared with feed interval, older statements counted separately, persisted status READ_ONLY_ORCFAX_CER_FEEDS_STALE; stale data is a successful acquisition with explicit stale classification, not a CI transport failure.
+- Original artifact ID 13056972087, ZIP digest 7586d6f1f9568d9b591d05e587ed48e3b8dd9f85688e96d614c8bd191fe58823; extracted JSON digest 28c96a745b4f0b8e1de769a32ea7ed7839dc92155345b2f2a479dad8682772f1.
+- Rerun pending. No price/peg/EEV/oracle qualification is asserted from these stale statements.
