@@ -291,3 +291,14 @@ Artifact ID 13056909111, ZIP SHA-256 037ff05c0f3a7e42486843272a008cbb08510248c94
 ### DIA endpoint case correction
 
 The first CI attempt used lowercase path segment `cardano` and returned HTTP 404 (no rows). The official API is case-sensitive for the blockchain slug: the correct endpoint is `/v1/assetQuotation/Cardano/0x0000000000000000000000000000000000000000`. A live API probe returned ADA / Cardano, exact native-asset address, USD price, timestamp, source, previous-day volume and a provider signature. The collector has been corrected to use the capitalized slug and preserve the signature and volume-yesterday field separately. Rerun pending.
+
+
+### DIA keyless reference verified in CI
+
+The corrected case-sensitive DIA endpoint succeeded in run [41241048258](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41241048258). The full reference set now reports **9/11** available: 5/7 direct CEX, 3/3 market aggregators and 1/1 DIA test-only oracle-reference API. The two unavailable CEX endpoints are Gemini (HTTP 404: no ADAUSD data) and Bitfinex (HTTP 500: invalid symbol). They remain explicit unavailable rows.
+
+DIA returned exact native Cardano ADA identity, provider timestamp 2026-10-31T20:53:58Z, USD price 0.19244131922788885 and a provider signature string. The signature is preserved but has **not** been cryptographically verified. The endpoint is still test/evaluation only; this does not make it a production on-chain oracle.
+
+CEX bid/ask midpoint range (five venues): 0.19236500–0.19244500 USD/ADA. Last-price range across all nine successful references: 0.19235000–0.19270000 USD/ADA. Do not interpret these ranges as a consensus or as USDM/USD.
+
+Artifact ID 13057825466, ZIP SHA-256 02df44c55b1dba7acf19a69f80c516fb242f90b722830a2bbbbdbb4f9faa289d, extracted JSON SHA-256 10dfb2e90ed8092bdfff3c5558a331aeec97d9a6e2139dbdd7190ec6dbda288f.
