@@ -146,7 +146,7 @@ async function collect(source) {
       bodySha256: sha256(rawBody),
       rawBody,
     }
-    if (!response.ok) return { id: source.id, venue: source.venue, status: 'SOURCE_UNAVAILABLE', error: 'HTTP_' + response.status, observedAt, evidence }
+    if (!response.ok) return { id: source.id, venue: source.venue, sourceType: source.sourceType ?? 'CEX_SPOT', status: 'SOURCE_UNAVAILABLE', error: 'HTTP_' + response.status, observedAt, evidence }
     const parsed = source.parse(JSON.parse(rawBody))
     const last = toScaled(parsed.last)
     const bid = parsed.bid === null || parsed.bid === undefined ? null : toScaled(parsed.bid)
