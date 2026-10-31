@@ -1,0 +1,34 @@
+{
+  "schema_version": "materios-snapshot-state-probe-v1",
+  "status": "PASS",
+  "network": "materios_preprod_v6",
+  "genesis_hash": "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf",
+  "target": {
+    "block_number": 2509824,
+    "expected_block_hash": "0x0f3b29d5c6285fdfe92e4f4ba8dfc13904c78b9a43fa6a4a7bf952da5d4d913e"
+  },
+  "historical_state_query": {
+    "authorities_hex": "0x1421e2a24e43bbe9b8f84cefe33a6df5e80747e5ee126714c8013527d251b50d29010000000000000090ca78c51613f9cafe2d3b19e1198f0707c914698dad44cbf87543a6a8e9f48101000000000000004558853422164939eca690f21f76a614f7957352e01a4486ca3d55d98f2301000000000000004dc9c8f9bd37df2bb9223458c897b000fe4362958da6eeb6413b93dcfbabe2ba0100000000000000750d4ba2a831a30d419009f2d8bc1ef1e6fc6f673c7a2b5b500a2b7f2a68458e0100000000000000",
+    "set_id_hex": "0x5211000000000000"
+  },
+  "grandpa_storage_diagnostic": {
+    "current_set_id_runtime_api": "0x5211000000000000",
+    "current_set_id_raw_storage": "0x5211000000000000",
+    "current_set_id_api_matches_storage": true,
+    "authorities_api_matches_storage": true,
+    "pending_change_raw_storage": null,
+    "stalled_raw_storage": null,
+    "session_current_index_raw_storage": "0x52110000"
+  },
+  "grandpa_voter_start_logs": [
+    "2026-10-31 05:56:16.053 DEBUG main grandpa: immortal-b3-snapshot-probe: Starting new voter with set ID 4343\n"
+  ],
+  "trust_boundary": "Evidence captured from checksum-verified Materios Preprod snapshot, isolated FULL-role node, 0 peers, no block import. Runtime/storage state and local GRANDPA auxiliary voter state are independent observations; neither alone establishes canonical finality.",
+  "evidence_provenance": {
+    "workflow_run_id": 41174445548,
+    "workflow_url": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41174445548",
+    "artifact_id": 13032587479,
+    "artifact_name": "materios-snapshot-state-probe",
+    "captured_at": "2026-10-31T05:56:16Z"
+  }
+}

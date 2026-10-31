@@ -1,0 +1,53 @@
+name: Materios GRANDPA historical digest replay
+
+on:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - "docs/04-verification/MATERIOS-SNAPSHOT-STATE-PROBE-2509824.json"
+      - ".github/workflows/materios-grandpa-header-history.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: materios-grandpa-header-history-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install checkpoint hashing dependency
+        run: npm ci --prefix poc/materios-checkpoint
+
+      - name: Reconstruct GRANDPA digest history from public raw headers
+        run: node poc/materios-grandpa/src/scan-grandpa-digest-history.mjs
+        env:
+          MATERIOS_SNAPSHOT_RPC: https://materios.fluxpointstudios.com/rpc
+          MATERIOS_SNAPSHOT_STATE_EVIDENCE_PATH: ${{ github.workspace }}/docs/04-verification/MATERIOS-SNAPSHOT-STATE-PROBE-2509824.json
+          MATERIOS_GRANDPA_DIGEST_HISTORY_OUT: ${{ github.workspace }}/out/MateriosGrandpaDigestHistory-public-rpc.json
+          MATERIOS_HEADER_SCAN_BATCH_SIZE: "256"
+
+      - name: Label public RPC trust boundary
+        if: always() && hashFiles('out/MateriosGrandpaDigestHistory-public-rpc.json') != ''
+        run: |
+          jq '.scan.source_kind = "PUBLIC_HTTP_RPC" |
+              .trust_scope = "Read-only public Materios HTTP RPC header scan. Every header hash and parent link is recomputed from the pinned genesis to the exact target hash. RPC data remains an untrusted source until the captured GRANDPA justification verifies under the replayed authority set."' \
+            out/MateriosGrandpaDigestHistory-public-rpc.json > out/MateriosGrandpaDigestHistory-public-rpc.tmp
+          mv out/MateriosGrandpaDigestHistory-public-rpc.tmp out/MateriosGrandpaDigestHistory-public-rpc.json
+
+      - name: Upload public GRANDPA digest history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-grandpa-digest-history-public-rpc
+          path: out/MateriosGrandpaDigestHistory-public-rpc.json
+          if-no-files-found: warn
