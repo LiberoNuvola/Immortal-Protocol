@@ -7042,3 +7042,12 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Artifact ID 13057132705, ZIP digest 1f9cc9756474ced7ae5be8e82fc2408715d3faf31cd4e8ec56da5a4e989ca82a; JSON digest 8e298c6cc47021f0f0a8074e1e8548621d1c496954f1cc37dd031de345ab31c2.
 - Charli3 corrected observer in same run: one exact ADA/USD OracleFeed NFT, one decoded datum, zero invalid; status OBSERVED_STALE_CHARLI3_ADA_USD. Price integer 239761, precision omitted (so no decimal conversion), timestamp 2026-05-27T05:21:30.404Z, expiry 2026-05-27T11:21:30.404Z. Expired by ~157 days at capture; excluded from current reference data. Artifact ID 13057252360, JSON digest e431c98e0b88d07b941d036d432a12877b1efa8b04264d42a1ddc062bc7314aa.
 - Decoder/syntax test job passed in run 41240334298. Full workflow still had other read-only market jobs pending at the time of this record.
+
+
+## 10.79 Agent A — oracle freshness and expanded ADA/USD reference verification (2026-10-31)
+
+- Run 41240334298 passed the focused syntax/decoder tests, ten-source ADA/USD collector, Charli3 observer and Orcfax observer jobs.
+- Orcfax again reports both ADA/USD and ADA/USDM structurally valid but STALE: five statements each, newest timestamps unchanged at 2026-06-18, ~135 days old versus 3600-second feed interval. Acquisition job is green; freshness remains explicitly stale.
+- Charli3 reports OBSERVED_STALE_CHARLI3_ADA_USD: one exact NFT/address UTxO, one valid minimal price map, zero invalid. Raw integer 239761, precision omitted, timestamp 2026-05-27T05:21:30.404Z, expiry 2026-05-27T11:21:30.404Z. Expired; no decimal conversion and no current price admission.
+- ADA/USD public references: 8/10 available (5/7 CEX, 3/3 aggregators). Bid/ask midpoint range 0.19240900–0.19245500; all-source last range 0.19238600–0.19276400. Two unavailable CEXs are explicitly recorded; aggregators are not independent venues.
+- The full workflow still had SundaeSwap V3, WingRiders V2 and two cross-indexer reconciliation jobs in progress/queued at the time of this update.
