@@ -270,6 +270,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+      - name: Install locked dependencies for Blake2b-256
+        run: npm ci --no-audit --no-fund
       - name: Download same-run SuperCardano USDM pool discovery
         uses: actions/download-artifact@v4
         with:
