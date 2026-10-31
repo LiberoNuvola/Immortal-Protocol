@@ -6558,3 +6558,13 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Added source independence taxonomy and cost/access classification to `docs/COORDINATION/MINSWAP_USDM_READONLY_RECONCILIATION.md` at `e628500f7260bf1f0608e95951e79c450d3b4172`.
 - Other candidates recorded: DanoNight own db-sync daily scan (public page, CoinGecko ADA/USD dependency); GeroWallet free UI but Nexus developer market data paid add-on; DexHunter partner API requires key and is an aggregator, not a venue; Cardanoscan free API key supports chain data but not DEX market pricing.
 - Multi-source must be assessed across venue, indexer, market methodology, USD reference and issuer reserve dimensions. No API count alone qualifies an oracle quorum.
+
+
+## 10.48 Agent A — SuperCardano live artifact and venue/trade coverage (2026-10-31)
+
+- SuperCardano exact-USDM collector succeeded in Actions run 41221859296, source block 14,140,510, source `stale=false`. Artifact ID `13050446694`, ZIP SHA-256 `4586f94d439f43d9ee71554abcd397bce0a40e6ee2104ab6e85327a5393e14c2`; extracted JSON SHA-256 `b3c220e155950608fbc34e1b600054e9b72c6b8bfd712fe0ee0d41afed3b59d2`.
+- 81 USDM pool records across 9 venues: Minswap V2 31, Danogo CLMM 12, Sundae V3 10, Minswap V1 8, WingRiders V2 6, VyFi 5, Splash 5, MuesliSwap 3, CSWAP 1. These include historical/old rows, not 81 live pools. Minswap V2 freshness relative to source as-of: 5 under 24h, 5 from 1–7d, 21 over 7d.
+- 50 latest trade rows: Minswap V2 32, Danogo CLMM 13, WingRiders V2 5; all Level B. Flags: converted 22, multiHop 9, batchImpact 2. Token price is ADA-denominated; source methodology says own price surface currently reads Minswap V2, and USD conversion uses DexHunter ADA/USD.
+- Raw token response SHA-256 `e6052504d1a3b70e98d583ec9ea1bfb1797da990d6ed012542305d74327fc413`; raw trades response SHA-256 `23d71b9d3856c52f32b45a5e8429abcfabe6f9986472f6c94e5a847b280f4c52`.
+- Reconciler extended to compare SuperCardano Minswap V2 pool keys, pair order and reserves against Koios candidates. First run 41221859296 failed only due a missing comma syntax error in the reconciler limitations array; raw source artifacts downloaded successfully. Syntax fixed at `16cd0484482ec61a3ac24e62dafbab8847ce83f1`; next full push run 41221976475 is in progress to produce corrected multi-indexer comparison.
+- Workflow conditions changed to run same-snapshot read-only acquisition jobs on every relevant push (the previous `head_commit.modified` conditional was observed to skip required jobs). No wallet/signing/transactions/chain writes.
