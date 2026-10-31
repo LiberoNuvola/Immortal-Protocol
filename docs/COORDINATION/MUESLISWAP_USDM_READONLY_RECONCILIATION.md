@@ -52,3 +52,16 @@ In run 41231687131 all four requests failed before HTTP response with DNS `ENOTF
 5. Only after contract-bound decoding and live reserve checks, derive any pool spot observation. This remains separate from USD/USDM peg or oracle qualification.
 
 SuperCardano is an independently operated indexer, not a separate DEX venue. Its rows are discovery hints only; Koios re-queries the exact NFT on Mainnet. No price, peg, oracle, EEV or deployment qualification is produced.
+
+
+## Official datum decoding and structural validation
+
+The official source `dex/src/MuesliSwapPools/ConstantProductPool/Types.hs` declares `PoolDatum` as constructor 0 with exactly four fields: `pdCoinA`, `pdCoinB`, `pdTotalLiquidity`, and `pdSwapFee`. The factory validator requires canonical `coinA < coinB`, positive pair reserves, positive total liquidity, exactly one pool NFT and factory coin, and fee bounds 1–10,000. The pool validator keeps the datum's pair and swap fee immutable and checks the pool Value using `assertPoolValue`. Its fee denominator is 10,000. Official sources: [PoolDatum Types.hs](https://github.com/MuesliSwapTeam/muesliswap-cardano-pool-contracts/blob/main/dex/src/MuesliSwapPools/ConstantProductPool/Types.hs), [Factory validator](https://github.com/MuesliSwapTeam/muesliswap-cardano-pool-contracts/blob/main/dex/src/MuesliSwapPools/ConstantProductFactory/OnChain.hs), [Pool validator](https://github.com/MuesliSwapTeam/muesliswap-cardano-pool-contracts/blob/main/dex/src/MuesliSwapPools/ConstantProductPool/OnChain.hs), and [Value cardinality check](https://github.com/MuesliSwapTeam/muesliswap-cardano-pool-contracts/blob/main/dex/src/MuesliSwapPools/Utils/OnChainUtils.hs).
+
+Added strict decoder/validator `scripts/lib/muesliPoolDatum.mjs`, using only the official four-field shape. It checks exact pair identity and ordering, official pool payment credential, exact Pool NFT and factory coin quantities, positive liquidity/reserves, fee range, and the official output Value asset cardinality / allowed asset set. It does not assume a Minswap-style reserve field or subtract a Minswap min-ADA amount: Muesli's pool contract reads the full ADA value as the ADA coin reserve.
+
+The real Koios fixture at `scripts/fixtures/muesliswap-usdm-mainnet-2026-10-31.json` supports the following structural result, first exercised by Actions run [41232322566](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41232322566): **2 MATCH / 1 UNQUALIFIED**. The two official-credential pools pass the four-field datum and Value checks. The third candidate remains excluded because its payment credential differs and its datum has an unsupported eight-field shape.
+
+The direct ADA/USDM pool has an observed reserve-ratio spot of **5.27796218 ADA per USDM** (both assets have six decimals), with `pdSwapFee=30/10000 = 0.30%`. This is an on-chain AMM spot before swap fees/price impact, not an executable quote or oracle value. The other structurally matched pool is USDM/USADA and supplies no direct ADA/USDM rate. The excluded candidate is not used.
+
+The combined focused test job in run 41232322566 passed **26/26 tests across 3 files**. A later assertion correction and the cross-reference integration are being re-run in the current workflow; do not treat the older test run as evidence for those later edits.
