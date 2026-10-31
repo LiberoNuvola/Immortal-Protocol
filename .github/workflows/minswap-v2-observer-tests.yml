@@ -8,6 +8,9 @@ on:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
       - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/collectFloatUsdmReadOnly.mjs"
+      - "scripts/lib/orcfaxCerDatum.test.mjs"
+      - "scripts/lib/orcfaxCerDatum.mjs"
+      - "scripts/observeOrcfaxCerFeedsReadOnly.mjs"
       - "scripts/reconcileFloatUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
@@ -66,6 +69,8 @@ jobs:
           node --check scripts/collectMinswapUsdmReadOnly.mjs
           node --check scripts/collectFloatUsdmReadOnly.mjs
           node --check scripts/reconcileFloatUsdmReadOnly.mjs
+          node --check scripts/observeOrcfaxCerFeedsReadOnly.mjs
+          node --check scripts/lib/orcfaxCerDatum.mjs
           node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
           node --check scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs
           node --check scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs
@@ -84,7 +89,7 @@ jobs:
           node --check scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs
           node --check scripts/observeWingRidersV2UsdmReadOnly.mjs
       - name: Run synthetic decoder fixtures
-        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs scripts/observeSundaeSwapV3UsdmUtxosReadOnly.test.mjs scripts/lib/danogoClmmMath.test.mjs scripts/lib/cswapAmmMath.test.mjs --reporter=verbose
+        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs scripts/observeSundaeSwapV3UsdmUtxosReadOnly.test.mjs scripts/lib/danogoClmmMath.test.mjs scripts/lib/cswapAmmMath.test.mjs scripts/lib/orcfaxCerDatum.test.mjs --reporter=verbose
 
   read-only-mainnet-observation:
     # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
@@ -597,4 +602,25 @@ jobs:
         with:
           name: float-usdm-cross-indexer-reconciliation-${{ github.run_id }}
           path: audit/oracles/float-usdm-cross-indexer-reconciliation.json
+          if-no-files-found: warn
+
+  read-only-orcfax-cer-observation:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Observe Orcfax ADA-USD and ADA-USDM CER statements (read-only)
+        run: node scripts/observeOrcfaxCerFeedsReadOnly.mjs --out audit/oracles/orcfax-cer-mainnet-readonly.json
+      - name: Upload Orcfax on-chain feed evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orcfax-cer-mainnet-readonly-${{ github.run_id }}
+          path: audit/oracles/orcfax-cer-mainnet-readonly.json
           if-no-files-found: warn
