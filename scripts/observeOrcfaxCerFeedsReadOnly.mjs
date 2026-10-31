@@ -200,13 +200,29 @@ async function main() {
     const summaries = {}
     for (const target of TARGETS) {
       const rows = feedRows[target.pair]
+      const definition = feedDefinitions[target.pair]
+      const latest = rows[0] ?? null
+      const expectedIntervalMs = Number(definition.interval) * 1000
+      const freshnessStatus = !latest
+        ? 'MISSING'
+        : latest.ageMsAtCapture < 0
+          ? 'FUTURE_TIMESTAMP'
+          : latest.ageMsAtCapture <= expectedIntervalMs
+            ? 'FRESH'
+            : 'STALE'
       summaries[target.pair] = {
         statementCount: rows.length,
         validStatementCount: rows.filter((x) => x.statementValid).length,
-        latestCreatedAtIso: rows[0]?.createdAtIso ?? null,
-        latestAgeMs: rows[0]?.ageMsAtCapture ?? null,
-        duplicateStatementCount: Math.max(0, rows.length - 1),
-        feedDefinition: feedDefinitions[target.pair],
+        latestCreatedAtIso: latest?.createdAtIso ?? null,
+        latestAgeMs: latest?.ageMsAtCapture ?? null,
+        expectedIntervalMs,
+        freshnessStatus,
+        latestRational: latest ? {
+          numeratorRaw: latest.numeratorRaw,
+          denominatorRaw: latest.denominatorRaw,
+        } : null,
+        olderStatementCount: Math.max(0, rows.length - 1),
+        feedDefinition: definition,
       }
     }
 
@@ -256,9 +272,16 @@ async function main() {
 
     await mkdir(dirname(out), { recursive: true })
     await writeFile(out, JSON.stringify(result, null, 2) + '\n', 'utf8')
-    const complete = TARGETS.every((t) => feedRows[t.pair].length === 1 && feedRows[t.pair][0].statementValid)
+    const complete = TARGETS.every((t) => feedRows[t.pair].length > 0 && feedRows[t.pair].some((x) => x.statementValid))
+    const fresh = complete && TARGETS.every((t) => summaries[t.pair].freshnessStatus === 'FRESH')
+    const status = !complete
+      ? 'READ_ONLY_ORCFAX_CER_FEEDS_PARTIAL'
+      : fresh
+        ? 'READ_ONLY_ORCFAX_CER_FEEDS_COMPLETE'
+        : 'READ_ONLY_ORCFAX_CER_FEEDS_STALE'
+    result.status = status
     console.log(JSON.stringify({
-      status: complete ? 'READ_ONLY_ORCFAX_CER_FEEDS_COMPLETE' : 'READ_ONLY_ORCFAX_CER_FEEDS_PARTIAL',
+      status,
       output: out,
       summary: summaries,
       fsTokenUtxoCount: fsScan.rows.length,
