@@ -273,3 +273,16 @@ Added a fourth non-CEX reference class using DIA's public, keyless Cardano nativ
 This source may overlap with the seven direct CEX venues, the three market aggregators, and the Float/DEX data. Its raw provenance and timestamp must be retained; it must not be blindly averaged with those inputs. The first live CI observation is pending.
 
 Official references: [DIA free API](https://www.diadata.org/free-crypto-api/), [Cardano ADA endpoint](https://www.diadata.org/app/price/asset/cardano/0x0000000000000000000000000000000000000000/), [DIA API endpoint specification](https://github.com/diadata-org/diadata/blob/master/documentation/api-1/api-endpoints.md).
+
+
+### Float reserve-aware reconciliation result
+
+The corrected reserve-aware reconciler completed successfully in run [41240680438](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41240680438):
+- Float exact-USDM markets: 58 / 12 venues; direct ADA/USDM 18 (12 not stale, 6 stale);
+- Float Minswap V2 rows: 14; Koios Minswap V2 rows: 31; Minswap API V2 rows: 31;
+- Float-to-Koios LP identity + unordered pair: 14/14;
+- Float reserve values exactly match decoded Minswap V2 datum reserves: **14/14**, zero reserve mismatches;
+- Minswap API LP pool found for Float rows: 14/14; API pair matches: 14/14;
+- Float-only vs Koios: 0; Koios-only vs Float: 17 (provider coverage gap); pair mismatches 0; duplicate keys 0; on-chain unqualified 0.
+
+Artifact ID 13056909111, ZIP SHA-256 037ff05c0f3a7e42486843272a008cbb08510248c94ae37df1ebb8365ca31bbf. This is strong cross-indexer evidence for the 14 Float-listed Minswap V2 pools, including exact datum reserve agreement. It does not mean Float covers all 31 pools, and it does not validate USD conversion, price, peg, or executable depth. The 17 absent Float rows remain known on-chain pools, not absent liquidity.
