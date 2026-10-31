@@ -46,11 +46,13 @@ describe('SundaeSwap V3 real Koios Mainnet fixtures', () => {
     expect(validateSundaeV3PoolUtxo(candidate).reasons).toContain('POOL_NFT_QUANTITY_NOT_ONE')
   })
 
-  it('fails closed when ADA protocol-fee composition does not match the datum', () => {
+  it('detects an ADA Value reserve that no longer reconciles with the official API', () => {
     const candidate = structuredClone(fixture.candidates[4])
     candidate.valueLovelaceRaw = (BigInt(candidate.valueLovelaceRaw) + 1n).toString()
-    expect(validateSundaeV3PoolUtxo(candidate).reasons)
-      .toContain('POOL_LOVELACE_PROTOCOL_FEE_COMPOSITION_MISMATCH')
+    const validation = validateSundaeV3PoolUtxo(candidate)
+    expect(validation.status).toBe('MATCH')
+    expect(reconcileSundaeV3PoolWithApi(validation, fixture.apiV3Pools[4]).reasons)
+      .toContain('SUNDAE_API_RESERVE_A_MISMATCH')
   })
 
   it('fails closed when the API reserve differs from the real on-chain reserve', () => {
