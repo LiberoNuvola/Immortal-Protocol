@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decodeSwapDatum, deriveQuote, formatRatio } from './observeSaturnSwapUsdmOrderbookReadOnly.mjs'
+import { classifyOrderbookCoverage, decodeSwapDatum, deriveQuote, formatRatio } from './observeSaturnSwapUsdmOrderbookReadOnly.mjs'
 
 const USDM = {
   policy: 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad',
@@ -92,5 +92,27 @@ describe('SaturnSwap exact-USDM CLOB decoder', () => {
 
   it('formats ratios using integer arithmetic', () => {
     expect(formatRatio(1n, 3n, 8)).toBe('0.33333333')
+  })
+})
+
+describe('SaturnSwap orderbook coverage classification', () => {
+  it('does not report complete when any deployment hit the pagination cap', () => {
+    const deployments = [
+      { id: 'one', paginationComplete: true },
+      { id: 'two', paginationComplete: false },
+      { id: 'three', paginationComplete: true },
+    ]
+    expect(classifyOrderbookCoverage(deployments, [])).toBe('READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL')
+  })
+
+  it('reports complete only when all three deployments are fully paginated and error-free', () => {
+    const deployments = [
+      { id: 'one', paginationComplete: true },
+      { id: 'two', paginationComplete: true },
+      { id: 'three', paginationComplete: true },
+    ]
+    expect(classifyOrderbookCoverage(deployments, [])).toBe('READ_ONLY_SATURNSWAP_ORDERBOOK_COMPLETE')
+    expect(classifyOrderbookCoverage(deployments, [{ deployment: 'two', error: 'timeout' }]))
+      .toBe('READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL')
   })
 })
