@@ -6762,3 +6762,26 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Corrected Saturn observer at `700c15881541bbd0a32912094a643177f1b12edb` so coverage is `PARTIAL` whenever any deployment pagination is incomplete or errors occur; added coverage classification tests at `c5e4248ed7d589afb8ccecd9e373b0dbb7d28090`. New CI run 41232826901 is pending. Do not treat the earlier 0-order result as a complete orderbook census.
 - Added `docs/COORDINATION/USDM_USD_MULTI_SOURCE_CROSS_REFERENCE.md` at `b96858ea2e3ed9748654ce7d8ad5ad6fa944ba29`.
 - Aggregators/indexers (SuperCardano, GeckoTerminal, DexScreener) are not counted as independent venues. Danogo CLMM and Sundae stables remain excluded pending curve math. No wallet, signing, transaction, chain write, oracle refresh, EEV or deployment action.
+
+
+## Agent B — completed-body binding source audit and current-head CI recheck (2026-10-31)
+
+**Audited branch HEAD:** `0c2902c5a606d64ee2e6c92dfcd967a82dd1ee54` (Agent A CSWAP observer commit). This is a source/coordination audit only; no runtime code, workflow, V3, Reveal, economic rule, wallet action, deployment, or on-chain state was changed.
+
+### Exact-head CI evidence
+
+[Cardano Adapter Sale Conformance #41233272829](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41233272829) completed SUCCESS on the audited HEAD. Both `economic-conformance` and `frontend-build` succeeded. The economic job explicitly ran `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`, `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts`, the Cardano adapter conformance suite, RF8 boundary tests, Issue intent/settlement tests, and related observation tests. This is exact-head regression/build evidence for the current narrow admission/input-classification boundary; it is **not** completed-body semantic-binding conformance.
+
+### Source findings confirmed at the audited HEAD
+
+- `CardanoExecutionAdapter.submitEconomic` validates the Economic Admission witness, checks that declared protocol spending inputs occur in the completed Lucid body, classifies additional spending inputs against the connected wallet's UTxO list, and re-reads the spending-input references immediately before signing.
+- The adapter still does not accept a phase-specific pre-sign transition-intent binding and does not independently validate the complete completed-body output/datum/redeemer/value/mint/fee/validity map against an approved per-action predicate profile.
+- The existing `EconomicAdmissionTransitionBinding` helper compares action class, action fingerprint and pre/post-state fingerprints, but its tests are helper-level only; it is not a universal production adapter gate.
+- Production builders in `src/gameFlow.ts` make the required protocol roles observable: Reveal spends Prize + B1 PrizePool and emits both continuations; Claim additionally spends the owner ticket NFT and emits Prize/Pool continuations, settlement payout and returned ticket NFT, with `validTo(expiresAt)`; Expire spends Prize + Pool, emits executor collateral and Pool continuation, and sets `validFrom(expiresAt)`.
+- Issue remains sourced from `PRE-RICH/onchain/PreRichIssueDecision.hs`; preserve its existing Haskell fingerprint and V3 carrier contracts. The local-Yaci Reveal/Claim/Expire trace `hashJson` fingerprints are post-observation evidence, not production pre-sign authorization.
+
+### Gate disposition and next action
+
+The SDK proposal's sections 11.1–11.7 already provide the review inventory and adversarial categories. They remain explicitly draft/not-approved. **Do not add a guessed generic fingerprint, derive economic state hashes from transaction CBOR, or wire a partial body checker as if it closed the gate.** Before runtime integration, maintainers must approve (1) canonical producer/provenance and encoding per action, especially Reveal/Claim/Expire; (2) exact protocol-versus-wallet input and protocol-versus-change output classification; (3) versioned per-action input/redeemer/validity/output/datum/value predicate profiles; and (4) phase-separated pre-sign intent versus submit/settlement evidence. Then add positive/negative twins for each action proving every negative stops before signing and submission, bind validation to the exact body subsequently signed, and rerun exact-head CI.
+
+**STATUS: CURRENT-HEAD SOURCE AUDIT COMPLETE; NARROW INPUT-CLASSIFICATION CI GREEN; FULL BODY BINDING NOT IMPLEMENTED; REVIEW/OWNERSHIP DECISIONS STILL REQUIRED. V08/V09 remain OPEN.**
