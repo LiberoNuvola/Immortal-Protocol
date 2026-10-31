@@ -246,7 +246,7 @@ The official NBX page labels the EU issuer whitepaper as updated 24 September 20
 
 Official landing page: https://nbx.com/en/usdm
 PDF: https://cdn.prod.website-files.com/6152dfaed2ce58d94ef37b88/6ab4e90ceb46558d48fc093a_USDM%20White%20Paper%20-%20Modified%20version%202026-09-24.pdf
-XHTML/iXBRL ZIP: https://cdn.prod.website-files.com/6152dfaed2ce58c94ef37b88/6ab4e9329383c7b9695de62d_WhitePaper-USDM-5493004WNVZP9EMYI834-NO-260915122610-en.zip
+XHTML/iXBRL ZIP: https://cdn.prod.website-files.com/6152dfaed2ce58d94ef37b88/6ab4e9329383c7b9695de62d_WhitePaper-USDM-5493004WNVZP9EMYI834-NO-260915122610-en.zip
 
 The PDF's cover identifies it as a draft/modified version notified to Finanstilsynet on 24 September 2026 and explicitly states that it has not been approved by any competent authority in an EU Member State. This is an issuer-authored disclosure, not regulatory approval.
 
@@ -295,7 +295,7 @@ https://cardanoscan.io/transaction/f3f62b62dc7b3a4dc6036b6e7810719597d246d7df70c
 
 shows a mainnet transaction labelled "USDM Mint", timestamp 11 March 2026 00:45:39 UTC, block 13,143,082, minting 25,050.000000 USDM.
 
-The same transaction:
+The same transaction (explorer-rendered details; full input reference not exposed in the extracted view):
 - consumes a UTxO at counter-script address `addr1wxwgnqps79qf8h4dnvrfr5w9qsepkycqr0rtj7802n7uueqshn6tg` carrying one `USDM_COUNT` singleton and datum hash `d27836d660b1140d986db27ab9344e93a88d3f50c93ec6aced53edcdd623092e`;
 - recreates the singleton at the same address in output #1 with datum hash `e80fb60dd9af1d73748189bf32146583249bdd2458fb94a4ff9fd5c69abdca93`;
 - the datum CBOR shown by the explorer changes from `d879821b00000e760a10c140d87980` to `d879821b00000e7bdf296bc0d87980`.
@@ -304,12 +304,12 @@ The first integer in those CBOR data decodes to 15,900,137.8 and 15,925,187.8 re
 
 ### 7.6 Historical counter locator from DeFiLlama adapter — not current-state proof
 
-A DeFiLlama adapter commit dated 18 October 2024 identifies the counter NFT asset ID as:
+A DeFiLlama adapter commit dated 18 October 2024 identifies a counter NFT asset ID candidate as:
 `e319d8e6629ff7991c8ae4f8aec2e0f10463ebdf29b57d26d34914f65553444d5f434f554e54`
 (policy `e319d8e6629ff7991c8ae4f8aec2e0f10463ebdf29b57d26d34914f6`, asset name `5553444d5f434f554e54` = `USDM_COUNT`), and a then-used counter address:
 `addr1wyl82v9qy06hsz50hqqdy0u6xw9hdewy7twjahgek2tpp7c0qajez`.
 
-The March 2026 Cardanoscan exemplar above shows the singleton at a different address (`addr1wxwgn...`). The 2024 adapter address must therefore be treated as historical/possibly superseded, not a current locator. A full continuity trace and current singleton UTxO still need to be established.
+The March 2026 Cardanoscan exemplar above shows the singleton at a different address (`addr1wxwgn...`). The 2024 adapter address must therefore be treated as historical/possibly superseded, not a current locator. The explorer-rendered USDM_COUNT label on the March 2026 transaction is consistent with this counter, but the extracted transaction view does not expose the full asset unit for the counter token; exact asset-unit continuity remains to be verified. A full continuity trace and current singleton UTxO still need to be established.
 
 Source commit: https://github.com/DefiLlama/DefiLlama-Adapters/commit/730af7bbfc6858103a1ab3a8fae612a70220d7aa
 Current adapter file: https://raw.githubusercontent.com/DefiLlama/DefiLlama-Adapters/master/projects/moneta/index.js
