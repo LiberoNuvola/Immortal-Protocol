@@ -92,18 +92,20 @@ async function submitComposedEconomic(
 
 describe('CAES transition closure boundary', () => {
   it('composes admission, canonical evidence and Cardano submission', async () => {
+    const tx = completedLucidTransaction()
+    const signedTx = { toTransaction: () => tx.toTransaction() }
     const lucid = {
-      signTx: vi.fn().mockResolvedValue('signed'),
+      signTx: vi.fn().mockResolvedValue(signedTx),
       submitTx: vi.fn().mockResolvedValue(evidence.transactionRef),
     }
     const adapter = createCardanoExecutionAdapter(lucid)
 
     await expect(
-      submitComposedEconomic(adapter, completedLucidTransaction(), admission, evidence),
+      submitComposedEconomic(adapter, tx, admission, evidence),
     ).resolves.toEqual({ transactionRef: evidence.transactionRef })
 
     expect(lucid.signTx).toHaveBeenCalledTimes(1)
-    expect(lucid.submitTx).toHaveBeenCalledTimes(1)
+    expect(lucid.submitTx).toHaveBeenCalledWith(signedTx)
   })
 
   it('stops before Cardano signing when canonical evidence diverges', async () => {
