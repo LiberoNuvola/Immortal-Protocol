@@ -177,7 +177,7 @@ async function main() {
       'Only verified constant-product USDM/ADA pools are used. CLMM and stableswap pools are deliberately excluded until their official curve math is implemented.',
       'Each CEX midpoint is a separate centralized-exchange market reference. It is not a decentralized oracle and may be stale, thin, or venue-specific.',
       'The ADA/USD and USDM/ADA observations have separate timestamps and are not an atomic cross-market snapshot.',
-      'Pool UTxO ages are reported for transparency only; no freshness threshold or automatic pool exclusion is introduced by this observer.'
+      'Pool UTxO ages are reported for transparency only; no freshness threshold or automatic pool exclusion is introduced by this observer.',
       'No averaging, outlier threshold, peg band, confidence threshold, redemption claim, issuer reserve claim, EEV valuation, or deployment qualification is performed.',
       'The resulting USDM/USD values are indicative cross-rates only. They do not establish USDM/USD parity or oracle suitability.',
     ],
