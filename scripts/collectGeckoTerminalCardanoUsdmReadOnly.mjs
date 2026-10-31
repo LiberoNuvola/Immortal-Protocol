@@ -45,14 +45,6 @@ async function request(path) {
   catch { return { evidence, json: null, parseError: true } }
 }
 
-function resourceAssetAddress(resource) {
-  const address = resource?.attributes?.address
-  if (typeof address === 'string') return address.toLowerCase()
-  const id = String(resource?.id ?? '')
-  const prefix = 'cardano_'
-  return id.startsWith(prefix) ? id.slice(prefix.length).toLowerCase() : ''
-}
-
 async function main() {
   const startedAt = new Date().toISOString()
   const result = await request('/networks/cardano/tokens/' + encodeURIComponent(ASSET_UNIT) + '/pools?page=1')
@@ -75,6 +67,13 @@ async function main() {
     priceChangePercentage: pool.attributes?.price_change_percentage ?? null,
     baseTokenPriceUsd: pool.attributes?.base_token_price_usd ?? null,
     quoteTokenPriceUsd: pool.attributes?.quote_token_price_usd ?? null,
+    tokenPriceUsd: pool.attributes?.token_price_usd ?? null,
+    usdmPriceUsd: baseToken === exactTokenId
+      ? pool.attributes?.base_token_price_usd ?? null
+      : quoteToken === exactTokenId
+        ? pool.attributes?.quote_token_price_usd ?? null
+        : null,
+    usdmPriceOrientation: baseToken === exactTokenId ? 'base' : quoteToken === exactTokenId ? 'quote' : null,
   }})
   const exactUsdmPoolCount = pools.filter((pool) => pool.exactUsdmPairIdentityMatched).length
   const venueCounts = pools.reduce((counts, pool) => {
@@ -125,6 +124,7 @@ async function main() {
     output: out,
     returnedPoolCount: data.length,
     exactUsdmPoolCount,
+    venueCounts,
     paginationComplete: evidence.acquisition.paginationComplete,
     httpStatus: result.evidence.status,
     completedAt: evidence.completedAt,
