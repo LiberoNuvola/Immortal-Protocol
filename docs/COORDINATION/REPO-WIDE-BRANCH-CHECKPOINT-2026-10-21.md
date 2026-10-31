@@ -6215,7 +6215,7 @@ The arithmetic difference between the displayed values is **1,961,891.13 USD (~2
 
 - Existing exact-head native Pyth probe #41008762196 tested feed ID 16 (ADA/USD) and failed closed with `403 FEED_ENTITLEMENT_REQUIRED`; it did not establish entitlement for the NAV asset class or feed ID 3326. No further authenticated endpoint call or workflow dispatch was made.
 - Existing Pyth carrier feasibility remains software-only. `plutus/MintPolicy.hs` still consumes the legacy Oracle State quote; no Pyth production binding to MintPolicy is evidenced.
-- Feed 3326 may be investigated as a reserve-attestation cross-check only after raw signed update, source/publisher provenance, exact timestamps, freshness and the 20.42% displayed divergence are reconciled.
+- Feed 3326 may be investigated as a reserve-attestation cross-check only after raw signed update, source/publisher provenance, exact timestamps and freshness are acquired, and the 20.42% arithmetic cross-source difference (not proven contemporaneous) is explained.
 - Feed 3326 does not close Option B (USD/USDM per unit), does not establish issuer redemption parity, and does not alter direct-USDM EEV qualification. VerifiedUSDM remains the qualified token quantity physically present in the exact B1 PrizePool UTxO.
 - Do not confuse Pyth Pro numeric feed IDs with Pyth Core 32-byte Hermes IDs; the Pyth Pro Cardano guide documents the pull/update flow and requires consumer-side freshness checks: https://developers.cardano.org/docs/build/integrate/oracles/pyth/.
 
