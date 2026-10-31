@@ -7078,3 +7078,10 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Minswap API pool records found for all 14 Float rows (14/14), with 14/14 pair matches. Zero Float-only, zero pair mismatches, zero duplicate keys, zero on-chain unqualified. Koios-only vs Float: 17, classified as Float coverage gap.
 - Artifact ID 13056909111, ZIP digest 037ff05c0f3a7e42486843272a008cbb08510248c94ae37df1ebb8365ca31bbf. Run URL https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41240680438.
 - This validates the 14 Float-listed pools' identity/pair/reserve decoding, not full Float coverage, USD conversion, peg, or executable liquidity. The run's unrelated SundaeSwap V3 observation job failed; Agent A's Float/Koios/Minswap/Orcfax/Charli3/CEX jobs completed as separately recorded.
+
+
+## 10.83 Agent A — DIA Cardano slug case correction (2026-10-31)
+
+- First DIA collector run 41240859252 included the DIA free API endpoint but queried lowercase /assetQuotation/cardano/... and received HTTP 404 no rows; the source remained unavailable, not qualified.
+- Official API path is case-sensitive; a direct read-only probe confirmed /v1/assetQuotation/Cardano/0x0000000000000000000000000000000000000000 returns ADA/Cardano, the exact native address, USD price, timestamp, source and provider signature.
+- Collector corrected at c984a03c7e062d1aab520ccf7ea78875d106c669 to use capitalized Cardano and preserve the signature and volume-yesterday field separately. Rerun pending.
