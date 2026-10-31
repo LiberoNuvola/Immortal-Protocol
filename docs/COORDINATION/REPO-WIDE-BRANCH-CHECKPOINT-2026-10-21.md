@@ -5732,3 +5732,46 @@ The remaining B3-C dependency is a real, reproducible upstream execution-proof a
 **Next bounded action:** execute the current B3 workflow at its exact current branch HEAD so the newly added WebSocket probe is actually run and its JSON artifact retained. Inspect its catalogue, genesis match, candidate block/header, raw FRNK payload status and hashes. If it yields a payload, feed it only through the existing GRANDPA verifier and keep authority-set provenance fail-closed. If it does not, request the confirmed FPS archive/sync-node endpoint and retention contract; do not guess a hostname or treat the RPC finalized label as proof.
 
 **No B3-A/B3-C closure is claimed. No Preprod ticket, wallet action or on-chain protocol change was performed.**
+
+
+## Agent C addendum — Materios B3 historical snapshot and GRANDPA set-id investigation (2026-10-31)
+
+**Scope:** autonomous, read-only investigation on Agent C branch `work/b3-materios-provenance-evidence`. No request was sent to Flux Point Studios. No protocol, V3, Reveal, economic or authority-selector semantics were changed.
+
+### Snapshot / archive finding
+
+The official Preprod snapshot opens only with its stored pruning mode **`Constrained(256)`**. An attempted `--state-pruning archive` open was explicitly rejected as an incompatible pruning-mode change. Do not describe this snapshot as archive-capable and do not try to rewrite its RocksDB metadata: pruned historical states cannot be restored by changing the mode.
+
+A bounded isolated FULL-role diagnostic now starts from the checksum-verified snapshot using `--state-pruning 256`, loopback RPC, mock main-chain follower solely for service startup, zero peers and no block import. It verifies the expected genesis and a target block inside the retained 256-block window. This is a historical-state availability test only, not an archive node or an independent finality source.
+
+### Exact witness result — run #41165134861
+
+[Materios B3 execution-proof verifier #41165134861](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41165134861), commit `07a9fce5dd1ac584a8b2cf0221e104e312bdb041):
+
+- The WebSocket FRNK candidate at block **2509824** was bound to the exact local snapshot header and block hash. The public HTTP route did **not** match the WebSocket candidate; the evidence records `LOCAL_SNAPSHOT_RPC` binding and `public_http_cross_route_matched=false`. This fallback is explicitly diagnostic and does not hide the HTTP discrepancy.
+- The snapshot's runtime API at block 2509824 returned five GRANDPA authorities, weight 1 each, and **set ID 4434** (raw SCALE `0x5211000000000000`).
+- Signature verification under set ID 4434: **0/4 valid**.
+- A bounded diagnostic search found set ID **4343**, under which **4/4** signatures verify and the signed weight is **4/5**. This candidate is **UNTRUSTED diagnostic only**; it is not an authenticated authority set and must not be substituted for 4434.
+- The parent block and the five preceding block states (2509819–2509824) all return set ID **4434**. The 4343 candidate does not appear in that six-block state window. A simple parent/post-state off-by-one explanation is therefore not supported.
+- `authority_transition_provenance=false`; B3-A remains **OPEN**. No finality or canonicality PASS is claimed.
+
+The same run's Rust verifier, live storage-proof job and finalized-state capture succeeded. The real GRANDPA witness job failed as expected because the exact runtime set ID does not verify the captured signatures.
+
+### Follow-up diagnostic in progress
+
+Commit `b3093bc26d74b5526fa3e4bfd8ac2753bf862e9b` adds a read-only `grandpa_roundState` observation against public HTTP and the isolated local snapshot RPC, alongside the runtime API set-ID evidence. This may distinguish the node's live GRANDPA voter view from the runtime's stored set ID. It is an untrusted observation, not a trust anchor. The exact-head workflow is [#41165523804](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41165523804); at checkpoint update time, the live witness job is still running. The companion evidence-boundary workflow is green, including GRANDPA TypeScript build/tests.
+
+### Current B3 classification
+
+| Layer | Classification | Evidence / next condition |
+|---|---|---|
+| Snapshot retained state | **PASS — bounded 256-block window** | Checksum-verified snapshot, expected genesis and exact local header/hash; not archive |
+| B3-A raw FRNK acquisition | **PASS — candidate acquired** | WebSocket payload captured; local snapshot header/hash binding; public HTTP mismatch explicitly recorded |
+| B3-A cryptographic finality | **FAIL under runtime set ID 4434** | Diagnostic 4343 gives 4/4 and 4/5 but remains untrusted |
+| B3-A authority-set provenance | **OPEN** | Need reconcile runtime set ID, live voter set and authenticated transition history |
+| B3-B storage proof | **PASS — bounded to captured receipt lifecycle/state roots** | Existing Rust verification remains separate from GRANDPA finality |
+| B3-C execution proof | **OPEN** | No change in this investigation |
+
+**Next bounded action:** inspect the `grandpa_roundState` diagnostic from run #41165523804. If the live voter set reports 4343 while runtime state reports 4434, record a concrete node/runtime consensus-state discrepancy and keep B3-A OPEN. If it reports 4434, investigate why the attached FRNK justification verifies only under 4343 and whether the payload is stale or from another finality context. Do not accept 4343 without authenticated authority-set provenance.
+
+**No external request, archive-node installation, Preprod transaction, wallet signature or on-chain change was performed.**
