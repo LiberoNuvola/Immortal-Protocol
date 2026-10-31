@@ -162,33 +162,16 @@ describe('economic Cardano submission boundary', () => {
   })
 
   it('submits the pinned legacy lucid-cardano TxComplete through its native signing API', async () => {
-    const references = candidateInputs
-    const inputs = references.map((reference) => {
-      const [txHash, outputIndex] = reference.split('#')
-      return {
-        transaction_id: () => ({ to_hex: () => txHash }),
-        // lucid-cardano 0.10.11 CML exposes input.index() as BigNum.
-        index: () => ({ to_str: () => outputIndex }),
-      }
-    })
+    const cmlTx = legacyCmlTransaction(candidateInputs)
     const submit = vi.fn().mockResolvedValue('tx-legacy-lucid')
-    const complete = vi.fn().mockResolvedValue({ submit })
+    const complete = vi.fn().mockResolvedValue({ submit, txSigned: cmlTx })
     const sign = vi.fn().mockReturnValue({ complete })
     const tx = {
-      txComplete: {
-        body: () => ({
-          inputs: () => ({
-            len: () => inputs.length,
-            get: (index: number) => inputs[index],
-          }),
-          to_bytes: () => new TextEncoder().encode(JSON.stringify(references)),
-        }),
-        to_bytes: () => new TextEncoder().encode(JSON.stringify(references)),
-      },
+      txComplete: cmlTx,
       sign,
     }
-    // Match src/wallet.ts: the actual Lucid instance exposes these methods
-    // under wallet and has no top-level signTx/submitTx methods.
+    // Match lucid-cardano 0.10.11 TxComplete / TxSigned shape, including the
+    // signed CML Transaction that the adapter inspects before submit.
     const lucid = { wallet: { getUtxos: vi.fn() } }
     const adapter = createCardanoExecutionAdapter(lucid)
 
