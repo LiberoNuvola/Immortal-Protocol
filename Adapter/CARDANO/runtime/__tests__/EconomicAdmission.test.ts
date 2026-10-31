@@ -129,28 +129,33 @@ describe('economic Cardano submission boundary', () => {
   })
 
   it('consumes a valid admission before signing and submitting', async () => {
-    const lucid = { signTx: vi.fn().mockResolvedValue('signed'), submitTx: vi.fn().mockResolvedValue('tx-1') }
-    const adapter = createCardanoExecutionAdapter(lucid)
     const tx = completedTxWithInputs(candidateInputs)
+    const signedTx = { toTransaction: () => tx.toTransaction() }
+    const lucid = {
+      signTx: vi.fn().mockResolvedValue(signedTx),
+      submitTx: vi.fn().mockResolvedValue('tx-1'),
+    }
+    const adapter = createCardanoExecutionAdapter(lucid)
     await expect(adapter.submitEconomic(tx, admission, candidateInputs, [pool0])).resolves.toEqual({ transactionRef: 'tx-1' })
     expect(lucid.signTx).toHaveBeenCalledWith(tx)
-    expect(lucid.submitTx).toHaveBeenCalledWith('signed')
+    expect(lucid.submitTx).toHaveBeenCalledWith(signedTx)
   })
 
 
   it('accepts additional completed inputs only when the connected wallet reports them', async () => {
     const walletInput = '33'.repeat(32) + '#0'
+    const tx = completedTxWithInputs([pool0, walletInput])
+    const signedTx = { toTransaction: () => tx.toTransaction() }
     const lucid = {
       wallet: {
         getUtxos: vi.fn().mockResolvedValue([
           { txHash: '33'.repeat(32), outputIndex: 0, address: 'addr_test1_wallet' },
         ]),
       },
-      signTx: vi.fn().mockResolvedValue('signed'),
+      signTx: vi.fn().mockResolvedValue(signedTx),
       submitTx: vi.fn().mockResolvedValue('tx-wallet-balanced'),
     }
     const adapter = createCardanoExecutionAdapter(lucid)
-    const tx = completedTxWithInputs([pool0, walletInput])
 
     await expect(
       adapter.submitEconomic(tx, admission, [pool0], [pool0]),
@@ -158,7 +163,7 @@ describe('economic Cardano submission boundary', () => {
 
     expect(lucid.wallet.getUtxos).toHaveBeenCalledTimes(1)
     expect(lucid.signTx).toHaveBeenCalledWith(tx)
-    expect(lucid.submitTx).toHaveBeenCalledWith('signed')
+    expect(lucid.submitTx).toHaveBeenCalledWith(signedTx)
   })
 
   it('submits the pinned legacy lucid-cardano TxComplete through its native signing API', async () => {
@@ -205,8 +210,9 @@ describe('economic Cardano submission boundary', () => {
         to_cbor_hex: () => bytesToHex(new TextEncoder().encode(JSON.stringify(references))),
       }),
     }
+    const signedTx = { toTransaction: () => tx.toTransaction() }
     const lucid = {
-      signTx: vi.fn().mockResolvedValue('signed'),
+      signTx: vi.fn().mockResolvedValue(signedTx),
       submitTx: vi.fn().mockResolvedValue('tx-evolution-cbor'),
     }
     const adapter = createCardanoExecutionAdapter(lucid)
@@ -216,7 +222,7 @@ describe('economic Cardano submission boundary', () => {
     ).resolves.toEqual({ transactionRef: 'tx-evolution-cbor' })
 
     expect(lucid.signTx).toHaveBeenCalledWith(tx)
-    expect(lucid.submitTx).toHaveBeenCalledWith('signed')
+    expect(lucid.submitTx).toHaveBeenCalledWith(signedTx)
   })
 
   it('uses lucid-cardano 0.10.11 and a simulated CIP-30 wallet with a real CML transaction', async () => {
