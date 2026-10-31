@@ -5813,3 +5813,26 @@ Commit `ac93e256d93bb7386a79563c6a0497f78e8409a6` extends the snapshot probe to 
 Exact-head workflow [#41173448645](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173448645) is running. It will show whether the candidate header/window carries GRANDPA scheduled/forced-change logs and identify the runtime version used at the target. This is a bounded diagnostic; a 256-block window cannot reconstruct 91 earlier set transitions. If no relevant digest logs occur in the window, the next work must shift to a verifiable historical header/digest acquisition path and genesis-anchored replay, not guessed set IDs.
 
 **Current classification:** B3-A witness acquisition PASS (candidate only); signature verification under exact runtime set 4434 FAIL; set 4343 diagnostic only; authority-set provenance OPEN; B3-B remains bounded PASS; B3-C unchanged OPEN. No protocol semantics, V3, Reveal, economic rules, or authority-selector behavior changed. No external request, wallet action or on-chain transaction occurred.
+
+
+## Agent C addendum — GRANDPA target header and retained digest-window result (2026-10-31)
+
+Exact-head workflow [#41173470032](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173470032), commit `eb0edb2f794dd808f773a3dd8fb475233db82263`, completed with the GRANDPA witness step failing as expected under runtime set ID 4434. The snapshot probe itself passed and produced artifact [materios-snapshot-state-probe #13031732332](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173470032/artifacts/13031732332).
+
+The exact target header at block **2509824** is:
+- hash `0x0f3b29d5c6285fdfe92e4f4ba8dfc13904c78b9a43fa6a4a7bf952da5d4d913e`;
+- state root `0x52885158fd5b31e72f262a70d6def97191bb4b727a30252e694a99949f1adea7`;
+- runtime `materios`, `specVersion=242`, `implVersion=1`, `transactionVersion=6`;
+- digest logs contain Aura slot, McHash and Aura seal entries; no FRNK consensus log.
+
+The snapshot probe scanned every header from **2509569 through 2509824** (256 blocks) and found **zero** FRNK consensus digest logs. Thus the candidate target block itself does not carry a visible GRANDPA ScheduledChange/ForcedChange digest, and there is no such digest in the immediately preceding retained header window. This narrows the one-block transition hypothesis but cannot exclude older transitions outside the window.
+
+The runtime API still returns `GrandpaApi_current_set_id = 4434` and five authorities at the exact target state. The raw justification signatures still match only diagnostic set ID 4343. The runtime version is recorded so future runtime-code identity comparisons can be made against the deployed code. No canonicality/finality PASS is inferred from the local snapshot.
+
+### Follow-up
+
+Commit `1683b38d0ac137df81192f8910d18ee044bd513c` adds exact-target raw storage reads for `Grandpa.CurrentSetId`, `Grandpa.Authorities`, `Grandpa.PendingChange`, `Grandpa.Stalled` and `PalletSession.CurrentIndex`, then compares the two GRANDPA runtime API values with their raw storage values. Commit `84ed1ebebfb4f5d4293966c7a4d5fb32a7591018` corrects the session pallet storage prefix to the runtime alias `PalletSession`.
+
+Exact-head workflow [#41173729276](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173729276) is running. Its purpose is to establish whether the runtime API agrees with direct storage and whether a PendingChange/Stalled value exists at the target. Even a clean storage match does not authenticate the active GRANDPA voter set; it only establishes what the target state commits.
+
+**B3-A remains OPEN.** The absence of FRNK logs in the 256-block window plus the 91-set-ID mismatch points to a historical voter/runtime divergence or a mismatched justification attachment, but neither is proven yet. Next work depends on direct storage and pending-change evidence, then historical header/digest replay if needed. No external request, node authority action, protocol semantic change, wallet signature or on-chain transaction occurred.
