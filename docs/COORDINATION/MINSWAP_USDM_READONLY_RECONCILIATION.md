@@ -207,3 +207,14 @@ A second read-only Mainnet run [41204297344](https://github.com/LiberoNuvola/Imm
 Artifact ID `13043476858`, ZIP SHA-256 `57ce6478ecedec6fb522271eedba921ed3a5c62904a567cb94c55fe671674af0`; extracted JSON SHA-256 `76b74901b312a4754673dacfa7f2d787bc0baeb3c94fe7259f88242f7370a8c8`. This confirms the label fix and repeats the structural census. It does not add market price qualification.
 
 A dedicated read-only Minswap API collection job was added to `.github/workflows/minswap-v2-observer-tests.yml` and the collector's cross-protocol pool key was fixed to prevent one protocol family overwriting another. The first API collection run is pending.
+
+
+## 16. Minswap API current-pool census and cross-source identity comparison
+
+The first full-history attempt (Actions run 41204422144) reached the per-pool history stage and received HTTP 429 from Minswap (`retry in 1 minute`). The collector was changed so per-pool history is opt-in via `--with-history`; the default collection now captures exact-asset lookup and current pool metrics first, avoiding an unnecessary burst of history calls. The collector also preserves protocol family in its internal pool key (`protocol + LP asset id`) so records cannot overwrite each other across V1/V2/Stable.
+
+The metrics-only read-only collection succeeded in Actions run [41204489438](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204489438): exact verified Moneta USDM found, decimals 6; **43 pools** total — **31 MinswapV2**, **8 Minswap V1**, **4 Minswap Stable**. History was deliberately deferred (`historyCollection.enabled=false`). API artifact ID `13044046954`, ZIP digest `f716856f91f59b521accc4749a25673ef067037fbdf57af6fc107c7bd6346a0e`; extracted JSON SHA-256 `c679c7c150e37ec4690e9508981186256fc1c4173c0e987dde0b67392cc08f30`.
+
+A direct comparison of that API artifact with the same-run Koios artifact (run 41204489438) found **31/31 exact LP asset identity matches** between MinswapV2 API and the 31 Koios candidates, and **31/31 exact unordered asset-pair matches**. This is a pool-set/identity reconciliation only. It does not validate API USD liquidity or volume values, price/peg, independent market depth, or oracle suitability.
+
+A deterministic reconciliation script, `scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs`, and a dependent GitHub Actions job were added to reproduce this comparison from same-run artifacts. The first automated reconciliation run is pending.
