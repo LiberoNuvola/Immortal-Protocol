@@ -6433,3 +6433,13 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Source changes are not runtime verification. The observer remains unexecuted against live Koios in this session; no live UTxO count, reserve, slot or reconciliation result is claimed. V1 and StableSwap remain separate.
 - Issue #37 update: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6542230028
 - Option B remains UNQUALIFIED; no price/oracle consumer, EEV, R1/Kc, Kernel, V3, Reveal, Materios, wallet, signature, transaction, refresh, deployment or chain write changed.
+
+
+## 10.36 — Agent A: exact Minswap V2 Pool NFT identity added (2026-10-31)
+
+- Official Minswap V2 `deployed/mainnet/script.json` identifies `poolAuthenAsset`: policy `f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c`, asset name hex `4d5350` (`MSP`). The deployed script file also identifies the same policy as `lpPolicyId`.
+- Commit `fdecdd300e83ae1b60726d92b56c34e7040d2764` adds this exact NFT identity to the read-only observer and records raw quantity plus an exact-quantity-1 boolean for each USDM UTxO candidate.
+- This is a pool-authentication signal, not full qualification. Datum decoding, pair validation, derived LP asset validation and reserve-vs-Value reconciliation remain open.
+- No live scan or runtime test in this session; no current pool count, reserve, price or match claimed.
+- Issue #37 update: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6542234509
+- Option B remains UNQUALIFIED; no protocol/economic/Oracle/EEV/R1-Kc/Kernel/V3/Reveal/Materios changes, wallet, signature, transaction, refresh, deployment or chain write.
