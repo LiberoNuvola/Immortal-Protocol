@@ -18,8 +18,10 @@ SNAPSHOT_SIZE=""
 NODE_VERSION=""
 AUTHORITY_HEX=""
 SET_ID_HEX=""
-TARGET_NUMBER=2519552
-TARGET_HASH=0x03174fceb7078f5fbed5de437c03f457e8460645725da883baa712ed55747db7
+TARGET_NUMBER=""
+TARGET_HASH=""
+DB_DIR=""
+NODE_BASE_PATH=""
 GENESIS_HASH=0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf
 
 finish() {
@@ -33,7 +35,8 @@ finish() {
     --arg status "$STATUS" --arg classification "$CLASSIFICATION" --arg detail "$DETAIL" \
     --arg snapshot_url "$SNAPSHOT_URL" --arg snapshot_sha256 "$SNAPSHOT_SHA" \
     --arg snapshot_head "$SNAPSHOT_HEAD" --arg snapshot_size "$SNAPSHOT_SIZE" \
-    --arg node_version "$NODE_VERSION" --arg target_hash "$TARGET_HASH" \
+    --arg node_version "$NODE_VERSION" --arg target_number "$TARGET_NUMBER" --arg target_hash "$TARGET_HASH" \
+    --arg db_dir "$DB_DIR" --arg node_base_path "$NODE_BASE_PATH" \
     --arg authorities "$AUTHORITY_HEX" --arg set_id "$SET_ID_HEX" \
     --arg rpc_url "$RPC_URL" --arg log "$(tail -n 35 "$LOG" 2>/dev/null || true)" \
     '{
@@ -42,8 +45,10 @@ finish() {
       network:"materios_preprod_v6", genesis_hash:"0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf",
       snapshot:{url:$snapshot_url,sha256:$snapshot_sha256,
         head_block_at_publish:($snapshot_head|if .=="" then null else tonumber end),
-        size_bytes:($snapshot_size|if .=="" then null else tonumber end)},
-      target:{block_number:2519552,expected_block_hash:$target_hash},
+        size_bytes:($snapshot_size|if .=="" then null else tonumber end),
+        rocksdb_directory:(if $db_dir=="" then null else $db_dir end),
+        node_base_path:(if $node_base_path=="" then null else $node_base_path end)},
+      target:{block_number:($target_number|if .=="" then null else tonumber end),expected_block_hash:$target_hash},
       node_version:$node_version,
       historical_state_query:{authorities_hex:(if $authorities=="" then null else $authorities end),
         set_id_hex:(if $set_id=="" then null else $set_id end)},
@@ -59,6 +64,16 @@ finish() {
 trap finish EXIT
 
 fail() { CLASSIFICATION="$1"; DETAIL="$2"; STATUS=FAIL; echo "::warning::$CLASSIFICATION — $DETAIL"; exit 1; }
+
+WS_EVIDENCE="$GITHUB_WORKSPACE/poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json"
+[[ -f "$WS_EVIDENCE" ]] || fail WEBSOCKET_WITNESS_EVIDENCE_MISSING "WebSocket probe artifact is absent"
+jq -e '.identity.genesis_hash_match == true and .claims.raw_grandpa_justification_captured == true and .historical_candidate_probe.status == "FRNK_JUSTIFICATION_CAPTURED_UNVERIFIED"' "$WS_EVIDENCE" >/dev/null \
+  || fail WEBSOCKET_FRNK_CANDIDATE_UNAVAILABLE "No genesis-matched raw FRNK candidate is available"
+TARGET_NUMBER="$(jq -r '.historical_candidate_probe.requested_block_number | tostring' "$WS_EVIDENCE")"
+TARGET_HASH="$(jq -r '.historical_candidate_probe.requested_block_hash // empty' "$WS_EVIDENCE" | tr '[:upper:]' '[:lower:]')"
+[[ "$TARGET_NUMBER" =~ ^[0-9]+$ ]] || fail WEBSOCKET_TARGET_NUMBER_INVALID "candidate block number is invalid"
+[[ "$TARGET_HASH" =~ ^0x[0-9a-f]{64}$ ]] || fail WEBSOCKET_TARGET_HASH_INVALID "candidate block hash is invalid"
+
 rpc_raw() {
   curl --fail --silent --show-error --max-time 15 -H 'content-type: application/json' \
     --data "$(jq -cn --arg m "$1" --argjson p "$2" '{jsonrpc:"2.0",id:1,method:$m,params:$p}')" \
@@ -104,14 +119,37 @@ printf '%s  %s\n' "$SNAPSHOT_SHA" "$TMP/snapshot.tar.gz" | sha256sum -c - \
   || fail SNAPSHOT_CHECKSUM_FAILED "snapshot checksum mismatch"
 tar -xzf "$TMP/snapshot.tar.gz" -C "$TMP" || fail SNAPSHOT_EXTRACTION_FAILED "tar extraction failed"
 rm -f "$TMP/snapshot.tar.gz"
-[[ -d "$TMP/data/chains/materios_preprod_v6/db" ]] || fail SNAPSHOT_LAYOUT_INVALID "RocksDB path absent"
+
+echo "Locate RocksDB database and derive the node base path"
+DB_DIR="$(find "$TMP" -type d -path '*/chains/materios_preprod_v6/db' -print -quit)"
+if [[ -z "$DB_DIR" ]]; then
+  CURRENT_FILE="$(find "$TMP" -type f -name CURRENT -print -quit)"
+  [[ -n "$CURRENT_FILE" ]] || fail SNAPSHOT_LAYOUT_INVALID "No RocksDB CURRENT marker found in snapshot"
+  CURRENT_DIR="$(dirname "$CURRENT_FILE")"
+  case "$CURRENT_DIR" in
+    */db/full) DB_DIR="$(dirname "$CURRENT_DIR")" ;;
+    */db) DB_DIR="$CURRENT_DIR" ;;
+    *) fail SNAPSHOT_LAYOUT_UNRECOGNIZED "CURRENT marker is not under a Materios RocksDB db directory" ;;
+  esac
+fi
+if [[ "$DB_DIR" == */chains/materios_preprod_v6/db ]]; then
+  NODE_BASE_PATH="$(sed 's#/chains/materios_preprod_v6/db$##' <<<"$DB_DIR")"
+else
+  NODE_BASE_PATH="$TMP/data"
+  mkdir -p "$NODE_BASE_PATH/chains/materios_preprod_v6"
+  mv "$DB_DIR" "$NODE_BASE_PATH/chains/materios_preprod_v6/db" \
+    || fail SNAPSHOT_DB_RELOCATION_FAILED "Could not place RocksDB under the expected Materios base path"
+  DB_DIR="$NODE_BASE_PATH/chains/materios_preprod_v6/db"
+fi
+[[ -d "$DB_DIR" ]] || fail SNAPSHOT_LAYOUT_INVALID "RocksDB directory absent after normalization"
+[[ -f "$DB_DIR/CURRENT" || -f "$DB_DIR/full/CURRENT" ]] || fail SNAPSHOT_LAYOUT_INVALID "RocksDB CURRENT marker absent after normalization"
 
 echo "Start node with explicit --state-pruning archive"
-"$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$TMP" \
+nohup "$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$NODE_BASE_PATH" \
   --name immortal-b3-archive-probe --port 30334 --rpc-port 9945 \
   --rpc-methods unsafe --state-pruning archive \
   --bootnodes /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM \
-  --out-peers 24 --in-peers 0 --no-telemetry --no-prometheus -linfo >"$LOG" 2>&1 &
+  --out-peers 24 --in-peers 0 --no-telemetry --no-prometheus -linfo >"$LOG" 2>&1 </dev/null &
 NODE_PID=$!
 READY=false
 for _ in $(seq 1 60); do
@@ -162,6 +200,6 @@ SET_ID_HEX="$(rpc_result state_call "[\"GrandpaApi_current_set_id\",\"0x\",\"$TA
 
 STATUS=PASS
 CLASSIFICATION=ARCHIVE_HISTORICAL_STATE_QUERY_PASS
-DETAIL="Verified snapshot checksum; node started with archive pruning; target hash matched and was finalized; both historical GRANDPA state calls succeeded."
+DETAIL="Verified snapshot checksum; normalized RocksDB path; node started with archive pruning; WebSocket FRNK candidate hash matched and was finalized; both historical GRANDPA state calls succeeded."
 RPC_URL=http://127.0.0.1:9945
 echo "PASS: local archive authority RPC available at $RPC_URL"
