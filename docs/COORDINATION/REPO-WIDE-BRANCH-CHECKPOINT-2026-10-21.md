@@ -6316,3 +6316,18 @@ Continued the exact-version AuxStore extraction research without opening or modi
 - No snapshot was downloaded, no archive was requested from Flux Point, and no source snapshot or database was opened. No repository runtime code, GRANDPA logic, V3, Reveal, or chain state was changed.
 
 **Next exact gates:** (1) obtain the original snapshot through an already-authorized local source, without contacting Flux Point from this workflow; (2) identify backend and column-family metadata from the supplied copy; (3) verify the exact `kvdb-rocksdb 0.19.0`/underlying RocksDB API against its pinned source; (4) extract only AUX column 8 keys to a separate evidence file, preserving the original snapshot hash. Until then, AuxStore values and the stale-state cause remain unproven.
+
+
+## Agent C — viable independent RocksDB read-only route identified, source snapshot still absent (2026-10-31)
+
+Further dependency/source research refines the AuxStore extraction route:
+
+- The pinned `kvdb-rocksdb 0.19.0` depends on the Rust `rocksdb 0.21.0` wrapper; this exact dependency pair is corroborated by the published dependency-resolution report for `sc-client-db`/Polkadot SDK. See [try-runtime-cli issue #118](https://github.com/paritytech/try-runtime-cli/issues/118).
+- The Rust RocksDB wrapper has an explicit `open_cf_for_read_only` API; its documentation specifies read-only opening of named column families. The wrapper changelog also records earlier support for read-only and secondary access methods, predating 0.21.0. See [RocksDB API docs](https://docs.rs/rocksdb/latest/rocksdb/struct.DBCommon.html) and [wrapper changelog](https://docs.rs/crate/rust-rocksdb/latest/source/CHANGELOG.md).
+- This yields a safer independent candidate than relying on `kvdb-rocksdb 0.19.0`'s higher-level `Database::open`: use the exact underlying `rocksdb 0.21.0` API with read-only access, after verifying the snapshot's backend and exact column-family names. This is still a candidate implementation route, not an executed or tested extractor. The current docs URL resolves the latest API documentation; exact 0.21.0 docs/source were not directly retrievable in this pass.
+- The AUX column index 8 and keys `grandpa_schema_version`, `grandpa_voters`, and `grandpa_completed_round` remain grounded in the pinned SDK's `sc-client-db` implementation, not inferred from the snapshot.
+- No local copy of the 2.39 GB snapshot exists in the current working filesystem. No download or external request was made. No DB was opened, no source snapshot was altered, and no runtime/protocol/V3/Reveal/on-chain state was changed.
+
+**Implementation gate:** only after an authorized local snapshot copy is made available, first hash and inspect its archive manifest/backend metadata; then list the RocksDB column families without mutation, open the copy with the pinned `rocksdb 0.21.0` read-only API, and extract only the three AUX keys from column 8. Preserve original archive/database hashes and emit a separate extraction manifest. If backend or CF layout differs, stop rather than guessing.
+
+The new classifier trigger commit `cf5b41f86bb69c5e277d52cfbb91d933e4148cdd` still has no independently observed workflow run in the available GitHub connector surface; do not claim the rerun passed.
