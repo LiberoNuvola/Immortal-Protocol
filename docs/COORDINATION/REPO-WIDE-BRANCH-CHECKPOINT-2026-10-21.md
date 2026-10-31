@@ -6512,3 +6512,12 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Tests expanded at `b7422cfa3b34a6a9e50263db249fd14bf95fff5e` to cover retained fee surplus, under-reserved Value and ADA-pair fee surplus. The real captured Mainnet datum fixture remains included.
 - The earlier 7 MATCH / 24 UNQUALIFIED classification from run 41203746686 used the superseded exact-equality rule and is withdrawn. Await run 41204050705 (latest test suite) and the corresponding read-only Mainnet observer result before stating current counts.
 - No economic kernel, DApp, V3, Reveal, Materios, Oracle consumer, EEV or R1/Kc semantics were changed.
+
+
+## 10.44 Agent A — First 31-pool Mainnet V2 structural reconciliation (2026-10-31)
+
+- Actions run 41204050705 completed successfully. Focused Vitest suite: **12/12 passed**, including the captured real Koios datum fixture, retained fee surplus and ADA-pair lower-bound cases.
+- Read-only Koios observer: **31 exact-USDM UTxOs** at the official Minswap V2 pool address, **31 transaction contexts**, **31 MATCH / 0 UNQUALIFIED**, zero validation reasons. This corrects the earlier 7/31 result, which used the superseded equality assumption and is withdrawn.
+- Evidence artifact ID `13043641385`, ZIP SHA-256 `38ee9388333e85a1765493cbc879b48bca2a42e9758534893e4897eac86acacc`; JSON SHA-256 `db5b109eb4638eac10434f5b3d120b57c526d55f2d4f7de837c8aea1434ecbcb`. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204050705
+- Scope of MATCH is structural pool identity + datum/Value consistency under Minswap's fee-retention semantics. It is not an oracle price, USDM/USD peg, independent market venue, EEV evidence or deployment approval. Minswap API collection and cross-indexer corroboration remain open.
+- Per-candidate qualification label clarified at `3c500e192389c16c87eee2e3bb3db9534876f498` to say `POOL_IDENTITY_AND_RESERVE_STRUCTURE_MATCH_NOT_ORACLE_QUALIFICATION`; the rerun triggered by this change is pending.
