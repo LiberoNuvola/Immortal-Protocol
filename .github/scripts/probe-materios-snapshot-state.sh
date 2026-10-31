@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Read-only probe of the official Materios snapshot with archive state pruning.
-# RPC-returned authority data remains untrusted; this tests availability only.
+# Read-only probe of the official Materios snapshot's retained state window.
+# This is not an archive node. RPC-returned authority data remains untrusted.
 set -Eeuo pipefail
 OUT="$GITHUB_WORKSPACE/poc/materios-grandpa/out/MateriosSnapshotStateProbe.json"
 TMP="$RUNNER_TEMP/materios-archive-snapshot-probe"
@@ -18,6 +18,10 @@ SNAPSHOT_SIZE=""
 NODE_VERSION=""
 AUTHORITY_HEX=""
 SET_ID_HEX=""
+TARGET_HEADER_JSON=""
+TARGET_RUNTIME_VERSION=""
+DIGEST_WINDOW_JSON="[]"
+DIGEST_SCAN_START=""
 TARGET_NUMBER=""
 TARGET_HASH=""
 DB_DIR=""
@@ -38,6 +42,8 @@ finish() {
     --arg node_version "$NODE_VERSION" --arg target_number "$TARGET_NUMBER" --arg target_hash "$TARGET_HASH" \
     --arg db_dir "$DB_DIR" --arg node_base_path "$NODE_BASE_PATH" \
     --arg authorities "$AUTHORITY_HEX" --arg set_id "$SET_ID_HEX" \
+    --arg target_header "$TARGET_HEADER_JSON" --arg runtime_version "$TARGET_RUNTIME_VERSION" \
+    --arg digest_window "$DIGEST_WINDOW_JSON" --arg digest_scan_start "$DIGEST_SCAN_START" \
     --arg rpc_url "$RPC_URL" --arg log "$(tail -n 35 "$LOG" 2>/dev/null || true)" \
     '{
       schema_version:"materios-snapshot-state-probe-v1",
@@ -53,6 +59,13 @@ finish() {
       node_version:$node_version,
       historical_state_query:{authorities_hex:(if $authorities=="" then null else $authorities end),
         set_id_hex:(if $set_id=="" then null else $set_id end)},
+      target_header:(if $target_header=="" then null else ($target_header|fromjson) end),
+      target_runtime_version:(if $runtime_version=="" then null else ($runtime_version|fromjson) end),
+      grandpa_digest_window:{
+        start_block:($digest_scan_start|if .=="" then null else tonumber end),
+        end_block:($target_number|if .=="" then null else tonumber end),
+        blocks_with_frnk_consensus_logs:($digest_window|fromjson)
+      },
       local_rpc_url:(if $rpc_url=="" then null else $rpc_url end),
       node_log_tail:$log,
       trust_boundary:"Isolated FULL-role diagnostic only: snapshot DB is Constrained(256); USE_MAIN_CHAIN_FOLLOWER_MOCK is used solely to start local RPC; no validator role, no peers, no block import. This proves availability only inside the retained window, not archive history. RPC authority state remains untrusted until independently authenticated."
@@ -206,6 +219,22 @@ FINALIZED_NUMBER="$(jq -r '.number // empty' <<<"$FINALIZED_HEADER")"
 [[ "$FINALIZED_NUMBER" =~ ^0x[0-9a-fA-F]+$ ]] || fail SNAPSHOT_FINALIZED_HEIGHT_INVALID "snapshot finalized height is malformed"
 FINALIZED_DECIMAL=$((16#$(sed 's/^0x//' <<<"$FINALIZED_NUMBER")))
 (( FINALIZED_DECIMAL >= TARGET_NUMBER )) || fail SNAPSHOT_FINALIZED_HEAD_BEHIND_TARGET "snapshot is not finalized through candidate block"
+
+echo "Capture target header digest and runtime version"
+TARGET_HEADER_JSON="$(rpc_result chain_getHeader "[\\"$TARGET_HASH\\"]")" \
+  || fail TARGET_HEADER_QUERY_FAILED "target header query failed"
+TARGET_RUNTIME_VERSION="$(rpc_result state_getRuntimeVersion "[\\"$TARGET_HASH\\"]")" \
+  || fail TARGET_RUNTIME_VERSION_QUERY_FAILED "target runtime version query failed"
+DIGEST_SCAN_START=$(( TARGET_NUMBER > 255 ? TARGET_NUMBER - 255 : 0 ))
+echo "Scan retained headers for FRNK consensus digest logs: $DIGEST_SCAN_START..$TARGET_NUMBER"
+for ((block_number=DIGEST_SCAN_START; block_number<=TARGET_NUMBER; block_number++)); do
+  block_hash="$(rpc_result chain_getBlockHash "[$block_number]")" || continue
+  block_header="$(rpc_result chain_getHeader "[\\"$block_hash\\"]")" || continue
+  frnk_logs="$(jq -c '[.digest.logs[]? | select((ascii_downcase | contains("46524e4b")))]' <<<"$block_header")"
+  if [[ "$frnk_logs" != "[]" ]]; then
+    DIGEST_WINDOW_JSON="$(jq -cn --argjson acc "$DIGEST_WINDOW_JSON" --argjson n "$block_number" --arg hash "$block_hash" --argjson logs "$frnk_logs" '$acc + [{block_number:$n,block_hash:$hash,logs:$logs}]')"
+  fi
+done
 
 echo "Query GRANDPA authorities and set id at exact target hash"
 AUTHORITY_HEX="$(rpc_result state_call "[\"GrandpaApi_grandpa_authorities\",\"0x\",\"$TARGET_HASH\"]")" \
