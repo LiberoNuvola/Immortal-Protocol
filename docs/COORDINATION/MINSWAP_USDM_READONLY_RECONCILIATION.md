@@ -286,3 +286,16 @@ A valid multi-source quorum must identify overlap and common-mode dependencies; 
 - Reconcile its Minswap V2 pool keys/reserves and trades against Koios and the Minswap API, while preserving provider-specific identities and timestamps.
 - Add venue-specific on-chain observers only for venues that can be authenticated by their own pool NFT/script identities (WingRiders, SundaeSwap, Danogo, VyFi, MuesliSwap, CSWAP, Splash).
 - Keep all USD conversion and peg claims blocked until ADA/USD reference provenance and an independent cross-check are qualified.
+
+
+## 19. First frozen SuperCardano USDM observation
+
+The SuperCardano observer completed successfully in Actions run [41221859296](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41221859296), at source block **14,140,510** (Unix time `1793465281`), with source metadata `stale=false`. Both exact-unit endpoints returned HTTP 200 and their raw response hashes are preserved.
+
+Artifact ID `13050446694`, ZIP SHA-256 `4586f94d439f43d9ee71554abcd397bce0a40e6ee2104ab6e85327a5393e14c2`; extracted JSON SHA-256 `b3c220e155950608fbc34e1b600054e9b72c6b8bfd712fe0ee0d41afed3b59d2`. Raw token response SHA-256 `e6052504d1a3b70e98d583ec9ea1bfb1797da990d6ed012542305d74327fc413`; raw trades response SHA-256 `23d71b9d3856c52f32b45a5e8429abcfabe6f9986472f6c94e5a847b280f4c52`.
+
+The endpoint returned **81 USDM pool records across 9 venue families**: Minswap V2 31, Danogo CLMM 12, Sundae V3 10, Minswap V1 8, WingRiders V2 6, VyFi 5, Splash 5, MuesliSwap 3, CSWAP 1. These are not 81 confirmed active pools: pool timestamps relative to the source's own as-of time show many old records. For Minswap V2, 5 records were under 24h old, 5 were 1–7 days old and 21 were older than 7 days. Other venues' freshness buckets are preserved in the artifact.
+
+The endpoint also returned 50 latest USDM trade rows: Minswap V2 32, Danogo CLMM 13 and WingRiders V2 5; all were Level B. Flags include converted (22), multiHop (9) and batchImpact (2), so these flags must be respected when using trade rows as price evidence. The source's own token price was `5.094192535453990358` ADA/USDM, but its methodology states its own price surface currently reads Minswap V2; it is not a cross-venue consensus or independent USD quote. The USD display uses DexHunter ADA/USD and is explicitly excluded from our oracle count.
+
+This is a useful independent indexer feed for raw pool/trade observations and venue discovery. The next gate is to reconcile SuperCardano's 31 Minswap V2 pool keys and reserve values directly against the same-run Koios UTxOs and PoolDatum, then separately authenticate the non-Minswap venue pools using each venue's own on-chain contract/NFT identities.
