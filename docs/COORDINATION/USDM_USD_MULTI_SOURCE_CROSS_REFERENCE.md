@@ -113,3 +113,25 @@ Primary observations:
 SaturnSwap CLOB result in the same run: 20,026 order UTxOs scanned across three deployments; no direct ADA/USDM orders were detected in the scanned rows, but the `saturn-v2-mainnet-4pct-runoff` deployment hit the pagination cap. Overall status remains `READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL`, with 8 invalid rows and no best bid/ask. Therefore **zero detected orders is not proof of zero orders** and this source contributes no CLOB quote yet.
 
 These observations broaden the market reference set, but they are still research cross-rates—not an issuer redemption quote, not proof of a 1 USD peg, not a qualified oracle and not EEV evidence. Staleness, market depth, venue independence and reserve risk remain explicit limitations.
+
+
+## Float — additional confirmed-chain cross-DEX indexer (2026-10-31)
+
+Added a read-only collector for the public [Float API](https://api.float.sundae.fi/v1), associated with Sundae Labs. The official Sundae Labs site lists Float among its Cardano DeFi analytics products, and describes its aggregate market statistics as on-chain sourced. Float's API reports a confirmed-chain watermark (slot, height, hash) and serves per-market reserves, pool metadata, stale flags and venue identifiers. It is a **separate indexer/data plane**, not a separate DEX venue or independent USD oracle.
+
+The first live collector run [41239314212](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239314212) succeeded:
+- exact Moneta USDM identity verified, decimals 6;
+- HTTP 200, provider finality confirmed, watermark height 14,141,197 / slot 201,912,408;
+- 58 exact-USDM markets across 12 venue families;
+- 18 direct ADA/USDM markets, of which 12 were not marked stale and 6 were marked stale by Float;
+- raw response SHA-256 295331e0878c1f9b6529fff100671bda89c3d7ddb9ef5ae76f07193aa3eb5e8f;
+- artifact ID 13057135662, ZIP SHA-256 9c9b6126d3c56524af457a133afcff8460314302b5063c53b4510114263a6083, extracted JSON SHA-256 c6c39376f31a6831fb12318c9fb9a8a86c3be272587adb1b30226aa2a6272900.
+
+Venue census in that snapshot: Minswap V2 14, Danogo 11, Splash 8, Sundae V3 5, WingRiders V2 5, Minswap Stable 4, Sundae Stable 2, VyFi 2, MuesliSwap 2, WingRiders V1 2, Minswap V1 2, CSWAP 1. The 18 direct ADA/USDM market rows include stale and thin pools; these counts are a provider coverage census, not 18 qualified or executable quotes. The collector requests quote=ada and preserves raw reserves; it does not use Float's USD conversion.
+
+A same-run reconciler is now added to compare Float's Minswap V2 pool keys and unordered asset pairs with the Koios UTxO set and Minswap API, while separately reporting Float venue coverage and stale direct pairs. It deliberately does not require Float to enumerate every on-chain pool: missing rows are coverage differences, not proof of absent pools. Automated cross-indexer result is pending.
+
+Source boundaries:
+- Float is operated in the Sundae Labs ecosystem; its data is not independent of the underlying Cardano ledger and it is not a second DEX venue.
+- Koios, SuperCardano and Float are distinct indexer observations, but all describe the same on-chain state. Agreement is corroboration of decoding/coverage, not market independence.
+- Do not merge Float's price, deviation, liquidity USD or ADA/USD-derived fields into the primary cross-rate until reserve semantics, venue curve math, freshness and the independent ADA/USD reference are validated.
