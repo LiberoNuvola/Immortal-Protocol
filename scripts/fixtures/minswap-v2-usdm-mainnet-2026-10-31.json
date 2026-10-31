@@ -1,0 +1,115 @@
+{
+  "schema": "immortal-minswap-v2-mainnet-pool-datum-fixture-v1",
+  "provenance": {
+    "provider": "Koios",
+    "network": "cardano-mainnet",
+    "endpoint": "POST /asset_utxos",
+    "responseDate": "Sat, 31 Oct 2026 12:59:20 GMT",
+    "responseBodySha256": "c8614fcdbadc105069c067a68dc1610bdba46b1ae72b5d03feeaaffcf57237c1",
+    "captureRunId": 41203478980,
+    "artifactId": 13043376113,
+    "utxoRef": "483c84771b14c9c80eea13a0b2606b2e4a50224fc90b891943a1a77448c0817e#1",
+    "blockHash": "3e2d6f8b02dd6529b76e36b4dd15cd449ae046e12bebdc063dd48306711028c4",
+    "blockHeight": 10589026,
+    "epochNo": 497,
+    "absoluteSlot": 129744241,
+    "blockTime": 1721310532
+  },
+  "address": "addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a",
+  "paymentCred": "ea07b733d932129c378af627436e7cbc2ef0bf96e0036bb51b3bde6b",
+  "stakeAddress": "stake1u9f9v0z5zzlldgx58n8tklphu8mf7h4jvp2j2gddluemnssjfnkzz",
+  "valueLovelaceRaw": "4500000",
+  "datumHash": "fc7f41a299efdeaf042cfa68f99a7d4f5c2caa82b3900be4de923affe337343b",
+  "inlineDatum": {
+    "bytes": "d8799fd8799fd87a9f581c1eae96baf29e27682ea3f815aba361a0c6059d45e4bfbe95bbd2f44affffd8799f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dffd8799f581cf6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d40ff0a0710181e181ed8799f190682ffd87980ff",
+    "value": {
+      "constructor": 0,
+      "fields": [
+        {
+          "constructor": 0,
+          "fields": [
+            {
+              "constructor": 1,
+              "fields": [
+                {
+                  "bytes": "1eae96baf29e27682ea3f815aba361a0c6059d45e4bfbe95bbd2f44a"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "constructor": 0,
+          "fields": [
+            {
+              "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+            },
+            {
+              "bytes": "0014df105553444d"
+            }
+          ]
+        },
+        {
+          "constructor": 0,
+          "fields": [
+            {
+              "bytes": "f6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d"
+            },
+            {
+              "bytes": ""
+            }
+          ]
+        },
+        {
+          "int": 10
+        },
+        {
+          "int": 7
+        },
+        {
+          "int": 16
+        },
+        {
+          "int": 30
+        },
+        {
+          "int": 30
+        },
+        {
+          "constructor": 0,
+          "fields": [
+            {
+              "int": 1666
+            }
+          ]
+        },
+        {
+          "constructor": 0,
+          "fields": []
+        }
+      ]
+    }
+  },
+  "assets": [
+    {
+      "policyId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+      "assetNameHex": "0014df105553444d",
+      "quantityRaw": "7"
+    },
+    {
+      "policyId": "f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c",
+      "assetNameHex": "10ae5aabdad4fec6e5d061eafb681ae0989ee0ecc60224a3a638c228d9885907",
+      "quantityRaw": "9223372036854775807"
+    },
+    {
+      "policyId": "f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c",
+      "assetNameHex": "4d5350",
+      "quantityRaw": "1"
+    },
+    {
+      "policyId": "f6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d",
+      "assetNameHex": "",
+      "quantityRaw": "16"
+    }
+  ]
+}
