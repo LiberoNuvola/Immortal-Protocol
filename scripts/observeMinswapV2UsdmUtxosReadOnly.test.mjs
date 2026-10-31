@@ -32,7 +32,7 @@ function fixtureDatum(overrides = {}) {
     int(RESERVE_B),
     int(30),
     int(30),
-    constr(0), // None
+    constr(1), // None
     constr(0), // False
     ...Object.entries(overrides).map(([index, value]) => [Number(index), value]),
   ].reduce((fields, entry) => {
