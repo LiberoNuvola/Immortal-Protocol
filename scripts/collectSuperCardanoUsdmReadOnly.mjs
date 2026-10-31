@@ -90,16 +90,32 @@ async function main() {
     if (!Array.isArray(tokenData.pools)) throw new Error('SUPERCARDANO_POOL_SCHEMA_INVALID')
     if (!Array.isArray(tradesData?.rows)) throw new Error('SUPERCARDANO_TRADES_SCHEMA_INVALID')
 
-    const pools = tokenData.pools.map((pool) => ({
-      ...pool,
-      exactUsdmInPair: unitOf({ currency_symbol: pool.assetA?.slice(0, 56), token_name: pool.assetA?.slice(56) }) === UNIT ||
-        unitOf({ currency_symbol: pool.assetB?.slice(0, 56), token_name: pool.assetB?.slice(56) }) === UNIT ||
-        pool.assetA?.toLowerCase() === UNIT || pool.assetB?.toLowerCase() === UNIT,
-    }))
+    const asOfTime = Number(tokenData.asOf ?? poolsResponse.json.meta?.asOf?.time ?? 0)
+    const pools = tokenData.pools.map((pool) => {
+      const ageSeconds = asOfTime > 0 && Number.isFinite(Number(pool.time))
+        ? Math.max(0, asOfTime - Number(pool.time))
+        : null
+      return {
+        ...pool,
+        ageSecondsAtSourceAsOf: ageSeconds,
+        freshnessAtSourceAsOf: ageSeconds === null
+          ? 'UNKNOWN'
+          : ageSeconds < 86_400 ? 'UNDER_24H'
+            : ageSeconds < 604_800 ? 'ONE_TO_SEVEN_DAYS' : 'OVER_SEVEN_DAYS',
+        exactUsdmInPair: String(pool.assetA ?? '').toLowerCase() === UNIT ||
+          String(pool.assetB ?? '').toLowerCase() === UNIT,
+      }
+    })
     const trades = tradesData.rows.filter((trade) => String(trade.unit ?? '').toLowerCase() === UNIT)
 
     const byVenue = {}
-    for (const pool of pools) byVenue[pool.venue ?? 'UNKNOWN'] = (byVenue[pool.venue ?? 'UNKNOWN'] ?? 0) + 1
+    const freshnessByVenue = {}
+    for (const pool of pools) {
+      const venue = pool.venue ?? 'UNKNOWN'
+      byVenue[venue] = (byVenue[venue] ?? 0) + 1
+      freshnessByVenue[venue] ??= { UNDER_24H: 0, ONE_TO_SEVEN_DAYS: 0, OVER_SEVEN_DAYS: 0, UNKNOWN: 0 }
+      freshnessByVenue[venue][pool.freshnessAtSourceAsOf] += 1
+    }
     const tradeByVenue = {}
     for (const trade of trades) tradeByVenue[trade.venue ?? 'UNKNOWN'] = (tradeByVenue[trade.venue ?? 'UNKNOWN'] ?? 0) + 1
 
@@ -124,6 +140,7 @@ async function main() {
       summary: {
         tokenPoolCount: pools.length,
         poolCountByVenue: byVenue,
+        poolFreshnessByVenueAtSourceAsOf: freshnessByVenue,
         tradeRowsReturned: tradesData.rows.length,
         exactUsdmTradeRows: trades.length,
         exactUsdmTradeRowsByVenue: tradeByVenue,
