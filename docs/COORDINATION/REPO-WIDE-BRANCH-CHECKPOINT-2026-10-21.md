@@ -7015,3 +7015,11 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Float helper now tests full LP unit mapping, API asset normalization, Float market key parsing, reserve equality in canonical and reversed pair orientation, mismatch and nonmatching pair behavior. New suite count is expected to increase by one more test; verify CI.
 - The workflow was queuing many redundant same-branch full evidence runs after each commit. Added a concurrency group with `cancel-in-progress: true` so only the latest same-branch read-only evidence run continues; older artifacts already captured remain available. Workflow commit `ae3deb9b0553bb6e409e8a35400ee469fd8571d1`.
 - Corrected Float reconciliation output remains pending; inspect the latest run after cancellation/queue drain. No on-chain write or economic change.
+
+
+## 10.77 Agent A — ADA/USD reference layer expanded with three aggregators (2026-10-31)
+
+- Extended scripts/collectAdaUsdPublicReferencesReadOnly.mjs with public CoinPaprika, CoinLore and CoinGecko ADA/USD endpoints. Commit c1d15921fe41f0727cfc9380b4dabe434aca99d8; source-category preservation on HTTP failures fixed at dbb85e755e8c6fa92def452c2be499559897e944.
+- Reference layer now has seven direct CEX spot sources plus three MARKET_DATA_AGGREGATOR observations. Aggregators are kept in a distinct category; they may reuse underlying exchange/DEX data and are not three extra venues or independent oracle networks.
+- CoinPaprika exposes last_updated, CoinGecko can expose last_updated_at, CoinLore currently returns no provider timestamp; freshness is treated accordingly.
+- Docs updated; ten-source live rerun pending. No aggregator or CEX value is used as USDM/USD peg evidence.
