@@ -280,6 +280,7 @@ async function main() {
   const observed = candidates.map(({ u, assets, usdm }) => {
     const txHash = String(u.tx_hash ?? '').toLowerCase()
     const tx = txContext[txHash]?.transaction
+    const datumValidation = validateV2Candidate(u, assets, u.inline_datum?.value ?? null)
     return {
       utxoRef: txHash + '#' + String(u.tx_index),
       address: u.address ?? ADDRESS,
@@ -288,7 +289,7 @@ async function main() {
       exactUsdmQuantityRaw: usdm[0].quantityRaw,
       poolAuthNftQuantityRaw: assets.find((a) => a.unit === V2_POOL_AUTH_NFT.policyId + V2_POOL_AUTH_NFT.assetNameHex)?.quantityRaw ?? '0',
       poolAuthNftValidated: assets.find((a) => a.unit === V2_POOL_AUTH_NFT.policyId + V2_POOL_AUTH_NFT.assetNameHex)?.quantityRaw === '1',
-      datumValidation: validateV2Candidate(u, assets, u.inline_datum?.value ?? null),
+      datumValidation,
       datumHash: u.datum_hash ?? null,
       inlineDatumCborHex: u.inline_datum?.bytes ?? null,
       inlineDatumJson: u.inline_datum?.value ?? null,
@@ -301,7 +302,9 @@ async function main() {
         absoluteSlot: tx.absolute_slot ?? tx.slot_no ?? null,
         blockTime: tx.block_time ?? tx.tx_timestamp ?? null,
       } : null,
-      qualification: 'USDM_UTXO_CANDIDATE_ONLY_POOL_DATUM_AND_AUTHENTICITY_NOT_YET_VALIDATED',
+      qualification: datumValidation.status === 'MATCH'
+        ? 'POOL_IDENTITY_AND_RESERVE_STRUCTURE_MATCH_NOT_ORACLE_QUALIFICATION'
+        : 'UNQUALIFIED_POOL_CANDIDATE',
     }
   })
 
