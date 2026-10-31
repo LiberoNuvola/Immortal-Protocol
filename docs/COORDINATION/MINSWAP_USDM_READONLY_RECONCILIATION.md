@@ -412,3 +412,14 @@ These sources represent three different layers and must not be conflated:
 3. **USD reference diversity:** CoinGecko ADA/USD, Pyth, Charli3, Orcfax or other genuinely separate fiat-reference sources. These need their own source, freshness, methodology and free-tier qualification gates.
 
 No source in this census independently proves USDM/USD parity or issuer redemption/reserves. Option B remains unqualified until market/price evidence is independently validated and the existing EEV/R1-Kc gates close.
+
+
+## 19. WingRiders V2 and full multi-source rerun
+
+The corrected WingRiders observer completed in run [41224109855](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41224109855): **6/6** SuperCardano-discovered share-token pools each resolved to exactly one current pool UTxO, with one validity NFT L, official pool payment credential by pool type, supported 21-field datum, exact USDM pair, derived share-token name, positive active reserves and exact active-reserve agreement with SuperCardano. Counts: 6 MATCH, 0 active reserve mismatches, 0 unqualified, 0 missing, 0 cardinality errors. The query also found **126** live factory-token F UTxOs, each quantity 1 (total 126), which is consistent with factory range splitting; the earlier single-F-output assumption was wrong.
+
+The corrected pool selection excludes LP-holder UTxOs: fungible share tokens are held by many wallets, whereas the pool output is identified by exactly one validity NFT L and one of the official WingRiders V2 pool payment credentials. The `lp` metric reported by SuperCardano is retained for audit but is not assumed to equal the pool's share-token reserve. This is structural identity/reserve reconciliation only, not a swap quote or USD price.
+
+Same run's full matrix remained: Minswap API 43 pools (31 V2, 8 V1, 4 Stable); Koios/Minswap V2 31/31 exact LP/pair matches; SuperCardano 81 pool records across 9 venue families; Danogo CLMM 12/12 structural matches; GeckoTerminal 20 exact-USDM pools (19 Minswap, 1 SaturnSwap); DEX Screener 5/31 known V2 pair matches; MuesliSwap source unavailable; SaturnSwap 0 direct USDM/ADA orders among 20,026 scanned order UTxOs, with legacy 4% run-off pagination incomplete at 20,000 rows. Focused suite passed 19/19 tests. See checkpoint section 10.55 for exact limits.
+
+No source in this matrix independently proves USDM/USD parity, issuer reserves/redemption, or oracle quality. Venue diversity, indexer diversity and USD-reference diversity remain separate qualification dimensions.
