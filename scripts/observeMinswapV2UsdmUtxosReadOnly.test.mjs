@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   decodeV2PoolDatum,
   expectedLpAssetName,
@@ -65,6 +66,29 @@ describe('Minswap V2 PoolDatum decoder (synthetic fixtures)', () => {
     expect(decoded.reserveA).toBe(RESERVE_A)
     expect(decoded.reserveB).toBe(RESERVE_B)
     expect(decoded.totalLiquidity).toBe(15_000_000n)
+  })
+
+
+  it('decodes and validates a captured Koios Mainnet USDM pool datum', () => {
+    const real = JSON.parse(readFileSync(
+      new URL('./fixtures/minswap-v2-usdm-mainnet-2026-10-31.json', import.meta.url),
+      'utf8',
+    ))
+    const assets = real.assets.map((asset) => ({
+      ...asset,
+      unit: asset.policyId + asset.assetNameHex,
+    }))
+    const result = validateV2Candidate(
+      { value: real.valueLovelaceRaw },
+      assets,
+      real.inlineDatum.value,
+    )
+    expect(result.status).toBe('MATCH')
+    expect(result.reasons).toEqual([])
+    expect(result.datum.poolBatchingStakeScriptHash).toBe(STAKE)
+    expect(result.datum.reserveARaw).toBe('7')
+    expect(result.datum.reserveBRaw).toBe('16')
+    expect(result.lpAsset.assetNameHex).toBe('10ae5aabdad4fec6e5d061eafb681ae0989ee0ecc60224a3a638c228d9885907')
   })
 
   it('rejects an unsupported PoolDatum constructor shape', () => {
