@@ -7005,7 +7005,7 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - First Charli3 live run 41240028319 found one UTxO at the exact ADA/USD feed address with the exact OracleFeed NFT, but the decoder rejected it because the live datum omitted optional precision and symbol fields.
 - Official Charli3 datum standard marks price-map fields 0–9 optional. The captured datum contained only keys 0 (price integer 239761), 1 (timestamp 1779859290404 ms) and 2 (expiry 1779880890404 ms). The decoder now requires only those mandatory operational fields, accepts optional metadata, and leaves decimal price conversion null when precision is absent. It identifies the pair by the pinned mainnet address/NFT, not by inferred symbols.
 - Updated decoder at b44ab8a6a7f2ac3a29c9a230c153a65c5c157560; observer at f58ceff0bda879536f7685fd2122b24c967ee7e0; tests at fa8cc80222ca0fff895f981c7ce8b510bf35ada0.
-- Captured timestamp corresponds to 2026-05-26T20:01:30.404Z and expiry 2026-05-27T02:01:30.404Z. At 2026-10-31 capture, the statement was expired by over five months. It is not a current price reference. Corrected rerun pending.
+- Captured timestamp corresponds to 2026-05-27T05:21:30.404Z and expiry 2026-05-27T11:21:30.404Z. At 2026-10-31 capture, the statement was expired by over five months. It is not a current price reference. Corrected rerun pending.
 - No conversion/precision assumption, no price/peg qualification, no EEV or deployment action.
 
 
@@ -7031,3 +7031,14 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - The observer `scripts/observeOrcfaxCerFeedsReadOnly.mjs` resolves the FS script hash via the FSP state NFT, scans FS token UTxOs, validates FS payment credential, exact feed-id prefixes, positive rational numerator/denominator, and provider-defined freshness. It captures transaction/block context and raw response hashes.
 - Source semantics: this is a distinct Cardano-native oracle publication channel, but ADA/USD is an aggregate of CEX inputs and ADA/USDM is an aggregate of DEX inputs. It is not a new market venue, not an issuer redemption price and not direct USDM/USD peg evidence.
 - No successful live Orcfax artifact has yet been inspected; the current run is queued behind prior read-only workflow runs. Do not claim feed values/freshness until the artifact is captured and inspected. No ratio orientation conversion until actual statement semantics are confirmed.
+
+
+## 10.78 Agent A — ten-source ADA/USD public reference run (2026-10-31)
+
+- Run 41240334298 completed the new ten-source ADA/USD collector successfully: 8/10 available, consisting of 5/7 CEX spot sources and 3/3 market aggregators.
+- CEX available: Coinbase, Kraken, Bitstamp, Crypto.com, BTSE. Gemini returned HTTP 404; Bitfinex HTTP 500. BTSE had last/index but no bid/ask.
+- Aggregators available: CoinPaprika, CoinLore, CoinGecko. CoinLore had no provider timestamp.
+- Five-venue bid/ask midpoint range: 0.19240900–0.19245500 USD/ADA. Last-price range across all eight successful references: 0.19238600–0.19276400 USD/ADA. These are observed ranges, not an average/consensus and not USDM/USD.
+- Artifact ID 13057132705, ZIP digest 1f9cc9756474ced7ae5be8e82fc2408715d3faf31cd4e8ec56da5a4e989ca82a; JSON digest 8e298c6cc47021f0f0a8074e1e8548621d1c496954f1cc37dd031de345ab31c2.
+- Charli3 corrected observer in same run: one exact ADA/USD OracleFeed NFT, one decoded datum, zero invalid; status OBSERVED_STALE_CHARLI3_ADA_USD. Price integer 239761, precision omitted (so no decimal conversion), timestamp 2026-05-27T05:21:30.404Z, expiry 2026-05-27T11:21:30.404Z. Expired by ~157 days at capture; excluded from current reference data. Artifact ID 13057252360, JSON digest e431c98e0b88d07b941d036d432a12877b1efa8b04264d42a1ddc062bc7314aa.
+- Decoder/syntax test job passed in run 41240334298. Full workflow still had other read-only market jobs pending at the time of this record.
