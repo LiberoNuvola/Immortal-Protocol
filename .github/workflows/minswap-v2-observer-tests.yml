@@ -6,6 +6,7 @@ on:
       - work/immortal-green-closure
     paths:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
+      - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs"
       - ".github/workflows/minswap-v2-observer-tests.yml"
   pull_request:
@@ -54,4 +55,26 @@ jobs:
         with:
           name: minswap-v2-usdm-mainnet-readonly-${{ github.run_id }}
           path: audit/oracles/minswap-v2-usdm-utxos-readonly.json
+          if-no-files-found: warn
+
+  read-only-minswap-api-observation:
+    # Public Minswap API market observations only; no transaction endpoints.
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect exact-USDM Minswap API observations (read-only)
+        run: node scripts/collectMinswapUsdmReadOnly.mjs --out audit/oracles/minswap-usdm-readonly.json
+      - name: Upload Minswap API evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minswap-usdm-api-readonly-${{ github.run_id }}
+          path: audit/oracles/minswap-usdm-readonly.json
           if-no-files-found: warn
