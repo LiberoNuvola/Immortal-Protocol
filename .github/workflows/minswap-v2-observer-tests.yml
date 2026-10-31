@@ -271,8 +271,10 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - name: Install locked dependencies for Blake2b-256
+      - name: Install locked repository dependencies
         run: npm ci --no-audit --no-fund
+      - name: Install pinned BLAKE2b-256 implementation (observer-only)
+        run: npm install --no-save --package-lock=false @noble/hashes@1.8.0
       - name: Download same-run SuperCardano USDM pool discovery
         uses: actions/download-artifact@v4
         with:
