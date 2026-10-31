@@ -6000,3 +6000,38 @@ Agent C's parallel commit `f156289fc4b7e8c553411c1ca7a9c6341669936c` adds an exa
 **Next action:** wait for the local snapshot digest replay artifact. Compare replayed ScheduledChange/ForcedChange count and final authority list against runtime set 4434 and persisted voter set 4343. If the scan is interrupted by the workflow timeout, increase the bounded job timeout or split the scan into resumable ranges; do not substitute the rate-limited public RPC or weaken hash/parent-link checks.
 
 **B3-A remains OPEN.** The snapshot voter/runtime contradiction is confirmed as an observation, not yet reconciled with the full genesis-to-target header history.
+
+
+## Agent C addendum — Genesis-anchored GRANDPA digest replay completed (2026-10-31)
+
+Exact-head workflow [#41175284220](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41175284220), source branch `work/b3-materios-provenance-evidence`, commit `493256dfa9201891396f504d9af9b60e230bc439`, completed the local-snapshot replay and uploaded artifact [materios-grandpa-digest-history #13032599446](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41175284220/artifacts/13032599446).
+
+### Replay evidence
+
+The artifact reports `status=PASS` and `GENESIS_ANCHORED_HEADER_CHAIN_AND_FRNK_DIGEST_SCAN_PASS` for `materios_preprod_v6`:
+- scanned blocks 0 through 2,509,824 inclusive (2,509,825 headers);
+- recomputed every header hash and verified every parent link;
+- verified the configured genesis hash and exact target hash;
+- found 4,434 FRNK consensus logs: 4,408 ScheduledChange and 26 ForcedChange, with zero unknown FRNK variants;
+- replayed set ID from genesis set 0 to **4434**;
+- replayed authority list matches the exact-target runtime authority list;
+- runtime set ID is **4434**; snapshot GRANDPA voter auxiliary set ID remains **4343**.
+
+Artifact SHA-256: `25d037ed938ae954ce8d5aa0abd60daeb1554739232a4fe2f1ba935aa304de02`. The replay uses the genesis authority list pinned to `Flux-Point-Studios/materios` source commit `ea86448d4aed4c1fc99d4e355e09ac280a3e4bbe`. Its trust scope is header-chain continuity and FRNK transition reconstruction from the pinned genesis, not finality proof acceptance by itself.
+
+### Narrowed discrepancy
+
+The 4,343rd replayed change (set ID 4343) is at block **2,455,115**. The 4,434th (set ID 4434) is at block **2,509,528**. Thus set 4343 was superseded by 91 subsequent set changes before target block **2,509,824**. The authority list at the set-4343 transition is byte-for-byte/member-for-member the same five-key list as the replayed set 4434 list; the set ID nevertheless differs and is part of the GRANDPA localized signing payload.
+
+The captured target justification is round 1253, commits to the exact target hash at block 2,509,824, and has four precommits. Its signatures fail under replayed/runtime set ID 4434; the bounded localized-payload diagnostic finds all four signatures valid only with set ID 4343. The snapshot voter startup log also reports set ID 4343. This is consistent with stale GRANDPA voter auxiliary state being used to produce or retain a justification for a later block, but the causal path is not yet proven.
+
+The exact-target witness artifact [#13032584596](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41175284220/artifacts/13032584596) still reports `cryptographic_finality=false`, `authority_transition_provenance=false`, and overall B3-A `OPEN`. The genesis-anchored replay does not upgrade the justification to valid finality.
+
+### Next bounded investigation
+
+1. Inspect the exact source implementation and artifact generation path for the digest replay, including the genesis-authority pin, FRNK SCALE decoding, ScheduledChange enactment semantics, and hash/parent-link verification; preserve this as a reproducible verifier test.
+2. Capture and compare raw justifications around the set-4343 interval, the set-4434 transition at block 2,509,528, target 2,509,824, and the snapshot voter round target 2,509,826. Verify each only against the set ID active at its exact target according to replay.
+3. Determine whether the public RPC's target justification is stale/misbound, or whether the node's persisted voter aux state is stale and continuing to sign/finalize under 4343 despite runtime set 4434. Do not infer this from the startup log alone.
+4. Keep B3-A OPEN until a justification for the exact target verifies under the replayed active set and its transition provenance is independently accepted.
+
+No authority set is substituted, no V3/Reveal or protocol semantics are changed, no external request is made, and no on-chain action occurs.
