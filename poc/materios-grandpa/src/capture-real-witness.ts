@@ -14,6 +14,10 @@
  * itself, authenticated authority-set provenance. The B3-A authority-transition
  * boundary therefore remains OPEN unless the transition proof is independently
  * authenticated.
+ *
+ * Historical candidate binding prefers public HTTP. If that route disagrees,
+ * a separately labeled checksum-verified local snapshot may bind the candidate;
+ * this does not authenticate authority-set provenance.
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -692,6 +696,15 @@ async function main(): Promise<void> {
   let websocketFallbackError: string | null = null;
   let websocketFallbackBindingSource: "PUBLIC_HTTP" | "LOCAL_SNAPSHOT_RPC" | null = null;
   let publicHttpCrossRouteMatched: boolean | null = null;
+  let snapshotStateEvidence: unknown = null;
+  const snapshotEvidencePath = process.env.MATERIOS_SNAPSHOT_STATE_EVIDENCE_PATH?.trim();
+  if (snapshotEvidencePath) {
+    try {
+      snapshotStateEvidence = JSON.parse(readFileSync(snapshotEvidencePath, "utf8"));
+    } catch {
+      snapshotStateEvidence = null;
+    }
+  }
   if (websocketEvidencePath) {
     try {
       const websocketEvidence = JSON.parse(
@@ -749,17 +762,8 @@ async function main(): Promise<void> {
       publicHttpCrossRouteMatched = httpCandidateMatched;
 
       if (!rpcCandidate || rpcCandidate.hash !== candidateHash) {
-        const snapshotEvidencePath = process.env.MATERIOS_SNAPSHOT_STATE_EVIDENCE_PATH?.trim();
-        let snapshotEvidence: unknown = null;
-        if (snapshotEvidencePath) {
-          try {
-            snapshotEvidence = JSON.parse(readFileSync(snapshotEvidencePath, "utf8"));
-          } catch {
-            snapshotEvidence = null;
-          }
-        }
         const localSnapshotBindingAllowed = isValidSnapshotStateProbeEvidence(
-          snapshotEvidence,
+          snapshotStateEvidence,
           {
             chainId: CHAIN_ID,
             genesisHash,
@@ -1233,6 +1237,7 @@ async function main(): Promise<void> {
   let parentStateDiagnostic: {
     status: string;
     source_block_hash: string;
+    source_kind?: "LOCAL_SNAPSHOT_RPC" | "PUBLIC_RPC";
     set_id?: string;
     authority_count?: number;
     authority_public_keys?: string[];
@@ -1247,8 +1252,30 @@ async function main(): Promise<void> {
     trust_scope: "UNTRUSTED DIAGNOSTIC ONLY; parent-state signatures/quorum do not authenticate the authority transition or finality",
   };
 
+  const snapshotWindowBindingValid = isValidSnapshotStateProbeEvidence(
+    snapshotStateEvidence,
+    {
+      chainId: CHAIN_ID,
+      genesisHash,
+      authorityRpc: AUTHORITY_RPC,
+      blockNumber: Number(witness.blockNumber),
+      blockHash: witness.blockHash,
+    },
+  );
+  const parentStateEndpoint = snapshotWindowBindingValid ? AUTHORITY_RPC : RPC;
+
   if (cryptoVerification.status === "FAIL") {
     try {
+      const parentNumber = Number(witness.blockNumber - 1n);
+      if (snapshotWindowBindingValid) {
+        const localParentHash = requireHash(
+          await rpc<unknown>("chain_getBlockHash", [parentNumber], parentStateEndpoint),
+          "local snapshot parent hash",
+        );
+        if (localParentHash !== witness.header.parentHash) {
+          throw new Error("LOCAL_SNAPSHOT_PARENT_HASH_MISMATCH");
+        }
+      }
       const parentAuthoritiesHex = await rpc<string>(
         "state_call",
         [
@@ -1256,6 +1283,7 @@ async function main(): Promise<void> {
           "0x",
           witness.header.parentHash,
         ],
+        parentStateEndpoint,
       );
       const parentSetIdHex = await rpc<string>(
         "state_call",
@@ -1264,12 +1292,14 @@ async function main(): Promise<void> {
           "0x",
           witness.header.parentHash,
         ],
+        parentStateEndpoint,
       );
       const parentAuthorities = decodeAuthorityList(parentAuthoritiesHex);
       const parentSetId = decodeSetId(parentSetIdHex);
       parentStateDiagnostic = {
         status: "CAPTURED_UNTRUSTED",
         source_block_hash: witness.header.parentHash,
+        source_kind: snapshotWindowBindingValid ? "LOCAL_SNAPSHOT_RPC" : "PUBLIC_RPC",
         set_id: parentSetId.toString(),
         authority_count: parentAuthorities.length,
         authority_public_keys: parentAuthorities.map(authority => bytesToHex(authority.publicKey)),
@@ -1306,7 +1336,87 @@ async function main(): Promise<void> {
       }
     } catch (error) {
       parentStateDiagnostic.status = "PARENT_STATE_UNAVAILABLE";
+      parentStateDiagnostic.source_kind = snapshotWindowBindingValid ? "LOCAL_SNAPSHOT_RPC" : "PUBLIC_RPC";
       parentStateDiagnostic.error = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  const authoritySetStateWindow: Array<{
+    block_number: number;
+    block_hash?: string;
+    set_id?: string;
+    authority_count?: number;
+    signature_status: string;
+    signed_weight?: string;
+    total_weight?: string;
+    error?: string;
+    trust_scope: string;
+  }> = [];
+
+  if (snapshotWindowBindingValid && cryptoVerification.status === "FAIL") {
+    const targetNumber = Number(witness.blockNumber);
+    for (let blockNumber = Math.max(0, targetNumber - 5); blockNumber <= targetNumber; blockNumber += 1) {
+      try {
+        const blockHash = requireHash(
+          await rpc<unknown>("chain_getBlockHash", [blockNumber], AUTHORITY_RPC),
+          "snapshot set-window block hash",
+        );
+        const [windowAuthoritiesHex, windowSetIdHex] = await Promise.all([
+          rpc<string>(
+            "state_call",
+            ["GrandpaApi_grandpa_authorities", "0x", blockHash],
+            AUTHORITY_RPC,
+          ),
+          rpc<string>(
+            "state_call",
+            ["GrandpaApi_current_set_id", "0x", blockHash],
+            AUTHORITY_RPC,
+          ),
+        ]);
+        const windowAuthorities = decodeAuthorityList(windowAuthoritiesHex);
+        const windowSetId = decodeSetId(windowSetIdHex);
+        const diagnosticEntry: (typeof authoritySetStateWindow)[number] = {
+          block_number: blockNumber,
+          block_hash: blockHash,
+          set_id: windowSetId.toString(),
+          authority_count: windowAuthorities.length,
+          signature_status: "FAIL",
+          trust_scope: "UNTRUSTED LOCAL SNAPSHOT DIAGNOSTIC ONLY; no authority transition or finality provenance is inferred",
+        };
+        try {
+          const windowResult = await verifyFinality(
+            {
+              chainId: CHAIN_ID,
+              genesisHash: hexToBytes(genesisHash, "genesis hash"),
+              blockHash: hexToBytes(witness.blockHash, "witness block hash"),
+              blockNumber: witness.blockNumber,
+            },
+            justification,
+            {
+              chainId: CHAIN_ID,
+              genesisHash: hexToBytes(genesisHash, "genesis hash"),
+              setId: windowSetId,
+              authorities: windowAuthorities,
+            },
+            nobleEd25519,
+            { verifyAncestry: true },
+          );
+          diagnosticEntry.signature_status = "SIGNATURE_QUORUM_ANCESTRY_PASS_UNTRUSTED";
+          diagnosticEntry.signed_weight = windowResult.signedWeight.toString();
+          diagnosticEntry.total_weight = windowResult.totalWeight.toString();
+        } catch (error) {
+          diagnosticEntry.signature_status =
+            error instanceof Error ? error.name + ": " + error.message : String(error);
+        }
+        authoritySetStateWindow.push(diagnosticEntry);
+      } catch (error) {
+        authoritySetStateWindow.push({
+          block_number: blockNumber,
+          signature_status: "STATE_QUERY_FAILED",
+          error: error instanceof Error ? error.message : String(error),
+          trust_scope: "UNTRUSTED LOCAL SNAPSHOT DIAGNOSTIC ONLY",
+        });
+      }
     }
   }
 
@@ -1355,6 +1465,7 @@ async function main(): Promise<void> {
       state_root: finalizedHeader.stateRoot,
     },
     parent_state_diagnostic: parentStateDiagnostic,
+    authority_set_state_window: authoritySetStateWindow,
     authority_state: {
       source_block_hash: authorityStateSource,
       source_kind: authorityStateFallback ? "CURRENT_FINALIZED_STATE_FALLBACK" : "EXACT_PROOF_TARGET_STATE",
