@@ -6264,3 +6264,27 @@ IMMORTAL-specific status:
 Issue #37 access-route record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6540273424.
 
 **Disposition unchanged:** Option B selected; no qualified USD/USDM unit-price source; Pyth feed 3326 not qualified for economic use; no code, consumer, Oracle schema, Kernel, V3, Reveal, deployment, EEV approval, wallet signature, or on-chain state changed. Do not dispatch or modify Agent B's runner for this Agent A entitlement check.
+
+
+## Agent A — Pyth feed-16 entitlement failure revalidated from actual run logs; feed 3326 still untested (2026-10-31)
+
+Re-opened GitHub Actions run [#41008762196](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41008762196), commit `e18c111f426ae333b3d85a830100c32500496f7f`, and decoded job logs.
+
+- `PYTH_LAZER_TOKEN` was present in the protected Actions environment; logs redact its value.
+- `PYTH_SUBMIT_PREPROD=false`; no wallet was loaded and no transaction was built, signed, or submitted.
+- The isolated Aiken consumer checks/build completed successfully.
+- The latest-price call failed HTTP 403 with the precise reason: `Not entitled: feed 16 (no grant accepts this feed (asset type 'crypto', instrument type 'spot'))`.
+- The evidence artifact was uploaded by the run. The denial is specific to feed 16 (ADA/USD, crypto/spot). It is not evidence of an authentication failure, a signature-verifier failure, or a Cardano deployment-policy failure.
+- Feed 3326 is a NAV instrument. It has **not** been requested with this key; entitlement for asset type `nav` remains UNKNOWN. Do not infer that feed 16's denial applies to feed 3326.
+
+Current official Pyth access guidance:
+- [Pyth Terminal](https://docs.pyth.network/pro/pyth-terminal) currently documents a self-serve free API trial token, generated in the browser without a credit card.
+- [Pyth entitled-only symbols API](https://docs.pyth.network/api-reference/price-feeds/symbols) documents `GET /v1/symbols?entitled_only=true`; a bearer token is required and only feeds covered by the key are returned.
+- [Intersect Cardano offer](https://www.intersectmbo.org/news/pyth-pro-on-cardano-subscription-offer), 2026-06-17, offers one year of Pyth Pro access to Cardano projects through onboarding at `genia@dourolabs.xyz`.
+- [Pyth API access notice](https://pyth.substack.com/p/api-access-is-changing), 2026-05-26, says real-time API access requires Starter or Pro. Treat the Cardano offer as a separate ecosystem onboarding route; do not assume it changed the existing key's entitlement automatically.
+
+**Next safe gate:** obtain a valid eligible credential via Pyth Terminal trial or the Cardano offer; then perform only the authenticated read-only entitled-catalog query and determine whether feed 3326 is included. Do not call latest-price for feed 3326 before confirming entitlement. Even if entitled, 3326 remains a reserve NAV cross-check, not a USD-per-USDM unit quote.
+
+Issue #37 evidence record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6540317004.
+
+**Disposition unchanged:** Option B selected; no qualified USD/USDM unit-price source; EEV direct-USDM remains independent; no production code, Oracle schema, consumer, Kernel, V3, Reveal, EEV approval, deployment, signature, or on-chain state changed.
