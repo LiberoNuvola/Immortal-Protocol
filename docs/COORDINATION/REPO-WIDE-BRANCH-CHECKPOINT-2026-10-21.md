@@ -5868,3 +5868,45 @@ The raw witness signatures still match set ID 4343 only as an untrusted diagnost
 3. Test whether the snapshot retains historical block headers well before the 256-block state window. If so, use the existing headers to reconstruct the GRANDPA FRNK scheduled/forced-change history from the genesis authority set; if not, keep B3-A OPEN and identify an independent historical-header source.
 
 **B3-A remains OPEN.** No 4343 promotion, no authority-set substitution, no external request, no on-chain transaction and no changes to V3, Reveal, economic rules or authority-selector semantics.
+
+
+## Agent C addendum — Cross-route FRNK candidate comparison and historical header availability (2026-10-31)
+
+Exact-head workflow [#41174092250](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41174092250), commit `063ae9c33ebe95c2e3d500523008690c04da470a`, completed with GRANDPA witness verification failing under runtime set ID 4434. Its WebSocket route-comparison artifact [#13031773132](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41174092250/artifacts/13031773132) was inspected.
+
+### Cross-route result
+
+Both:
+- `wss://materios.fluxpointstudios.com/preprod-rpc`
+- `wss://materios.fluxpointstudios.com/rpc`
+
+return the same exact candidate for block **2509824**:
+- same genesis hash and chain identity;
+- same target block hash `0x0f3b29d5c6285fdfe92e4f4ba8dfc13904c78b9a43fa6a4a7bf952da5d4d913e`;
+- same header and state root;
+- same single FRNK payload, 574 bytes, SHA-256 `6b26b94c600b9b59ce7f80300873a28f5ab50dd9a0cda85be1cfff73938b7c1d`;
+- both routes report finalized-head observation 2521983;
+- neither route advertises/accepts GRANDPA proof RPC methods.
+
+This rules out a discrepancy isolated to the `/preprod-rpc` WebSocket route. It does not distinguish a shared gateway/node stale-justification issue from a deeper consensus/runtime divergence.
+
+### Historical block header retention
+
+The same snapshot probe successfully retrieved and recorded raw headers at blocks:
+- 2508824 (1,000 before target);
+- 2499824 (10,000 before);
+- 2409824 (100,000 before);
+- 2009824 (500,000 before);
+- 1509824 (1,000,000 before).
+
+All five headers were available despite the snapshot's `Constrained(256)` **state** pruning mode. The official Materios gateway source `src/routes/explorer-chain.ts` also documents that raw block headers are retained and can be queried without historical `state_getRuntimeVersion`. This gives us a viable path to reconstruct GRANDPA authority changes from historical headers, rather than relying on unavailable historical state.
+
+The sampled headers had no FRNK digest logs, but sampling alone does not establish the complete transition history.
+
+### Next action
+
+Commit `11d17e2eff1465fdc72ecea1f229dd157348f533` changes the snapshot node's log filter to `grandpa=debug` and captures the GRANDPA voter startup log line `Starting new voter with set ID ...`. This should reveal the node's persisted GRANDPA authority-set ID from its own auxiliary voter state, independently of the runtime API read. Exact-head workflow [#41174445548](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41174445548) is queued.
+
+If the local node's persisted voter set ID is 4343 while runtime storage is 4434, record a concrete snapshot aux-state/runtime-state discrepancy; if it is 4434, the shared WebSocket FRNK candidate is not valid under the local node's current set. In either case, retain fail-closed status until the full historical digest chain is reconstructed and the proof passes.
+
+**B3-A remains OPEN.** No 4343 promotion, no external request, no authority action, no transaction and no changes to protocol semantics, V3, Reveal or economic rules.
