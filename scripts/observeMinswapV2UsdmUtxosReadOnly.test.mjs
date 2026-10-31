@@ -80,7 +80,7 @@ describe('Minswap V2 PoolDatum decoder (synthetic fixtures)', () => {
   it('fails closed on a batching stake credential mismatch', () => {
     const f = candidate()
     const wrong = fixtureDatum()
-    wrong.fields[0].fields[0].fields[0].fields[0] = bytes('ab'.repeat(28))
+    wrong.fields[0].fields[0].fields[0] = bytes('ab'.repeat(28))
     const result = validateV2Candidate(f.utxo, f.assets, wrong)
     expect(result.status).toBe('UNQUALIFIED')
     expect(result.reasons).toContain('POOL_BATCHING_STAKE_CREDENTIAL_MISMATCH')
