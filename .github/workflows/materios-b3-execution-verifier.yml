@@ -195,6 +195,15 @@ jobs:
         continue-on-error: true
         run: bash .github/scripts/probe-materios-snapshot-state.sh
 
+      - name: Reconstruct GRANDPA authority changes from genesis-anchored headers
+        continue-on-error: true
+        run: node poc/materios-grandpa/src/scan-grandpa-digest-history.mjs
+        env:
+          MATERIOS_SNAPSHOT_RPC: http://127.0.0.1:9945
+          MATERIOS_SNAPSHOT_STATE_EVIDENCE_PATH: ${{ github.workspace }}/poc/materios-grandpa/out/MateriosSnapshotStateProbe.json
+          MATERIOS_GRANDPA_DIGEST_HISTORY_OUT: ${{ github.workspace }}/poc/materios-grandpa/out/MateriosGrandpaDigestHistory.json
+          MATERIOS_HEADER_SCAN_BATCH_SIZE: "256"
+
       - name: Capture and verify real Materios GRANDPA witness
         working-directory: poc/materios-grandpa
         run: npx tsx src/capture-real-witness.ts
@@ -225,6 +234,14 @@ jobs:
           path: |
             poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
             poc/materios-checkpoint/out/MateriosWebSocketRpcProbePrimary.json
+          if-no-files-found: warn
+
+      - name: Upload Materios GRANDPA digest history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-grandpa-digest-history
+          path: poc/materios-grandpa/out/MateriosGrandpaDigestHistory.json
           if-no-files-found: warn
 
       - name: Upload real GRANDPA witness

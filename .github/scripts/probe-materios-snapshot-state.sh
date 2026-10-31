@@ -35,8 +35,8 @@ GENESIS_HASH=0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf
 finish() {
   local rc=$?
   trap - EXIT
-  GRANDPA_VOTER_LOGS_JSON="$(grep -Ei 'Starting new voter with set ID|GRANDPA voter|authority_set_id' "$LOG" 2>/dev/null | tail -n 100 | jq -Rsc 'split("\\n") | map(select(length > 0))' || printf '[]')"
-  GRANDPA_VOTER_SET_IDS_JSON="$(grep -Eo 'Starting new voter with set ID [0-9]+' "$LOG" 2>/dev/null | sed -E 's/.* ([0-9]+)$/\\1/' | jq -Rsc 'split("\\n") | map(select(length > 0))' || printf '[]')"
+  GRANDPA_VOTER_LOGS_JSON="$(grep -Ei 'Starting new voter with set ID|Completed round|Committing: round_number|Voter .*concluded round|GRANDPA voter|authority_set_id' "$LOG" 2>/dev/null | tail -n 100 | jq -Rsc 'split("\n") | map(select(length > 0))' || printf '[]')"
+  GRANDPA_VOTER_SET_IDS_JSON="$(grep -Eo 'Starting new voter with set ID [0-9]+' "$LOG" 2>/dev/null | awk '{print $NF}' | jq -Rsc 'split("\n") | map(select(length > 0))' || printf '[]')"
   if [[ "$STATUS" != PASS && -n "$NODE_PID" ]]; then
     kill "$NODE_PID" 2>/dev/null || true
     wait "$NODE_PID" 2>/dev/null || true
