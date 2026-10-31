@@ -291,7 +291,7 @@ async function main() {
       'Minswap API and Koios are two observations of the same Cardano/DEX state, not independent market venues or independent price oracles.',
       'SuperCardano is a separately operated on-chain indexer observation; it is not a separate DEX venue and its USD display uses DexHunter ADA/USD according to its published methodology.',
       'SuperCardano pool freshness is classified against its own asOf timestamp; historical pool rows must not be interpreted as live liquidity without checking block/time and reserves.',
-      'Exact reserve agreement is an observed comparison only; mismatches are preserved and must be investigated against each provider decoder and the actual contract datum semantics.'
+      'Exact reserve agreement is an observed comparison only; mismatches are preserved and must be investigated against each provider decoder and the actual contract datum semantics.',
       'Minswap API USD liquidity/volume metrics are preserved as source data and are not independently verified by this reconciliation.',
       'No USDM/USD price, peg, oracle qualification, EEV valuation, deployment approval, or economic parameter is produced.',
       'Snapshot times are close but not a cryptographic atomic snapshot; each source has its own observation timestamp and raw response hashes.',
