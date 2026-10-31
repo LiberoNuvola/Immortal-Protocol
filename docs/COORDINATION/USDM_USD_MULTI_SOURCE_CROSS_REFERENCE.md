@@ -58,7 +58,7 @@ Artifact ID `13054296365`; ZIP SHA-256 `f058af4c0cadfd36a89ba2a0907e3aa6e7fc1ea2
 - Keep aggregator observations separate from actual venue observations.
 
 
-## Danogo CLMM curve math implementation — pending live CI
+## Danogo CLMM curve math implementation — unit CI green; live inclusion pending
 
 The official [`dano-finance/clmm-sdk`](https://github.com/dano-finance/clmm-sdk) `src/utils.ts` implements `calculateConcentratedPoolSwap` using active reserves and virtual reserves derived from the pool's lower/upper square-root price bounds. Its internal formula is:
 
@@ -67,6 +67,15 @@ The official [`dano-finance/clmm-sdk`](https://github.com/dano-finance/clmm-sdk)
 - `virtualY = ceil(L × lower) + activeY`;
 - marginal `Y per X = virtualY / virtualX` (invert when the pool's X/Y orientation is ADA/USDM rather than USDM/ADA).
 
-Added `scripts/lib/danogoClmmMath.mjs` as an integer-only read-only port, with tests in `scripts/lib/danogoClmmMath.test.mjs`. The cross-reference now reads the same-run Danogo observer artifact and includes only direct ADA/USDM pools passing structural MATCH. If `rewardEpochBehind` is true, the pool is excluded unless a reward amount was actually read and applied; the current observer does not yet resolve that amount, so it remains fail-closed. The new CI rerun is required before publishing any Danogo CLMM price.
+Added `scripts/lib/danogoClmmMath.mjs` as an integer-only read-only port, with tests in `scripts/lib/danogoClmmMath.test.mjs`. The cross-reference now reads the same-run Danogo observer artifact and includes only direct ADA/USDM pools passing structural MATCH. If `rewardEpochBehind` is true, the pool is excluded unless a reward amount was actually read and applied; the current observer does not yet resolve that amount, so it remains fail-closed. The focused CI suite passed 37/37 tests (4 files) in Actions run [41238599020](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238599020), including 9 Danogo math tests. The same run's live Danogo observer is still pending its upstream Mainnet and WingRiders dependencies; no Danogo spot has been published yet.
 
 The resulting value is a marginal spot before trade execution fees/slippage, not a finite-size executable quote. No Danogo pool is included in the prior four-DEX snapshot above.
+
+
+## CSWAP candidate discovery — not yet price-qualified
+
+A separate exact-USDM Koios scan at the official CSWAP ADA pool address completed in Actions run [41238599020](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238599020). It returned one current UTxO with the pinned official payment credential and one decoded eight-field datum. The UTxO holds 198.980533 USDM and 1,041.525670 ADA; datum fields include balance `424221685` and fee numerator `85`. Artifact ID `13055464167`.
+
+This is only a candidate discovery. The current parser is based on reverse-engineered field positions. The deployed PlutusV3 fee denominator, swap arithmetic, balance semantics, LP token name encoding and pool Value invariants are not independently validated. Do not calculate or include a CSWAP ADA/USDM spot until those are resolved against contract behavior. Third-party references report an 0.85% pool fee for this pair, but that does not replace contract-level verification.
+
+The same Actions run's SundaeSwap V3 observer timed out during Koios acquisition after 45 seconds; the result is `SOURCE_UNAVAILABLE_OR_INCOMPLETE`. Earlier 5/5 structural evidence remains the last successful snapshot and is not refreshed by this failed attempt.
