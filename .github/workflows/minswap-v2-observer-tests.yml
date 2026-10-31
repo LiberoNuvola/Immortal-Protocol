@@ -240,6 +240,7 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     needs:
       - read-only-supercardano-observation
+      - read-only-wingriders-v2-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -268,6 +269,7 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     needs:
       - read-only-supercardano-observation
+      - read-only-mainnet-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -299,6 +301,8 @@ jobs:
 
   read-only-saturnswap-orderbook:
     if: ${{ github.event_name == 'push' }}
+    needs:
+      - read-only-danogo-clmm-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -408,6 +412,7 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     needs:
       - read-only-sundaeswap-api-observation
+      - read-only-saturnswap-orderbook
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
