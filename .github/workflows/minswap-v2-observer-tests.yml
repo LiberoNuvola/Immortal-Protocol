@@ -12,6 +12,7 @@ on:
       - "scripts/observeDanogoClmmUsdmReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs"
+      - "scripts/collectAdaUsdPublicReferencesReadOnly.mjs"
       - "scripts/observeWingRidersV2UsdmReadOnly.mjs"
       - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
       - "scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs"
@@ -309,4 +310,27 @@ jobs:
         with:
           name: saturnswap-usdm-orderbook-readonly-${{ github.run_id }}
           path: audit/oracles/saturnswap-usdm-orderbook-readonly.json
+          if-no-files-found: warn
+
+  read-only-ada-usd-public-references:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax-check public reference collector
+        run: node --check scripts/collectAdaUsdPublicReferencesReadOnly.mjs
+      - name: Collect free public ADA/USD spot references (read-only)
+        run: node scripts/collectAdaUsdPublicReferencesReadOnly.mjs --out audit/oracles/ada-usd-public-references-readonly.json
+      - name: Upload ADA/USD reference evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ada-usd-public-references-readonly-${{ github.run_id }}
+          path: audit/oracles/ada-usd-public-references-readonly.json
           if-no-files-found: warn
