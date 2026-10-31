@@ -8,6 +8,7 @@ on:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
       - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
+      - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
       - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
       - "scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs"
       - "scripts/collectMuesliSwapCardanoUsdmReadOnly.mjs"
@@ -187,3 +188,24 @@ jobs:
           path: audit/oracles/muesliswap-cardano-usdm-readonly.json
           if-no-files-found: warn
 
+
+  read-only-supercardano-observation:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect exact-USDM SuperCardano indexer observation
+        run: node scripts/collectSuperCardanoUsdmReadOnly.mjs --out audit/oracles/supercardano-usdm-readonly.json
+      - name: Upload SuperCardano raw market evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supercardano-usdm-readonly-${{ github.run_id }}
+          path: audit/oracles/supercardano-usdm-readonly.json
+          if-no-files-found: warn
