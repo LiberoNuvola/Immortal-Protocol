@@ -311,7 +311,7 @@ async function main() {
     limitations: [
       'Pool NFT identity is pinned from the official Danogo CLMM SDK mainnet constants; exact policy/name is taken from SuperCardano discovery and independently queried on Koios.',
       'A MATCH confirms current pool NFT UTxO cardinality, inline datum schema, exact USDM pair identity, and active reserve agreement with SuperCardano after subtracting platform fees and (for tokenX=ADA) 3 ADA plus totalSwapFee, following the official SDK convention.',
-      'The official SDK can add staking rewards to the ADA-side active reserve when a staking reference UTxO is supplied. This observer does not resolve that separate staking UTxO; rewardAmount is explicitly assumed zero and any pool whose lastWithdrawEpoch is behind the observed epoch is flagged. Do not use this output as an executable quote until rewards are resolved.'
+      'The official SDK can add staking rewards to the ADA-side active reserve when a staking reference UTxO is supplied. This observer does not resolve that separate staking UTxO; rewardAmount is explicitly assumed zero and any pool whose lastWithdrawEpoch is behind the observed epoch is flagged. Do not use this output as an executable quote until rewards are resolved.',
       'Danogo CLMM is concentrated liquidity. A simple reserve ratio is not a price; current tick/range, liquidity and fee state must be decoded and independently calculated before deriving a quote.',
       'SuperCardano is a separate indexer, not an independent DEX venue or USD price source. Its USD display uses DexHunter ADA/USD.',
       'No USD/USDM peg, issuer reserve, oracle qualification, EEV valuation, deployment approval, wallet action, transaction, or chain write is produced.',
