@@ -221,15 +221,17 @@ FINALIZED_DECIMAL=$((16#$(sed 's/^0x//' <<<"$FINALIZED_NUMBER")))
 (( FINALIZED_DECIMAL >= TARGET_NUMBER )) || fail SNAPSHOT_FINALIZED_HEAD_BEHIND_TARGET "snapshot is not finalized through candidate block"
 
 echo "Capture target header digest and runtime version"
-TARGET_HEADER_JSON="$(rpc_result chain_getHeader "[\\"$TARGET_HASH\\"]")" \
+TARGET_PARAMS="$(jq -cn --arg hash "$TARGET_HASH" '[$hash]')"
+TARGET_HEADER_JSON="$(rpc_result chain_getHeader "$TARGET_PARAMS")" \
   || fail TARGET_HEADER_QUERY_FAILED "target header query failed"
-TARGET_RUNTIME_VERSION="$(rpc_result state_getRuntimeVersion "[\\"$TARGET_HASH\\"]")" \
+TARGET_RUNTIME_VERSION="$(rpc_result state_getRuntimeVersion "$TARGET_PARAMS")" \
   || fail TARGET_RUNTIME_VERSION_QUERY_FAILED "target runtime version query failed"
 DIGEST_SCAN_START=$(( TARGET_NUMBER > 255 ? TARGET_NUMBER - 255 : 0 ))
 echo "Scan retained headers for FRNK consensus digest logs: $DIGEST_SCAN_START..$TARGET_NUMBER"
 for ((block_number=DIGEST_SCAN_START; block_number<=TARGET_NUMBER; block_number++)); do
   block_hash="$(rpc_result chain_getBlockHash "[$block_number]")" || continue
-  block_header="$(rpc_result chain_getHeader "[\\"$block_hash\\"]")" || continue
+  header_params="$(jq -cn --arg hash "$block_hash" '[$hash]')"
+  block_header="$(rpc_result chain_getHeader "$header_params")" || continue
   frnk_logs="$(jq -c '[.digest.logs[]? | select((ascii_downcase | contains("46524e4b")))]' <<<"$block_header")"
   if [[ "$frnk_logs" != "[]" ]]; then
     DIGEST_WINDOW_JSON="$(jq -cn --argjson acc "$DIGEST_WINDOW_JSON" --argjson n "$block_number" --arg hash "$block_hash" --argjson logs "$frnk_logs" '$acc + [{block_number:$n,block_hash:$hash,logs:$logs}]')"
