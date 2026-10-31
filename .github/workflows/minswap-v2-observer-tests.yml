@@ -414,7 +414,7 @@ jobs:
           name: ada-usd-public-references-readonly-${{ github.run_id }}
           path: audit/ada-usd
       - name: Derive indicative USDM/USD cross-rates (no peg decision)
-        run: node scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs --onchain audit/onchain/minswap-v2-usdm-utxos-readonly.json --sundae audit/sundaeswap/sundaeswap-v3-usdm-utxos-readonly.json --wingriders audit/wingriders/wingriders-v2-usdm-readonly.json --muesli audit/muesliswap/muesliswap-usdm-utxos-readonly.json --ada-usd audit/ada-usd/ada-usd-public-references-readonly.json --out audit/oracles/usdm-usd-cross-reference-readonly.json
+        run: node scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs --onchain audit/onchain/minswap-v2-usdm-utxos-readonly.json --sundae audit/sundaeswap/sundaeswap-v3-usdm-utxos-readonly.json --wingriders audit/wingriders/wingriders-v2-usdm-readonly.json --muesli audit/muesliswap/muesliswap-usdm-utxos-readonly.json --danogo audit/danogo/danogo-clmm-usdm-readonly.json --ada-usd audit/ada-usd/ada-usd-public-references-readonly.json --out audit/oracles/usdm-usd-cross-reference-readonly.json
       - name: Upload USDM/USD cross-reference evidence
         if: always()
         uses: actions/upload-artifact@v4
