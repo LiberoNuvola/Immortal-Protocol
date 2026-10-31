@@ -7007,3 +7007,11 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Updated decoder at b44ab8a6a7f2ac3a29c9a230c153a65c5c157560; observer at f58ceff0bda879536f7685fd2122b24c967ee7e0; tests at fa8cc80222ca0fff895f981c7ce8b510bf35ada0.
 - Captured timestamp corresponds to 2026-05-26T20:01:30.404Z and expiry 2026-05-27T02:01:30.404Z. At 2026-10-31 capture, the statement was expired by over five months. It is not a current price reference. Corrected rerun pending.
 - No conversion/precision assumption, no price/peg qualification, no EEV or deployment action.
+
+
+## 10.74 Agent A — Float/API identity join schema correction and CI run serialization (2026-10-31)
+
+- Further schema review found the Minswap API asset pair uses `currency_symbol` + `token_name`, while the on-chain datum uses `policyId` + `assetNameHex`. Added explicit `apiAssetUnit()` normalization and a test; Float/API pair comparisons now use the correct API field schema. Commit `0fcaf28aebfabc013658c7f980cfe52ea858d48f`; test commit `b63b19e1d5671081cc7bb1e0d3db1f710636324c`.
+- Float helper now tests full LP unit mapping, API asset normalization, Float market key parsing, reserve equality in canonical and reversed pair orientation, mismatch and nonmatching pair behavior. New suite count is expected to increase by one more test; verify CI.
+- The workflow was queuing many redundant same-branch full evidence runs after each commit. Added a concurrency group with `cancel-in-progress: true` so only the latest same-branch read-only evidence run continues; older artifacts already captured remain available. Workflow commit `ae3deb9b0553bb6e409e8a35400ee469fd8571d1`.
+- Corrected Float reconciliation output remains pending; inspect the latest run after cancellation/queue drain. No on-chain write or economic change.
