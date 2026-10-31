@@ -6303,3 +6303,16 @@ Re-inspected GitHub Actions run [#41176475742](https://github.com/LiberoNuvola/I
 The historical-state blocker remains: public RPC can return historical headers, but its historical runtime/storage state is pruned. The raw snapshot AuxStore remains the required next evidence source. No source snapshot was downloaded or modified; no request was sent to Flux Point; no Materios runtime, GRANDPA, V3, Reveal, chain, or protocol semantics were changed.
 
 **Disposition:** B3-A remains OPEN. The stale-AuxStore hypothesis remains leading but unproven until the original AuxStore bytes are read and decoded. Do not treat the prior green workflow run as proof of historical state capture.
+
+
+## Agent C — read-only RocksDB API research and limits of version evidence (2026-10-31)
+
+Continued the exact-version AuxStore extraction research without opening or modifying any snapshot.
+
+- The pinned Materios SDK dependency remains `kvdb-rocksdb 0.19.0`. The target crate's exact 0.19.0 source/API could not be retrieved through the available source index during this pass; therefore no 0.19.0 API is claimed as verified.
+- The published `kvdb-rocksdb 0.20.0` source documents `DatabaseConfig.secondary: Option<PathBuf>`, opens its secondary via `DB::open_cf_as_secondary`, and maps columns to `col0..`. This is evidence for 0.20.0 only, not proof that the pinned 0.19.0 has the same API or behavior. Do not transplant the 0.20.0 sample into an extractor until 0.19.0 source is confirmed.
+- The 0.20.0 implementation also makes clear that `Database::open` chooses primary vs secondary based on configuration; secondary requires a separate path. It is not a generic immutable-image reader. For the pinned version, the safe route remains unselected pending exact source/API verification and identification of the snapshot's actual backend.
+- GitHub Actions connector access can inspect known runs/jobs/artifacts but did not expose a general workflow-run listing or dispatch action in this pass. The push-trigger commit `cf5b41f86bb69c5e277d52cfbb91d933e4148cdd` exists, but a fresh run/artifact has not been independently verified. Do not infer a run outcome from the commit alone.
+- No snapshot was downloaded, no archive was requested from Flux Point, and no source snapshot or database was opened. No repository runtime code, GRANDPA logic, V3, Reveal, or chain state was changed.
+
+**Next exact gates:** (1) obtain the original snapshot through an already-authorized local source, without contacting Flux Point from this workflow; (2) identify backend and column-family metadata from the supplied copy; (3) verify the exact `kvdb-rocksdb 0.19.0`/underlying RocksDB API against its pinned source; (4) extract only AUX column 8 keys to a separate evidence file, preserving the original snapshot hash. Until then, AuxStore values and the stale-state cause remain unproven.
