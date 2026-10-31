@@ -211,9 +211,22 @@ async function main() {
       const valueY = valueQuantity(utxo, datum.tokenY.unit)
       const scReserveX = BigInt(String(sameOrder ? pool.reserveA : pool.reserveB))
       const scReserveY = BigInt(String(sameOrder ? pool.reserveB : pool.reserveA))
-      const reserveMatch = valueX === scReserveX && valueY === scReserveY
+      // Mirror the official SDK's active-reserve convention:
+      // subtract platform fees from both assets, and for tokenX=ADA also
+      // subtract min ADA (3 ADA) plus totalSwapFee. Reward amount is not
+      // available from this pool UTxO alone, so keep it explicitly at zero.
+      const platformFeeX = BigInt(datum.platformFeeXRaw)
+      const platformFeeY = BigInt(datum.platformFeeYRaw)
+      const totalSwapFee = BigInt(datum.totalSwapFeeRaw)
+      const excludedAda = datum.tokenX.unit === '' ? 3_000_000n + totalSwapFee : 0n
+      const activeReserveX = valueX - platformFeeX - excludedAda
+      const activeReserveY = valueY - platformFeeY
+      if (activeReserveX < 0n || activeReserveY < 0n) throw new Error('DANO_ACTIVE_RESERVE_NEGATIVE')
+      const reserveMatch = activeReserveX === scReserveX && activeReserveY === scReserveY
+      const currentEpoch = Math.floor((Date.now() - 1647899091000) / 432_000_000) + 328
+      const rewardEpochBehind = datum.tokenX.unit === '' && Number(datum.lastWithdrawEpoch) < currentEpoch
       results.push({
-        status: reserveMatch ? 'MATCH' : 'VALUE_RESERVE_MISMATCH',
+        status: reserveMatch ? 'MATCH' : 'ACTIVE_RESERVE_MISMATCH',
         nft, poolKey: pool.key,
         utxoRef: String(utxo.tx_hash) + '#' + String(utxo.tx_index),
         paymentCredential: paymentCred,
@@ -224,9 +237,14 @@ async function main() {
         datum,
         valueReserveXRaw: valueX.toString(),
         valueReserveYRaw: valueY.toString(),
+        activeReserveXRaw: activeReserveX.toString(),
+        activeReserveYRaw: activeReserveY.toString(),
         supercardanoReserveXRaw: scReserveX.toString(),
         supercardanoReserveYRaw: scReserveY.toString(),
-        exactValueReserveMatch: reserveMatch,
+        exactActiveReserveMatch: reserveMatch,
+        rewardAmountAssumedRaw: '0',
+        rewardAmountRead: false,
+        rewardEpochBehind,
         blockHeight: utxo.block_height ?? null,
         blockTime: utxo.block_time ?? null,
         supercardanoPoolHeight: pool.height ?? null,
@@ -285,13 +303,15 @@ async function main() {
       unqualifiedCount: results.filter((r) => r.status === 'UNQUALIFIED_DATUM').length,
       missingCurrentUtxoCount: results.filter((r) => r.status === 'NO_CURRENT_UTXO_FOR_POOL_NFT').length,
       cardinalityErrorCount: results.filter((r) => r.status === 'POOL_NFT_UTXO_CARDINALITY_INVALID').length,
-      reserveMismatchCount: results.filter((r) => r.status === 'VALUE_RESERVE_MISMATCH').length,
+      reserveMismatchCount: results.filter((r) => r.status === 'ACTIVE_RESERVE_MISMATCH').length,
+      adaPoolsWithPotentialUnverifiedReward: results.filter((r) => r.rewardEpochBehind).length,
       paymentCredentialScriptMatches: results.filter((r) => r.paymentCredentialMatchesPoolScript).length,
     },
     pools: results,
     limitations: [
       'Pool NFT identity is pinned from the official Danogo CLMM SDK mainnet constants; exact policy/name is taken from SuperCardano discovery and independently queried on Koios.',
-      'A MATCH confirms current pool NFT UTxO cardinality, inline datum schema, exact USDM pair identity, and Value reserve agreement with SuperCardano. It does not establish the current CLMM marginal price or executable quote.',
+      'A MATCH confirms current pool NFT UTxO cardinality, inline datum schema, exact USDM pair identity, and active reserve agreement with SuperCardano after subtracting platform fees and (for tokenX=ADA) 3 ADA plus totalSwapFee, following the official SDK convention.',
+      'The official SDK can add staking rewards to the ADA-side active reserve when a staking reference UTxO is supplied. This observer does not resolve that separate staking UTxO; rewardAmount is explicitly assumed zero and any pool whose lastWithdrawEpoch is behind the observed epoch is flagged. Do not use this output as an executable quote until rewards are resolved.'
       'Danogo CLMM is concentrated liquidity. A simple reserve ratio is not a price; current tick/range, liquidity and fee state must be decoded and independently calculated before deriving a quote.',
       'SuperCardano is a separate indexer, not an independent DEX venue or USD price source. Its USD display uses DexHunter ADA/USD.',
       'No USD/USDM peg, issuer reserve, oracle qualification, EEV valuation, deployment approval, wallet action, transaction, or chain write is produced.',
