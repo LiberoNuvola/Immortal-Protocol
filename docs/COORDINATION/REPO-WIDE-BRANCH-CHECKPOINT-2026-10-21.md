@@ -6568,3 +6568,16 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Raw token response SHA-256 `e6052504d1a3b70e98d583ec9ea1bfb1797da990d6ed012542305d74327fc413`; raw trades response SHA-256 `23d71b9d3856c52f32b45a5e8429abcfabe6f9986472f6c94e5a847b280f4c52`.
 - Reconciler extended to compare SuperCardano Minswap V2 pool keys, pair order and reserves against Koios candidates. First run 41221859296 failed only due a missing comma syntax error in the reconciler limitations array; raw source artifacts downloaded successfully. Syntax fixed at `16cd0484482ec61a3ac24e62dafbab8847ce83f1`; next full push run 41221976475 is in progress to produce corrected multi-indexer comparison.
 - Workflow conditions changed to run same-snapshot read-only acquisition jobs on every relevant push (the previous `head_commit.modified` conditional was observed to skip required jobs). No wallet/signing/transactions/chain writes.
+
+
+## 10.49 Agent A — three-source Minswap V2 structural reconciliation green (2026-10-31)
+
+- Corrected Actions run **41221976475** succeeded on commit `16cd0484482ec61a3ac24e62dafbab8847ce83f1`. Decoder suite: **12/12 tests passed** (370 ms). Koios, Minswap API and SuperCardano acquisition jobs all succeeded; dependent reconciler succeeded.
+- Koios: 31 exact-USDM UTxOs at official Minswap V2 address, all structural MATCH.
+- Minswap API: 31 V2 pool records (43 across V1/V2/Stable total).
+- SuperCardano: 31 Minswap V2 pool records within 81 USDM pool records across 9 venue families.
+- Cross-indexer comparison: **31/31 exact pool identity + asset pair + datum reserve matches** between Koios PoolDatum/UTxO and SuperCardano; 0 onchain-only, 0 SuperCardano-only, 0 pair mismatches, 0 reserve mismatches, 0 duplicate IDs. Minswap API vs Koios remains 31/31 exact LP identity + pair matches.
+- Reconciliation artifact ID `13050372165`, ZIP SHA-256 `37fb204a00072b38364b2e44662cdd6b7b20d0d7e47d12b166f0624d764bd950`, JSON SHA-256 `92e2a20265ce6db8331db61ee2eb959e41fdad086cc527977be8755cbe3a4c07`.
+- Same-run evidence artifacts: Koios `13050436975` / digest `74bba8e5846e3c1936bff777d0664703e917c07a283b85b8d17d3f36ba9eb09f`; Minswap API `13049768317` / digest `afb00e2af4e6103862f372d7f847546e0b43e9b7a36762a68c0f453e466d6b69`; SuperCardano `13050850055` / digest `147a61eefffab293dc52879a94456595ea517be1c966c1575dc02823571e4b5c`.
+- Interpretation: structural pool identity/reserve serialization is corroborated by an independent on-chain indexer. This is not an independent venue, USD price source, USDM/USD peg, issuer reserve, or oracle quorum. The 81 SuperCardano pool rows include historical records; per-venue freshness is mandatory. Other DEX pool contracts still need independent identity/decoder gates.
+- Reconciliation spec updated at `c8a310b83b70999a68c63dced4978e89d24f926a`.
