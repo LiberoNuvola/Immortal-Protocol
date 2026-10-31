@@ -16,6 +16,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const BASE = (process.env.KOIOS_MAINNET_URL ?? 'https://api.koios.rest/api/v1').replace(/\/$/, '')
 const ADDRESS = 'addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a'
@@ -70,21 +71,21 @@ const ADA_POLICY = ''
 const ADA_NAME = ''
 const MIN_POOL_ADA_LOVELACE = 4_500_000n
 
-function plutusConstr(value, label) {
+export function plutusConstr(value, label) {
   if (!value || typeof value !== 'object' || !Number.isInteger(value.constructor) || !Array.isArray(value.fields)) {
     throw new Error('MIN_SWAP_V2_DATUM_INVALID_CONSTR:' + label)
   }
   return value
 }
 
-function plutusBytes(value, label) {
+export function plutusBytes(value, label) {
   if (!value || typeof value !== 'object' || typeof value.bytes !== 'string' || !/^(?:[0-9a-f]{2})*$/i.test(value.bytes)) {
     throw new Error('MIN_SWAP_V2_DATUM_INVALID_BYTES:' + label)
   }
   return value.bytes.toLowerCase()
 }
 
-function plutusInt(value, label) {
+export function plutusInt(value, label) {
   const raw = value && typeof value === 'object' && value.int !== undefined ? value.int : value
   if (!(typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'bigint') || !/^-?\d+$/.test(String(raw))) {
     throw new Error('MIN_SWAP_V2_DATUM_INVALID_INT:' + label)
@@ -92,7 +93,7 @@ function plutusInt(value, label) {
   return BigInt(raw)
 }
 
-function decodeV2PoolDatum(value) {
+export function decodeV2PoolDatum(value) {
   const root = plutusConstr(value, 'PoolDatum')
   if (root.constructor !== 0 || root.fields.length !== 10) {
     throw new Error('MIN_SWAP_V2_POOL_DATUM_SHAPE_UNSUPPORTED')
@@ -124,7 +125,7 @@ function compareBytesHex(a, b) {
   return Buffer.compare(Buffer.from(a, 'hex'), Buffer.from(b, 'hex'))
 }
 
-function expectedLpAssetName(assetA, assetB) {
+export function expectedLpAssetName(assetA, assetB) {
   const hashAsset = (asset) => createHash('sha3-256')
     .update(Buffer.from(assetUnit(asset), 'hex'))
     .digest()
@@ -133,7 +134,7 @@ function expectedLpAssetName(assetA, assetB) {
     .digest('hex')
 }
 
-function validateV2Candidate(utxo, assets, datumJson) {
+export function validateV2Candidate(utxo, assets, datumJson) {
   const reasons = []
   let datum = null
   try { datum = decodeV2PoolDatum(datumJson) } catch (error) {
@@ -343,7 +344,8 @@ async function main() {
   }, null, 2))
 }
 
-main().catch((error) => {
+const invokedPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : null
+if (invokedPath === import.meta.url) main().catch((error) => {
   console.error(JSON.stringify({
     status: 'READ_ONLY_UTXO_OBSERVATION_FAILED',
     error: error instanceof Error ? error.message : String(error),
