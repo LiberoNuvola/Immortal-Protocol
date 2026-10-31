@@ -5,6 +5,7 @@
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { apiMinswapLpUnit, compareFloatReservesToDatum } from './lib/floatPoolIdentity.mjs'
 
 const USDM = 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d'
 const FLOAT_USDM = 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d'
@@ -44,7 +45,11 @@ async function main() {
       if(floatV2.has(key))duplicateFloat.push(key); else floatV2.set(key,x)
     }
   }
-  const apiV2=new Map((m.pools??[]).filter(x=>x.protocol==='MinswapV2').map(x=>[String(x.id??'').toLowerCase(),x]))
+  // Minswap API identifies the LP token by its full policy+asset-name unit.
+  // Float's market id suffix and the Koios candidate key are the pool LP name
+  // only; join the API record through the full unit on the matched UTxO.
+  const apiV2=new Map((m.pools??[]).filter(x=>x.protocol==='MinswapV2')
+    .map(x=>[apiMinswapLpUnit(x),x]).filter(([unit])=>unit))
   const chain=new Map(),unqualified=[]
   for(const c of o.candidates??[]){
     const v=c.datumValidation??{},lp=v.lpAsset
@@ -54,7 +59,8 @@ async function main() {
     if(!chain.has(k))chain.set(k,[])
     chain.get(k).push(c)
   }
-  const matches=[],floatOnly=[],chainOnly=[],pairMismatch=[],apiPairMismatch=[]
+  const matches=[],floatOnly=[],chainOnly=[],pairMismatch=[],apiPairMismatch=[],floatReserveMismatch=[],apiPoolNotFound=[]
+  let floatReserveExactMatchCount=0,apiPoolFoundCount=0,apiPairMatchCount=0
   for(const [k,x] of floatV2){
     const cs=chain.get(k)
     if(!cs?.length){floatOnly.push({poolKey:k,marketId:x.id});continue}
@@ -62,12 +68,21 @@ async function main() {
       const d=c.datumValidation.datum
       const fp=pair(floatUnit(x.assets?.a),floatUnit(x.assets?.b))
       const cp=pair(datumUnit(d.assetA),datumUnit(d.assetB))
-      const ap=apiV2.get(k)
+      const lp=v.lpAsset
+      const ap=apiV2.get(datumUnit(lp))
       const apair=ap?pair(datumUnit(ap.assetA),datumUnit(ap.assetB)):null
-      const row={poolKey:k,utxoRef:c.utxoRef,floatMarketId:x.id,floatStale:x.stale===true,floatPair:fp,onchainPair:cp,apiPair:apair,floatReservesRaw:x.reserves??null,datumReservesRaw:{a:String(d.reserveARaw),b:String(d.reserveBRaw)},apiPoolFound:Boolean(ap)}
+      const reserveMatch=compareFloatReservesToDatum(x,d)
+      const row={poolKey:k,lpAssetUnit:datumUnit(lp),utxoRef:c.utxoRef,floatMarketId:x.id,floatStale:x.stale===true,floatPair:fp,onchainPair:cp,apiPair:apair,floatReservesRaw:x.reserves??null,datumReservesRaw:{a:String(d.reserveARaw),b:String(d.reserveBRaw)},floatReservesExactlyMatchDatum:reserveMatch,apiPoolFound:Boolean(ap)}
+      if(reserveMatch===true)floatReserveExactMatchCount+=1
+      else if(reserveMatch===false)floatReserveMismatch.push(row)
+      if(ap)apiPoolFoundCount+=1
+      else apiPoolNotFound.push({poolKey:k,lpAssetUnit:datumUnit(lp),floatMarketId:x.id,utxoRef:c.utxoRef})
       if(fp!==cp)pairMismatch.push(row)
       else if(apair&&apair!==cp)apiPairMismatch.push(row)
-      else matches.push(row)
+      else {
+        if(apair===cp)apiPairMatchCount+=1
+        matches.push(row)
+      }
     }
   }
   for(const [k,cs] of chain)if(!floatV2.has(k))for(const c of cs)chainOnly.push({poolKey:k,utxoRef:c.utxoRef})
@@ -87,13 +102,15 @@ async function main() {
       floatDirectAdaUsdm:direct.length,floatDirectAdaUsdmFresh:direct.filter(x=>!x.stale).length,floatDirectAdaUsdmStale:direct.filter(x=>x.stale).length,
       floatMinswapV2:floatV2.size,koiosMinswapV2:chain.size,minswapApiV2:apiV2.size,
       floatKoiosIdentityAndPairMatches:matches.length,floatOnlyVsKoios:floatOnly.length,koiosOnlyVsFloat:chainOnly.length,
+      floatReserveExactMatches:floatReserveExactMatchCount,floatReserveMismatches:floatReserveMismatch.length,
+      apiPoolFoundCount,apiPoolNotFoundCount:apiPoolNotFound.length,apiPairMatches:apiPairMatchCount,
       floatPairMismatches:pairMismatch.length,apiPairMismatches:apiPairMismatch.length,duplicateFloatKeys:duplicateFloat.length,onchainUnqualified:unqualified.length,
     },
-    directAdaUsdmMarkets:direct,matches,floatOnly,chainOnly,pairMismatch,apiPairMismatch,duplicateFloat,unqualified,
+    directAdaUsdmMarkets:direct,matches,floatOnly,chainOnly,pairMismatch,floatReserveMismatch,apiPairMismatch,apiPoolNotFound,duplicateFloat,unqualified,
     limitations:[
       'Float is an additional Cardano market-data indexer associated with Sundae Labs, not a separate DEX venue.',
       'Missing markets are provider coverage differences, not proof that on-chain pools do not exist.',
-      'Pool identity/pair agreement does not validate Float reserve semantics, executable depth, or USD conversion.',
+      'Float reserve equality is checked against the Minswap V2 PoolDatum reserve fields for joined pools; it does not validate executable depth, other DEX venue reserve semantics, or USD conversion.',
       'Stale markets are preserved but not treated as live liquidity.',
       'Only quote=ada data is used; no USDM/USD peg or oracle output is derived.',
       'No wallet, signing, transaction, chain write, oracle refresh, EEV or deployment action occurs.',
