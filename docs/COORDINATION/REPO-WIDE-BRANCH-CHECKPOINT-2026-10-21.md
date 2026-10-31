@@ -6112,3 +6112,22 @@ State-window artifacts:
 - 2,509,826: #13033396901, SHA-256 `382ec0d09a89ab82463233f788e95a88e95074e306f7712e84ebb95f30077beb`
 
 This is a confirmed historical-state retention boundary, not evidence for any set ID. The next valid route is to inspect the already checksum-verified local snapshot at the earlier heights, if it contains the required historical state, or use an already-configured archive source. Do not retry the same pruned public HTTP state calls as though they were likely to recover.
+
+
+### Cross-reference: signature-matched set IDs map to earlier digest ordinals
+
+The candidate set IDs from the three raw justifications were cross-referenced against the genesis-anchored FRNK event array in artifact #13032599446. Each candidate ID corresponds exactly to the same 1-based ordinal event in the replay:
+
+| Candidate signer set ID | Matching FRNK event block | Witness block | FRNK event ordinal at witness block | Ordinal lag |
+|---:|---:|---:|---:|---:|
+| 4251 | 2,405,335 | 2,455,115 | 4343 | 92 |
+| 4342 | 2,454,515 | 2,509,528 | 4434 | 92 |
+| 4343 | 2,455,115 | 2,509,824 | 4434 | 91 |
+
+For each candidate event authority list, all four precommit signer keys are present in its five-member authority list. The four signatures also verify under that candidate event ordinal as the localized GRANDPA set ID. This is a much tighter historical association than an unconstrained numerical search: the matching IDs map to concrete earlier FRNK authority-change events and their decoded authority lists.
+
+At target 2,509,824, the local snapshot independently reports runtime API and direct `Grandpa.CurrentSetId` storage value 4434, while the snapshot GRANDPA voter starts at set 4343 and completes round 1264 at block 2,509,826. The exact-target justification at 2,509,824 is round 1253 and is cryptographically compatible with set 4343. The candidate 4343 maps to the authority-change event at block 2,455,115, 54,709 blocks before the target. This is strong evidence of a voter process operating roughly 91 authority-set transitions behind runtime state.
+
+This still does not prove the exact transition enactment chain or the node's internal persistence/recovery bug. The public HTTP historical state is pruned; the official snapshot uses `Constrained(256)`; the workflow confirmed `MATERIOS_ARCHIVE_RPC` is not configured. The two earlier historical target-state values cannot currently be queried from either existing public HTTP state or that snapshot's retained state window.
+
+The remaining causal question is now narrow: why does the GRANDPA voter persist/replay set 4343 while runtime state is 4434, and why do earlier raw justifications show the same approximately 92-event lag (4251 and 4342) with round 2542 before the round resets to 1253? Treat this as a probable stale GRANDPA voter auxiliary-state / catch-up defect, not as a proven root cause until a retained-state or node-internal voter-state trace demonstrates the transition path. B3-A remains OPEN.
