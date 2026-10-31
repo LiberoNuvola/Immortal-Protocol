@@ -150,7 +150,9 @@ async function main() {
     const createdAt = priceData.createdAtMs === null ? null : Number(priceData.createdAtMs)
     const expiresAt = priceData.expiresAtMs === null ? null : Number(priceData.expiresAtMs)
     const now = Date.now()
-    const fresh = createdAt !== null && expiresAt !== null && expiresAt > now && createdAt <= now
+    const activeByDatumTime = createdAt !== null && expiresAt !== null && expiresAt > now && createdAt <= now
+    const withinDocumentedFreshnessWindow = createdAt !== null && now - createdAt <= 3_600_000
+    const exactFeedPairMatched = priceData.baseSymbol === 'USDM' && priceData.quoteSymbol === 'USD'
     return {
       utxoRef: String(row.tx_hash ?? '') + '#' + String(row.tx_index ?? ''),
       address: row.address ?? null,
@@ -167,11 +169,19 @@ async function main() {
         evaluatedAt: new Date(now).toISOString(),
         createdAt: createdAt === null ? null : new Date(createdAt).toISOString(),
         expiresAt: expiresAt === null ? null : new Date(expiresAt).toISOString(),
-        activeByDatumTime: fresh,
+        activeByDatumTime,
+        withinDocumentedFreshnessWindow,
       },
-      structuralStatus: invalidRows.length === 0 && nftQuantity === 1n && priceData.status === 'DECODED'
+      exactFeedPairMatched,
+      structuralStatus: invalidRows.length === 0 && nftQuantity === 1n &&
+        priceData.status === 'DECODED' && exactFeedPairMatched
         ? 'FEED_UTXO_STRUCTURALLY_DECODED'
         : 'UNQUALIFIED_FEED_UTXO',
+      feedObservationStatus: invalidRows.length === 0 && nftQuantity === 1n &&
+        priceData.status === 'DECODED' && exactFeedPairMatched &&
+        activeByDatumTime && withinDocumentedFreshnessWindow
+        ? 'ACTIVE_PREPROD_FEED_OBSERVATION'
+        : 'STALE_OR_UNQUALIFIED_PREPROD_FEED',
     }
   })
 
