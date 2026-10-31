@@ -7,6 +7,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { validateMuesliPoolCandidate } from './lib/muesliPoolDatum.mjs'
 
 const KOIOS = 'https://api.koios.rest/api/v1'
 const USDM = {
@@ -248,6 +249,10 @@ async function main() {
       candidate.datumResolutionStatus = datum
         ? 'DATUM_INFO_RESOLVED'
         : candidate.inlineDatumJson ? 'INLINE_DATUM_AVAILABLE' : 'DATUM_INFO_NOT_FOUND'
+      candidate.datumValidation = validateMuesliPoolCandidate(candidate)
+      candidate.qualification = candidate.datumValidation.status === 'MATCH'
+        ? 'POOL_IDENTITY_DATUM_AND_VALUE_STRUCTURE_MATCH_NOT_ORACLE_QUALIFICATION'
+        : 'UNQUALIFIED_POOL_CANDIDATE'
     }
   } catch (error) {
     complete = false
@@ -289,7 +294,7 @@ async function main() {
     : 'NO_CURRENT_USDM_POOL_NFT_UTXOS_FOR_DISCOVERED_POOL_NFTS'
   const evidence = {
     schema: 'immortal-muesliswap-usdm-utxo-acquisition-v2',
-    classification: 'RAW_EXACT_USDM_POOL_NFT_UTXO_DISCOVERY_NOT_DATUM_QUALIFICATION',
+    classification: 'POOL_IDENTITY_DATUM_AND_VALUE_STRUCTURE_CHECKS_NOT_MARKET_ORACLE_QUALIFICATION',
     network: 'cardano-mainnet',
     exactAsset: USDM,
     poolNftPolicyId: POOL_NFT_POLICY_ID,
@@ -331,6 +336,8 @@ async function main() {
       inlineDatumCount: candidates.filter((x) => x.inlineDatumJson).length,
       datumHashCount: candidates.filter((x) => x.datumHash).length,
       datumInfoResolvedCount: candidates.filter((x) => x.datumResolutionStatus === 'DATUM_INFO_RESOLVED').length,
+      structuralMatchCount: candidates.filter((x) => x.datumValidation?.status === 'MATCH').length,
+      unqualifiedCount: candidates.filter((x) => x.datumValidation?.status !== 'MATCH').length,
       distinctAddresses: [...new Set(candidates.map((x) => x.address))].length,
     },
     poolNftUtxos,
@@ -339,7 +346,7 @@ async function main() {
     limitations: [
       'SuperCardano pool rows are discovery hints only. Each exact Pool NFT unit is re-queried from Koios Mainnet before its current UTxO is recorded.',
       'The Pool NFT policy is pinned to the official MuesliSwap deployment. Each candidate payment credential is compared with the official pool script hash decoded from both official pool addresses.',
-      'PoolDatum, LP token, reserve and fee validation are not yet implemented; inline datum JSON/CBOR and hash-resolved datum JSON/CBOR are preserved first.',
+      'Only the official four-field Muesli PoolDatum shape, exact pair identity, pool/factory NFT quantities, fee bounds and output asset cardinality are checked. This is structural validation, not a full script execution or independent price validation.',
       'A SuperCardano pool row without a current Koios UTxO is not counted as a current pool. It may be stale, spent, or associated with an unrecognized script version.',
       'No price, peg, oracle, EEV or deployment qualification is produced.',
       'Read-only public Koios queries only; no wallet, signing, transaction submission or chain write.',
