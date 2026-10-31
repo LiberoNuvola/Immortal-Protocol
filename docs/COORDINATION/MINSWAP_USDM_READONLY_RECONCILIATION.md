@@ -134,3 +134,26 @@ No mismatch is resolved by preferring the API or the chain without retaining bot
 The collector source is present, but no successful live execution has been evidenced in this session. The current execution environment failed DNS resolution for the Minswap and Koios hosts, so no current pool count, reserve, UTxO or slot claim is made. Direct UTxO acquisition and reconciliation remain open.
 
 Option B remains unqualified. This document does not authorize a price, parity assumption, oracle refresh, protocol change, signing, submission, deployment or Issue.
+
+
+## 10. Decoder fixture harness — 2026-10-31
+
+The V2 observer now exports its pure decoder/validation functions and has a direct-execution guard, so tests can import the implementation without starting any network request.
+
+Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic Plutus-JSON fixtures for:
+
+- published 10-field `PoolDatum` decoding and bigint precision;
+- unsupported constructor shape;
+- internally consistent exact-USDM candidate;
+- batching stake credential mismatch;
+- Pool NFT quantity other than exactly one;
+- missing derived LP asset;
+- datum reserve vs Value mismatch;
+- unexpected asset in the pool Value;
+- USDM absent from the datum pair.
+
+**Important evidence boundary:** these fixtures are synthetic, not copied from a real Koios response. The Vitest suite has been added to the repository but has not been executed in this environment. Therefore no runtime/test-pass claim is made, and the Koios `inline_datum.value` serialization shape remains to be confirmed against a captured Mainnet fixture.
+
+The implementation constants were cross-checked against the official Minswap V2 source: `PoolDatum` has ten fields; `min_pool_ada` is 4,500,000 lovelace; `compute_lp_asset_name` uses SHA3-256 over each concatenated policy/name pair and then over the two hashes; the deployed Mainnet batching stake key hash and Pool NFT identity match the pinned values already recorded above. See the official [Minswap V2 repository](https://github.com/minswap/minswap-dex-v2), particularly `lib/amm_dex_v2/types.ak`, `lib/amm_dex_v2/utils.ak`, and `deployed/mainnet/params.json`.
+
+**Next gate:** execute the focused Vitest suite in CI or a verified checkout; then capture a real Koios UTxO fixture, compare its raw inline datum representation with the decoder, and only after that attempt a strictly read-only Mainnet reconciliation.
