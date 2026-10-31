@@ -113,3 +113,14 @@ Official SundaeSwap V3 contract semantics reviewed from `lib/calculation/process
 The one ADA/USDM pool (identifier `64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef`) has raw Value lovelace `75817851679`, protocol fees `1239772000`, therefore ADA reserve `74578079679`; USDM reserve is `14572208659`; circulating LP is `25568555601`. The datum/Value arithmetic is directly supported by the captured UTxO, but the new validator/API reconciliation job has not yet produced its green run.
 
 Added `scripts/lib/sundaeV3PoolDatum.mjs`, observer integration and real-fixture Vitest tests. The fixture is stored in `scripts/fixtures/sundaeswap-v3-usdm-mainnet-2026-10-31.json`. The observer will reconcile pool identifier, CIP-68 333 LP identity, pair, reserves and circulating LP against the same-run official API artifact. This is structural evidence only, not a market price or peg qualification. Stableswaps and V1 remain separate unqualified protocol types.
+
+
+## 10. Indicative USDM/USD cross-reference with source ages — 2026-10-31
+
+The cross-reference job in run [41225927034](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41225927034) now emits actual pool UTxO block times and ages. It reports 2 ADA/USDM constant-product venues × 3 CEX ADA/USD midpoint references (Coinbase, Kraken, Bitstamp) = 6 indicative rates.
+
+- Minswap V2 pool UTxO updated at 2026-10-31 17:36:08Z; age 554 seconds at calculation 17:45:22Z. Spot 5.14514955 ADA/USDM.
+- WingRiders V2 pool UTxO updated at 2026-10-30 09:02:49Z; age 117,753 seconds (~32.7 hours) at calculation. Spot 5.17286012 ADA/USDM.
+- CEX references were observed around 17:43:54Z. Resulting indicative USDM/USD cross-rates: Minswap 0.99427442–0.99473749; WingRiders 0.99962935–1.00009491.
+
+These are reserve-ratio × CEX-midpoint calculations, not executable quotes. The WingRiders state is materially older than the CEX observations; the source ages are exposed, but no arbitrary freshness threshold is applied. The 6 values must not be averaged or represented as a peg proof. The Minswap ADA/USDM reserve ratio also changed between successive snapshots, reinforcing the need for timestamp-aware evidence.
