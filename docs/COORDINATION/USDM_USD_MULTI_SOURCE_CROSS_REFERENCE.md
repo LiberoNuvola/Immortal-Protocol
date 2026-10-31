@@ -286,3 +286,8 @@ The corrected reserve-aware reconciler completed successfully in run [4124068043
 - Float-only vs Koios: 0; Koios-only vs Float: 17 (provider coverage gap); pair mismatches 0; duplicate keys 0; on-chain unqualified 0.
 
 Artifact ID 13056909111, ZIP SHA-256 037ff05c0f3a7e42486843272a008cbb08510248c94ae37df1ebb8365ca31bbf. This is strong cross-indexer evidence for the 14 Float-listed Minswap V2 pools, including exact datum reserve agreement. It does not mean Float covers all 31 pools, and it does not validate USD conversion, price, peg, or executable depth. The 17 absent Float rows remain known on-chain pools, not absent liquidity.
+
+
+### DIA endpoint case correction
+
+The first CI attempt used lowercase path segment `cardano` and returned HTTP 404 (no rows). The official API is case-sensitive for the blockchain slug: the correct endpoint is `/v1/assetQuotation/Cardano/0x0000000000000000000000000000000000000000`. A live API probe returned ADA / Cardano, exact native-asset address, USD price, timestamp, source, previous-day volume and a provider signature. The collector has been corrected to use the capitalized slug and preserve the signature and volume-yesterday field separately. Rerun pending.
