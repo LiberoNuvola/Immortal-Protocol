@@ -6443,3 +6443,11 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - No live scan or runtime test in this session; no current pool count, reserve, price or match claimed.
 - Issue #37 update: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6542234509
 - Option B remains UNQUALIFIED; no protocol/economic/Oracle/EEV/R1-Kc/Kernel/V3/Reveal/Materios changes, wallet, signature, transaction, refresh, deployment or chain write.
+
+
+## 10.37 — Agent A: reconciliation specification aligned with observer hardening (2026-10-31)
+
+- Updated `docs/COORDINATION/MINSWAP_USDM_READONLY_RECONCILIATION.md` in commit `96fad86952ba9ad0ec84e21b1a829761027a8723`.
+- The spec now records explicit Koios paging/fail-closed behavior, V2 payment-credential verification, and the exact deployed Pool authentication NFT identity from official `deployed/mainnet/script.json`.
+- Remaining critical gate is still contract-bound datum decoding plus pool pair / LP identity / reserve-vs-Value validation, followed by live read-only execution and evidence capture. No decoder or live execution is claimed.
+- Option B remains UNQUALIFIED; no protocol/economic/Oracle/EEV/R1-Kc/Kernel/V3/Reveal/Materios changes or ledger actions.
