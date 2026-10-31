@@ -18,7 +18,7 @@ const USDM = Object.freeze({
 const USDM_UNIT = USDM.policyId + USDM.assetNameHex
 const ADA_UNIT = ''
 const PAGE_SIZE = 1000
-const MAX_PAGES = 5
+const MAX_PAGES = 20
 const DEPLOYMENTS = Object.freeze([
   {
     id: 'saturn-v2-mainnet-1pct',
@@ -141,6 +141,7 @@ function deriveQuote(deployment, utxo, datum, snapshotTimeMs) {
     buyAmountRaw: buy.toString(),
     exactUsdmUnit: USDM_UNIT,
     utxoRef: String(utxo.tx_hash ?? '') + '#' + String(utxo.tx_index ?? ''),
+    address: utxo.address ?? null,
     fundedByCurrentUtxo: funded,
     availableSellRaw: availableSell.toString(),
     expired,
@@ -202,8 +203,10 @@ async function main() {
       const orders = []
       const invalidRows = []
       for (const utxo of result.rows) {
-        if (String(utxo.address ?? '') !== deployment.address ||
-            String(utxo.payment_cred ?? '').toLowerCase() !== deployment.scriptHash) {
+        // A payment script can be used with different stake credentials, so the
+        // validator payment credential is authoritative; do not pin the full
+        // base address from one deployment example.
+        if (String(utxo.payment_cred ?? '').toLowerCase() !== deployment.scriptHash) {
           invalidRows.push({ utxoRef: String(utxo.tx_hash ?? '') + '#' + String(utxo.tx_index ?? ''), reason: 'ORDER_SCRIPT_IDENTITY_MISMATCH' })
           continue
         }
