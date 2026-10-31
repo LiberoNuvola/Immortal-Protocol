@@ -9,6 +9,7 @@ on:
       - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
+      - "scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs"
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs"
       - ".github/workflows/minswap-v2-observer-tests.yml"
   pull_request:
@@ -141,4 +142,25 @@ jobs:
         with:
           name: dexscreener-cardano-usdm-readonly-${{ github.run_id }}
           path: audit/oracles/dexscreener-cardano-usdm-readonly.json
+          if-no-files-found: warn
+
+  read-only-geckoterminal-observation:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect exact-USDM Cardano pools from GeckoTerminal (read-only)
+        run: node scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs --out audit/oracles/geckoterminal-cardano-usdm-readonly.json
+      - name: Upload GeckoTerminal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geckoterminal-cardano-usdm-readonly-${{ github.run_id }}
+          path: audit/oracles/geckoterminal-cardano-usdm-readonly.json
           if-no-files-found: warn
