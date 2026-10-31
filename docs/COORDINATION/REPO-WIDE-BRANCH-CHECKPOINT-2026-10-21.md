@@ -6970,3 +6970,12 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Observer corrected at commits 84517c60e463b313c12b15cda07c72c43fb50ef6 and 4d282646448a276d498c6224bf5d872bfbaa8bab: latest age compared with feed interval, older statements counted separately, persisted status READ_ONLY_ORCFAX_CER_FEEDS_STALE; stale data is a successful acquisition with explicit stale classification, not a CI transport failure.
 - Original artifact ID 13056972087, ZIP digest 7586d6f1f9568d9b591d05e587ed48e3b8dd9f85688e96d614c8bd191fe58823; extracted JSON digest 28c96a745b4f0b8e1de769a32ea7ed7839dc92155345b2f2a479dad8682772f1.
 - Rerun pending. No price/peg/EEV/oracle qualification is asserted from these stale statements.
+
+
+## 10.74 Agent A — Charli3 ADA/USD on-chain observer implemented (2026-10-31)
+
+- Added Charli3 standard oracle datum decoder scripts/lib/charli3Datum.mjs (commit 3d725c77cdbcd4c2ec21052ba18a16104bda985c), synthetic tests scripts/lib/charli3Datum.test.mjs (commit df6989cca2d0d6ed1fa1bbbeca98102ffa006603, expectation correction 54bb9551dbb72e5640a1321c3592b05bf449cba9).
+- Added read-only observer scripts/observeCharli3AdaUsdReadOnly.mjs (commit f7a9e12e11b8cbcc4d5be3c873ceb72b0a674b48), pinned to the official mainnet ADA/USD feed address and OracleFeed NFT. It verifies exact NFT/address, parses official price map fields, ADA/USD symbols, precision, timestamp/expiry and extended provider metadata, captures raw datum/CBOR and Koios transaction context, and classifies freshness against the documented six-hour window.
+- Added workflow syntax/test and live observer job at commit cda2116aa59f0e58bad378e328a11d4e0306ce05. First live run pending.
+- No price is admitted into the cross-rate until live datum schema, exact symbols, scale, expiry, source quorum and freshness are verified.
+- No wallet, signing, transaction, oracle refresh, EEV, deployment or chain write.
