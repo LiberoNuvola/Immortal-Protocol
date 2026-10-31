@@ -35,6 +35,10 @@ import {
 import {
   bytesToHex,
 } from "./scale.js";
+import {
+  isValidSnapshotStateProbeEvidence,
+  sameSubstrateHeader,
+} from "./snapshot-binding.js";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 
@@ -686,6 +690,8 @@ async function main(): Promise<void> {
   const websocketEvidencePath = process.env.MATERIOS_WS_EVIDENCE_PATH?.trim();
   let websocketFallbackStatus = websocketEvidencePath ? "NOT_ATTEMPTED" : "NOT_CONFIGURED";
   let websocketFallbackError: string | null = null;
+  let websocketFallbackBindingSource: "PUBLIC_HTTP" | "LOCAL_SNAPSHOT_RPC" | null = null;
+  let publicHttpCrossRouteMatched: boolean | null = null;
   if (websocketEvidencePath) {
     try {
       const websocketEvidence = JSON.parse(
@@ -736,21 +742,66 @@ async function main(): Promise<void> {
         throw new Error("WEBSOCKET_FRNK_PAYLOAD_SHA256_MISMATCH");
       }
 
-      const rpcCandidate = recentBlocks.find(block => block.number === candidateNumber);
-      if (!rpcCandidate || rpcCandidate.hash !== candidateHash) {
-        throw new Error("WEBSOCKET_CANDIDATE_HASH_NOT_MATCHED_BY_HTTP_ROUTE");
-      }
       const websocketHeader = candidate.header as SubstrateHeader;
-      const normalizeHeader = (header: SubstrateHeader) => JSON.stringify({
-        parentHash: requireHash(header.parentHash, "header.parentHash"),
-        number: parseBlockNumber(header.number, "header.number").toString(),
-        stateRoot: requireHash(header.stateRoot, "header.stateRoot"),
-        extrinsicsRoot: requireHash(header.extrinsicsRoot, "header.extrinsicsRoot"),
-        digestLogs: Array.isArray(header.digest?.logs)
-          ? header.digest.logs.map(log => String(log).toLowerCase())
-          : null,
-      });
-      if (normalizeHeader(websocketHeader) !== normalizeHeader(rpcCandidate.signed.block.header)) {
+      let rpcCandidate = recentBlocks.find(block => block.number === candidateNumber);
+      let candidateBindingSource: "PUBLIC_HTTP" | "LOCAL_SNAPSHOT_RPC" = "PUBLIC_HTTP";
+      const httpCandidateMatched = Boolean(rpcCandidate && rpcCandidate.hash === candidateHash);
+      publicHttpCrossRouteMatched = httpCandidateMatched;
+
+      if (!rpcCandidate || rpcCandidate.hash !== candidateHash) {
+        const snapshotEvidencePath = process.env.MATERIOS_SNAPSHOT_STATE_EVIDENCE_PATH?.trim();
+        let snapshotEvidence: unknown = null;
+        if (snapshotEvidencePath) {
+          try {
+            snapshotEvidence = JSON.parse(readFileSync(snapshotEvidencePath, "utf8"));
+          } catch {
+            snapshotEvidence = null;
+          }
+        }
+        const localSnapshotBindingAllowed = isValidSnapshotStateProbeEvidence(
+          snapshotEvidence,
+          {
+            chainId: CHAIN_ID,
+            genesisHash,
+            authorityRpc: AUTHORITY_RPC,
+            blockNumber: candidateNumber,
+            blockHash: candidateHash,
+          },
+        );
+        if (!localSnapshotBindingAllowed) {
+          throw new Error("WEBSOCKET_CANDIDATE_HASH_NOT_MATCHED_BY_HTTP_OR_VERIFIED_LOCAL_SNAPSHOT");
+        }
+
+        const localGenesisHash = requireHash(
+          await rpc<unknown>("chain_getBlockHash", [0], AUTHORITY_RPC),
+          "local snapshot genesis hash",
+        );
+        if (localGenesisHash !== genesisHash) {
+          throw new Error("LOCAL_SNAPSHOT_GENESIS_HASH_MISMATCH");
+        }
+        const localCandidateHash = requireHash(
+          await rpc<unknown>("chain_getBlockHash", [candidateNumber], AUTHORITY_RPC),
+          "local snapshot candidate hash",
+        );
+        if (localCandidateHash !== candidateHash) {
+          throw new Error("LOCAL_SNAPSHOT_CANDIDATE_HASH_MISMATCH");
+        }
+        const localSigned = await rpc<SignedBlock>(
+          "chain_getBlock",
+          [candidateHash],
+          AUTHORITY_RPC,
+        );
+        if (!localSigned?.block?.header ||
+            !sameSubstrateHeader(websocketHeader, localSigned.block.header)) {
+          throw new Error("WEBSOCKET_LOCAL_SNAPSHOT_HEADER_FIELDS_MISMATCH");
+        }
+        rpcCandidate = {
+          number: candidateNumber,
+          hash: candidateHash,
+          signed: localSigned,
+        };
+        candidateBindingSource = "LOCAL_SNAPSHOT_RPC";
+      } else if (!sameSubstrateHeader(websocketHeader, rpcCandidate.signed.block.header)) {
         throw new Error("WEBSOCKET_HTTP_HEADER_FIELDS_MISMATCH");
       }
 
@@ -769,6 +820,7 @@ async function main(): Promise<void> {
         ...rpcCandidate.signed,
         justifications: [[GRANDPA_ENGINE_ID, rawPayloadHex]] as [string, string][],
       };
+      websocketFallbackBindingSource = candidateBindingSource;
       const existingIndex = witnessedBlocks.findIndex(
         block => block.number === candidateNumber,
       );
@@ -778,7 +830,9 @@ async function main(): Promise<void> {
           hash: candidateHash,
           signed: signedWithJustification,
         };
-        websocketFallbackStatus = "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
+        websocketFallbackStatus = candidateBindingSource === "LOCAL_SNAPSHOT_RPC"
+          ? "CAPTURED_LOCAL_SNAPSHOT_BINDING_HTTP_ROUTE_MISMATCH"
+          : "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
       } else if (
         witnessedBlocks.length === 0 ||
         candidateNumber > witnessedBlocks[0]!.number
@@ -791,7 +845,9 @@ async function main(): Promise<void> {
           hash: candidateHash,
           signed: signedWithJustification,
         });
-        websocketFallbackStatus = "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
+        websocketFallbackStatus = candidateBindingSource === "LOCAL_SNAPSHOT_RPC"
+          ? "CAPTURED_LOCAL_SNAPSHOT_BINDING_HTTP_ROUTE_MISMATCH"
+          : "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
       } else {
         websocketFallbackStatus = "CAPTURED_BUT_OLDER_THAN_HTTP_WITNESS_NOT_SELECTED";
       }
@@ -828,6 +884,8 @@ async function main(): Promise<void> {
         websocket_fallback: {
           status: websocketFallbackStatus,
           error: websocketFallbackError,
+          binding_source: websocketFallbackBindingSource,
+          public_http_cross_route_matched: publicHttpCrossRouteMatched,
           evidence_path_configured: Boolean(websocketEvidencePath),
         },
         scan_manifest: recentBlocks.map((block) => ({

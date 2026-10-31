@@ -182,7 +182,7 @@ jobs:
           MATERIOS_WS_EVIDENCE_OUT: out/MateriosWebSocketRpcProbe.json
 
       - name: Probe retained state in official Materios snapshot
-        id: archive_probe
+        id: snapshot_state_probe
         continue-on-error: true
         run: bash .github/scripts/probe-materios-snapshot-state.sh
 
@@ -191,9 +191,10 @@ jobs:
         run: npx tsx src/capture-real-witness.ts
         env:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
-          # Prefer the verified local archive snapshot; retain the optional secret as fallback.
-          # If neither is available, capture-real-witness falls back to public RPC and preserves OPEN.
-          MATERIOS_AUTHORITY_RPC: ${{ steps.archive_probe.outputs.rpc_url || secrets.MATERIOS_ARCHIVE_RPC }}
+          # Prefer the checksum-verified local snapshot state window; it is not an archive node.
+          # The local fallback is diagnostic and never closes authority-set provenance.
+          MATERIOS_AUTHORITY_RPC: ${{ steps.snapshot_state_probe.outputs.rpc_url || secrets.MATERIOS_ARCHIVE_RPC }}
+          MATERIOS_SNAPSHOT_STATE_EVIDENCE_PATH: ${{ github.workspace }}/poc/materios-grandpa/out/MateriosSnapshotStateProbe.json
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_WITNESS_LOOKBACK: 1024
           MATERIOS_WS_EVIDENCE_PATH: ${{ github.workspace }}/poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
