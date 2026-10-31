@@ -6719,3 +6719,11 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
   - MuesliSwap API: DNS `ENOTFOUND api.muesliswap.com`, no pool data; `SOURCE_UNAVAILABLE`, not zero pools. Artifact 13051492777.
 - Muesli official contract repository publishes mainnet pool addresses `addr1z9cy...` and `addr1w9cy...`, pool NFT policy `909133...`, LP policy `af3d70...`; `PoolDatum` is four fields `(coinA, coinB, totalLiquidity, swapFee)` and the pool uses a constant-product invariant. Added direct exact-USDM Koios UTxO observer for both official pool addresses at commit `082d61dc29f0e48c7c438a4746cf48a4075687c8`, workflow job at `7f7d6857af7e49471507816598d6342f096d0a4d`. Its live run is pending.
 - Added Sundae V3 to the USDM/USD cross-reference pipeline. First run failed because the calculator loaded but did not bind the `sundae` artifact; fixed at `d5034304baf15b1a6283f8bc092ce9505acc9b4d`. New run 41226789902 pending. No averaging, peg decision, or economic change.
+
+
+## 10.63 Agent A — Koios observer ordering and Muesli direct scan (2026-10-31)
+
+- Official MuesliSwap pool source inspected: `PoolDatum` is four fields `(coinA, coinB, totalLiquidity, swapFee)`; official Mainnet pool addresses are `addr1z9cy...` and `addr1w9cy...`; pool NFT policy `909133...`, LP policy `af3d70...`. The contract uses a constant-product invariant. Official API docs list `/liquidity/pools`, `/price`, `/trades`, `/orderbook`, but terms specify private use only and commercial use requires contacting MuesliSwap; API DNS failed in CI (`ENOTFOUND`).
+- Direct exact-USDM Koios observer added for both official Muesli AMM pool addresses. Initial run `41226732468` is queued behind Saturn; a new workflow ordering now moves Muesli before Sundae and places the long Saturn CLOB scan last.
+- Updated DAG: Minswap -> WingRiders -> Danogo -> Muesli on-chain -> Sundae V3 on-chain -> SaturnSwap CLOB. The USDM/USD cross-reference can complete after Sundae and does not wait on the slow/incomplete Saturn orderbook scan. This avoids one partial CLOB scan blocking the main pool/price research pipeline.
+- Workflow DAG commit `7317cb18a8cce8b0f9e581c725923f1a5825e3b2`; run pending.
