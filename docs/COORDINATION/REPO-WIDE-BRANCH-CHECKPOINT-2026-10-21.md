@@ -6098,3 +6098,17 @@ A follow-up read-only attempt to query historical runtime API/storage state from
 2. Obtain historical state from a source that actually retains it (the existing isolated snapshot, if it contains those heights, or another already-configured archive source); do not infer historical state from public HTTP's pruned responses.
 3. Explain why the 2,455,115 and 2,509,528 payloads use round 2542 while the 2,509,824 payload uses round 1253, and whether those proofs were emitted by different voter instances or after a voter restart.
 4. Keep B3-A OPEN. No justification has yet been accepted against a genesis-rooted, correctly enacted historical authority-set chain. No external request to Flux Point was made; acquisition used only existing public RPC endpoints. No transactions or on-chain changes occurred.
+
+
+### Historical state availability check completed
+
+The read-only state-window workflow [#41176475742](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41176475742) completed successfully across all five target/parent pairs. The RPC successfully returned block hashes, but every `state_call(GrandpaApi_current_set_id)`, `state_call(GrandpaApi_grandpa_authorities)`, and `state_getStorage(Grandpa.CurrentSetId)` request at those historical hashes returned `UnknownBlock: State already discarded`. This includes 2,509,824, so the public HTTP archive route cannot independently reproduce even the previously observed exact-target runtime state. The existing local snapshot evidence for 2,509,824 remains the only available state observation in this workstream.
+
+State-window artifacts:
+- 2,455,115: #13033047374, SHA-256 `924163d951fd44d5ea8120faaf87bc333d9773ab4d51e528d756c78bc65a0b2d`
+- 2,455,116: #13033830813, SHA-256 `1e272e04cfc5f26f26cc1afa8230a494dd08d084e616f747e999a6cf1787182f`
+- 2,509,528: #13033771109, SHA-256 `417412f6d378271c804a5407cbb489486b48fb4c307e98409e73a74583f9784a`
+- 2,509,824: #13033610786, SHA-256 `5a454df8a158d82828f3ec8a14a314ff7467546aa8c12035acb68db1505ca44b`
+- 2,509,826: #13033396901, SHA-256 `382ec0d09a89ab82463233f788e95a88e95074e306f7712e84ebb95f30077beb`
+
+This is a confirmed historical-state retention boundary, not evidence for any set ID. The next valid route is to inspect the already checksum-verified local snapshot at the earlier heights, if it contains the required historical state, or use an already-configured archive source. Do not retry the same pruned public HTTP state calls as though they were likely to recover.
