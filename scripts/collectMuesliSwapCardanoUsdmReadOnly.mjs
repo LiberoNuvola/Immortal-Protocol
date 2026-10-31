@@ -30,7 +30,23 @@ async function request(queryName, tokenSide) {
     providers: PROVIDERS,
   })
   const url = BASE + '/liquidity/pools?' + params.toString()
-  const response = await fetch(url, { headers: { accept: 'application/json' } })
+  let response
+  try {
+    response = await fetch(url, { headers: { accept: 'application/json' } })
+  } catch (error) {
+    return {
+      evidence: {
+        queryName, tokenSide, url, method: 'GET', status: null,
+        responseDate: null, contentType: null, bodySha256: null, rawBody: null,
+        networkError: {
+          name: error instanceof Error ? error.name : 'Error',
+          message: error instanceof Error ? error.message : String(error),
+          cause: error?.cause ? String(error.cause) : null,
+        },
+      },
+      json: null,
+    }
+  }
   const raw = await response.text()
   const evidence = {
     queryName,
@@ -115,6 +131,11 @@ async function main() {
       quotePoolCount: quotePools.length,
       uniquePoolCount: pools.length,
       exactUsdmPoolCount: pools.filter((pool) => pool.exactUsdmFound).length,
+      sourceStatus: [baseResult.evidence, quoteResult.evidence].every((x) => x.status === 200)
+        ? 'COMPLETE'
+        : [baseResult.evidence, quoteResult.evidence].some((x) => x.status === 200)
+          ? 'PARTIAL'
+          : 'SOURCE_UNAVAILABLE',
     },
     pools,
     startedAt,
@@ -131,7 +152,11 @@ async function main() {
   await mkdir(dirname(out), { recursive: true })
   await writeFile(out, JSON.stringify(evidence, null, 2) + '\n', 'utf8')
   console.log(JSON.stringify({
-    status: 'READ_ONLY_MUESLISWAP_COLLECTION_COMPLETE',
+    status: evidence.acquisition.sourceStatus === 'SOURCE_UNAVAILABLE'
+      ? 'SOURCE_UNAVAILABLE'
+      : evidence.acquisition.sourceStatus === 'PARTIAL'
+        ? 'READ_ONLY_MUESLISWAP_COLLECTION_PARTIAL'
+        : 'READ_ONLY_MUESLISWAP_COLLECTION_COMPLETE',
     output: out,
     basePoolCount: basePools.length,
     quotePoolCount: quotePools.length,
