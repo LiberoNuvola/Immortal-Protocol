@@ -6739,3 +6739,14 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Added separate Muesli evidence document `docs/COORDINATION/MUESLISWAP_USDM_READONLY_RECONCILIATION.md` at `edddf34a80ecfcae2701cfc6ddb950e0f91dd734`.
 - Observer then extended at `58a0d6906f227d684414e2b967c3d340d97eabab` to resolve datum hashes via Koios `/datum_info`; the rerun is pending. No Muesli datum decoder or reserve qualification yet.
 - No wallet, signing, transaction, chain write, oracle refresh, EEV, deployment, V3, Reveal, Materios, Kernel or R1/Kc change.
+
+
+## 10.48 Agent A — MuesliSwap official PoolDatum validation (2026-10-31)
+
+- Official source `PoolDatum` is constructor 0 / four fields: coin A, coin B, total liquidity, swap fee. Official factory/pool validators require canonical pair, positive reserves/liquidity, fee 1–10,000, immutable pair/fee, exactly one pool NFT/factory coin, and official Value cardinality. ADA reserve is the full lovelace amount; do not import Minswap's ADA reserve adjustment.
+- Added strict decoder `scripts/lib/muesliPoolDatum.mjs`, real Koios fixture `scripts/fixtures/muesliswap-usdm-mainnet-2026-10-31.json`, and 7 tests in `scripts/observeMuesliSwapUsdmUtxosReadOnly.test.mjs`.
+- Actions run 41232322566: 26/26 focused tests passed across 3 files; Muesli observer summary: 3 exact USDM NFT UTxOs, datum info resolved 3/3, structural MATCH 2, UNQUALIFIED 1. The unqualified candidate has a different payment credential and an unsupported eight-field datum.
+- The official ADA/USDM pool's raw on-chain reserve ratio is 5.27796218 ADA/USDM, fee 30/10,000 (0.30%). This is a pool spot only, not an executable price or oracle qualification. The other MATCH pool is USDM/USADA and provides no direct ADA/USDM quote.
+- Cross-reference calculator updated at `48537de0efe4cbd9738d20a296d5035a78b65c41` to include MuesliSwap's verified ADA/USDM pool; workflow now downloads same-run Muesli artifact and depends on its observer at `f2999efecd32311bba79d6a6472014040c1a43ff`. Current run 41232463082 is exercising this integration; result pending.
+- Documentation updated at `945ea1aaf270864c9afefdf428e40c9b2dde1470`.
+- No oracle/peg/EEV/deployment qualification, no chain writes, and no V3/Reveal/Materios/Kernel/R1-Kc changes.
