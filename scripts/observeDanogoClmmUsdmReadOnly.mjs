@@ -51,8 +51,10 @@ function integer(value, name) {
   return BigInt(text)
 }
 function parseAssetClass(value, name) {
-  const fields = constr(value, name)
-  if (fields.length !== 2) throw new Error(name + '_ASSET_CLASS_FIELDS_INVALID')
+  // The official SDK serializes tokenX/tokenY as a two-element Plutus list,
+  // not as an AssetClass constructor. Keep the schema exact and fail closed.
+  const fields = value && Array.isArray(value.list) ? value.list : null
+  if (!fields || fields.length !== 2) throw new Error(name + '_ASSET_CLASS_LIST_INVALID')
   const policyId = bytes(fields[0], name + '_POLICY')
   const assetNameHex = bytes(fields[1], name + '_NAME')
   if (policyId === '' && assetNameHex === '') return { policyId: '', assetNameHex: '', unit: '' }
