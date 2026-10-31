@@ -58,22 +58,30 @@ async function main() {
   const result = await request('/networks/cardano/tokens/' + encodeURIComponent(ASSET_UNIT) + '/pools?page=1')
   const data = Array.isArray(result.json?.data) ? result.json.data : []
   const included = Array.isArray(result.json?.included) ? result.json.included : []
-  const tokenResources = included.filter((resource) =>
-    resource.type === 'token' && resourceAssetAddress(resource) === ASSET_UNIT
-  )
-  const pools = data.map((pool) => ({
+  const exactTokenId = 'cardano_' + ASSET_UNIT
+  const pools = data.map((pool) => {
+    const baseToken = pool.relationships?.base_token?.data?.id ?? null
+    const quoteToken = pool.relationships?.quote_token?.data?.id ?? null
+    return {
     id: pool.id ?? null,
     address: pool.attributes?.address ?? null,
     name: pool.attributes?.name ?? null,
     dexId: pool.relationships?.dex?.data?.id ?? null,
-    baseToken: pool.relationships?.base_token?.data?.id ?? null,
-    quoteToken: pool.relationships?.quote_token?.data?.id ?? null,
+    baseToken,
+    quoteToken,
+    exactUsdmPairIdentityMatched: baseToken === exactTokenId || quoteToken === exactTokenId,
     reserveInUsd: pool.attributes?.reserve_in_usd ?? null,
     volumeUsd: pool.attributes?.volume_usd ?? null,
     priceChangePercentage: pool.attributes?.price_change_percentage ?? null,
     baseTokenPriceUsd: pool.attributes?.base_token_price_usd ?? null,
     quoteTokenPriceUsd: pool.attributes?.quote_token_price_usd ?? null,
-  }))
+  }})
+  const exactUsdmPoolCount = pools.filter((pool) => pool.exactUsdmPairIdentityMatched).length
+  const venueCounts = pools.reduce((counts, pool) => {
+    const venue = String(pool.dexId ?? 'UNKNOWN')
+    counts[venue] = (counts[venue] ?? 0) + 1
+    return counts
+  }, {})
   const evidence = {
     schema: 'immortal-geckoterminal-cardano-usdm-readonly-v1',
     classification: 'SECONDARY_DEX_INDEXER_OBSERVATION_NOT_INDEPENDENT_VENUE_OR_ORACLE',
@@ -92,7 +100,8 @@ async function main() {
       request: result.evidence,
       returnedPoolCount: data.length,
       includedResourceCount: included.length,
-      exactUsdmTokenResourceCount: tokenResources.length,
+      exactUsdmPoolCount,
+      venueCounts,
       nextPage: result.json?.links?.next ?? null,
       paginationComplete: !result.json?.links?.next,
     },
@@ -104,7 +113,7 @@ async function main() {
       'Minswap pools overlap the Minswap venue already observed through Minswap API and Koios; WingRiders and SundaeSwap remain distinct venues.',
       'Pool USD reserves, volume and price fields are source-reported metrics, not independent oracle observations.',
       'Exact token identity is checked against the Cardano policy ID plus asset name; no ticker-only match is accepted.',
-      'Only one page is requested to respect the free public API rate limit; if a next-page link exists, the census is incomplete.',
+      'The endpoint returns top pools for a token, not a guaranteed exhaustive pool census; only one page is requested to respect the free public API rate limit.',
       'No price/peg qualification, oracle qualification, EEV valuation, deployment approval, transaction, wallet, signature, refresh or chain write is produced.',
     ],
   }
@@ -115,7 +124,7 @@ async function main() {
     status: 'READ_ONLY_GECKOTERMINAL_COLLECTION_COMPLETE',
     output: out,
     returnedPoolCount: data.length,
-    exactUsdmTokenResourceCount: tokenResources.length,
+    exactUsdmPoolCount,
     paginationComplete: evidence.acquisition.paginationComplete,
     httpStatus: result.evidence.status,
     completedAt: evidence.completedAt,
