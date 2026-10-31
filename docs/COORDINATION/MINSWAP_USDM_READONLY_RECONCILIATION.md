@@ -78,7 +78,7 @@ For V2, the contract source describes `PoolDatum` asset pair and reserve fields 
 
 ## V2 decoder implementation status
 
-The read-only observer now implements a strict V2 PoolDatum JSON decoder for the published 10-field constructor and validates the configured pool batching Script credential, canonical ordered asset pair, exact USDM membership, exact Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed output Value composition, and datum reserve quantities against output Value. The ADA reserve comparison follows the validator's `min_pool_ada = 4,500,000 lovelace` adjustment. Unsupported/missing datum JSON remains unqualified.
+The read-only observer now implements a strict V2 PoolDatum JSON decoder for the published 10-field constructor and validates the configured pool batching Script credential, canonical ordered asset pair, exact USDM membership, exact Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed output Value composition, and lower-bound checks that ensure output Value reserves are not below datum reserves. The ADA reserve comparison follows the validator's `min_pool_ada = 4,500,000 lovelace` adjustment. Unsupported/missing datum JSON remains unqualified.
 
 This is a source implementation awaiting fixtures and runtime verification, not a live qualification.
 
@@ -149,7 +149,7 @@ Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic Plutus
 - batching stake credential mismatch;
 - Pool NFT quantity other than exactly one;
 - missing derived LP asset;
-- datum reserve vs Value mismatch;
+- Value reserve below datum reserve;
 - unexpected asset in the pool Value;
 - USDM absent from the datum pair.
 
@@ -178,3 +178,12 @@ The first successful targeted Koios capture exposed the actual Plutus Data const
 Official deployment files distinguish the two identities: `deployed/mainnet/script.json` declares `poolBatchingCredential` as Script hash `1eae…` and `poolBatchingAddress` as `stake17y…`; `deployed/mainnet/params.json` separately declares `poolStakeCredential` as Key hash `52563c…`. The captured UTxO's own `stake_address` decodes to the latter Key hash. The decoder now validates the former Script hash in the datum. A real datum fixture is preserved at `scripts/fixtures/minswap-v2-usdm-mainnet-2026-10-31.json` with Koios response provenance and raw CBOR.
 
 This correction is based on the actual Mainnet datum and official deployment configuration. The real fixture is expected to validate as a candidate only after the focused CI suite reruns; no result is asserted until that run completes.
+
+
+## 13. Minswap V2 fee accounting — reserve reconciliation rule
+
+The initial observer treated `datum.reserve_a/b == Value reserve_a/b` as mandatory. That was too strict. The official Minswap V2 `order_validation.ak` deliberately tracks both values separately: for a successful swap, the datum reserve increases by `swap_amount - earned_fee_in`, while the Value reserve increases by the full `swap_amount`. The difference therefore retains earned fees in the pool Value without including them in the AMM pricing reserve. See [official Minswap V2 order_validation.ak](https://github.com/minswap/minswap-dex-v2/blob/main/lib/amm_dex_v2/order_validation.ak) around the `validate_swap_exact_in` state update.
+
+The observer now uses a fail-closed lower-bound rule: `Value reserve >= datum reserve` for both pair assets, and records the non-negative difference as `valueSurplusARaw` / `valueSurplusBRaw`. If Value is below datum reserve, the candidate is unqualified. For an ADA pair, lovelace must be at least `min_pool_ada + datum ADA reserve`; for a non-ADA pair, lovelace must equal `min_pool_ada` exactly. The output Value still must contain only ADA, the two pair assets, the derived LP asset and exactly one Pool NFT.
+
+The previous 7 MATCH / 24 UNQUALIFIED classification from run 41203746686 used the superseded equality check. Do not use those counts as current qualification results. The updated focused CI and Mainnet observer run will supersede them.
