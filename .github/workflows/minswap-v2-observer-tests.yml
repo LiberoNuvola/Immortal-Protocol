@@ -10,6 +10,7 @@ on:
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
       - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs"
+      - "scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs"
       - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.test.mjs"
       - "scripts/lib/sundaeV3PoolDatum.mjs"
       - "scripts/fixtures/sundaeswap-v3-usdm-mainnet-2026-10-31.json"
@@ -54,6 +55,7 @@ jobs:
           node --check scripts/collectMinswapUsdmReadOnly.mjs
           node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
           node --check scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs
+          node --check scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs
           node --check scripts/lib/sundaeV3PoolDatum.mjs
           node --check scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
@@ -423,6 +425,7 @@ jobs:
     needs:
       - read-only-sundaeswap-api-observation
       - read-only-saturnswap-orderbook
+      - read-only-muesliswap-onchain-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -445,4 +448,28 @@ jobs:
         with:
           name: sundaeswap-v3-usdm-utxos-readonly-${{ github.run_id }}
           path: audit/oracles/sundaeswap-v3-usdm-utxos-readonly.json
+          if-no-files-found: warn
+
+  read-only-muesliswap-onchain-observation:
+    if: ${{ github.event_name == 'push' }}
+    needs:
+      - read-only-saturnswap-orderbook
+      - read-only-muesliswap-observation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Capture exact-USDM UTxOs at official MuesliSwap pool addresses (read-only)
+        run: node scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs --out audit/oracles/muesliswap-usdm-utxos-readonly.json
+      - name: Upload raw MuesliSwap pool datum evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: muesliswap-usdm-utxos-readonly-${{ github.run_id }}
+          path: audit/oracles/muesliswap-usdm-utxos-readonly.json
           if-no-files-found: warn
