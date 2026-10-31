@@ -200,3 +200,10 @@ The first live run [41239730829](https://github.com/LiberoNuvola/Immortal-Protoc
 However, the latest ADA/USD statement was created at 2026-06-18 21:02:22.882 UTC and the latest ADA/USDM statement at 2026-06-18 21:20:32.150 UTC. At capture time (2026-10-31 20:37 UTC), both were approximately 135 days old, against the feed registry's 3600-second interval. Therefore both feeds are **STALE** and must be excluded from current cross-rate/price evidence. The previous CI job returned nonzero because it mistakenly treated five unspent historical statement UTxOs as duplicate outputs. Those are preserved as five historical statements, not five duplicate copies. The observer has been corrected to report olderStatementCount, compare the newest statement age with the source-defined interval, persist READ_ONLY_ORCFAX_CER_FEEDS_STALE in the artifact, and keep acquisition success separate from feed freshness.
 
 Artifact ID 13056972087, ZIP SHA-256 7586d6f1f9568d9b591d05e587ed48e3b8dd9f85688e96d614c8bd191fe58823, extracted JSON SHA-256 28c96a745b4f0b8e1de769a32ea7ed7839dc92155345b2f2a479dad8682772f1. The next rerun will verify the corrected freshness classification and that the CI job remains green while explicitly reporting the feed as stale.
+
+
+## ADA/USD public CEX reference expansion
+
+The unauthenticated direct ADA/USD collector now includes seven exchange endpoints: Coinbase, Kraken, Bitstamp, Gemini, Bitfinex, Crypto.com Exchange and BTSE Spot. Crypto.com exposes last/bid/ask plus a ticker timestamp; BTSE exposes last and index prices but no bid/ask, so it is recorded without manufacturing a midpoint. The collector now permits absent bid/ask fields and reports midpoint ranges only for venues that actually provide both sides.
+
+This remains **CEX market data**, not a decentralized oracle. ADA/USDT and ADA/USDC markets are intentionally not counted as USD pairs; any conversion through those stablecoins would require a separately qualified USDT/USD or USDC/USD reference. First seven-source live run pending.
