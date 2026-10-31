@@ -70,7 +70,8 @@ function formatRatio(numerator, denominator, decimals = 8) {
  */
 export function deriveDanogoClmmSpotPrice(pool) {
   if (!pool || pool.status !== 'MATCH') return null
-  if (pool.rewardEpochBehind === true && pool.rewardAmountRead !== true) return null
+  if (pool.rewardEpochBehind === true &&
+      (pool.rewardAmountRead !== true || pool.rewardAmountAppliedRaw === undefined || pool.rewardAmountAppliedRaw === null)) return null
 
   const datum = pool.datum
   if (!datum) throw new Error('DANO_CLMM_DATUM_MISSING')
@@ -82,7 +83,10 @@ export function deriveDanogoClmmSpotPrice(pool) {
   const yIsUsdm = tokenY === usdm && tokenX === ada
   if (!xIsUsdm && !yIsUsdm) return null
 
-  const activeX = parsePositive(pool.activeReserveXRaw, 'DANO_CLMM_ACTIVE_RESERVE_X')
+  const activeXBase = parsePositive(pool.activeReserveXRaw, 'DANO_CLMM_ACTIVE_RESERVE_X')
+  const rewardApplied = pool.rewardEpochBehind === true ? BigInt(String(pool.rewardAmountAppliedRaw)) : 0n
+  if (rewardApplied < 0n) throw new Error('DANO_CLMM_REWARD_AMOUNT_NEGATIVE')
+  const activeX = activeXBase + rewardApplied
   const activeY = parsePositive(pool.activeReserveYRaw, 'DANO_CLMM_ACTIVE_RESERVE_Y')
   const lower = {
     num: parsePositive(datum.sqrtLowerPrice?.numeratorRaw, 'DANO_CLMM_LOWER_NUM'),
@@ -114,6 +118,8 @@ export function deriveDanogoClmmSpotPrice(pool) {
     sourceBlockTime: pool.blockTime ?? null,
     tokenX,
     tokenY,
+    activeReserveXBaseRaw: activeXBase.toString(),
+    rewardAmountAppliedRaw: rewardApplied.toString(),
     activeReserveXRaw: activeX.toString(),
     activeReserveYRaw: activeY.toString(),
     virtualReserveXNumeratorRaw: (liquidity.numerator * upper.den).toString(),
