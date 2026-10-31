@@ -5775,3 +5775,41 @@ Commit `b3093bc26d74b5526fa3e4bfd8ac2753bf862e9b` adds a read-only `grandpa_roun
 **Next bounded action:** inspect the `grandpa_roundState` diagnostic from run #41165523804. If the live voter set reports 4343 while runtime state reports 4434, record a concrete node/runtime consensus-state discrepancy and keep B3-A OPEN. If it reports 4434, investigate why the attached FRNK justification verifies only under 4343 and whether the payload is stale or from another finality context. Do not accept 4343 without authenticated authority-set provenance.
 
 **No external request, archive-node installation, Preprod transaction, wallet signature or on-chain change was performed.**
+
+
+## Agent C addendum — GRANDPA voter RPC capability and digest-window probe (2026-10-31)
+
+### Exact result — run #41165523804
+
+[Materios B3 execution-proof verifier #41165523804](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41165523804), commit `b3093bc26d74b5526fa3e4bfd8ac2753bf862e9b`, completed **FAIL** only at `Capture and verify real Materios GRANDPA witness`. The verifier, live storage-proof and finalized-state-capture jobs succeeded. The snapshot state probe succeeded; the raw WebSocket FRNK candidate at block **2509824** was again acquired and bound to the exact snapshot header/hash.
+
+The resulting artifact [materios-real-grandpa-witness #13029127688](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41165523804/artifacts/13029127688) records:
+- runtime set ID **4434**, five authorities, four precommits, round **1253**;
+- signature verification under 4434: **FAIL / INVALID_SIGNATURE**;
+- the only matching localized-payload set ID in the diagnostic search is **4343**, with all 4/4 signatures valid and the existing full verifier yielding 4/5 signed weight plus ancestry — explicitly **UNTRUSTED diagnostic only**;
+- parent state and all six states 2509819–2509824 return 4434;
+- the authority set is read at the exact proof target, but `provenance_verified=false`;
+- transition witness not found; B3-A remains **OPEN**.
+
+### Why `grandpa_roundState` cannot resolve this through current Materios RPC
+
+The probe tried `grandpa_roundState` on both public HTTP and the local snapshot RPC. Both return JSON-RPC `-32601 Method not found`.
+
+This is explained by the official Materios source, not by a probe bug:
+- `partnerchain/node/src/rpc.rs` constructs the node's full RPC module by registering only System, OrinqReceipts and MOTRA. It does not register the standard GRANDPA RPC handler.
+- `partnerchain/node/src/service.rs` starts the GRANDPA voter task when enabled, but that voter state is not exported through the custom `create_full` RPC module.
+- The isolated snapshot node is also started without peers and cannot provide a live peer-synchronized voter view.
+
+Therefore do not repeat `grandpa_roundState` probes or treat the missing method as a GRANDPA consensus failure. Current public Materios gateway and node RPC interfaces do not expose this observer endpoint. No upstream request was made.
+
+### Cryptographic payload encoding cross-check
+
+The pinned upstream Polkadot SDK implementation of `sp_consensus_grandpa::localized_payload` explicitly encodes `(message, round, set_id)`. IMMORTAL's existing `encodeLocalizedPrecommitPayload` uses that same order and SCALE-u64 encoding. The 4343 match remains a cryptographic diagnostic only; it does not prove that 4343 was the authorized set for block 2509824.
+
+### Next autonomous probe
+
+Commit `ac93e256d93bb7386a79563c6a0497f78e8409a6` extends the snapshot probe to retain the target header digest, runtime version and any FRNK consensus digest logs in the retained 256-block header window. Commit `eb0edb2f794dd808f773a3dd8fb475233db82263` fixes the JSON-RPC parameter construction for those header queries.
+
+Exact-head workflow [#41173448645](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41173448645) is running. It will show whether the candidate header/window carries GRANDPA scheduled/forced-change logs and identify the runtime version used at the target. This is a bounded diagnostic; a 256-block window cannot reconstruct 91 earlier set transitions. If no relevant digest logs occur in the window, the next work must shift to a verifiable historical header/digest acquisition path and genesis-anchored replay, not guessed set IDs.
+
+**Current classification:** B3-A witness acquisition PASS (candidate only); signature verification under exact runtime set 4434 FAIL; set 4343 diagnostic only; authority-set provenance OPEN; B3-B remains bounded PASS; B3-C unchanged OPEN. No protocol semantics, V3, Reveal, economic rules, or authority-selector behavior changed. No external request, wallet action or on-chain transaction occurred.
