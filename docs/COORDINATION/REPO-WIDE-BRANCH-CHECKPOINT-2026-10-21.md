@@ -6854,3 +6854,11 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - This is not PlutusV3 contract qualification. CSWAP official source code is not available in the inspected public repositories; fee/Datum/LP/Value semantics remain subject to independent validation. Do not use this provisional figure for EEV/oracle qualification.
 - Commits: math `563c50e462f245155ee7e706587592034f2f7359`; fee formatting fix `4724fe640490f25789e08ce74d9264e0d6449440`; tests `526d2dce625ed000903a8a7c5d575b7e52dfe97a`; cross-reference integration `ec67334b103463eb6c00c57a7bc8c836abbfdff7`; workflow `fb6229fefc2835a3aba823c71b6d713d41ebd62a`; docs `c88b06fa9a106f67aedd778e504cdb773beb7737`.
 - New CI run pending. No wallet, transaction, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
+
+
+## 10.68 Agent A — Danogo + CSWAP math CI expanded and green (2026-10-31)
+
+- Actions run [41238996378](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238996378), source commit `fb6229fefc2835a3aba823c71b6d713d41ebd62a`: **5 test files / 43 tests passed**, including 9 Danogo CLMM virtual-reserve tests and 6 CSWAP provisional SDK reconstruction tests. Syntax checks for all observer/math/reconciliation scripts passed.
+- The run's CSWAP exact-USDM observer also completed and uploaded its artifact successfully. Its result remains one candidate, official payment credential match, datum decoded, full pagination. Pricing stays provisional only.
+- Mainnet Minswap acquisition and SundaeSwap V3 observation were still in progress when this entry was written; Danogo/updated cross-reference job remains downstream. Do not state any new Danogo live spot until its artifact and dependent cross-reference are complete.
+- No transaction, wallet, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
