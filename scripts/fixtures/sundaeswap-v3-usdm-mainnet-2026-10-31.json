@@ -36,7 +36,7 @@
         }
       ],
       "datumHash": "0e916d8beed76ce066e6978d823624ccb64a58dc5860e868cc280ef6bd47f0d8",
-      "inlineDatumCborHex": "d8799f581c5e09ddbd825b861e16ec5e8b7b33b818baf07519529cf918350c899f9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dff9f581cf6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d40ffff1a05180625181e181ed87a80001a01eefec0ff",
+      "inlineDatumCborHex": "d8799f581c5e09ddbd825b861e16ec5e8b7b33b818f9baf07519529cf918350c899f9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dff9f581cf6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d40ffff1a05180625181e181ed87a80001a01eefec0ff",
       "inlineDatumJson": {
         "constructor": 0,
         "fields": [
@@ -400,7 +400,7 @@
       "id": "5e09ddbd825b861e16ec5e8b7b33b818f9baf07519529cf918350c89",
       "version": "V3",
       "assetA": {
-        "assetId": "ada.lovelace"
+        "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
       },
       "assetB": {
         "assetId": "f6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d."
@@ -424,7 +424,7 @@
       "id": "9b16ad48eb1ba1cde2ad55d8c90f8aa83e8daaaae9904d05d98cb8f4",
       "version": "V3",
       "assetA": {
-        "assetId": "ada.lovelace"
+        "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
       },
       "assetB": {
         "assetId": "f66d78b4a3cb3d37afa0ec36461e51ecbde00f26c8f0a68f94b69880.69555344"
@@ -448,7 +448,7 @@
       "id": "187a43bfedb6c402212c20afee1d0332f690e8336279b79bdc5af514",
       "version": "V3",
       "assetA": {
-        "assetId": "ada.lovelace"
+        "assetId": "0691b2fecca1ac4f53cb6dfb00b7013e561d1f34403b957cbb5af1fa.4e49474854"
       },
       "assetB": {
         "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
@@ -472,7 +472,7 @@
       "id": "f5728bd65babd2f8b9a24c8067168b7e29b3b5177586e57f819df86f",
       "version": "V3",
       "assetA": {
-        "assetId": "ada.lovelace"
+        "assetId": "a0028f350aaabe0545fdcb56b039bfb08e4bb4d8c4d7c3c7d481c235.484f534b59"
       },
       "assetB": {
         "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
@@ -496,7 +496,7 @@
       "id": "64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef",
       "version": "V3",
       "assetA": {
-        "assetId": "."
+        "assetId": "ada.lovelace"
       },
       "assetB": {
         "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
