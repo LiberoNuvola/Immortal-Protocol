@@ -90,6 +90,27 @@ async function main() {
       priceAdaPerUsdm: formatScaled(BigInt(price.priceScaledRaw)),
     })
   }
+  for (const candidate of sundae.candidates ?? []) {
+    const validation = candidate.datumValidation ?? {}
+    if (validation.status !== 'MATCH' || candidate.apiReconciliation?.status !== 'MATCH') continue
+    const datum = validation.datum
+    const price = poolPrice(datum.assetA, datum.assetB, validation.reserveARaw, validation.reserveBRaw)
+    if (!price) continue
+    dexPools.push({
+      venue: 'SundaeSwap V3',
+      poolType: 'CONSTANT_PRODUCT',
+      poolUtxoRef: candidate.utxoRef,
+      sourceBlockHeight: candidate.blockHeight ?? null,
+      sourceBlockTime: candidate.blockTime ?? null,
+      ...price,
+      priceAdaPerUsdm: formatScaled(BigInt(price.priceScaledRaw)),
+      bidFeesPer10000Raw: datum.bidFeesPer10000Raw,
+      askFeesPer10000Raw: datum.askFeesPer10000Raw,
+      protocolFeesRaw: datum.protocolFeesRaw,
+      apiReconciliationStatus: candidate.apiReconciliation.status,
+    })
+  }
+
   for (const pool of wing.pools ?? []) {
     if (pool.status !== 'MATCH' || pool.poolType !== 'ConstantProduct') continue
     const d = pool.datum ?? {}
@@ -174,7 +195,7 @@ async function main() {
     indicativeCrossRates: crossRates,
     limitations: [
       'AMM spot is the ratio of the on-chain active reserve quantities before trade fees and slippage; it is not a guaranteed execution price.',
-      'Only verified constant-product USDM/ADA pools are used. CLMM and stableswap pools are deliberately excluded until their official curve math is implemented.',
+      'Only verified constant-product USDM/ADA pools are used. SundaeSwap V3 is included after official contract-source review of its constant-product swap formula and live API/Koios reserve reconciliation. Danogo CLMM and Sundae Stableswaps remain excluded until their own curve math is implemented.',
       'Each CEX midpoint is a separate centralized-exchange market reference. It is not a decentralized oracle and may be stale, thin, or venue-specific.',
       'The ADA/USD and USDM/ADA observations have separate timestamps and are not an atomic cross-market snapshot.',
       'Pool UTxO ages are reported for transparency only; no freshness threshold or automatic pool exclusion is introduced by this observer.',
