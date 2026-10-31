@@ -242,3 +242,47 @@ Automated summary:
 Reconciliation artifact ID `13044411182`, ZIP SHA-256 `b0c2d9b3c93f9e4c6098eb7c7303ad080ed30d77fbac7cc959617ec87ebfc339`; extracted JSON SHA-256 `c01872590804b698dd5ad6adb1328809ea4139467320bdc5abf50a4bbbc07c80`.
 
 The source windows were close but not atomic: API `13:14:27.946Z`–`13:14:28.758Z`; Koios `13:14:29.034Z`–`13:15:46.121Z`. Both preserve per-request raw response hashes and timestamps. This is strong evidence of **pool-set and exact asset-pair identity agreement** between Minswap V2 API and the Koios Mainnet view at the captured times. It is not independent market validation: both sources describe the same Minswap venue / Cardano ledger state. It does not qualify USD-denominated API liquidity/volume, USDM/USD price, peg, oracle, EEV, or deployment. Per-pool history remains deferred after the documented HTTP 429.
+
+
+## 18. Independent indexer coverage — SuperCardano and additional free/paid paths
+
+### SuperCardano (new read-only indexer observer)
+
+SuperCardano publishes unauthenticated read-only endpoints for exact asset market data:
+
+- `GET /api/v1/markets/tokens/{unit}` — token activity, price in ADA, liquidity, and pool rows with venue, pool key, asset units, reserves, LP, height and time.
+- `GET /api/v1/markets/tokens/{unit}/trades` — settled trade rows with transaction hash, block height, venue, pool, exact token/ADA quantities, price when available, order kind, owner classification and flags.
+- `GET /api/v1/assets/{unit}/ranks` — ranks and as-of block/time metadata.
+
+The methodology states that SuperCardano reads pools from its own Cardano node, waits 15 blocks before recording pool state, and derives pool prices from on-chain state. It also says that its own token price surface currently reads Minswap V2; WingRiders V2 and Dano Finance are being added after their readers run clean for a week. USD figures currently use DexHunter's ADA/USD rate, not SuperCardano's own independent USD series. Therefore this is a potentially independent **on-chain indexer implementation**, not an independent DEX venue or independent USD oracle. The token pool/trade rows show broader venue identifiers, but each venue's actual freshness and decoder coverage must be evaluated from its block/time and trade rows, not assumed from the site-wide coverage claims.
+
+Exact asset used in the endpoint path is the full unit `c48c…47ad0014df105553444d`, never the ticker alone. A live read through the public endpoint returned pool rows for Minswap V2/V1, WingRiders V2, SundaeSwap V3, VyFi, MuesliSwap, CSWAP, Splash and Danogo CLMM, plus recent trade rows identifying venues such as Minswap V2, WingRiders V2 and Danogo CLMM. These are initial discovery observations, not yet frozen evidence: the committed observer `scripts/collectSuperCardanoUsdmReadOnly.mjs` captures raw responses, response hashes, headers, source metadata, exact asset pools and trades. Its first CI run is pending.
+
+### Other candidate paths and cost classification
+
+| Source | What it adds | Cost / access | Independence caveat |
+|---|---|---|---|
+| DanoNight stablecoin tracker | Own `cardano-db-sync`-based on-chain pool scan; ADA-per-stablecoin rates, cross-DEX pool comparison, daily history | Public page, no API key shown | Own indexer; its USD conversion uses CoinGecko ADA/USD; daily cadence and published pool coverage are limited |
+| GeroWallet Market / Nexus | Gero's own Nexus indexer, 11 DEXs, trades, candles, order books | Wallet UI is free; developer market-data API is paid add-on (Nexus base plan plus Market Data) | Independent indexer implementation; Nexus multi-provider failover can route through Koios/Blockfrost/Maestro, so not an independent underlying ledger |
+| DexHunter | Aggregated DEX quotes, OHLCV, order history, routing across 15+ DEXs | Partner API requires `X-Partner-Id`; free API access not established | Aggregator across venues; not a separate venue, and quote path may overlap existing DEX sources |
+| Cardanoscan API | Separate explorer/indexer, asset and address/transaction lookups | Free API plan, API key, documented 5 req/s and up to 100k calls/day | Useful for ledger cross-checks, not a native market-price oracle or DEX-specific market-data API |
+| CoinGecko / CryptoSlate / market aggregators | Cross-venue listings, snapshots and market summaries | Access tiers vary; public pages accessible | Aggregated sources may share upstream DEX data; provenance and venue de-duplication must be established |
+
+### Source independence model
+
+Do not use “multi-oracle” as a raw count of APIs. Keep these dimensions separate:
+
+1. **Venue independence:** distinct DEX protocol/pool contract (e.g. Minswap vs WingRiders vs SundaeSwap vs Danogo).
+2. **Indexer independence:** separately operated chain reader and database (Koios vs SuperCardano own node vs DanoNight db-sync vs Nexus), after checking provider lineage and failover.
+3. **Market-data independence:** separate trade/pool interpretation, filtering, freshness, and aggregation methodology.
+4. **USD reference independence:** separate fiat/USD source (exchange market or independently published on-chain oracle statement). A USD conversion that reuses DexHunter or CoinGecko is not an independent USD observation.
+5. **Issuer/reserve independence:** Moneta reserve/attestation evidence is a distinct backing dimension, not interchangeable with DEX spot price.
+
+A valid multi-source quorum must identify overlap and common-mode dependencies; three APIs that all ingest Minswap or route USD conversion through the same source do not create three independent oracles.
+
+### Immediate next gates
+
+- Verify the SuperCardano collector CI run, inspect raw artifact and freshness metadata, count venue pools and trades, and classify stale/unsupported pools separately.
+- Reconcile its Minswap V2 pool keys/reserves and trades against Koios and the Minswap API, while preserving provider-specific identities and timestamps.
+- Add venue-specific on-chain observers only for venues that can be authenticated by their own pool NFT/script identities (WingRiders, SundaeSwap, Danogo, VyFi, MuesliSwap, CSWAP, Splash).
+- Keep all USD conversion and peg claims blocked until ADA/USD reference provenance and an independent cross-check are qualified.
