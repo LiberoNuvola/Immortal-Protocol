@@ -148,6 +148,7 @@ async function collectPoolHistory(poolId) {
 
 async function main() {
   const startedAt = new Date().toISOString()
+  const includeHistory = process.argv.includes('--with-history')
   const asset = await collectAsset()
   const protocolResults = await Promise.all(PROTOCOLS.map(collectPools))
   const poolMap = new Map()
@@ -173,7 +174,7 @@ async function main() {
       assetA: metrics.asset_a,
       assetB: metrics.asset_b,
       apiMetrics: metrics,
-      history: await collectPoolHistory(id),
+      history: includeHistory ? await collectPoolHistory(id) : null,
     })
   }
 
@@ -195,6 +196,13 @@ async function main() {
     poolProtocolsQueried: PROTOCOLS,
     poolMetricPages: pages,
     poolCount: pools.length,
+    historyCollection: {
+      enabled: includeHistory,
+      period: includeHistory ? PERIOD : null,
+      note: includeHistory
+        ? 'Per-pool history queried; API rate limits may apply.'
+        : 'Per-pool history deferred; current pool metrics are collected first to keep the initial reconciliation within public API limits.',
+    },
     pools,
     limitations: [
       'API/indexer observations are not direct UTxO observations.',
