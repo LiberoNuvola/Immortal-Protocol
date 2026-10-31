@@ -6939,3 +6939,14 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Increased the read-only Saturn workflow job timeout from 15 to 45 minutes (workflow commit `095b59a23ffe0d716fc4934c8e81a16ca889b1bb`) to allow full pagination.
 - New run is pending. Continue to classify as partial until every deployment returns a page shorter than 1,000 rows and all source errors are clear. No price or best bid/ask is claimed until then.
 - No transaction, wallet, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
+
+
+## 10.71 Agent A — Orcfax CER on-chain oracle observer and additional feed discovery (2026-10-31)
+
+- Added pure Orcfax CER datum decoder and tests: scripts/lib/orcfaxCerDatum.mjs (commit faceaa5eb50e543f0a08e5528dbe4386f5230d27) and scripts/lib/orcfaxCerDatum.test.mjs (commit fa05bea22b3c5a3071465302b472ca29d68d941b).
+- Added read-only mainnet observer scripts/observeOrcfaxCerFeedsReadOnly.mjs (commit 60ae0f476798cabfa71b220aa57461450aa8eebf). It resolves the FS script hash from the documented FSP NFT/state, scans exact FS-token UTxOs, and checks feed-id prefixes CER/ADA-USD/ and CER/ADA-USDM/, timestamp and positive rational. It captures Koios raw response hashes, inline datum CBOR and transaction/block context.
+- Workflow syntax/test and live observer job added at commit 57ca7cc5333d6e6e2cc64c32c6ee686f6643a4ce. First live run pending.
+- Official Orcfax registry lists ADA-USD as CEX-sourced median and ADA-USDM as DEX-sourced weighted mean, each 3600s interval; the latter is not a separate DEX venue. No price/rational is admitted into the primary cross-rate until live datum serialization, orientation, scale and freshness are verified.
+- Pyth public Hermes feed list identifies Crypto.ADA/USD ID 2a01deaec9e51a579277b34b122399984d0bbf57e2458a7e42fecd2829867a0d without auth, but latest updates require an API key; metadata is free, live price is not assumed permanently free.
+- Charli3 mainnet ADA/USD feed discovered: address addr1wyvxns52tsgz8ggvrh4np5gjyfk0g5fshqq2ytvu9t7pe8qp3adw6; NFT policy 08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e; token name 4f7261636c6546656564. Published config: 5 nodes, 3/5 update threshold, 6h freshness/cadence, 15% deviation threshold, 2 signatories. Separate read-only observer still required.
+- No wallet, signing, transaction, oracle refresh, EEV, deployment, or chain write.
