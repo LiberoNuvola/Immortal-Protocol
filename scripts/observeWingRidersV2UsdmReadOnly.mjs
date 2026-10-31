@@ -278,6 +278,7 @@ async function main() {
       if (assetCount !== expectedAssetCount) throw new Error('WINGRIDERS_POOL_ASSET_COMPOSITION_COUNT_INVALID')
       results.push({
         status: reserveMatch ? 'MATCH' : 'ACTIVE_RESERVE_MISMATCH',
+        officialPolicyIdMatches: share.policyId === officialPolicyId,
         poolKey: pool.key,
         poolType: datum.poolType,
         shareToken: share,
@@ -327,6 +328,7 @@ async function main() {
     } catch (cause) {
       results.push({
         status: 'UNQUALIFIED_POOL',
+        officialPolicyIdMatches: share.policyId === officialPolicyId,
         poolKey: pool.key,
         shareToken: share,
         utxoRef: String(utxo.tx_hash).toLowerCase() + '#' + String(utxo.tx_index),
@@ -371,7 +373,6 @@ async function main() {
     },
     summary: {
       poolShareTokensDiscovered: requested.length,
-      officialFactoryPolicyMatches: results.filter((r) => r.paymentCredentialMatchesOfficial || r.error !== 'WINGRIDERS_POOL_POLICY_DIFFERS_FROM_OFFICIAL_FACTORY_POLICY').length,
       currentUtxoCount: results.filter((r) => r.utxoRef).length,
       matchedCount: results.filter((r) => r.status === 'MATCH').length,
       activeReserveMismatchCount: results.filter((r) => r.status === 'ACTIVE_RESERVE_MISMATCH').length,
