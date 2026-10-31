@@ -37,6 +37,27 @@ const SOURCES = [
       return { last: data.last, bid: data.bid, ask: data.ask, sourceTime: data.timestamp ?? null }
     },
   },
+
+  {
+    id: 'crypto-com',
+    venue: 'Crypto.com Exchange',
+    url: 'https://api.crypto.com/v2/public/get-ticker?instrument_name=ADA_USD',
+    parse(data) {
+      const ticker = data.result?.data?.[0]
+      if (data.code !== 0 || !ticker || ticker.i !== 'ADA_USD') throw new Error('CRYPTO_COM_ADA_USD_TICKER_MISSING')
+      return { last: ticker.a, bid: ticker.b, ask: ticker.k, sourceTime: ticker.t }
+    },
+  },
+  {
+    id: 'btse',
+    venue: 'BTSE Spot',
+    url: 'https://api.btse.com/spot/api/v3.2/price?symbol=ADA-USD',
+    parse(data) {
+      const ticker = Array.isArray(data) ? data.find((x) => x.symbol === 'ADA-USD') : null
+      if (!ticker) throw new Error('BTSE_ADA_USD_TICKER_MISSING')
+      return { last: ticker.lastPrice, index: ticker.indexPrice, bid: null, ask: null, sourceTime: null }
+    },
+  },
   {
     id: 'gemini',
     venue: 'Gemini',
@@ -90,9 +111,13 @@ async function collect(source) {
     if (!response.ok) return { id: source.id, venue: source.venue, status: 'SOURCE_UNAVAILABLE', error: 'HTTP_' + response.status, observedAt, evidence }
     const parsed = source.parse(JSON.parse(rawBody))
     const last = toScaled(parsed.last)
-    const bid = toScaled(parsed.bid)
-    const ask = toScaled(parsed.ask)
-    if (bid <= 0n || ask <= 0n || last <= 0n || ask < bid) throw new Error('ADA_USD_TICKER_VALUES_INVALID')
+    const bid = parsed.bid === null || parsed.bid === undefined ? null : toScaled(parsed.bid)
+    const ask = parsed.ask === null || parsed.ask === undefined ? null : toScaled(parsed.ask)
+    const index = parsed.index === null || parsed.index === undefined ? null : toScaled(parsed.index)
+    if (last <= 0n || (bid !== null && bid <= 0n) || (ask !== null && ask <= 0n) ||
+        (bid !== null && ask !== null && ask < bid) || (index !== null && index <= 0n)) {
+      throw new Error('ADA_USD_TICKER_VALUES_INVALID')
+    }
     return {
       id: source.id,
       venue: source.venue,
@@ -101,10 +126,12 @@ async function collect(source) {
       status: 'MATCHED',
       observedAt,
       sourceTime: parsed.sourceTime,
-      bidUsd: fromScaled(bid),
-      askUsd: fromScaled(ask),
+      bidUsd: bid === null ? null : fromScaled(bid),
+      askUsd: ask === null ? null : fromScaled(ask),
       lastUsd: fromScaled(last),
-      midUsd: fromScaled((bid + ask) / 2n),
+      midUsd: bid === null || ask === null ? null : fromScaled((bid + ask) / 2n),
+      indexUsd: index === null ? null : fromScaled(index),
+      bidAskAvailable: bid !== null && ask !== null,
       evidence,
     }
   } catch (error) {
@@ -139,10 +166,16 @@ async function main() {
       sourceCount: SOURCES.length,
       successfulSourceCount: successful.length,
       unavailableSourceCount: results.length - successful.length,
-      bidAskMidRangeUsd: successful.length
+      bidAskMidRangeUsd: successful.filter((x) => x.midUsd !== null).length
         ? {
-            min: successful.map((x) => Number(x.midUsd)).reduce((a, b) => Math.min(a, b)).toFixed(8),
-            max: successful.map((x) => Number(x.midUsd)).reduce((a, b) => Math.max(a, b)).toFixed(8),
+            min: successful.filter((x) => x.midUsd !== null).map((x) => Number(x.midUsd)).reduce((a, b) => Math.min(a, b)).toFixed(8),
+            max: successful.filter((x) => x.midUsd !== null).map((x) => Number(x.midUsd)).reduce((a, b) => Math.max(a, b)).toFixed(8),
+          }
+        : null,
+      lastPriceRangeUsd: successful.length
+        ? {
+            min: successful.map((x) => Number(x.lastUsd)).reduce((a, b) => Math.min(a, b)).toFixed(8),
+            max: successful.map((x) => Number(x.lastUsd)).reduce((a, b) => Math.max(a, b)).toFixed(8),
           }
         : null,
     },
