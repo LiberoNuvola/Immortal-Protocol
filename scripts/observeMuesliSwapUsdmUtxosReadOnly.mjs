@@ -87,18 +87,23 @@ function decodeAddressPaymentCredential(address) {
   return raw.subarray(1, 29).toString('hex')
 }
 
-async function fetchAddressPage(scriptHash, offset) {
-  const url = KOIOS + '/script_utxos?script_hash=eq.' + scriptHash +
-    '&limit=' + PAGE_SIZE + '&offset=' + offset + '&extended=true'
+async function fetchAddressPage(target, offset) {
+  const path = '/asset_utxos?address=eq.' + encodeURIComponent(target.address) +
+    '&limit=' + PAGE_SIZE + '&offset=' + offset
+  const url = KOIOS + path
   const startedAt = new Date().toISOString()
   const response = await fetch(url, {
-    method: 'GET',
-    headers: { accept: 'application/json' },
+    method: 'POST',
+    headers: { accept: 'application/json', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      _asset_list: [[USDM.policyId, USDM.assetNameHex]],
+      _extended: true,
+    }),
     signal: AbortSignal.timeout(90_000),
   })
   const rawBody = await response.text()
   const evidence = {
-    url, method: 'GET', status: response.status,
+    url, method: 'POST', addressId: target.id, status: response.status,
     responseDate: response.headers.get('date'),
     startedAt, completedAt: new Date().toISOString(),
     bodyBytes: Buffer.byteLength(rawBody),
@@ -129,16 +134,26 @@ async function main() {
   const poolScriptHash = uniquePaymentCredentials[0]
   const scriptRows = []
   try {
-    for (let offset = 0; offset < PAGE_SIZE * MAX_PAGES; offset += PAGE_SIZE) {
-      const page = await fetchAddressPage(poolScriptHash, offset)
-      pages.push(page.evidence)
-      scriptRows.push(...page.json)
-      if (page.json.length < PAGE_SIZE) {
-        complete = true
-        break
+    complete = true
+    for (const target of addressCredentials) {
+      let addressComplete = false
+      for (let offset = 0; offset < PAGE_SIZE * MAX_PAGES; offset += PAGE_SIZE) {
+        const page = await fetchAddressPage(target, offset)
+        pages.push(page.evidence)
+        scriptRows.push(...page.json)
+        if (page.json.some((row) => String(row.address ?? '') !== target.address)) {
+          throw new Error('KOIOS_MUESLI_ADDRESS_FILTER_RETURNED_FOREIGN_ROW')
+        }
+        if (page.json.length < PAGE_SIZE) {
+          addressComplete = true
+          break
+        }
+      }
+      if (!addressComplete) {
+        complete = false
+        throw new Error('KOIOS_MUESLI_ASSET_UTXOS_PAGE_CAP_REACHED_INCOMPLETE:' + target.id)
       }
     }
-    if (!complete) throw new Error('KOIOS_MUESLI_SCRIPT_UTXOS_PAGE_CAP_REACHED_INCOMPLETE')
     const usdmUnit = USDM.policyId + USDM.assetNameHex
     for (const row of scriptRows) {
       const containsUsdm = (row.asset_list ?? []).some((asset) =>
@@ -167,7 +182,7 @@ async function main() {
       schema: 'immortal-muesliswap-usdm-utxo-acquisition-v1',
       network: 'cardano-mainnet',
       exactAsset: USDM,
-      source: 'Koios Mainnet script UTxO query at official MuesliSwap pool payment credential',
+      source: 'Koios Mainnet script UTxO query at official MuesliSwap pool addresses with exact asset filter',
       startedAt,
       completedAt: new Date().toISOString(),
       status: 'SOURCE_UNAVAILABLE_OR_INCOMPLETE',
@@ -195,8 +210,10 @@ async function main() {
     startedAt,
     completedAt: new Date().toISOString(),
     acquisition: {
-      endpoint: '/script_utxos',
-      scriptHashFilter: poolScriptHash,
+      endpoint: '/asset_utxos',
+      exactAssetFilter: { policyId: USDM.policyId, assetNameHex: USDM.assetNameHex },
+      addressFilters: addressCredentials.map(({ id, address }) => ({ id, address })),
+      derivedPaymentCredential: poolScriptHash,
       exactAssetFilterAppliedLocally: { policyId: USDM.policyId, assetNameHex: USDM.assetNameHex },
       pageSize: PAGE_SIZE,
       maxPages: MAX_PAGES,
