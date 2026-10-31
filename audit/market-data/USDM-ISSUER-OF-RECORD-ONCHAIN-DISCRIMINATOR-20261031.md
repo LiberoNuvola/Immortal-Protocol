@@ -161,3 +161,78 @@ Updated status:
 - Per-issuance / per-holding issuer discriminator: **OPEN**
 - Current reserve qualification / holder redemption proof: **NOT ESTABLISHED**
 - Option B remains observational only; EEV / first Issue remains blocked.
+
+
+---
+
+## 6. Follow-up: public counter-UTxO claim, exact asset policy, and explorer inventory
+
+### 6.1 NBX EU issuer whitepaper link verified; payload not retrievable here
+
+The current NBX USDM page identifies an "USDM EU Issuer" whitepaper updated 24 September 2026 and exposes both PDF and machine-readable XHTML/iXBRL links. The links resolve to a PDF and a ZIP archive on the site's CDN, but both payloads returned non-retryable retrieval errors in this inspection environment. The archive filename identifies LEI `5493004WNVZP9EMYI834` and a 15 September 2026 document build; the page itself labels the whitepaper as updated 24 September 2026.
+
+Source page: https://nbx.com/en/usdm
+PDF link: https://cdn.prod.website-files.com/6152dfaed2ce58d94ef37b88/6ab4e90ceb46558d48fc093a_USDM%20White%20Paper%20-%20Modified%20version%202026-09-24.pdf
+XHTML/iXBRL ZIP: https://cdn.prod.website-files.com/6152dfaed2ce58d94ef37b88/6ab4e9329383c7b9695de62d_WhitePaper-USDM-5493004WNVZP9EMYI834-NO-260915122610-en.zip
+
+No content-level claims are made about either inaccessible file.
+
+### 6.2 NBX explainer identifies the counter UTxO concept, not its locator or issuer fields
+
+NBX's public "What is USDM?" explainer says:
+- USDM is minted as a Cardano native token using a multisignature smart contract and oracle attestation system.
+- minting is governed by an oracle system;
+- mint/burn data and total supply are stored on-chain in a special "counter UTxO".
+
+Source: https://nbx.com/en/whatisusdm
+
+The explainer does not publish the counter UTxO address, script hash, datum schema, datum CBOR, update rules, or whether the counter distinguishes NBX and Moneta issuance. Thus this remains a documented lead, not a reproducible chain locator.
+
+### 6.3 Exact asset identity implies one policy identity, not two independent policy IDs
+
+Moneta's official policy page and developer docs publish:
+- Policy ID: `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`
+- Asset name: `0014df105553444d`
+- fingerprint: `asset12ffdj8kk2w485sr7a5ekmjjdyecz8ps2cm5zed`
+
+Cardano's developer documentation explains that a token's policy ID is the hash of its minting-policy script; mint and burn transactions execute that policy. Therefore, the exact same policy ID cannot represent two different minting-policy scripts. It does not, however, identify the legal entity controlling or operating the script, nor does it establish reserve liability. If NBX-issued and Moneta-issued USDM share this exact asset identity, their legal separation must be implemented through some common-policy governance/authorization arrangement and/or transaction-level or off-chain issuer attribution, not by separate policy IDs.
+
+Potential on-chain evidence fields to inspect (not yet verified as present): mint transaction redeemer, spending inputs (including counter UTxO), reference inputs, output datum, transaction metadata, signer witnesses, and any oracle-attestation reference. A transaction's signers or addresses alone must not be treated as issuer attribution absent an issuer-authenticated mapping.
+
+Sources:
+- https://moneta.global/policy-id/
+- https://moneta.global/developers/
+- https://developers.cardano.org/docs/developers/curriculum/native-tokens/minting-policies/
+- https://developers.cardano.org/docs/developers/curriculum/smart-contracts/security/vulnerabilities/token-security/
+
+### 6.4 Explorer inventory as discovery evidence only
+
+Cardanoscan's USDM asset page, inspected 31 October 2026, displayed:
+- creation time: 17 March 2024 00:21:21 UTC;
+- total supply: approximately 11.52 million USDM;
+- 423 mint transactions;
+- 975,336+ total asset transactions.
+
+Source: https://cardanoscan.io/token/c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d
+
+These are explorer-indexed, time-sensitive figures, not an independently reconstructed mint/burn ledger. They provide a bounded starting inventory for subsequent transaction enumeration. They do not identify the counter UTxO or issuer-of-record for any issuance.
+
+### 6.5 Correct technical inference
+
+The single policy ID is a strong technical constraint:
+- We should not expect separate NBX and Moneta minting policy IDs for the same exact USDM asset.
+- If the legal issuers share the same asset identity, issuer differentiation (if represented on-chain) must be encoded in transaction context or a shared counter/registry, or be supplied by an authenticated off-chain issuance record.
+- Because a Cardano minting policy executes with a redeemer and transaction context (not a datum), the counter's spending datum and transaction references are candidate evidence surfaces to inspect, but their issuer semantics must be proven from the actual deployed policy and authoritative issuer documentation.
+
+No script, counter address, datum schema, redeemer semantics, issuer-specific mint classification, or on-chain history has been established by this section.
+
+Updated status:
+- NBX EU issuer whitepaper links: **IDENTIFIED; FILE CONTENT NOT RETRIEVED**
+- Counter UTxO concept: **DOCUMENTED BY NBX**
+- Counter UTxO locator/schema: **NOT ESTABLISHED**
+- Exact token policy ID / asset name: **CONFIRMED**
+- Same-policy legal issuer separation mechanism: **OPEN**
+- Cardanoscan mint count (423): **INDEXER DISCOVERY LEAD ONLY**
+- Per-issuance/per-holding issuer discriminator: **NOT ESTABLISHED**
+- Current reserve qualification / holder redemption proof: **NOT ESTABLISHED**
+- Option B remains observational only; EEV / first Issue remains blocked.
