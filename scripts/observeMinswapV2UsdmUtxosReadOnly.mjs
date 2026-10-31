@@ -163,6 +163,17 @@ function validateV2Candidate(utxo, assets, datumJson) {
   if (amountB !== datum.reserveB) reasons.push('RESERVE_B_VALUE_MISMATCH')
   if (datum.totalLiquidity <= 0n || datum.reserveA <= 0n || datum.reserveB <= 0n) reasons.push('NONPOSITIVE_POOL_DATUM_VALUES')
 
+  // Pool V2 Value must contain only ADA, the two pair assets, LP asset and Pool NFT.
+  const allowedUnits = new Set([nftUnit, lpUnit])
+  if (assetUnit(datum.assetA) !== ADA_POLICY + ADA_NAME) allowedUnits.add(assetUnit(datum.assetA))
+  if (assetUnit(datum.assetB) !== ADA_POLICY + ADA_NAME) allowedUnits.add(assetUnit(datum.assetB))
+  const unexpectedUnits = assets.filter((asset) => !allowedUnits.has(asset.unit))
+  if (unexpectedUnits.length > 0) reasons.push('UNEXPECTED_ASSETS_IN_POOL_VALUE')
+  const expectedLovelace = MIN_POOL_ADA_LOVELACE +
+    (assetUnit(datum.assetA) === ADA_POLICY + ADA_NAME ? datum.reserveA : 0n) +
+    (assetUnit(datum.assetB) === ADA_POLICY + ADA_NAME ? datum.reserveB : 0n)
+  if (BigInt(String(utxo.value ?? '0')) !== expectedLovelace) reasons.push('POOL_LOVELACE_VALUE_MISMATCH')
+
   return {
     status: reasons.length === 0 ? 'MATCH' : 'UNQUALIFIED',
     reasons,
