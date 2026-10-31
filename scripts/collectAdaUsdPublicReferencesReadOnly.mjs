@@ -118,7 +118,7 @@ const SOURCES = [
     id: 'dia-free-api-test',
     venue: 'DIA Free Aggregated Reference API (test-only)',
     sourceType: 'ORACLE_REFERENCE_API_TEST_ONLY',
-    url: 'https://api.diadata.org/v1/assetQuotation/cardano/0x0000000000000000000000000000000000000000',
+    url: 'https://api.diadata.org/v1/assetQuotation/Cardano/0x0000000000000000000000000000000000000000',
     parse(data) {
       if (String(data.Blockchain ?? '').toLowerCase() !== 'cardano' ||
           String(data.Symbol ?? '').toUpperCase() !== 'ADA' ||
@@ -130,7 +130,8 @@ const SOURCES = [
         bid: null,
         ask: null,
         sourceTime: data.Time ?? null,
-        volume24hUsd: data.VolumeYesterdayUSD ?? null,
+        volumeYesterdayUsd: data.VolumeYesterdayUSD ?? null,
+        providerSignature: data.Signature ?? null,
         providerSource: data.Source ?? null,
       }
     },
@@ -193,7 +194,9 @@ async function collect(source) {
       midUsd: bid === null || ask === null ? null : fromScaled((bid + ask) / 2n),
       indexUsd: index === null ? null : fromScaled(index),
       volume24hUsd: parsed.volume24hUsd ?? null,
+      volumeYesterdayUsd: parsed.volumeYesterdayUsd ?? null,
       providerSource: parsed.providerSource ?? null,
+      providerSignature: parsed.providerSignature ?? null,
       bidAskAvailable: bid !== null && ask !== null,
       evidence,
     }
