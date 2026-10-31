@@ -7085,3 +7085,12 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - First DIA collector run 41240859252 included the DIA free API endpoint but queried lowercase /assetQuotation/cardano/... and received HTTP 404 no rows; the source remained unavailable, not qualified.
 - Official API path is case-sensitive; a direct read-only probe confirmed /v1/assetQuotation/Cardano/0x0000000000000000000000000000000000000000 returns ADA/Cardano, the exact native address, USD price, timestamp, source and provider signature.
 - Collector corrected at c984a03c7e062d1aab520ccf7ea78875d106c669 to use capitalized Cardano and preserve the signature and volume-yesterday field separately. Rerun pending.
+
+
+## 10.84 Agent A — DIA keyless ADA/USD API successfully captured (2026-10-31)
+
+- Corrected case-sensitive DIA endpoint succeeded in run 41241048258. Reference collector now has 11 sources: 7 CEX, 3 market aggregators, 1 DIA test-only oracle-reference API.
+- 9/11 available: 5/7 CEX, 3/3 aggregators, 1/1 DIA. Gemini HTTP 404 (no ADAUSD data); Bitfinex HTTP 500 (invalid symbol).
+- DIA exact native Cardano ADA response: price 0.19244131922788885 USD/ADA, provider timestamp 2026-10-31T20:53:58Z, source diadata.org; provider signature preserved but not cryptographically verified. Free endpoint is for testing/evaluation, not production oracle use.
+- Five CEX bid/ask midpoint range 0.19236500–0.19244500 USD/ADA; last range across nine successful sources 0.19235000–0.19270000. Ranges are observations, not a consensus and not USDM/USD.
+- Artifact ID 13057825466, ZIP digest 02df44c55b1dba7acf19a69f80c516fb242f90b722830a2bbbbdbb4f9faa289d; JSON digest 10dfb2e90ed8092bdfff3c5558a331aeec97d9a6e2139dbdd7190ec6dbda288f.
