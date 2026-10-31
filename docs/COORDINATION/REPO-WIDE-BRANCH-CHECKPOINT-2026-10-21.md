@@ -6828,3 +6828,10 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Separately retain the SDK proposal's approval gate for canonical producers, input/output role classification, per-action predicates and phase separation. Do not invent fingerprints, fee limits, change-address rules or output-position assumptions.
 
 **STATUS: INPUT-CLASSIFICATION GUARD PRESENT; NON-INPUT BODY MUTATION NOT COVERED BY THE FINAL RECHECK; PINNED LUCID/CML IMPLEMENTATION VERIFICATION STILL REQUIRED; FULL BODY BINDING AND V08/V09 REMAIN OPEN.**
+
+## 10.65 Agent A — Danogo test expectation and CSWAP evidence serialization fixes (2026-10-31)
+
+- First CI run on the Danogo CLMM math port exposed one test expectation error: the official SDK formula returned virtual reserves 200/200 for the symmetric fixture, while the test incorrectly expected 117/117. The implementation matched the official `calcLiquidity` expression; the fixture expectation was corrected at `52d61976b32d362a14a0fb3b37231cab29adfa1a`. The initial run showed 36/37 tests passing, with this one expected-value failure.
+- The same run also exposed an independent pre-existing CSWAP observer failure: `JSON.stringify` cannot serialize the `BigInt` fields returned by its datum decoder. Fixed at `be019114ad8172a1a524387e9a4df72b917006bd` by serializing BigInt evidence values as exact decimal strings; no numeric precision is lost.
+- New CI rerun is pending. Do not claim Danogo math or CSWAP observer green until the next run and artifacts are inspected.
+- No transaction, wallet, signing, chain write, oracle refresh, EEV, deployment, or economic parameter change.
