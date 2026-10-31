@@ -18,7 +18,7 @@ const USDM = Object.freeze({
 const USDM_UNIT = USDM.policyId + USDM.assetNameHex
 const ADA_UNIT = ''
 const PAGE_SIZE = 1000
-const MAX_PAGES = 20
+const MAX_PAGES = 50
 const DEPLOYMENTS = Object.freeze([
   {
     id: 'saturn-v2-mainnet-1pct',
@@ -283,6 +283,7 @@ async function main() {
       deploymentsQueried: DEPLOYMENTS.length,
       deploymentsWithSuccessfulRead: deployments.length,
       orderUtxosScanned: deployments.reduce((sum, x) => sum + x.rowCount, 0),
+      maxPagesPerDeployment: MAX_PAGES,
       directUsdmAdaOrders: observations.length,
       activeFundedBids: bids.length,
       activeFundedAsks: asks.length,
