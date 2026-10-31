@@ -10,6 +10,7 @@ on:
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
       - "scripts/observeDanogoClmmUsdmReadOnly.mjs"
+      - "scripts/observeWingRidersV2UsdmReadOnly.mjs"
       - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
       - "scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs"
       - "scripts/collectMuesliSwapCardanoUsdmReadOnly.mjs"
@@ -45,6 +46,7 @@ jobs:
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
           node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
           node --check scripts/observeDanogoClmmUsdmReadOnly.mjs
+          node --check scripts/observeWingRidersV2UsdmReadOnly.mjs
       - name: Run synthetic decoder fixtures
         run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs --reporter=verbose
 
@@ -250,4 +252,32 @@ jobs:
         with:
           name: danogo-clmm-usdm-readonly-${{ github.run_id }}
           path: audit/oracles/danogo-clmm-usdm-readonly.json
+          if-no-files-found: warn
+
+  read-only-wingriders-v2-observation:
+    if: ${{ github.event_name == 'push' }}
+    needs:
+      - read-only-supercardano-observation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download same-run SuperCardano USDM pool discovery
+        uses: actions/download-artifact@v4
+        with:
+          name: supercardano-usdm-readonly-${{ github.run_id }}
+          path: audit/indexer
+      - name: Observe WingRiders V2 pool share tokens and datums on Mainnet (read-only)
+        run: node scripts/observeWingRidersV2UsdmReadOnly.mjs --supercardano audit/indexer/supercardano-usdm-readonly.json --out audit/oracles/wingriders-v2-usdm-readonly.json
+      - name: Upload WingRiders V2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wingriders-v2-usdm-readonly-${{ github.run_id }}
+          path: audit/oracles/wingriders-v2-usdm-readonly.json
           if-no-files-found: warn
