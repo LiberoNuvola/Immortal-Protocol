@@ -6,7 +6,7 @@ const ADA = ''
 
 function pool({ tokenX = USDM, tokenY = ADA, activeX = '100', activeY = '100',
   lowerNum = '1', lowerDen = '2', upperNum = '2', upperDen = '1',
-  rewardEpochBehind = false, rewardAmountRead = false } = {}) {
+  rewardEpochBehind = false, rewardAmountRead = false, rewardAmountAppliedRaw } = {}) {
   return {
     status: 'MATCH',
     poolKey: 'danogo-clmm:test',
@@ -15,6 +15,7 @@ function pool({ tokenX = USDM, tokenY = ADA, activeX = '100', activeY = '100',
     activeReserveYRaw: activeY,
     rewardEpochBehind,
     rewardAmountRead,
+    ...(rewardAmountAppliedRaw === undefined ? {} : { rewardAmountAppliedRaw }),
     rewardAmountAssumedRaw: '0',
     datum: {
       tokenX: { unit: tokenX },
@@ -30,8 +31,8 @@ describe('Danogo CLMM official virtual-reserve spot math', () => {
   it('matches the symmetric-range, symmetric-reserve marginal spot', () => {
     const result = deriveDanogoClmmSpotPrice(pool())
     expect(result.priceAdaPerUsdm).toBe('1')
-    expect(result.virtualReserveXRaw).toBe('184')
-    expect(result.virtualReserveYRaw).toBe('184')
+    expect(result.virtualReserveXRaw).toBe('117')
+    expect(result.virtualReserveYRaw).toBe('117')
     expect(result.priceMethod).toBe('OFFICIAL_DANOGO_SDK_VIRTUAL_RESERVE_MARGINAL_RATIO')
   })
 
@@ -53,12 +54,14 @@ describe('Danogo CLMM official virtual-reserve spot math', () => {
     expect(deriveDanogoClmmSpotPrice(pool({ tokenX: ADA, tokenY: USDM, rewardEpochBehind: true }))).toBeNull()
   })
 
-  it('allows the reward-behind pool only when its reward amount was actually read', () => {
+  it('requires a read and applies the reward amount for a reward-behind ADA pool', () => {
     const result = deriveDanogoClmmSpotPrice(pool({
-      tokenX: ADA, tokenY: USDM, rewardEpochBehind: true, rewardAmountRead: true,
+      tokenX: ADA, tokenY: USDM, rewardEpochBehind: true,
+      rewardAmountRead: true, rewardAmountAppliedRaw: '12',
     }))
     expect(result).not.toBeNull()
-    expect(result.rewardAmountRead).toBe(true)
+    expect(result.rewardAmountAppliedRaw).toBe('12')
+    expect(result.activeReserveXRaw).toBe('112')
   })
 
   it('does not produce a direct ADA/USDM quote for other pairs', () => {
@@ -79,7 +82,7 @@ describe('Danogo CLMM official virtual-reserve spot math', () => {
   it('uses integer-only liquidity arithmetic', () => {
     const liquidity = calcLiquidity(100n, 100n,
       { num: 1n, den: 2n }, { num: 2n, den: 1n })
-    expect(liquidity.numerator).toBe(1000n)
+    expect(liquidity.numerator).toBe(1200n)
     expect(liquidity.denominator).toBe(6n)
   })
 })
