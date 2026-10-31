@@ -152,6 +152,13 @@ function deriveQuote(deployment, utxo, datum, snapshotTimeMs) {
   }
 }
 
+export function classifyOrderbookCoverage(deployments, errors) {
+  const complete = errors.length === 0 &&
+    deployments.length === DEPLOYMENTS.length &&
+    deployments.every((deployment) => deployment.paginationComplete)
+  return complete ? 'READ_ONLY_SATURNSWAP_ORDERBOOK_COMPLETE' : 'READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL'
+}
+
 export {
   decodeSwapDatum,
   deriveQuote,
@@ -254,8 +261,10 @@ async function main() {
     BigInt(a.priceNumeratorRaw) * BigInt(b.priceDenominatorRaw) <
     BigInt(b.priceNumeratorRaw) * BigInt(a.priceDenominatorRaw) ? -1 : 1
   )
+  const coverageStatus = classifyOrderbookCoverage(deployments, errors)
   const evidence = {
     schema: 'immortal-saturnswap-usdm-orderbook-readonly-v1',
+    status: coverageStatus,
     classification: 'INDEPENDENT_CARDANO_CLOB_VENUE_ORDERBOOK_OBSERVATION_NOT_ORACLE_QUALIFICATION',
     network: 'cardano-mainnet',
     source: {
@@ -269,6 +278,8 @@ async function main() {
     completedAt: new Date().toISOString(),
     snapshotTimeMs,
     summary: {
+      coverageStatus,
+      incompleteDeployments: deployments.filter((x) => !x.paginationComplete).map((x) => x.id),
       deploymentsQueried: DEPLOYMENTS.length,
       deploymentsWithSuccessfulRead: deployments.length,
       orderUtxosScanned: deployments.reduce((sum, x) => sum + x.rowCount, 0),
@@ -299,9 +310,7 @@ async function main() {
   await mkdir(dirname(outPath), { recursive: true })
   await writeFile(outPath, JSON.stringify(evidence, null, 2) + '\n', 'utf8')
   console.log(JSON.stringify({
-    status: errors.length === 0 && deployments.length === DEPLOYMENTS.length
-      ? 'READ_ONLY_SATURNSWAP_ORDERBOOK_COMPLETE'
-      : 'READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL',
+    status: coverageStatus,
     output: outPath,
     summary: evidence.summary,
     completedAt: evidence.completedAt,
