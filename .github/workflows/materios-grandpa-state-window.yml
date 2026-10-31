@@ -81,6 +81,7 @@ jobs:
                 result[key + '_error'] = String(error);
               }
             }
+            // A successful job only confirms artifact capture; evidence.status carries the historical-state result.
             const stateKeys = ['runtime_set_id', 'runtime_authorities', 'storage_set_id'];
             const errors = stateKeys.map(key => result[key + '_error']).filter(Boolean);
             const captured = stateKeys.filter(key => Object.prototype.hasOwnProperty.call(result, key + '_hex')).length;
