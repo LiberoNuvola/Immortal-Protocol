@@ -158,3 +158,22 @@ The cross-rate spread is a diagnostic dispersion, not a peg band. Pool source ti
 ## SaturnSwap CLOB coverage retry
 
 The previous run scanned 20,026 order UTxOs across three deployment scripts but reached the 20-page cap on `saturn-v2-mainnet-4pct-runoff`. The observer now permits 50 pages per deployment and the GitHub Actions job timeout has been raised to 45 minutes. This is only an acquisition-coverage extension; it does not alter order parsing or price logic. The next run must still show a short final page for all three deployments before the orderbook can be called complete. Until then, no direct bid/ask is available from this partial CLOB scan.
+
+
+## Orcfax on-chain CER feeds — ADA/USD and ADA/USDM discovery gate
+
+A further native Cardano oracle path is now implemented as a **read-only** observer: `scripts/observeOrcfaxCerFeedsReadOnly.mjs`. It resolves the Orcfax-publish FactStatement script hash through the official FSP state token, then queries the corresponding FS-token UTxOs through Koios and decodes only the documented CER statement shape. It checks the FS token, payment credential, exact feed-id prefixes (`CER/ADA-USD/` and `CER/ADA-USDM/`), millisecond `created_at`, and positive exact rational numerator/denominator. It records the current UTxO, datum CBOR, tx/block context, raw Koios response hashes and the official feed-registry snapshot.
+
+Official Orcfax documentation describes CER statements as on-chain oracle outputs; CEX-sourced and DEX-sourced feeds are distinct source classes. The live feed registry identifies ADA/USD as a CEX/median feed and ADA/USDM as a DEX/weighted-mean feed, each with a one-hour interval. This is a potentially valuable oracle aggregate, but it is **not** a new independent market venue: ADA/USDM inherits the DEX venues and their liquidity/quality limitations, while ADA/USD inherits its CEX inputs.
+
+The observer and a dedicated five-case decoder test suite are wired into the read-only workflow. First live CI result is pending. No Orcfax rational is used in the primary cross-rate until actual mainnet datum serialization, feed-id, freshness, sign/scale and pair orientation are verified against captured UTxOs.
+
+### Pyth feed availability
+
+Pyth's public Hermes feed directory can be queried without authentication and identifies `Crypto.ADA/USD` feed ID `2a01deaec9e51a579277b34b122399984d0bbf57e2458a7e42fecd2829867a0d`. The latest price-update endpoint currently requires an API key, so metadata discovery is free/public but live price access is not treated as a permanent unauthenticated source. The previous Pyth trial remains a possible temporary test path only; do not commit credentials or put keys in workflow files.
+
+### Charli3 mainnet ADA/USD feed
+
+Charli3 documents a mainnet ADA/USD oracle feed at address `addr1wyvxns52tsgz8ggvrh4np5gjyfk0g5fshqq2ytvu9t7pe8qp3adw6`, feed NFT policy `08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e`, token name `4f7261636c6546656564`. Its published network configuration uses five contributing nodes, a 60% update threshold (3/5), six-hour freshness and six-hour generation cadence, with a 15% deviation threshold and two required signatories. This is a real on-chain oracle feed, but the freshness cadence and source composition must be inspected before using it as a current reference. A separate read-only UTxO observer is still required.
+
+Source references: [Orcfax CER feed documentation](https://github.com/orcfax/docs/blob/main/docs/developer-manual/consume.md), [Orcfax mainnet feed registry](https://raw.githubusercontent.com/orcfax/cer-feeds/main/feeds/mainnet/cer-feeds.json), [Pyth Hermes feed list](https://docs.pyth.network/api-reference/hermes/price-feeds), [Pyth latest updates](https://docs.pyth.network/api-reference/hermes/latest-price-updates), [Charli3 mainnet feeds](https://docs.charli3.io/oracles/resources/networks/mainnet).
