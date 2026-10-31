@@ -6145,3 +6145,17 @@ The same source's `partnerchain/node/src/service.rs:228-244` unconditionally con
 This is directly relevant to the observed 4434 runtime / 4343 voter split and makes a warp/state-sync authority-set initialization mismatch a concrete upstream hypothesis, not a generic guess. It does **not** yet prove that the published snapshot was created by warp sync or that warp sync caused this exact stale auxiliary state: our snapshot probe is isolated, has no peers, runs with `Constrained(256)`, and uses a mock main-chain follower only to start local RPC.
 
 Next source-level test: trace how the pinned Substrate `sc-consensus-grandpa` version initializes `grandpa_link.shared_authority_set()` from restored auxiliary DB versus runtime/warp proof, then add a fail-closed diagnostic comparing (a) runtime `Grandpa.CurrentSetId`, (b) restored GRANDPA voter/authority-set ID, and (c) set ID carried by the exact proof. Do not modify Materios upstream, V3, Reveal, or any on-chain state. B3-A remains OPEN.
+
+
+### Pinned GRANDPA implementation trace — persisted auxiliary state is the voter input
+
+The Materios `partnerchain/Cargo.lock` pins `sc-consensus-grandpa 0.30.0` to Polkadot SDK commit `c455194a2ae2f613c1c671e00dbf397b83ed8171` (`polkadot-stable2409-4`). Source inspection at that exact commit establishes the following startup path:
+
+1. Materios `partnerchain/node/src/service.rs:117-123` creates `grandpa_block_import` and `grandpa_link` via `sc_consensus_grandpa::block_import`.
+2. Pinned `sc-consensus-grandpa/src/lib.rs:562-575` calls `aux_schema::load_persistent` against the backend AuxStore. The genesis runtime API is supplied only as the fallback closure if persistent data is absent.
+3. Pinned `aux_schema.rs:362-380`: when GRANDPA DB version 3 and `AUTHORITY_SET_KEY` exist, the loader decodes the persisted `AuthoritySet` and `VoterSetState` and returns them directly. It does not compare the persisted set ID with runtime `Grandpa.CurrentSetId`.
+4. Pinned `lib.rs:450-454` exposes this persistent set through `LinkHalf.shared_authority_set()`; Materios `service.rs:228-244` uses it to construct the warp-sync provider, and `service.rs:378-395` passes the same link to the GRANDPA voter.
+
+This gives a concrete mechanism for the observed split: a restored DB can load voter/authority auxiliary state at set 4343 while the runtime state at the same chain height reports 4434, because the startup loader trusts the persisted GRANDPA AuxStore state and performs no runtime-set consistency check. The snapshot log's `Starting new voter with set ID 4343` is therefore consistent with the aux-store value being used as the voter set. Combined with the upstream preflight's explicit warp/state-sync warning, stale or divergent GRANDPA auxiliary authority state is now the leading root-cause hypothesis.
+
+**What remains unproven:** we have not extracted the exact `AUTHORITY_SET_KEY` bytes from the published snapshot RocksDB, nor identified the event/import/warp-sync path that left them at 4343 while runtime storage reached 4434. The isolated snapshot log is a strong observation of the loaded voter set, not a raw AuxStore proof. The next test should capture the aux key and decoded voter state from the snapshot DB itself, then compare it byte-for-byte with runtime `Grandpa.CurrentSetId` and the active-set chain. Do not "repair" the snapshot or synthesize a new set ID; keep B3-A OPEN until the source of divergence is proven.
