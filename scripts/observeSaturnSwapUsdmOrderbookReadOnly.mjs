@@ -161,11 +161,11 @@ async function readAddress(address, deployment) {
   const pages = []
   const rows = []
   for (let offset = 0; offset < PAGE_SIZE * MAX_PAGES; offset += PAGE_SIZE) {
-    const url = KOIOS + '/address_utxos?limit=' + PAGE_SIZE + '&offset=' + offset
+    const url = KOIOS + '/credential_utxos?limit=' + PAGE_SIZE + '&offset=' + offset
     const response = await fetch(url, {
       method: 'POST',
       headers: { accept: 'application/json', 'content-type': 'application/json' },
-      body: JSON.stringify({ _addresses: [address], _extended: true }),
+      body: JSON.stringify({ _payment_credentials: [deployment.scriptHash], _extended: true }),
       signal: AbortSignal.timeout(45_000),
     })
     const raw = await response.text()
