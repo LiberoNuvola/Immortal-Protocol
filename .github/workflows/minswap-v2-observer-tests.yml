@@ -8,6 +8,7 @@ on:
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
       - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
+      - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs"
       - ".github/workflows/minswap-v2-observer-tests.yml"
   pull_request:
@@ -112,4 +113,32 @@ jobs:
         with:
           name: minswap-v2-usdm-api-onchain-reconciliation-${{ github.run_id }}
           path: audit/oracles/minswap-v2-api-onchain-reconciliation.json
+          if-no-files-found: warn
+
+  read-only-dexscreener-observation:
+    if: ${{ github.event_name == 'push' }}
+    needs:
+      - read-only-minswap-api-observation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download same-run Minswap API pool census
+        uses: actions/download-artifact@v4
+        with:
+          name: minswap-usdm-api-readonly-${{ github.run_id }}
+          path: audit/api
+      - name: Collect DEX Screener Cardano USDM and known V2 pairs (read-only)
+        run: node scripts/collectDexScreenerCardanoUsdmReadOnly.mjs --api audit/api/minswap-usdm-readonly.json --out audit/oracles/dexscreener-cardano-usdm-readonly.json
+      - name: Upload DEX Screener evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dexscreener-cardano-usdm-readonly-${{ github.run_id }}
+          path: audit/oracles/dexscreener-cardano-usdm-readonly.json
           if-no-files-found: warn
