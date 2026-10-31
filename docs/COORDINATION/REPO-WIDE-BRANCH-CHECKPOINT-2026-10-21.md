@@ -6642,3 +6642,13 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - SaturnSwap CLOB: **20,026 UTxOs scanned; 0 direct USDM/ADA orders**. The 4% run-off deployment still exceeds the 20,000-row cap, so the orderbook scan is incomplete and cannot establish a fully empty book. The current 1% V2 and V3 deployments were scanned completely. No best bid/ask is admitted.
 - Secondary indexers in the same workflow: GeckoTerminal 20 exact-USDM pool results (19 Minswap, 1 SaturnSwap); DEX Screener exact pair match 5/31 known V2 pairs; MuesliSwap remained `SOURCE_UNAVAILABLE` with zero results. These are indexer observations, not independent venue/oracle counts.
 - All work is read-only. No quote, USDM/USD peg, issuer reserve, independent USD reference, EEV qualification, R1/Kc certificate or deployment approval is produced.
+
+
+## 10.47 Agent A — Multi-venue and oracle source discovery (2026-10-31)
+
+- Added `docs/COORDINATION/USDM_MULTI_VENUE_SOURCE_MATRIX.md` at commit `2f06a5acbc7ae9cc69c084d9efad9af3b4e13c3d`.
+- Existing Minswap same-run reconciliation run 41204657669: 31/31 API V2 LP identities and asset pairs match Koios structural candidates; this remains one venue observed through two channels.
+- Discovery candidates: SundaeSwap (official Moneta partnership + Sundae ADA/USDM V3 listing), WingRiders (official ecosystem integration; third-party USDM/NIGHT discovery and official Rapid DEX SDK), Danogo CLMM (third-party USDM/USDCx and USDM/USDA leads; official SDK available), Splash (active DEX but no USDM pool confirmed), NBX (potential external market; pair/API not confirmed).
+- Oracle/reference pathways separated by role: Pyth Lazer signed external market feeds; Charli3 issuer reserve attestation (not market price); CoinGecko/CoinPaprika and route aggregators only after source lineage is traced; multiple indexers are ledger corroboration, not independent venues.
+- No additional venue or oracle qualified. The matrix explicitly requires exact policy/name, immutable pool identity, real datum fixture, protocol-specific reserve/fee semantics, quote depth/freshness, and source-lineage checks.
+- No new economics, coefficients, thresholds, oracle consumer, wallet, transaction, deployment or chain-write changes.
