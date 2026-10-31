@@ -1,0 +1,520 @@
+{
+  "schema": "immortal-sundaeswap-v3-real-koios-fixture-v1",
+  "provenance": {
+    "provider": "Koios Mainnet",
+    "captureRunId": 41225473861,
+    "artifactId": 13051362189,
+    "artifactZipSha256": "448da612257d58ac4613423b44ab22e792602da5b4546404322dc15b040ce220",
+    "responseBodySha256": "b42e028163e6e7e3e79b82c0a639543794793b1244eb6c77837be66e82736185",
+    "capturedAt": "2026-10-31T17:38:17.549Z",
+    "poolScriptHash": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+    "exactUsdm": {
+      "policyId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+      "assetNameHex": "0014df105553444d"
+    }
+  },
+  "candidates": [
+    {
+      "utxoRef": "5ca5f5bf58a27c146b99e14079619f9f4efaebb429ac74c91c606d0c4dc95756#0",
+      "paymentCredential": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+      "valueLovelaceRaw": "32440000",
+      "assets": [
+        {
+          "policy_id": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "asset_name": "0014df105553444d",
+          "quantity": "1687546"
+        },
+        {
+          "policy_id": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+          "asset_name": "000de1405e09ddbd825b861e16ec5e8b7b33b818f9baf07519529cf918350c89",
+          "quantity": "1"
+        },
+        {
+          "policy_id": "f6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d",
+          "asset_name": "",
+          "quantity": "4386438076"
+        }
+      ],
+      "datumHash": "0e916d8beed76ce066e6978d823624ccb64a58dc5860e868cc280ef6bd47f0d8",
+      "inlineDatumCborHex": "d8799f581c5e09ddbd825b861e16ec5e8b7b33b818baf07519529cf918350c899f9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dff9f581cf6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d40ffff1a05180625181e181ed87a80001a01eefec0ff",
+      "inlineDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "bytes": "5e09ddbd825b861e16ec5e8b7b33b818f9baf07519529cf918350c89"
+          },
+          {
+            "list": [
+              {
+                "list": [
+                  {
+                    "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+                  },
+                  {
+                    "bytes": "0014df105553444d"
+                  }
+                ]
+              },
+              {
+                "list": [
+                  {
+                    "bytes": "f6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d"
+                  },
+                  {
+                    "bytes": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "int": 85460517
+          },
+          {
+            "int": 30
+          },
+          {
+            "int": 30
+          },
+          {
+            "constructor": 1,
+            "fields": []
+          },
+          {
+            "int": 0
+          },
+          {
+            "int": 32440000
+          }
+        ]
+      },
+      "blockHeight": 14047227,
+      "blockTime": 1791574201
+    },
+    {
+      "utxoRef": "a27b00be3a55f835dc3bc5a3de082cba42649ebf034e250a03f3da76e853d6ed#0",
+      "paymentCredential": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+      "valueLovelaceRaw": "59544000",
+      "assets": [
+        {
+          "policy_id": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "asset_name": "0014df105553444d",
+          "quantity": "1229549509"
+        },
+        {
+          "policy_id": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+          "asset_name": "000de1409b16ad48eb1ba1cde2ad55d8c90f8aa83e8daaaae9904d05d98cb8f4",
+          "quantity": "1"
+        },
+        {
+          "policy_id": "f66d78b4a3cb3d37afa0ec36461e51ecbde00f26c8f0a68f94b69880",
+          "asset_name": "69555344",
+          "quantity": "1252256864"
+        }
+      ],
+      "datumHash": "758fc99b4daaf4ae8a98324af5243e7a80b22599764751aa557b33b98c5a33b1",
+      "inlineDatumCborHex": "d8799f581c9b16ad48eb1ba1cde2ad55d8c90f8aa83e8daaaae9904d05d98cb8f49f9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dff9f581cf66d78b4a3cb3d37afa0ec36461e51ecbde00f26c8f0a68f94b698804469555344ffff1a49195a21181e181ed87a80001a038c91c0ff",
+      "inlineDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "bytes": "9b16ad48eb1ba1cde2ad55d8c90f8aa83e8daaaae9904d05d98cb8f4"
+          },
+          {
+            "list": [
+              {
+                "list": [
+                  {
+                    "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+                  },
+                  {
+                    "bytes": "0014df105553444d"
+                  }
+                ]
+              },
+              {
+                "list": [
+                  {
+                    "bytes": "f66d78b4a3cb3d37afa0ec36461e51ecbde00f26c8f0a68f94b69880"
+                  },
+                  {
+                    "bytes": "69555344"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "int": 1226398241
+          },
+          {
+            "int": 30
+          },
+          {
+            "int": 30
+          },
+          {
+            "constructor": 1,
+            "fields": []
+          },
+          {
+            "int": 0
+          },
+          {
+            "int": 59544000
+          }
+        ]
+      },
+      "blockHeight": 14051451,
+      "blockTime": 1791660030
+    },
+    {
+      "utxoRef": "4f23e86adf2e57aefaa32bfda30bd734fdfc263cd3c28b629a353870c19c9759#0",
+      "paymentCredential": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+      "valueLovelaceRaw": "2799024003",
+      "assets": [
+        {
+          "policy_id": "0691b2fecca1ac4f53cb6dfb00b7013e561d1f34403b957cbb5af1fa",
+          "asset_name": "4e49474854",
+          "quantity": "416796629"
+        },
+        {
+          "policy_id": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "asset_name": "0014df105553444d",
+          "quantity": "16615317"
+        },
+        {
+          "policy_id": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+          "asset_name": "000de140187a43bfedb6c402212c20afee1d0332f690e8336279b79bdc5af514",
+          "quantity": "1"
+        }
+      ],
+      "datumHash": "16d49bf1f545625190b72095689608b9e9c73ec77f5835ec01bfedbd62f30a9f",
+      "inlineDatumCborHex": "d8799f581c187a43bfedb6c402212c20afee1d0332f690e8336279b79bdc5af5149f9f581c0691b2fecca1ac4f53cb6dfb00b7013e561d1f34403b957cbb5af1fa454e49474854ff9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dffff1a04b7b7fd181e181ed87a80001aa6d5b783ff",
+      "inlineDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "bytes": "187a43bfedb6c402212c20afee1d0332f690e8336279b79bdc5af514"
+          },
+          {
+            "list": [
+              {
+                "list": [
+                  {
+                    "bytes": "0691b2fecca1ac4f53cb6dfb00b7013e561d1f34403b957cbb5af1fa"
+                  },
+                  {
+                    "bytes": "4e49474854"
+                  }
+                ]
+              },
+              {
+                "list": [
+                  {
+                    "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+                  },
+                  {
+                    "bytes": "0014df105553444d"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "int": 79149053
+          },
+          {
+            "int": 30
+          },
+          {
+            "int": 30
+          },
+          {
+            "constructor": 1,
+            "fields": []
+          },
+          {
+            "int": 0
+          },
+          {
+            "int": 2799024003
+          }
+        ]
+      },
+      "blockHeight": 14084473,
+      "blockTime": 1792326374
+    },
+    {
+      "utxoRef": "9f73a1773e8d28e8b1e283e427144a77db40bdc0f8c84996d101f83aefdc2c0b#0",
+      "paymentCredential": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+      "valueLovelaceRaw": "328232000",
+      "assets": [
+        {
+          "policy_id": "a0028f350aaabe0545fdcb56b039bfb08e4bb4d8c4d7c3c7d481c235",
+          "asset_name": "484f534b59",
+          "quantity": "90808049644"
+        },
+        {
+          "policy_id": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "asset_name": "0014df105553444d",
+          "quantity": "422275649"
+        },
+        {
+          "policy_id": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+          "asset_name": "000de140f5728bd65babd2f8b9a24c8067168b7e29b3b5177586e57f819df86f",
+          "quantity": "1"
+        }
+      ],
+      "datumHash": "aa2887c91017517569a005c9dac34be7a2f5c371d1c58aba6419b82f06c16573",
+      "inlineDatumCborHex": "d8799f581cf5728bd65babd2f8b9a24c8067168b7e29b3b5177586e57f819df86f9f9f581ca0028f350aaabe0545fdcb56b039bfb08e4bb4d8c4d7c3c7d481c23545484f534b59ff9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dffff1b000000016b954ce5181e181ed87a80001a13906c40ff",
+      "inlineDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "bytes": "f5728bd65babd2f8b9a24c8067168b7e29b3b5177586e57f819df86f"
+          },
+          {
+            "list": [
+              {
+                "list": [
+                  {
+                    "bytes": "a0028f350aaabe0545fdcb56b039bfb08e4bb4d8c4d7c3c7d481c235"
+                  },
+                  {
+                    "bytes": "484f534b59"
+                  }
+                ]
+              },
+              {
+                "list": [
+                  {
+                    "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+                  },
+                  {
+                    "bytes": "0014df105553444d"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "int": 6099913957
+          },
+          {
+            "int": 30
+          },
+          {
+            "int": 30
+          },
+          {
+            "constructor": 1,
+            "fields": []
+          },
+          {
+            "int": 0
+          },
+          {
+            "int": 328232000
+          }
+        ]
+      },
+      "blockHeight": 14133356,
+      "blockTime": 1793318936
+    },
+    {
+      "utxoRef": "097455506b8f6785e0449f54269ebe373c111a2dfd28d4b4fb4f97be321bdda6#0",
+      "paymentCredential": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+      "valueLovelaceRaw": "75817851679",
+      "assets": [
+        {
+          "policy_id": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+          "asset_name": "0014df105553444d",
+          "quantity": "14572208659"
+        },
+        {
+          "policy_id": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b",
+          "asset_name": "000de14064f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef",
+          "quantity": "1"
+        }
+      ],
+      "datumHash": "edaebbb30fc1a3318c24ecbdf88dbb9aac541927fba7a2db53d8acbbcb6592f8",
+      "inlineDatumCborHex": "d8799f581c64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef9f9f4040ff9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dffff1b00000005f4013251183c183cd87a80001a49e56b60ff",
+      "inlineDatumJson": {
+        "constructor": 0,
+        "fields": [
+          {
+            "bytes": "64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef"
+          },
+          {
+            "list": [
+              {
+                "list": [
+                  {
+                    "bytes": ""
+                  },
+                  {
+                    "bytes": ""
+                  }
+                ]
+              },
+              {
+                "list": [
+                  {
+                    "bytes": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad"
+                  },
+                  {
+                    "bytes": "0014df105553444d"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "int": 25568555601
+          },
+          {
+            "int": 60
+          },
+          {
+            "int": 60
+          },
+          {
+            "constructor": 1,
+            "fields": []
+          },
+          {
+            "int": 0
+          },
+          {
+            "int": 1239772000
+          }
+        ]
+      },
+      "blockHeight": 14137454,
+      "blockTime": 1793404816
+    }
+  ],
+  "apiV3Pools": [
+    {
+      "id": "5e09ddbd825b861e16ec5e8b7b33b818f9baf07519529cf918350c89",
+      "version": "V3",
+      "assetA": {
+        "assetId": "ada.lovelace"
+      },
+      "assetB": {
+        "assetId": "f6099832f9563e4cf59602b3351c3c5a8a7dda2d44575ef69b82cf8d."
+      },
+      "assetLP": {
+        "assetId": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b.0014df105e09ddbd825b861e16ec5e8b7b33b818f9baf07519529cf918350c89"
+      },
+      "current": {
+        "quantityA": {
+          "quantity": "1687546"
+        },
+        "quantityB": {
+          "quantity": "4386438076"
+        },
+        "quantityLP": {
+          "quantity": "85460517"
+        }
+      }
+    },
+    {
+      "id": "9b16ad48eb1ba1cde2ad55d8c90f8aa83e8daaaae9904d05d98cb8f4",
+      "version": "V3",
+      "assetA": {
+        "assetId": "ada.lovelace"
+      },
+      "assetB": {
+        "assetId": "f66d78b4a3cb3d37afa0ec36461e51ecbde00f26c8f0a68f94b69880.69555344"
+      },
+      "assetLP": {
+        "assetId": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b.0014df109b16ad48eb1ba1cde2ad55d8c90f8aa83e8daaaae9904d05d98cb8f4"
+      },
+      "current": {
+        "quantityA": {
+          "quantity": "1229549509"
+        },
+        "quantityB": {
+          "quantity": "1252256864"
+        },
+        "quantityLP": {
+          "quantity": "1226398241"
+        }
+      }
+    },
+    {
+      "id": "187a43bfedb6c402212c20afee1d0332f690e8336279b79bdc5af514",
+      "version": "V3",
+      "assetA": {
+        "assetId": "ada.lovelace"
+      },
+      "assetB": {
+        "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
+      },
+      "assetLP": {
+        "assetId": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b.0014df10187a43bfedb6c402212c20afee1d0332f690e8336279b79bdc5af514"
+      },
+      "current": {
+        "quantityA": {
+          "quantity": "416796629"
+        },
+        "quantityB": {
+          "quantity": "16615317"
+        },
+        "quantityLP": {
+          "quantity": "79149053"
+        }
+      }
+    },
+    {
+      "id": "f5728bd65babd2f8b9a24c8067168b7e29b3b5177586e57f819df86f",
+      "version": "V3",
+      "assetA": {
+        "assetId": "ada.lovelace"
+      },
+      "assetB": {
+        "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
+      },
+      "assetLP": {
+        "assetId": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b.0014df10f5728bd65babd2f8b9a24c8067168b7e29b3b5177586e57f819df86f"
+      },
+      "current": {
+        "quantityA": {
+          "quantity": "90808049644"
+        },
+        "quantityB": {
+          "quantity": "422275649"
+        },
+        "quantityLP": {
+          "quantity": "6099913957"
+        }
+      }
+    },
+    {
+      "id": "64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef",
+      "version": "V3",
+      "assetA": {
+        "assetId": "."
+      },
+      "assetB": {
+        "assetId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d"
+      },
+      "assetLP": {
+        "assetId": "e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b.0014df1064f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef"
+      },
+      "current": {
+        "quantityA": {
+          "quantity": "74578079679"
+        },
+        "quantityB": {
+          "quantity": "14572208659"
+        },
+        "quantityLP": {
+          "quantity": "25568555601"
+        }
+      }
+    }
+  ]
+}
