@@ -10,6 +10,8 @@ on:
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
       - "scripts/observeDanogoClmmUsdmReadOnly.mjs"
+      - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs"
+      - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs"
       - "scripts/observeWingRidersV2UsdmReadOnly.mjs"
       - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
       - "scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs"
@@ -46,9 +48,10 @@ jobs:
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
           node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
           node --check scripts/observeDanogoClmmUsdmReadOnly.mjs
+          node --check scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs
           node --check scripts/observeWingRidersV2UsdmReadOnly.mjs
       - name: Run synthetic decoder fixtures
-        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs --reporter=verbose
+        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs --reporter=verbose
 
   read-only-mainnet-observation:
     # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
@@ -280,4 +283,25 @@ jobs:
         with:
           name: wingriders-v2-usdm-readonly-${{ github.run_id }}
           path: audit/oracles/wingriders-v2-usdm-readonly.json
+          if-no-files-found: warn
+
+  read-only-saturnswap-orderbook:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Observe SaturnSwap USDM / ADA CLOB orders (read-only)
+        run: node scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs --out audit/oracles/saturnswap-usdm-orderbook-readonly.json
+      - name: Upload SaturnSwap orderbook evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: saturnswap-usdm-orderbook-readonly-${{ github.run_id }}
+          path: audit/oracles/saturnswap-usdm-orderbook-readonly.json
           if-no-files-found: warn
