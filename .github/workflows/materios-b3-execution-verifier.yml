@@ -15,6 +15,7 @@ on:
       - "poc/materios-checkpoint/**"
       - "poc/materios-grandpa/**"
       - ".github/workflows/materios-b3-execution-verifier.yml"
+      - ".github/scripts/probe-materios-archive-snapshot.sh"
   pull_request:
     branches:
       - b1-hardening
@@ -82,6 +83,7 @@ jobs:
   real-grandpa-witness:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
+    timeout-minutes: 50
 
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +99,11 @@ jobs:
       - name: Typecheck GRANDPA verifier
         working-directory: poc/materios-grandpa
         run: npm run typecheck
+
+      - name: Probe official Materios archive snapshot
+        id: archive_probe
+        continue-on-error: true
+        run: bash .github/scripts/probe-materios-archive-snapshot.sh
 
       - name: Compare public Materios RPC justification retention
         env:
@@ -183,13 +190,21 @@ jobs:
         run: npx tsx src/capture-real-witness.ts
         env:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
-          # Optional archive endpoint for historical GRANDPA authority state.
-          # Empty/unset safely falls back to the public RPC and preserves OPEN.
-          MATERIOS_AUTHORITY_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+          # Prefer the verified local archive snapshot; retain the optional secret as fallback.
+          # If neither is available, capture-real-witness falls back to public RPC and preserves OPEN.
+          MATERIOS_AUTHORITY_RPC: ${{ steps.archive_probe.outputs.rpc_url || secrets.MATERIOS_ARCHIVE_RPC }}
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_WITNESS_LOOKBACK: 1024
           MATERIOS_WS_EVIDENCE_PATH: ${{ github.workspace }}/poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
           MATERIOS_BLOCK_BATCH_SIZE: 64
+
+      - name: Upload Materios archive snapshot probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-archive-snapshot-probe
+          path: poc/materios-grandpa/out/MateriosArchiveSnapshotProbe.json
+          if-no-files-found: warn
 
       - name: Upload real GRANDPA witness
         if: always()
