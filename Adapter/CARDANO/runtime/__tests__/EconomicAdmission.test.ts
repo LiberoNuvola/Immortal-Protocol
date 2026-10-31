@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { C, Lucid, TxComplete } from 'lucid-cardano'
 import { createCardanoExecutionAdapter } from '../CardanoExecutionAdapter'
 import { assertExecutableLiquidityMatchesAuthenticatedPool, assertExecutableLiquidityObservationFresh } from '../../observation/ExecutableLiquidityObservation'
 import type { EconomicAdmissionWitness } from '../EconomicAdmission'
@@ -48,8 +49,64 @@ function completedTxWithInputs(references: readonly string[]) {
           get: (index: number) => inputs[index],
         }),
       }),
+      to_bytes: () => new TextEncoder().encode(JSON.stringify(references)),
     }),
   }
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+function legacyCmlTransaction(
+  references: readonly string[],
+  outputLovelace = 5_000_000n,
+): C.Transaction {
+  const inputs = C.TransactionInputs.new()
+  for (const reference of references) {
+    const [txHash, outputIndex] = reference.split('#')
+    inputs.add(
+      C.TransactionInput.new(
+        C.TransactionHash.from_hex(txHash),
+        C.BigNum.from_str(outputIndex),
+      ),
+    )
+  }
+
+  const paymentKeyHash = C.Ed25519KeyHash.from_hex('ab'.repeat(28))
+  const address = C.EnterpriseAddress.new(
+    0,
+    C.StakeCredential.from_keyhash(paymentKeyHash),
+  ).to_address()
+  const outputs = C.TransactionOutputs.new()
+  outputs.add(
+    C.TransactionOutput.new(
+      address,
+      C.Value.new(C.BigNum.from_str(outputLovelace.toString())),
+    ),
+  )
+
+  const body = C.TransactionBody.new(
+    inputs,
+    outputs,
+    C.BigNum.from_str('170000'),
+  )
+  return C.Transaction.new(body, C.TransactionWitnessSet.new(), undefined)
+}
+
+async function makeSimulatedCip30Lucid() {
+  const lucid = await Lucid.new()
+  const emptyWitnessSetHex = bytesToHex(C.TransactionWitnessSet.new().to_bytes())
+  const api = {
+    getUsedAddresses: vi.fn().mockResolvedValue([]),
+    getUnusedAddresses: vi.fn().mockResolvedValue([]),
+    getRewardAddresses: vi.fn().mockResolvedValue([]),
+    getUtxos: vi.fn().mockResolvedValue([]),
+    signTx: vi.fn().mockResolvedValue(emptyWitnessSetHex),
+    submitTx: vi.fn().mockResolvedValue('tx-cip30-simulated'),
+  }
+  lucid.selectWallet(api as any)
+  return { lucid, api }
 }
 
 describe('economic Cardano submission boundary', () => {
@@ -132,6 +189,62 @@ describe('economic Cardano submission boundary', () => {
     expect(submit).toHaveBeenCalledTimes(1)
   })
 
+  it('uses lucid-cardano 0.10.11 and a simulated CIP-30 wallet with a real CML transaction', async () => {
+    const { lucid, api } = await makeSimulatedCip30Lucid()
+    const tx = new TxComplete(lucid, legacyCmlTransaction([pool0]))
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(tx, admission, [pool0], [pool0]),
+    ).resolves.toEqual({ transactionRef: 'tx-cip30-simulated' })
+
+    expect(api.signTx).toHaveBeenCalledTimes(1)
+    expect(api.signTx).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/), true)
+    expect(api.submitTx).toHaveBeenCalledTimes(1)
+    expect(api.submitTx).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/))
+  })
+
+  it('rejects a legacy TxComplete body replacement with unchanged inputs during wallet lookup', async () => {
+    const walletInput = '33'.repeat(32) + '#0'
+    const { lucid, api } = await makeSimulatedCip30Lucid()
+    const original = legacyCmlTransaction([pool0, walletInput], 5_000_000n)
+    const replacement = legacyCmlTransaction([pool0, walletInput], 6_000_000n)
+    const tx = new TxComplete(lucid, original)
+    const walletUtxoLookup = vi.spyOn(lucid.wallet, 'getUtxos').mockImplementation(async () => {
+      // Rebind the public TxComplete.txComplete property while the adapter awaits
+      // wallet classification. Spending inputs stay identical; the output changes.
+      tx.txComplete = replacement
+      return [{
+        txHash: '33'.repeat(32),
+        outputIndex: 0,
+        address: 'addr_test1_wallet',
+        assets: { lovelace: 2_000_000n },
+      }]
+    })
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(tx, admission, [pool0], [pool0]),
+    ).rejects.toThrow('Completed transaction bytes changed after economic admission validation')
+
+    expect(walletUtxoLookup).toHaveBeenCalledTimes(1)
+    expect(api.signTx).not.toHaveBeenCalled()
+    expect(api.submitTx).not.toHaveBeenCalled()
+  })
+
+  it('treats the pinned CML Transaction.body input collection as a detached copy', () => {
+    const transaction = legacyCmlTransaction([pool0])
+    const bodyInputs = transaction.body().inputs()
+    bodyInputs.add(
+      C.TransactionInput.new(
+        C.TransactionHash.from_hex('44'.repeat(32)),
+        C.BigNum.from_str('1'),
+      ),
+    )
+
+    expect(transaction.body().inputs().len()).toBe(1)
+  })
+
   it('rejects if completed spending inputs change during the asynchronous wallet classification', async () => {
     const walletInput = '33'.repeat(32) + '#0'
     const replacementInput = '44'.repeat(32) + '#1'
@@ -150,6 +263,7 @@ describe('economic Cardano submission boundary', () => {
             },
           }),
         }),
+        to_bytes: () => new TextEncoder().encode(JSON.stringify(bodyReferences)),
       }),
     }
     const lucid = {
