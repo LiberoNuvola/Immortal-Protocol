@@ -191,3 +191,12 @@ Same-run Float/Koios/Minswap API reconciliation completed successfully in Action
 - Float pair mismatches: 0; Minswap API pair mismatches: 0; duplicate Float keys: 0; on-chain unqualified: 0.
 
 Reconciliation artifact ID 13056244341, ZIP SHA-256 b00032a14423db2aa4824506dfa13790f4f8048409ab8ac9056f11401d836870. The 17 Koios-only rows are a **Float coverage gap**, not missing on-chain pools: the same-run Minswap API and Koios reconciliation still agree on 31/31. Float confirms all 14 rows it does expose, but its Minswap V2 list is not exhaustive. This further demonstrates why multiple indexers are useful and why an indexer's omission must never be treated as evidence of no pool.
+
+
+### Orcfax first live Mainnet observation — structurally valid but stale
+
+The first live run [41239730829](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239730829) found and decoded both on-chain feeds. It resolved the official FSP policy/token and FS script hash, scanned 111 FS-token UTxOs, decoded 111 statements, and found five valid statements for each target feed. All five rows per feed passed the FS token/payment credential and datum checks.
+
+However, the latest ADA/USD statement was created at 2026-06-18 21:02:22.882 UTC and the latest ADA/USDM statement at 2026-06-18 21:20:32.150 UTC. At capture time (2026-10-31 20:37 UTC), both were approximately 135 days old, against the feed registry's 3600-second interval. Therefore both feeds are **STALE** and must be excluded from current cross-rate/price evidence. The previous CI job returned nonzero because it mistakenly treated five unspent historical statement UTxOs as duplicate outputs. Those are preserved as five historical statements, not five duplicate copies. The observer has been corrected to report olderStatementCount, compare the newest statement age with the source-defined interval, persist READ_ONLY_ORCFAX_CER_FEEDS_STALE in the artifact, and keep acquisition success separate from feed freshness.
+
+Artifact ID 13056972087, ZIP SHA-256 7586d6f1f9568d9b591d05e587ed48e3b8dd9f85688e96d614c8bd191fe58823, extracted JSON SHA-256 28c96a745b4f0b8e1de769a32ea7ed7839dc92155345b2f2a479dad8682772f1. The next rerun will verify the corrected freshness classification and that the CI job remains green while explicitly reporting the feed as stale.
