@@ -42,7 +42,7 @@ jobs:
 
   read-only-mainnet-observation:
     # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
-    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/collectSuperCardanoUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs') }}
+    if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/collectSuperCardanoUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
