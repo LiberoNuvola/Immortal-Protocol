@@ -11,6 +11,9 @@ on:
       - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
       - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs"
       - "scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs"
+      - "scripts/lib/muesliPoolDatum.mjs"
+      - "scripts/observeMuesliSwapUsdmUtxosReadOnly.test.mjs"
+      - "scripts/fixtures/muesliswap-usdm-mainnet-2026-10-31.json"
       - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.test.mjs"
       - "scripts/lib/sundaeV3PoolDatum.mjs"
       - "scripts/fixtures/sundaeswap-v3-usdm-mainnet-2026-10-31.json"
@@ -57,6 +60,8 @@ jobs:
           node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
           node --check scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs
           node --check scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs
+          node --check scripts/lib/muesliPoolDatum.mjs
+          node --check scripts/observeMuesliSwapUsdmUtxosReadOnly.test.mjs
           node --check scripts/lib/sundaeV3PoolDatum.mjs
           node --check scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
