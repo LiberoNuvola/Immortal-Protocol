@@ -6987,3 +6987,14 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Crypto.com records last, best bid/ask and exchange timestamp. BTSE exposes last and index price but no bid/ask; the collector preserves both and does not synthesize a midpoint. Midpoint ranges include only sources with both bid and ask.
 - Seven direct ADA/USD CEX sources are now Coinbase, Kraken, Bitstamp, Gemini, Bitfinex, Crypto.com and BTSE. ADA/USDT and ADA/USDC remain excluded from the direct USD set.
 - Docs updated in USDM_USD_MULTI_SOURCE_CROSS_REFERENCE.md. First seven-source live rerun pending. These are CEX market references, not decentralized oracles or proof of USDM/USD parity.
+
+
+## 10.73 Agent A — Float confirmed-chain market indexer and reconciliation hardening (2026-10-31)
+
+- Float API exact-USDM read succeeded in run 41239640089. Provider confidence `high`, finality `confirmed`, as-of block `14,141,207`, slot `201,912,620`, timestamp `2026-10-31T20:35:11Z`; 6 decimals and exact policy/name. Response body SHA-256 `efdba89d1eef8ebb2bd934ffde21990a016f888c83e9b9d0cd6000922b385b2a`.
+- Float reported **58 exact-USDM markets across 12 DEX venue labels**; **18 direct ADA/USDM pairs**, 12 provider-marked fresh and 6 stale. Float is an indexer, not an independent venue or second node quorum.
+- Initial same-run reconciliation: 14 Float Minswap V2 keys matched Koios pool LP-name suffix and exact pair; 0 Float-only, 17 Koios-only, 0 pair mismatch, 0 duplicate keys. Float coverage is therefore 14/31 Minswap V2 pools in this response, not complete.
+- Found a reconciliation gap: API Minswap V2 identity is the full LP policy+asset-name unit, while Float ID and the Koios pool key use the LP asset-name suffix. The initial Float script looked up the full API key with the suffix, so `apiPoolFound` was false; its `apiPairMismatches=0` did not prove API pair matches. Corrected the join to use the on-chain candidate's full LP unit and added exact Float-reserves vs PoolDatum-reserves comparison with orientation handling.
+- Added `scripts/lib/floatPoolIdentity.mjs` and six tests; updated `scripts/reconcileFloatUsdmReadOnly.mjs` and CI. Commits: helper `870ca5c08337e4e62e459af16379fc6b98f5976a`; tests `4901a525c654c0b1e287e93e22f674c9e6544fc6`; reconciler `d00ef64d0d52add53bb27ff4a93589461b242cee`; workflow `30aae19ba962f8bd78f16b80fcc606b13940a8a1`.
+- Corrected Float/API/Koios reconciliation and reserve comparison remain pending CI. Do not claim API join or reserve-equality results until the new artifact is inspected.
+- No wallet, transaction, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
