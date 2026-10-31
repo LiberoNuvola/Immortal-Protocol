@@ -6412,3 +6412,13 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - **Stato verifica:** codice aggiunto ma non ancora eseguito né testato su una macchina/rete. La lettura API live non è stata ottenuta dagli strumenti di questa sessione; non dichiarare pool count, liveness o raccolta riuscita. Il collector non implementa ancora il confronto con UTxO on-chain diretti.
 - Prossimo gate: eseguire in ambiente repo con Node compatibile, ispezionare l'output e le risposte/limitazioni API; poi aggiungere una seconda osservazione on-chain read-only via provider già autorizzato e confrontare pool ID, reserve quantities e block/slot. Nessuna credenziale va committata.
 - **Disposition invariata:** nessuna fonte USD/USDM qualificata; Option B OPEN/UNQUALIFIED; nessun EEV approval, R1/Kc certificate, Oracle consumer, PriceReference o kernel change; nessuna firma, deploy o transazione; V3/Reveal intatti.
+
+
+## 10.34 — Agent A: Minswap V2 UTxO observer (2026-10-31)
+
+- Added `scripts/observeMinswapV2UsdmUtxosReadOnly.mjs` on `work/immortal-green-closure`.
+- Latest source commit: `cb24f4649f133c6b4d1cb724385840023348de51`.
+- The script queries Koios Mainnet address UTxOs at the official Minswap V2 pool address, filters the exact USDM policy and asset name, and records raw quantities, datum bytes/hash, UTxO reference, HTTP Date, response SHA-256 and transaction block/slot context when available.
+- Candidate discovery only: pool NFT/authentication identity and datum/reserve consistency are not yet decoded or qualified. V1 and StableSwap scans remain open.
+- Not executed in a network-enabled runtime. No live candidate count, UTxO, slot or reserve is claimed. No reconciliation result exists yet.
+- No wallet, signature, transaction, refresh, deployment, chain write, economic rule, Kernel, Oracle consumer, EEV/R1/Kc, V3, Reveal or Materios change. Option B remains UNQUALIFIED.
