@@ -20,6 +20,7 @@ function completedLucidTransaction() {
             index: () => outputIndex,
           }),
         }),
+        to_bytes: () => new TextEncoder().encode(pool),
       }),
       to_bytes: () => new TextEncoder().encode(pool),
     }),
