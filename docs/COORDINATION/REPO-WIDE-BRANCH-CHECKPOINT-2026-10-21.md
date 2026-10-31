@@ -6548,3 +6548,13 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Reconciliation artifact ID `13044411182`, ZIP digest `b0c2d9b3c93f9e4c6098eb7c7303ad080ed30d77fbac7cc959617ec87ebfc339`; JSON digest `c01872590804b698dd5ad6adb1328809ea4139467320bdc5abf50a4bbbc07c80`.
 - Source windows: API 13:14:27.946Z–13:14:28.758Z; Koios 13:14:29.034Z–13:15:46.121Z. Near-aligned but not atomic. Raw response hashes and times are retained in source artifacts.
 - This closes the first V2 pool-set/asset-pair identity reconciliation. It does not qualify API USD metrics, price/peg, independent venue/oracle, EEV or deployment. Minswap API + GeckoTerminal are one DEX venue; Koios is an indexer view of the same ledger, not another market venue. Historical price/volume series remain deferred due rate limiting.
+
+
+## 10.47 Agent A — SuperCardano independent indexer path (2026-10-31)
+
+- Researched public Cardano market-data paths. SuperCardano exposes unauthenticated exact-unit token/pool and settled-trade endpoints. Its published methodology says pool states are read from its own Cardano node after 15-block settlement; it currently uses its own decoded Minswap V2 pool reader for token price, with WingRiders V2 and Dano Finance readers still being qualified. Its USD display uses DexHunter ADA/USD, so do not count its USD number as independent.
+- A direct public endpoint discovery read for exact Moneta USDM unit surfaced multiple venues in the pool list: Minswap V1/V2, WingRiders V2, SundaeSwap V3, VyFi, MuesliSwap, CSWAP, Splash and Danogo CLMM; trade rows also showed Minswap V2, WingRiders V2 and Danogo CLMM. These are discovery observations; pool freshness and venue decoder coverage require artifact review.
+- Added `scripts/collectSuperCardanoUsdmReadOnly.mjs` at `a895f3c45d0deb6437e6c015181cac26c07cd658`, capturing exact-asset token/pool and trade JSON, raw response hashes, response headers, source metadata, per-venue counts, and explicit caveats. Added CI job at `7551db57f37b4ddb7d9c395ae2932c52c48485d2` (read-only GET only). First CI result pending.
+- Added source independence taxonomy and cost/access classification to `docs/COORDINATION/MINSWAP_USDM_READONLY_RECONCILIATION.md` at `e628500f7260bf1f0608e95951e79c450d3b4172`.
+- Other candidates recorded: DanoNight own db-sync daily scan (public page, CoinGecko ADA/USD dependency); GeroWallet free UI but Nexus developer market data paid add-on; DexHunter partner API requires key and is an aggregator, not a venue; Cardanoscan free API key supports chain data but not DEX market pricing.
+- Multi-source must be assessed across venue, indexer, market methodology, USD reference and issuer reserve dimensions. No API count alone qualifies an oracle quorum.
