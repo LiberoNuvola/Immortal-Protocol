@@ -3,6 +3,10 @@
  */
 const lower = (x) => String(x ?? '').toLowerCase()
 
+export function apiAssetUnit(asset) {
+  return lower(asset?.currency_symbol) + lower(asset?.token_name)
+}
+
 export function apiMinswapLpUnit(pool) {
   const lp = pool?.apiMetrics?.lp_asset
   const policy = lower(lp?.currency_symbol)
