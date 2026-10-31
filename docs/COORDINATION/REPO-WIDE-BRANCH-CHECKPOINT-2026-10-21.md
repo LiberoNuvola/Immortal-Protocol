@@ -6207,9 +6207,9 @@ Feed 609 is explicitly Mountain Protocol USD, not Moneta USDM, and is inactive. 
 
 ### Reserve value reconciliation warning
 
-During the same 2026-10-31 inspection, Pyth Terminal showed approximately **11,571,398.61 USD** for feed 3326, while Moneta's own Proof of Reserves page showed **9,609,507.48 USD** total reserve balance and **9,609,507.48 USDM** circulating supply, with verification labelled "today": https://moneta.global/transparency/.
+Pyth Terminal showed approximately **11,571,398.61 USD** for feed 3326. The Moneta Proof of Reserves page currently exposed in the available web capture shows **9,609,507.48 USD** total reserve balance and **9,609,507.48 USDM** circulating supply, with a "Verified on-chain · today" label: https://moneta.global/transparency/.
 
-The displayed difference is **1,961,891.13 USD (~20.42%)**. Do not classify this as a confirmed oracle error yet: the rendered sources do not expose sufficiently precise, matching observation timestamps or a full definition of the NAV field to prove the values represent the same measure at the same instant. Treat it as a material unresolved reconciliation discrepancy. Neither value may be converted into a USD-per-USDM price by assumption.
+The arithmetic difference between the displayed values is **1,961,891.13 USD (~20.42%)**, but this is **not a demonstrated contemporaneous divergence**: the Moneta page snapshot in the web index is marked as crawled approximately two months before the Pyth inspection, and the extracted page does not expose a precise observation timestamp. The values may refer to different observation times or definitions. Treat this only as an unresolved cross-source reconciliation item, not as a confirmed oracle error. Obtain raw Pyth update timestamps and the exact Moneta on-chain reserve datum before comparing them. Neither value may be converted into a USD-per-USDM price by assumption.
 
 ### Relation to existing Pyth probe and IMMORTAL
 
