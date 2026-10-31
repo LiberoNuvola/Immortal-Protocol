@@ -6483,3 +6483,12 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Logs confirm **1 test file passed; 9 tests passed**, Vitest 1.6.1, Node 22.23.4, suite duration 414 ms.
 - This is synthetic-fixture unit evidence only. No captured Koios Mainnet datum, real UTxO candidate, reserve snapshot, market quote, USD/USDM peg, oracle qualification, EEV qualification or deployment approval is implied.
 - Next gate: capture a real read-only Koios response (including inline datum bytes/value), verify its actual JSON shape against the decoder, then reconcile against Minswap API observations. Keep source and market evidence distinct.
+
+
+## 10.41 Agent A — Koios Mainnet read-only acquisition and timeout (2026-10-31)
+
+- The first read-only Mainnet observer job, Actions run 41203284220, received HTTP 504 from Koios `POST /address_utxos?limit=1000&offset=0` after approximately 121 seconds. Error body SHA-256: `bef140a1a96994029153dca8c00b1750b9a5a764fb9db2dc68d7bb40e8a29e8a`; no UTxO rows, datum or artifact were produced.
+- Classification: `SOURCE_UNAVAILABLE` (provider timeout), not zero pool candidates and not a decoder failure.
+- Observer updated at commit `0d916ec531b47cc5116aa34f2379bc607679b8d8` to use exact-asset `POST /asset_utxos` with `_asset_list: [[policyId, assetNameHex]]`, `_extended: true`, and PostgREST address equality filter for the official Minswap V2 address. This avoids scanning every UTxO at the shared validator address.
+- Reconciliation specification records the failed attempt and targeted retry method at commit `3cf57979ab7da8107c6adc3000bcb4600902ad7a`.
+- A new push-triggered run is expected for the exact-asset query. Do not infer success until its run, job logs and evidence artifact are inspected. No chain writes, wallet operations, oracle refresh, or economic qualification.
