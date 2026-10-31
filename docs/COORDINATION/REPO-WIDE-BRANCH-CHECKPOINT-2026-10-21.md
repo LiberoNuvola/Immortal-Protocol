@@ -6930,3 +6930,12 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - The workflow run itself ended `cancelled` as later commits superseded it. Report the observed build/test steps as passed, but do not label the entire Adapter Sale workflow green. A subsequent current-HEAD Adapter Sale run was queued after the checkpoint update.
 - This validates the adapter compatibility bridge against its regression shape and the repository conformance suite; it is not yet an end-to-end CIP-30 wallet signing/submission or Preprod transaction observation.
 - At checkpoint write time, branch HEAD was `dba6de21e665275054b93c4b2aff247c44736be4`. No new code or protocol semantics changed in this addendum.
+
+
+## 10.72 Agent A — Saturn CLOB pagination extension (2026-10-31)
+
+- The previous complete acquisition attempt remained `READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL`: 20,026 rows across three deployments, with the 4% legacy run-off deployment reaching the 20-page cap. No direct ADA/USDM order was detected in scanned rows, but zero detections are not evidence of zero orders.
+- Increased the observer page cap from 20 to 50 pages per deployment (`scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs`, commit `dba6de21e665275054b93c4b2aff247c44736be4`) and added `maxPagesPerDeployment` to output summary.
+- Increased the read-only Saturn workflow job timeout from 15 to 45 minutes (workflow commit `095b59a23ffe0d716fc4934c8e81a16ca889b1bb`) to allow full pagination.
+- New run is pending. Continue to classify as partial until every deployment returns a page shorter than 1,000 rows and all source errors are clear. No price or best bid/ask is claimed until then.
+- No transaction, wallet, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
