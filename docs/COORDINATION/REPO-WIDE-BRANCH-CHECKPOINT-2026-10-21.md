@@ -6180,3 +6180,8 @@ This confirms the correct extraction target and prevents a misleading approach: 
 4. decoded voter state and last completed round.
 
 The diagnostic must not open the database for writes, run migrations, or mutate the snapshot. If a safe read-only backend cannot be established, stop and request a local copy/export from the operator rather than using RocksDB repair/open tools on the original. Compare the decoded aux set ID to the independently observed runtime set ID 4434 and the exact-target justification candidate 4343. Keep B3-A OPEN; this establishes the extraction method, not the root cause.
+
+
+### Evidence-status correction in the Agent C state-window workflow
+
+Commit `7b6cd4d5322ccc3ea1fc3225b379adfc08ea6c81` updates `.github/workflows/materios-grandpa-state-window.yml` so the artifact no longer labels a run `CAPTURED` when all historical state reads failed. Each parent/target record now classifies its result as `STATE_CAPTURED`, `HISTORICAL_STATE_PRUNED`, or `PARTIAL_STATE_UNAVAILABLE`; the top-level status is derived from both records. This is an evidence-integrity correction only: no RPC scope, target heights, chain state, runtime behavior, or protocol semantics changed. The push-triggered workflow result must be checked before treating this patch as CI-verified.
