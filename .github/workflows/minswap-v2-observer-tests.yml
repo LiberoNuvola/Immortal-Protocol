@@ -42,7 +42,7 @@ jobs:
 
   read-only-mainnet-observation:
     # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
-    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs') }}
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/collectSuperCardanoUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -64,7 +64,7 @@ jobs:
 
   read-only-minswap-api-observation:
     # Public Minswap API market observations only; no transaction endpoints.
-    if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.modified, 'scripts/collectMinswapUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs')) }}
+    if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.modified, 'scripts/collectMinswapUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/collectSuperCardanoUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -89,6 +89,7 @@ jobs:
     needs:
       - read-only-mainnet-observation
       - read-only-minswap-api-observation
+      - read-only-supercardano-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -108,8 +109,13 @@ jobs:
         with:
           name: minswap-usdm-api-readonly-${{ github.run_id }}
           path: audit/api
-      - name: Reconcile exact V2 pool identities and asset pairs
-        run: node scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs --onchain audit/onchain/minswap-v2-usdm-utxos-readonly.json --api audit/api/minswap-usdm-readonly.json --out audit/oracles/minswap-v2-api-onchain-reconciliation.json
+      - name: Download SuperCardano indexer evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: supercardano-usdm-readonly-${{ github.run_id }}
+          path: audit/indexer
+      - name: Reconcile Minswap API and independent indexer against Koios
+        run: node scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs --onchain audit/onchain/minswap-v2-usdm-utxos-readonly.json --api audit/api/minswap-usdm-readonly.json --supercardano audit/indexer/supercardano-usdm-readonly.json --out audit/oracles/minswap-v2-api-onchain-reconciliation.json
       - name: Upload pool-set reconciliation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -190,7 +196,7 @@ jobs:
 
 
   read-only-supercardano-observation:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.modified, 'scripts/collectSuperCardanoUsdmReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs') || contains(github.event.head_commit.modified, 'scripts/observeMinswapV2UsdmUtxosReadOnly.mjs')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
