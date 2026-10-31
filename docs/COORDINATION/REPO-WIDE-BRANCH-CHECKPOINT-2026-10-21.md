@@ -6998,3 +6998,12 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Added `scripts/lib/floatPoolIdentity.mjs` and six tests; updated `scripts/reconcileFloatUsdmReadOnly.mjs` and CI. Commits: helper `870ca5c08337e4e62e459af16379fc6b98f5976a`; tests `4901a525c654c0b1e287e93e22f674c9e6544fc6`; reconciler `d00ef64d0d52add53bb27ff4a93589461b242cee`; workflow `30aae19ba962f8bd78f16b80fcc606b13940a8a1`.
 - Corrected Float/API/Koios reconciliation and reserve comparison remain pending CI. Do not claim API join or reserve-equality results until the new artifact is inspected.
 - No wallet, transaction, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
+
+
+## 10.76 Agent A — Charli3 minimal datum decoder correction and freshness finding (2026-10-31)
+
+- First Charli3 live run 41240028319 found one UTxO at the exact ADA/USD feed address with the exact OracleFeed NFT, but the decoder rejected it because the live datum omitted optional precision and symbol fields.
+- Official Charli3 datum standard marks price-map fields 0–9 optional. The captured datum contained only keys 0 (price integer 239761), 1 (timestamp 1779859290404 ms) and 2 (expiry 1779880890404 ms). The decoder now requires only those mandatory operational fields, accepts optional metadata, and leaves decimal price conversion null when precision is absent. It identifies the pair by the pinned mainnet address/NFT, not by inferred symbols.
+- Updated decoder at b44ab8a6a7f2ac3a29c9a230c153a65c5c157560; observer at f58ceff0bda879536f7685fd2122b24c967ee7e0; tests at fa8cc80222ca0fff895f981c7ce8b510bf35ada0.
+- Captured timestamp corresponds to 2026-05-26T20:01:30.404Z and expiry 2026-05-27T02:01:30.404Z. At 2026-10-31 capture, the statement was expired by over five months. It is not a current price reference. Corrected rerun pending.
+- No conversion/precision assumption, no price/peg qualification, no EEV or deployment action.
