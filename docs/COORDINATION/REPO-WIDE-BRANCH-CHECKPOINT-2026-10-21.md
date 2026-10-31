@@ -6601,3 +6601,14 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Three ADA-paired pools have `lastWithdrawEpoch` behind current epoch. The SDK can add a staking reward amount when a staking reference UTxO is supplied; observer does not fetch it, so reward amount is explicitly zero-assumed and the three are flagged. Do not use as executable CLMM quotes. Pool freshness: 5 under 24h, 2 from 1–7d, 5 over 7d; old pool rows are not automatically active liquidity.
 - DanoNight public db-sync tracker research: last updated 2026-10-30; USDM 5.1600 ADA/token, indicative USD $0.991 and +0.17% vs stablecoin basket median. It uses own `cardano-db-sync` and deepest ADA pool across Minswap/WingRiders, but USD conversion uses CoinGecko ADA/USD and daily cadence. This is a separate indexer/market calculation, not a separate DEX venue or independent USD source. SuperCardano's 2026-10-31 Minswap V2 ADA quote 5.094192535… is not directly comparable (different as-of and venue selection); no averaging or depeg claim.
 - Docs updated at `6fc1b2ccbcc50fb812a9f2e796081fe87e7022ca`.
+
+
+## 10.52 Agent A — WingRiders V2 official pool identity gate (2026-10-31)
+
+- Official `WingRiders/dex-v2-contracts` inspected. Mainnet `dexUniqueRef`/factory token UTxO is `914a0f1e615f41b3f462855f6052a6b37d1d291aab53918ad4c9d5f4245204ce#1`; official token names: factory `F` (`46`), pool validity `L` (`4c`). The same policy (`dexSymbol`) mints the validity token and pool share tokens.
+- Official `pshareTokenName` algorithm: Blake2b-256 over five concatenated Blake2b-256 digests for pool type id, scales A/B, asset A and asset B. Constant Product pool type id `0`, scales 1/1; Stableswap type id `1`, scales from datum.
+- Official pool validator enforces one `L` token and unique share token; active reserves exclude treasury/project/reserve balances and 3 ADA pool oil as defined in `Pool.Util`.
+- Mainnet payment script hashes extracted from Cardanoscan pages labelled WingRiders V2 Constant Product Pool / Stableswap Pool: CP `af97793b8702f381976cec83e303e9ce17781458c73c4bb16fe02b83`; Stable `946ae228430f2fc64aa8b3acb910ee27e9b3e47aa8f925fac27834a1`.
+- Added `scripts/observeWingRidersV2UsdmReadOnly.mjs` at `5f8110c3bb3b94d5cd700c1a9ceda732b81ab8c8` and follow-up policy-match recording fix at `3e8ad08070bc0e0c5039b36aec236b914431c543`. Observer derives official policy from factory UTxO, queries exact share-token UTxOs, checks `L`, derives share token name from datum, checks pool payment credential by type, validates datum pair and compares active reserves to SuperCardano.
+- Added workflow job `read-only-wingriders-v2-observation` at `0d1d3c3738221d8f0349914fe95e7aacf32c67ca`; first run pending.
+- No transaction, signing, wallet, or chain write. No USD price or oracle qualification.
