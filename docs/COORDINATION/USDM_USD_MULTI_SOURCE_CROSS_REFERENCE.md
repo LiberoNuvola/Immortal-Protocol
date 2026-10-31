@@ -264,3 +264,12 @@ Artifact ID 13057132705, ZIP SHA-256 1f9cc9756474ced7ae5be8e82fc2408715d3faf31cd
 ### Float cross-indexer rerun note
 
 The same-run Float reconciliation job in run 41240334298 failed before producing its artifact with a JavaScript scope error (`v is not defined`) in the join path. The decoder, Float collector, Koios observer and Minswap API collector artifacts all downloaded successfully; the failure is in the local reconciler, not the source providers. The scope reference was corrected to use the current candidate's `datumValidation.lpAsset` (commit 3b52da14a06fab42c5c554927402c19f6b4ddcfd). The rerun is pending; do not carry forward the previous 14/14 result as if it were produced by this updated reconciler.
+
+
+## DIA free ADA/USD reference API (test-only)
+
+Added a fourth non-CEX reference class using DIA's public, keyless Cardano native ADA endpoint: GET /v1/assetQuotation/cardano/0x0000000000000000000000000000000000000000. It returns the Cardano ADA quote, provider timestamp, source and 24h volume fields. DIA states that the free API aggregates raw trades from 100+ CEX/DEX sources, with no API key required, but is intended for testing/evaluation rather than production. It is therefore classified as ORACLE_REFERENCE_API_TEST_ONLY, not as a separate CEX venue and not as a production on-chain oracle.
+
+This source may overlap with the seven direct CEX venues, the three market aggregators, and the Float/DEX data. Its raw provenance and timestamp must be retained; it must not be blindly averaged with those inputs. The first live CI observation is pending.
+
+Official references: [DIA free API](https://www.diadata.org/free-crypto-api/), [Cardano ADA endpoint](https://www.diadata.org/app/price/asset/cardano/0x0000000000000000000000000000000000000000/), [DIA API endpoint specification](https://github.com/diadata-org/diadata/blob/master/documentation/api-1/api-endpoints.md).
