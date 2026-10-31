@@ -153,3 +153,8 @@ Latest snapshot:
 Artifact ID `13056533033`, ZIP SHA-256 `5b7c8895d8cc6131d0e27374c96b003c239dae5dfb604718a4f836b9f4425009`; extracted JSON SHA-256 `8bad2dac7b34cd4eada0bde7ebb4c12bf78b14468ede818e6371cd3e4603cc7f`.
 
 The cross-rate spread is a diagnostic dispersion, not a peg band. Pool source times are materially older than the CEX observations for some venues; the output must remain an unsmoothed observation matrix until freshness, depth, venue-independence and risk policies are explicitly governed.
+
+
+## SaturnSwap CLOB coverage retry
+
+The previous run scanned 20,026 order UTxOs across three deployment scripts but reached the 20-page cap on `saturn-v2-mainnet-4pct-runoff`. The observer now permits 50 pages per deployment and the GitHub Actions job timeout has been raised to 45 minutes. This is only an acquisition-coverage extension; it does not alter order parsing or price logic. The next run must still show a short final page for all three deployments before the orderbook can be called complete. Until then, no direct bid/ask is available from this partial CLOB scan.
