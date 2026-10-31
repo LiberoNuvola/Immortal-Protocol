@@ -116,6 +116,30 @@ async function fetchPoolNftPage(poolNft, offset) {
   if (!Array.isArray(json)) throw Object.assign(new Error('KOIOS_MUESLI_POOL_NFT_UTXOS_SHAPE_INVALID'), { evidence })
   return { json, evidence }
 }
+async function fetchDatumInfo(datumHash) {
+  const url = KOIOS + '/datum_info'
+  const startedAt = new Date().toISOString()
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { accept: 'application/json', 'content-type': 'application/json' },
+    body: JSON.stringify({ _datum_hashes: [datumHash] }),
+    signal: AbortSignal.timeout(60_000),
+  })
+  const rawBody = await response.text()
+  const evidence = {
+    url, method: 'POST', datumHash, status: response.status,
+    responseDate: response.headers.get('date'),
+    startedAt, completedAt: new Date().toISOString(),
+    bodyBytes: Buffer.byteLength(rawBody), bodySha256: sha256(rawBody), rawBody,
+  }
+  if (!response.ok) throw Object.assign(new Error('KOIOS_MUESLI_DATUM_INFO_HTTP_' + response.status), { evidence })
+  let json
+  try { json = JSON.parse(rawBody) } catch {
+    throw Object.assign(new Error('KOIOS_MUESLI_DATUM_INFO_JSON_INVALID'), { evidence })
+  }
+  if (!Array.isArray(json)) throw Object.assign(new Error('KOIOS_MUESLI_DATUM_INFO_SHAPE_INVALID'), { evidence })
+  return { json, evidence }
+}
 async function main() {
   const argv = process.argv.slice(2)
   const outPath = argValue(argv, '--out', 'audit/oracles/muesliswap-usdm-utxos-readonly.json')
@@ -124,6 +148,7 @@ async function main() {
   const pages = []
   const candidates = []
   const poolNftUtxos = []
+  const datumInfoRequests = []
   let complete = false
   let discovery = null
   let discoveredPoolNfts = []
@@ -206,6 +231,24 @@ async function main() {
         throw new Error('KOIOS_MUESLI_POOL_NFT_PAGE_CAP_REACHED_INCOMPLETE:' + assetNameHex)
       }
     }
+    // Pool outputs often carry only a datum hash. Resolve those hashes through
+    // Koios /datum_info and retain the exact raw response before decoding.
+    const uniqueDatumHashes = [...new Set(candidates.map((candidate) => candidate.datumHash).filter(Boolean))]
+    const datumByHash = new Map()
+    for (const datumHash of uniqueDatumHashes) {
+      const response = await fetchDatumInfo(datumHash)
+      datumInfoRequests.push(response.evidence)
+      const datum = response.json.find((entry) => String(entry.hash ?? '').toLowerCase() === datumHash.toLowerCase()) ?? null
+      datumByHash.set(datumHash, datum)
+    }
+    for (const candidate of candidates) {
+      const datum = candidate.datumHash ? datumByHash.get(candidate.datumHash) : null
+      candidate.resolvedDatumBytes = datum?.bytes ?? null
+      candidate.resolvedDatumJson = datum?.value ?? null
+      candidate.datumResolutionStatus = datum
+        ? 'DATUM_INFO_RESOLVED'
+        : candidate.inlineDatumJson ? 'INLINE_DATUM_AVAILABLE' : 'DATUM_INFO_NOT_FOUND'
+    }
   } catch (error) {
     complete = false
     const failure = {
@@ -231,6 +274,7 @@ async function main() {
       poolNftUtxoCount: poolNftUtxos.length,
       pages,
       poolNftUtxos,
+      datumInfoRequests,
       candidates,
     }
     await mkdir(dirname(outPath), { recursive: true })
@@ -273,7 +317,9 @@ async function main() {
       maxPages: MAX_PAGES,
       completePagination: complete,
       poolNftUtxoCount: poolNftUtxos.length,
+      datumInfoRequestCount: datumInfoRequests.length,
       rawPages: pages,
+      rawDatumInfoResponses: datumInfoRequests,
     },
     summary: {
       discoveredPoolNftCount: discoveredPoolNfts.length,
@@ -284,14 +330,16 @@ async function main() {
       poolNftQuantityExactlyOneCount: candidates.filter((x) => x.poolNftQuantityRaw === '1').length,
       inlineDatumCount: candidates.filter((x) => x.inlineDatumJson).length,
       datumHashCount: candidates.filter((x) => x.datumHash).length,
+      datumInfoResolvedCount: candidates.filter((x) => x.datumResolutionStatus === 'DATUM_INFO_RESOLVED').length,
       distinctAddresses: [...new Set(candidates.map((x) => x.address))].length,
     },
     poolNftUtxos,
+    datumInfoRequests,
     candidates,
     limitations: [
       'SuperCardano pool rows are discovery hints only. Each exact Pool NFT unit is re-queried from Koios Mainnet before its current UTxO is recorded.',
       'The Pool NFT policy is pinned to the official MuesliSwap deployment. Each candidate payment credential is compared with the official pool script hash decoded from both official pool addresses.',
-      'PoolDatum, LP token, reserve and fee validation are not yet implemented; raw inline datum JSON/CBOR is preserved first.',
+      'PoolDatum, LP token, reserve and fee validation are not yet implemented; inline datum JSON/CBOR and hash-resolved datum JSON/CBOR are preserved first.',
       'A SuperCardano pool row without a current Koios UTxO is not counted as a current pool. It may be stale, spent, or associated with an unrecognized script version.',
       'No price, peg, oracle, EEV or deployment qualification is produced.',
       'Read-only public Koios queries only; no wallet, signing, transaction submission or chain write.',
