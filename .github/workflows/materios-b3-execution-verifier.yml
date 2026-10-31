@@ -100,11 +100,6 @@ jobs:
         working-directory: poc/materios-grandpa
         run: npm run typecheck
 
-      - name: Probe official Materios archive snapshot
-        id: archive_probe
-        continue-on-error: true
-        run: bash .github/scripts/probe-materios-archive-snapshot.sh
-
       - name: Compare public Materios RPC justification retention
         env:
           MATERIOS_RPC_PRIMARY: https://materios.fluxpointstudios.com/rpc
@@ -184,6 +179,11 @@ jobs:
         env:
           MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: 2471424
           MATERIOS_WS_EVIDENCE_OUT: out/MateriosWebSocketRpcProbe.json
+
+      - name: Probe official Materios archive snapshot
+        id: archive_probe
+        continue-on-error: true
+        run: bash .github/scripts/probe-materios-archive-snapshot.sh
 
       - name: Capture and verify real Materios GRANDPA witness
         working-directory: poc/materios-grandpa
