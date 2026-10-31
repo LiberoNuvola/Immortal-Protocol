@@ -23,10 +23,10 @@ function outputPath(argv) {
   return i >= 0 && argv[i + 1] ? resolve(argv[i + 1]) : resolve('audit/oracles/muesliswap-cardano-usdm-readonly.json')
 }
 
-async function request(queryName, tokenSide) {
+async function request(queryName, tokenSide, onlyVerified) {
   const params = new URLSearchParams({
     [tokenSide]: ASSET.policyId + '.' + ASSET.assetNameHex,
-    'only-verified': 'y',
+    'only-verified': onlyVerified,
     providers: PROVIDERS,
   })
   const url = BASE + '/liquidity/pools?' + params.toString()
@@ -68,11 +68,12 @@ function unit(address) {
   return String(address?.policyId ?? '').toLowerCase() + String(address?.name ?? '').toLowerCase()
 }
 
-function poolSummary(pool, queryName) {
+function poolSummary(pool, queryName, onlyVerified) {
   const baseUnit = unit(pool.baseAddress)
   const quoteUnit = unit(pool.quoteAddress)
   return {
     queryName,
+    onlyVerifiedQuery: onlyVerified,
     provider: pool.provider ?? pool.providerName ?? pool.dex ?? null,
     poolId: pool.id ?? pool.poolId ?? pool.lpAssetId ?? null,
     baseAddress: pool.baseAddress ?? null,
@@ -96,22 +97,43 @@ function poolSummary(pool, queryName) {
 
 async function main() {
   const startedAt = new Date().toISOString()
-  const [baseResult, quoteResult] = await Promise.all([
-    request('USDM_AS_TOKEN_A', 'token-a'),
-    request('USDM_AS_TOKEN_B', 'token-b'),
+  // Query both verified-only and unfiltered modes. The public API supports
+  // only-verified=y/n; retaining both prevents a verified-only filter from
+  // silently hiding a real pool. Every query variant is preserved separately.
+  const requests = await Promise.all([
+    request('USDM_AS_TOKEN_A_VERIFIED', 'token-a', 'y'),
+    request('USDM_AS_TOKEN_B_VERIFIED', 'token-b', 'y'),
+    request('USDM_AS_TOKEN_A_UNFILTERED', 'token-a', 'n'),
+    request('USDM_AS_TOKEN_B_UNFILTERED', 'token-b', 'n'),
   ])
-  const basePools = Array.isArray(baseResult.json) ? baseResult.json : []
-  const quotePools = Array.isArray(quoteResult.json) ? quoteResult.json : []
-  const summaries = [
-    ...basePools.map((pool) => poolSummary(pool, 'token-a')),
-    ...quotePools.map((pool) => poolSummary(pool, 'token-b')),
-  ]
+  const queryResults = requests.map((result, index) => ({
+    ...result,
+    queryName: ['token-a-verified', 'token-b-verified', 'token-a-unfiltered', 'token-b-unfiltered'][index],
+    tokenSide: ['token-a', 'token-b', 'token-a', 'token-b'][index],
+    onlyVerified: ['y', 'y', 'n', 'n'][index],
+  }))
+  const queryPools = queryResults.map((result) => ({
+    queryName: result.queryName,
+    tokenSide: result.tokenSide,
+    onlyVerified: result.onlyVerified,
+    count: Array.isArray(result.json) ? result.json.length : 0,
+    status: result.evidence.status,
+    bodySha256: result.evidence.bodySha256,
+  }))
+  const summaries = queryResults.flatMap((result) =>
+    (Array.isArray(result.json) ? result.json : [])
+      .map((pool) => poolSummary(pool, result.tokenSide, result.onlyVerified)),
+  )
   const byKey = new Map()
   for (const pool of summaries) {
     const key = String(pool.provider ?? 'unknown') + ':' + String(pool.poolId ?? pool.baseUnit + ':' + pool.quoteUnit)
-    if (!byKey.has(key)) byKey.set(key, pool)
+    const existing = byKey.get(key)
+    if (!existing) byKey.set(key, { ...pool, queryVariants: [pool.queryName] })
+    else if (!existing.queryVariants.includes(pool.queryName)) existing.queryVariants.push(pool.queryName)
   }
   const pools = [...byKey.values()]
+  const basePools = summaries.filter((pool) => pool.queryName === 'token-a').length
+  const quotePools = summaries.filter((pool) => pool.queryName === 'token-b').length
   const evidence = {
     schema: 'immortal-muesliswap-cardano-usdm-readonly-v1',
     classification: 'INDEPENDENT_DEX_VENUE_OBSERVATION_NOT_ORACLE_QUALIFICATION',
@@ -122,18 +144,21 @@ async function main() {
       docs: 'https://docs.muesliswap.com/muesli-api',
       terms: 'Official docs describe API as private-use; commercial use requires contacting MuesliSwap.',
       providerFilter: PROVIDERS,
-      verifiedOnly: true,
+      verificationModesQueried: ['y', 'n'],
+      verifiedOnly: false,
     },
     exactAsset: ASSET,
     acquisition: {
-      requests: [baseResult.evidence, quoteResult.evidence],
-      basePoolCount: basePools.length,
-      quotePoolCount: quotePools.length,
+      requests: queryResults.map((result) => result.evidence),
+      queryPools,
+      rawPoolRows: summaries.length,
+      basePoolCount: basePools,
+      quotePoolCount: quotePools,
       uniquePoolCount: pools.length,
       exactUsdmPoolCount: pools.filter((pool) => pool.exactUsdmFound).length,
-      sourceStatus: [baseResult.evidence, quoteResult.evidence].every((x) => x.status === 200)
+      sourceStatus: queryResults.every((x) => x.evidence.status === 200)
         ? 'COMPLETE'
-        : [baseResult.evidence, quoteResult.evidence].some((x) => x.status === 200)
+        : queryResults.some((x) => x.evidence.status === 200)
           ? 'PARTIAL'
           : 'SOURCE_UNAVAILABLE',
     },
