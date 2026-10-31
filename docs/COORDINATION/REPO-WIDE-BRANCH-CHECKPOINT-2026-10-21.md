@@ -6521,3 +6521,12 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Evidence artifact ID `13043641385`, ZIP SHA-256 `38ee9388333e85a1765493cbc879b48bca2a42e9758534893e4897eac86acacc`; JSON SHA-256 `db5b109eb4638eac10434f5b3d120b57c526d55f2d4f7de837c8aea1434ecbcb`. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204050705
 - Scope of MATCH is structural pool identity + datum/Value consistency under Minswap's fee-retention semantics. It is not an oracle price, USDM/USD peg, independent market venue, EEV evidence or deployment approval. Minswap API collection and cross-indexer corroboration remain open.
 - Per-candidate qualification label clarified at `3c500e192389c16c87eee2e3bb3db9534876f498` to say `POOL_IDENTITY_AND_RESERVE_STRUCTURE_MATCH_NOT_ORACLE_QUALIFICATION`; the rerun triggered by this change is pending.
+
+
+## 10.45 Agent A — confirmed structural census and Minswap API collection gate (2026-10-31)
+
+- Run 41204297344 (source commit `3c500e192389c16c87eee2e3bb3db9534876f498`) succeeded: 12 tests passed; 31 current exact-USDM UTxOs, 31 transaction contexts, 31 MATCH, 0 reasons, complete one-page pagination. All 31 qualification labels correctly state structural pool match only, not oracle qualification.
+- Artifact ID `13043476858`, ZIP digest `57ce6478ecedec6fb522271eedba921ed3a5c62904a567cb94c55fe671674af0`; extracted JSON digest `76b74901b312a4754673dacfa7f2d787bc0baeb3c94fe7259f88242f7370a8c8`.
+- Minswap API collector updated at `b087bc8d2cc9e9f84d5c586f481f7a25a0379380` to key records by `protocol + LP asset id`, preventing a duplicate LP identity across protocol families from silently overwriting another result.
+- Workflow now includes a separate read-only Minswap API collection job, commit `d34f2a61f5e7651324317acdfbfb7cd63f420b48`; no transaction endpoints, signing or chain writes. First collection result pending.
+- Market-source qualification remains open. Minswap API and GeckoTerminal are not independent market venues; cross-indexer comparison and an independent venue/oracle remain separate requirements.
