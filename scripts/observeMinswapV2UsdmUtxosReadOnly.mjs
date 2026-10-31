@@ -27,7 +27,8 @@ const ASSET = Object.freeze({
   decimals: 6,
 })
 const V2_POOL_SCRIPT_HASH = 'ea07b733d932129c378af627436e7cbc2ef0bf96e0036bb51b3bde6b'
-const V2_POOL_STAKE_KEY_HASH = '52563c5410bff6a0d43ccebb7c37e1f69f5eb260552521adff33b9c2'
+const V2_POOL_ADDRESS_STAKE_KEY_HASH = '52563c5410bff6a0d43ccebb7c37e1f69f5eb260552521adff33b9c2'
+const V2_POOL_BATCHING_STAKE_SCRIPT_HASH = '1eae96baf29e27682ea3f815aba361a0c6059d45e4bfbe95bbd2f44a'
 // Official deployed/mainnet/script.json: poolAuthenAsset.
 const V2_POOL_AUTH_NFT = Object.freeze({
   policyId: 'f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c',
@@ -107,9 +108,9 @@ export function decodeV2PoolDatum(value) {
   const stakeReference = plutusConstr(root.fields[0], 'poolBatchingStakeCredential')
   if (stakeReference.constructor !== 0 || stakeReference.fields.length !== 1) throw new Error('MIN_SWAP_V2_STAKE_REFERENCE_UNSUPPORTED')
   const stakeCredential = plutusConstr(stakeReference.fields[0], 'poolBatchingStakeCredential.inline')
-  if (stakeCredential.constructor !== 0 || stakeCredential.fields.length !== 1) throw new Error('MIN_SWAP_V2_STAKE_CREDENTIAL_NOT_VERIFICATION_KEY')
+  if (stakeCredential.constructor !== 1 || stakeCredential.fields.length !== 1) throw new Error('MIN_SWAP_V2_STAKE_CREDENTIAL_NOT_SCRIPT')
   return {
-    poolBatchingStakeKeyHash: plutusBytes(stakeCredential.fields[0], 'poolBatchingStakeKeyHash'),
+    poolBatchingStakeScriptHash: plutusBytes(stakeCredential.fields[0], 'poolBatchingStakeScriptHash'),
     assetA: decodeAsset(root.fields[1], 'assetA'),
     assetB: decodeAsset(root.fields[2], 'assetB'),
     totalLiquidity: plutusInt(root.fields[3], 'totalLiquidity'),
@@ -146,7 +147,7 @@ export function validateV2Candidate(utxo, assets, datumJson) {
   if (nftQuantity !== 1n) reasons.push('POOL_AUTH_NFT_QUANTITY_NOT_ONE')
   if (!datum) return { status: 'UNQUALIFIED_DATUM', reasons, datum: null, lpAsset: null }
 
-  if (datum.poolBatchingStakeKeyHash !== V2_POOL_STAKE_KEY_HASH) reasons.push('POOL_BATCHING_STAKE_CREDENTIAL_MISMATCH')
+  if (datum.poolBatchingStakeScriptHash !== V2_POOL_BATCHING_STAKE_SCRIPT_HASH) reasons.push('POOL_BATCHING_STAKE_CREDENTIAL_MISMATCH')
   const usdmInPair = assetUnit(datum.assetA) === exactUnit || assetUnit(datum.assetB) === exactUnit
   if (!usdmInPair) reasons.push('USDM_NOT_IN_DATUM_ASSET_PAIR')
   if (datum.assetA.policyId === datum.assetB.policyId
@@ -187,7 +188,7 @@ export function validateV2Candidate(utxo, assets, datumJson) {
     status: reasons.length === 0 ? 'MATCH' : 'UNQUALIFIED',
     reasons,
     datum: {
-      poolBatchingStakeKeyHash: datum.poolBatchingStakeKeyHash,
+      poolBatchingStakeScriptHash: datum.poolBatchingStakeScriptHash,
       assetA: datum.assetA,
       assetB: datum.assetB,
       totalLiquidityRaw: datum.totalLiquidity.toString(),
@@ -307,7 +308,8 @@ async function main() {
       protocol: 'MinswapV2',
       poolValidatorAddress: ADDRESS,
       expectedPoolScriptHash: V2_POOL_SCRIPT_HASH,
-      expectedPoolBatchingStakeKeyHash: V2_POOL_STAKE_KEY_HASH,
+      expectedPoolAddressStakeKeyHash: V2_POOL_ADDRESS_STAKE_KEY_HASH,
+      expectedPoolBatchingStakeScriptHash: V2_POOL_BATCHING_STAKE_SCRIPT_HASH,
       expectedPoolAuthenticationNft: V2_POOL_AUTH_NFT,
       exactAsset: ASSET,
     },
