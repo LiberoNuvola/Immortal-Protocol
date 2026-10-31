@@ -6050,3 +6050,51 @@ The separate `genesis-trust-manifest-preprod-v6.json` is `VERIFIED`: it records 
 The scanner's set counter is the number of ScheduledChange plus ForcedChange logs. Review of the full artifact shows all 4,408 ScheduledChange logs have delay 0; all 26 ForcedChange logs have delay 30 and occur before block 534,962, with each `median_last_finalized + delay` at least 370 blocks before its digest header. Therefore the delayed forced changes have already passed their enactment boundary well before the set-4343 transition at block 2,455,115 and the target at 2,509,824. This supports the late-height set-ID mapping in this artifact, while a general-purpose replay should still model and test enactment semantics explicitly rather than relying on this chain-specific distribution.
 
 **Additional next-step focus:** the target justification is for round 1253 and exact block 2,509,824; the isolated snapshot voter log says set 4343 and round 1264 finalized block 2,509,826 with 5/5 weight. Capture raw signed blocks/justifications at 2,455,115 (set-4343 activation), 2,455,116, 2,509,528 (set-4434 activation), 2,509,824, and 2,509,826 from both public WebSocket routes and the isolated snapshot where available. Bind every proof to its exact header and verify only under the set ID active at that height. This should distinguish a stale retained justification from a voter process that continues to operate with stale auxiliary set state. Do not treat the local snapshot's mock main-chain follower as validator evidence; the probe runs isolated and its warning explicitly labels that mode development-only.
+
+
+## Agent C addendum — five-block GRANDPA witness window and signer-set diagnostics (2026-10-31)
+
+### Exact-target acquisition
+
+The read-only matrix workflow [#41176176923](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41176176923), commit `8498b9ff7bd16786b0061b6ef04372ca77e98784`, completed successfully for all five requested targets. Each job acquired the target over the public WebSocket RPC and independently fetched the same target over public HTTP RPC. All five comparisons reported `HEADER_BOUND_BOTH_ROUTES`: the genesis identity matched, target number/hash matched, and canonical header fields matched across the two routes.
+
+| Target block | Hash | WebSocket FRNK | HTTP FRNK | Raw WS justification SHA-256 |
+|---:|---|---:|---:|---|
+| 2,455,115 | `bee05dbe7e3f712c129603fc0e32c744b3af38aba69836bed66c9ce6b7982ff8` | 1 | 0 | `500d24d5a9b111d074e2ce5b7eb062bf20ca32effe5e2904e5106ebbdffdd48c` |
+| 2,455,116 | `08d636928c9180958cc014807a7bcf29b748b4bc2bf159c8a9104b0ae5bd096b` | 0 | 0 | — |
+| 2,509,528 | `fe39a600a08a402546464f105c321ec07bab4670cb779c04b5a79b7e8a96dd5e` | 1 | 0 | `021dda878d042cccdffa4c1c5ebf05eca7d84e0db3c28ae11df955c6b0ee4fa7` |
+| 2,509,824 | `0f3b29d5c6285fdfe92e4f4ba8dfc13904c78b9a43fa6a4a7bf952da5d4d913e` | 1 | 0 | `6b26b94c600b9b59ce7f80300873a28f5ab50dd9a0cda85be1cfff73938b7c1d` |
+| 2,509,826 | `ad5479c405ee2f4ebf29c345c072e311037294acbba48ff1a4850b161c7a13da` | 0 | 0 | — |
+
+Artifacts (run #41176176923):
+- block 2,455,115: artifact #13033446328, SHA-256 `f8c5da94176f97b2cc8a5d6e19f6ca1a8a8a45a18c206193919bfdef174c2c8b`
+- block 2,455,116: artifact #13033290833, SHA-256 `d96fc444df409b2f6768a6583a24eb8597169f5c8f1e251ec4c8b03f1256b579`
+- block 2,509,528: artifact #13033305816, SHA-256 `54f41bb89627b8e2c48af136e276ea1ebdc9dd3e951b51e14651ebacac24c59c`
+- block 2,509,824: artifact #13032806285, SHA-256 `a2b007d729d2a110daf3ca4055586216e5fe20710059634062d031394ef00759`
+- block 2,509,826: artifact #13032887077, SHA-256 `9d3030393cfe79d66c7811f16bc7d4e0a1c59b92364f65de6067d01a738929bb`
+
+The HTTP route returned the exact headers but no FRNK justification at any of the five targets; the WebSocket route exposed raw justifications at 2,455,115, 2,509,528 and 2,509,824. Therefore the HTTP route's missing `justifications` field is an acquisition-path limitation, not evidence that those target headers lack a GRANDPA justification. The two routes are header-consistent, but their justification availability differs.
+
+### Localized-signature diagnostic across the three captured justifications
+
+The three raw FRNK payloads were SCALE-decoded. Each commits to the exact requested target hash and number and contains four precommits. Exhaustive Ed25519 localized-payload checks over candidate set IDs 0..4999 found all four signatures valid only at:
+- block 2,455,115: round 2542, candidate set ID **4251** (4/4);
+- block 2,509,528: round 2542, candidate set ID **4342** (4/4);
+- block 2,509,824: round 1253, candidate set ID **4343** (4/4).
+
+None of these three payloads verifies under candidate set ID 4434. The four signer public keys are members of the five-key authority list observed at the 2,509,824 target, but this diagnostic does not authenticate historical authority membership or the active set at the earlier blocks. Candidate IDs are cryptographic localized-payload matches, not promoted trust anchors.
+
+This materially strengthens the stale-voter hypothesis: at the exact 2,509,824 target, the previously captured local snapshot runtime API and direct storage both report set ID 4434, while the exact-target justification's four signatures match set ID 4343. The local snapshot voter startup log also reports set ID 4343. However, the two earlier witnesses match 4251 and 4342 respectively, and both carry round 2542; the target witness carries round 1253. The round discontinuity and historical active-set mapping still require explanation.
+
+### Important correction to digest replay interpretation
+
+The existing `scan-grandpa-digest-history.mjs` computes `replayed_set_id_from_change_logs` by simply counting every ScheduledChange plus ForcedChange digest. It verifies header continuity and FRNK SCALE decoding, but it does **not** model scheduled/forced enactment, pending changes, cancellation/supersession, or the exact state transition timing at each target. Therefore the per-height values 4343 at block 2,455,115 and 4434 at block 2,509,528 are digest-log ordinals, not yet independently established active GRANDPA set IDs. The target runtime value 4434 at block 2,509,824 is independently observed from the local snapshot state probe; it must not be retroactively assumed for the earlier targets.
+
+A follow-up read-only attempt to query historical runtime API/storage state from the public HTTP endpoint returned `UnknownBlock: State already discarded` at all five targets. This confirms historical state pruning on that public route. The local snapshot evidence remains available only for the exact target 2,509,824.
+
+### Next bounded work
+
+1. Correct the replay model to enact ScheduledChange and ForcedChange according to GRANDPA semantics, including parent/target boundary timing, and test against exact-target runtime observations where retained state exists. Do not call a digest count an active set ID.
+2. Obtain historical state from a source that actually retains it (the existing isolated snapshot, if it contains those heights, or another already-configured archive source); do not infer historical state from public HTTP's pruned responses.
+3. Explain why the 2,455,115 and 2,509,528 payloads use round 2542 while the 2,509,824 payload uses round 1253, and whether those proofs were emitted by different voter instances or after a voter restart.
+4. Keep B3-A OPEN. No justification has yet been accepted against a genesis-rooted, correctly enacted historical authority-set chain. No external request to Flux Point was made; acquisition used only existing public RPC endpoints. No transactions or on-chain changes occurred.
