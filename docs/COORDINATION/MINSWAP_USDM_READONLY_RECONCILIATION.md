@@ -345,3 +345,18 @@ DanoNight's public stablecoin tracker (last updated **2026-10-30**) states that 
 This is another separately operated on-chain indexer/market calculation, useful for triangulating ADA-per-USDM and cross-DEX methodology. It is not a separate DEX venue: its price inputs are Minswap and WingRiders. Its USD number is not independent because it uses CoinGecko ADA/USD; its relative peg is a basket-relative statistic, not issuer reserve proof or a USD redemption quote.
 
 The SuperCardano snapshot on 2026-10-31 returned `5.094192535453990358` ADA/USDM from its current Minswap V2 price surface. The difference to DanoNight's prior-day `5.1600` is approximately **1.29%**, but this is not a valid same-time disagreement: timestamps differ by about a day and the pool selection differs (Minswap V2-only price surface vs deepest pool across Minswap and WingRiders). Keep both as dated source observations; do not average them or use the difference as a depeg assertion.
+
+
+## 23. Danogo CLMM first successful on-chain structural reconciliation
+
+The corrected Danogo observer completed in Actions run [41222679601](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41222679601), source commit `774f5fed4d49452f5bcc288412178db7dfd25975`. The syntax-check gate for all read-only observers/reconcilers also passed, as did the 12-test Minswap V2 suite.
+
+Result: **12/12 Danogo USDM pool NFTs** discovered from SuperCardano had exactly one current Koios UTxO; **12/12 payment credentials matched** the official Danogo pool script hash; **12/12 inline datums decoded** under the official 12-field schema; all 12 contained the exact USDM asset; and **12/12 active reserve pairs matched** SuperCardano after applying the official SDK reserve convention. Zero missing UTxOs, cardinality errors, datum failures or active-reserve mismatches.
+
+The first Danogo attempt (run 41222319647) incorrectly treated `tokenX`/`tokenY` as AssetClass constructors; the official SDK encodes them as two-element Plutus lists. After that fix, the next attempt (run 41222462250) compared raw UTxO Value with SuperCardano's active reserves and reported 11 false reserve mismatches. The SDK's `calculateConcentratedPoolSwap` shows the correct active reserve calculation: subtract `platformFeeX/Y`; if `tokenX` is ADA, also subtract 3 ADA plus `totalSwapFee`. The observer now follows this exact rule. The 12/12 match result supersedes the raw-Value comparison.
+
+Danogo artifact ID `13050861231`, ZIP SHA-256 `7f7cafed23f1e7dfa738fbe2eea2bfd5efabce6390986fbbe50620e673b556e0`; extracted JSON SHA-256 `1f1f6af61a272fa6cdec40e22788cbce2f426a6c76215667e10711e96d66d0d4`.
+
+**Reward limitation:** 3 ADA-paired pools have `lastWithdrawEpoch` behind the observed current epoch. The official SDK may add staking rewards to the ADA-side active reserve when a staking reference UTxO is supplied. This observer has not resolved that separate staking UTxO, so `rewardAmount=0` is explicitly assumed and the 3 pools are flagged `rewardEpochBehind`. This is a structural reserve match under the published no-reward input, not an executable CLMM quote. The other 9 pools have no such epoch-behind flag.
+
+**Freshness:** among the 12 SuperCardano Danogo pool records, 5 were updated within 24h, 2 within 1–7d, and 5 are older than 7d. Current UTxO existence does not itself prove meaningful trading liquidity; do not count old pool records as live market depth.
