@@ -6331,3 +6331,17 @@ Further dependency/source research refines the AuxStore extraction route:
 **Implementation gate:** only after an authorized local snapshot copy is made available, first hash and inspect its archive manifest/backend metadata; then list the RocksDB column families without mutation, open the copy with the pinned `rocksdb 0.21.0` read-only API, and extract only the three AUX keys from column 8. Preserve original archive/database hashes and emit a separate extraction manifest. If backend or CF layout differs, stop rather than guessing.
 
 The new classifier trigger commit `cf5b41f86bb69c5e277d52cfbb91d933e4148cdd` still has no independently observed workflow run in the available GitHub connector surface; do not claim the rerun passed.
+
+
+## Agent C — exact pinned RocksDB 0.21.0 read-only API verified (2026-10-31)
+
+The previous implementation gate is narrowed by inspecting the exact upstream Rust wrapper tag `v0.21.0`, not the latest docs:
+
+- GitHub source `rust-rocksdb/rust-rocksdb`, tag `v0.21.0`, file `src/db.rs`, blob `1cd44ac9dcac9f09e3837ca37c9fc6c8dfb36cfa`.
+- The pinned wrapper source defines `DBWithThreadMode::open_cf_for_read_only(opts, path, cfs, error_if_log_file_exist)` and `open_cf_descriptors_read_only(opts, path, cfs, error_if_log_file_exist)`; both route through internal `AccessType::ReadOnly`. It also defines `open_for_read_only`. This directly verifies the API exists in exact `rocksdb 0.21.0`.
+- The source also defines read methods `get_cf` / `get` (plus iterator APIs), so a separate minimal extractor can open the known AUX CF read-only and retrieve the three known keys without using `sc-client-db::utils::open_database`.
+- This confirms the low-level read-only API candidate from the prior note. It does **not** establish the snapshot backend, CF names, whether its RocksDB lock/WAL state permits opening read-only, or that the proposed extractor builds/runs against the snapshot. Do not claim a successful open or extraction.
+- The corrected historical-state workflow is present on Agent C branch at blob `054c6d092c06931b51f28122a13e5c1a78673eb1`; it computes per-parent/target `state_status` and derives top-level status. Connector lookup for commit `cf5b41f86bb69c5e277d52cfbb91d933e4148cdd` still returned no PR-triggered workflow runs (the connector wrapper is filtered to PR-triggered runs), so a fresh push-triggered run remains unverified.
+- The checkpoint branch currently resolves to commit content blob `971dac1e8bf36050c8897250bd74c35d5d5feb38` at the time of this update. No snapshot, external Flux Point request, chain operation, or runtime/V3/Reveal change was made.
+
+**Next gate:** when an authorized local snapshot copy is supplied, verify its archive hash/backend/CF metadata first, then compile a tiny standalone extractor pinned to `rocksdb = "=0.21.0"` and open only the copy with `open_cf_for_read_only`; stop on any backend/CF mismatch. Keep B3-A OPEN until the AUX bytes and GRANDPA state decode are actually observed.
