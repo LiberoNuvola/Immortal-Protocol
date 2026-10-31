@@ -384,3 +384,31 @@ The public contract integration spec for `Flux-Point-Studios/saturnswap-filler` 
 First scan: Actions run [41223310574](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41223310574), artifact ID `13050900935`, ZIP SHA-256 `32b82d1047d601ba6c42ee428e9de5f4b5de373b05292b0ad4c22daadfc3736d`. Two deployments were read successfully (1% V2: 3 UTxOs; 1% V3: 2 UTxOs); the 4% legacy run-off address timed out in Koios. Across the 5 successfully scanned UTxOs, all datums decoded and there were **0 direct USDM/ADA orders**, so no best bid/ask could be derived. The 5 orders were other pairs (SARA/ADA and FRENCHIE/ADA), not USDM. The result is `READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL`, with 1 source error and incomplete deployment coverage.
 
 Interpretation: SaturnSwap is a genuinely separate CLOB venue and adds market-structure diversity versus AMMs, but this snapshot does not provide a USDM/ADA quote. The 4% legacy book remains unobserved due timeout; do not claim the entire SaturnSwap orderbook is empty. Retry that address or use a second indexer before closing the coverage gate. No order was filled/cancelled/signed/submitted; no USD/peg/oracle qualification.
+
+
+## 18. Expanded venue/indexer census and orderbook qualification boundaries
+
+Run [41223929195](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41223929195) completed all 11 read-only jobs successfully; 19/19 focused tests passed. Same-run source census:
+
+| Source / venue | Observed result | Classification |
+|---|---:|---|
+| Minswap API | 43 pools: 31 V2, 8 V1, 4 Stable | DEX API + same-venue metrics |
+| Koios Mainnet | 31 exact-USDM Minswap V2 pool UTxOs | On-chain indexer view |
+| SuperCardano | 81 pool records across 9 venue families | Independent indexer; not a separate venue |
+| Danogo CLMM | 12/12 current pool UTxOs match | Separate DEX venue; CLMM pricing still requires active-range/reward/fee math |
+| GeckoTerminal | 20 exact-USDM pools: 19 Minswap, 1 SaturnSwap | Secondary market indexer |
+| DEX Screener | 5/31 known Minswap V2 pairs exactly returned | Secondary market indexer; incomplete coverage |
+| MuesliSwap API | `SOURCE_UNAVAILABLE`, zero results | No conclusion about market presence |
+| SaturnSwap CLOB | 0 direct USDM/ADA orders in 20,026 scanned UTxOs | Separate orderbook venue; legacy 4% scan incomplete |
+| WingRiders V2 | First corrected run 1/6; pool selector subsequently fixed | Separate DEX venue; latest rerun pending |
+
+The GeckoTerminal SaturnSwap listing is not sufficient to admit a quote: the on-chain CLOB observer found no direct USDM/ADA orders in the fully scanned current 1% V2 and V3 deployments, and the 4% run-off book remains incomplete beyond 20,000 rows. Do not convert the GeckoTerminal pool display into a SaturnSwap executable quote.
+
+The first WingRiders observer treated user-held fungible share tokens as multiple pool outputs. The selector now filters by exactly one pool validity NFT `L` and the official V2 pool payment script credential; SuperCardano's `lp` metric is retained but not assumed equivalent to the share reserve inside the pool UTxO. A subsequent runtime error in the output evidence serialization was fixed; see the latest CI run before using any WingRiders result.
+
+These sources represent three different layers and must not be conflated:
+1. **Venue diversity:** Minswap, Danogo, WingRiders, SundaeSwap, VyFi, CSwap, Splash, MuesliSwap, SaturnSwap.
+2. **Indexer diversity:** Koios, SuperCardano, GeckoTerminal, DEX Screener, DanoNight; multiple indexers can still describe the same venue/ledger state.
+3. **USD reference diversity:** CoinGecko ADA/USD, Pyth, Charli3, Orcfax or other genuinely separate fiat-reference sources. These need their own source, freshness, methodology and free-tier qualification gates.
+
+No source in this census independently proves USDM/USD parity or issuer redemption/reserves. Option B remains unqualified until market/price evidence is independently validated and the existing EEV/R1-Kc gates close.
