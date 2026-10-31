@@ -198,3 +198,12 @@ Evidence artifact: [minswap-v2-usdm-mainnet-readonly-41204050705](https://github
 **Interpretation limit:** `MATCH` means exact asset pair membership, official V2 payment script, batching Script credential, Pool NFT, derived LP asset, supported datum shape, positive reserves, allowed Value composition, and Value-reserve lower bounds all passed. It does **not** mean Minswap API market data has been reconciled, nor that any USDM/USD price, peg, oracle source, EEV or deployment is qualified. Minswap API collection remains a separate next step; Minswap API and GeckoTerminal are the same DEX venue, not independent venues.
 
 A follow-up source correction at commit `3c500e192389c16c87eee2e3bb3db9534876f498` makes the per-candidate `qualification` label reflect the structural MATCH without implying oracle qualification. Its workflow rerun is pending at the time of this record.
+
+
+## 15. Confirmed structural snapshot after qualification-label correction
+
+A second read-only Mainnet run [41204297344](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204297344) tested source commit `3c500e192389c16c87eee2e3bb3db9534876f498`. The focused test job and observer job both succeeded. The observer returned 31 candidates, all **31 MATCH**, no validation reasons, one complete pagination page, and every per-candidate qualification label is now `POOL_IDENTITY_AND_RESERVE_STRUCTURE_MATCH_NOT_ORACLE_QUALIFICATION`.
+
+Artifact ID `13043476858`, ZIP SHA-256 `57ce6478ecedec6fb522271eedba921ed3a5c62904a567cb94c55fe671674af0`; extracted JSON SHA-256 `76b74901b312a4754673dacfa7f2d787bc0baeb3c94fe7259f88242f7370a8c8`. This confirms the label fix and repeats the structural census. It does not add market price qualification.
+
+A dedicated read-only Minswap API collection job was added to `.github/workflows/minswap-v2-observer-tests.yml` and the collector's cross-protocol pool key was fixed to prevent one protocol family overwriting another. The first API collection run is pending.
