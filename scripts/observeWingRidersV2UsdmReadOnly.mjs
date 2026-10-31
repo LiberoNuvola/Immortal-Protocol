@@ -236,8 +236,14 @@ async function main() {
     })
   }
   const factoryTokenUtxoCount = factoryTokenRows.length
+  // Share tokens are fungible and may be held by many wallets. The actual
+  // pool UTxO is distinguished by exactly one validity token L and an official
+  // pool validator payment credential; do not treat LP-holder UTxOs as pools.
+  const officialPoolCredentials = new Set(Object.values(MAINNET_POOL_SCRIPT_HASHES))
   const byShare = new Map()
   for (const row of poolResponse.json) {
+    if (quantityOf(row, validityTokenUnit) !== 1n) continue
+    if (!officialPoolCredentials.has(String(row.payment_cred ?? '').toLowerCase())) continue
     for (const a of row.asset_list ?? []) {
       const shareUnit = String(a.policy_id ?? '').toLowerCase() + String(a.asset_name ?? '').toLowerCase()
       if (shareMap.has(shareUnit)) {
@@ -293,8 +299,9 @@ async function main() {
       const scReserveA = BigInt(String(sameOrder ? pool.reserveA : pool.reserveB))
       const scReserveB = BigInt(String(sameOrder ? pool.reserveB : pool.reserveA))
       const reserveMatch = activeA === scReserveA && activeB === scReserveB
+      // SuperCardano lp metric is retained for audit but is not assumed
+      // semantically identical to the share-token reserve in the pool UTxO.
       const scLp = pool.lp === null || pool.lp === undefined ? null : String(pool.lp)
-      const shareQtyMatchesSupercardano = scLp === null || shareQty.toString() === scLp
       const assetCount = (utxo.asset_list ?? []).length + 1 // include ADA
       const expectedAssetCount = datum.assetA.unit === '' ? 4 : 5
       if (assetCount !== expectedAssetCount) throw new Error('WINGRIDERS_POOL_ASSET_COMPOSITION_COUNT_INVALID')
@@ -309,7 +316,7 @@ async function main() {
         validityTokenQuantityRaw: validityQty.toString(),
         shareTokenQuantityRaw: shareQty.toString(),
         supercardanoLpQuantityRaw: scLp,
-        shareQtyMatchesSupercardano,
+        supercardanoLpMetricRaw: scLp,
         paymentCredential,
         expectedPaymentCredential: expectedScriptHash,
         paymentCredentialMatchesOfficial: true,
@@ -415,7 +422,6 @@ async function main() {
       paymentCredentialOfficialMatches: results.filter((r) => r.paymentCredentialMatchesOfficial).length,
       factoryTokenUtxoCount: factoryTokenRows.length,
       factoryTokenQuantityRaw: factoryTokenTotal.toString(),
-      shareQtyMatchesSupercardanoCount: results.filter((r) => r.shareQtyMatchesSupercardano).length,
     },
     pools: results,
     limitations: [
