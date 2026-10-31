@@ -160,22 +160,29 @@ nohup env \
   CARDANO_ACTIVE_SLOTS_COEFF=0.05 \
   BLOCK_STABILITY_MARGIN=0 \
   "$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$NODE_BASE_PATH" \
-  --name immortal-b3-archive-probe --rpc-port 9945 --rpc-methods unsafe \
+  --name immortal-b3-snapshot-probe --rpc-addr 127.0.0.1 --rpc-port 9945 --rpc-methods unsafe \
   --state-pruning 256 --reserved-only --in-peers 0 --out-peers 0 --in-peers-light 0 \
   --listen-addr /ip4/127.0.0.1/tcp/0 --no-mdns --no-telemetry --no-prometheus -linfo \
   >"$LOG" 2>&1 </dev/null &
 NODE_PID=$!
+echo "Waiting for local RPC (maximum five minutes)"
 READY=false
-for _ in $(seq 1 60); do
+READY_DEADLINE=$((SECONDS+300))
+while (( SECONDS < READY_DEADLINE )); do
   kill -0 "$NODE_PID" 2>/dev/null || break
-  if rpc_result system_health '[]' >/dev/null 2>&1; then READY=true; break; fi
+  if curl --fail --silent --show-error --max-time 2 -H 'content-type: application/json' \
+    --data '{"jsonrpc":"2.0","id":1,"method":"system_health","params":[]}' \
+    http://127.0.0.1:9945 >/dev/null 2>&1; then
+    READY=true
+    break
+  fi
   sleep 2
 done
 [[ "$READY" == true ]] || {
   if grep -Eqi 'prun|database.*(mode|config)|config.*database' "$LOG"; then
-    fail SNAPSHOT_PRUNING_MODE_MISMATCH "snapshot DB refused archive pruning mode"
+    fail SNAPSHOT_PRUNING_MODE_MISMATCH "snapshot DB pruning mode did not match --state-pruning 256"
   fi
-  fail ARCHIVE_NODE_START_FAILED "node RPC did not become ready"
+  fail SNAPSHOT_NODE_START_FAILED "local RPC did not become ready within five minutes"
 }
 LOCAL_GENESIS="$(rpc_result chain_getBlockHash '[0]')" || fail LOCAL_GENESIS_QUERY_FAILED "genesis RPC failed"
 LOCAL_GENESIS="$(tr '[:upper:]' '[:lower:]' <<<"$LOCAL_GENESIS")"
