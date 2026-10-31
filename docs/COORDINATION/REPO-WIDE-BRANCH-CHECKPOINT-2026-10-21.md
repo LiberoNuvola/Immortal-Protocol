@@ -7051,3 +7051,11 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Charli3 reports OBSERVED_STALE_CHARLI3_ADA_USD: one exact NFT/address UTxO, one valid minimal price map, zero invalid. Raw integer 239761, precision omitted, timestamp 2026-05-27T05:21:30.404Z, expiry 2026-05-27T11:21:30.404Z. Expired; no decimal conversion and no current price admission.
 - ADA/USD public references: 8/10 available (5/7 CEX, 3/3 aggregators). Bid/ask midpoint range 0.19240900–0.19245500; all-source last range 0.19238600–0.19276400. Two unavailable CEXs are explicitly recorded; aggregators are not independent venues.
 - The full workflow still had SundaeSwap V3, WingRiders V2 and two cross-indexer reconciliation jobs in progress/queued at the time of this update.
+
+
+## 10.80 Agent A — Float reserve-aware reconciler scope fix (2026-10-31)
+
+- In run 41240334298, the expanded Float reconciler job downloaded same-run Float, Koios and Minswap API artifacts successfully but failed before output with ReferenceError: v is not defined.
+- Root cause: concurrent extension added API LP-unit and Float reserve comparison helpers, but referenced the block-scoped datum validation variable after its loop. Corrected to use c.datumValidation.lpAsset at commit 3b52da14a06fab42c5c554927402c19f6b4ddcfd.
+- No source acquisition failure. No new reconciliation artifact was produced in that run. Earlier 14/14 identity/pair result from run 41239467040 remains valid for its narrower logic; it is not a result of the newer reserve-aware reconciler.
+- Updated spec records the failure and fix. New workflow rerun pending.
