@@ -6035,3 +6035,18 @@ The exact-target witness artifact [#13032584596](https://github.com/LiberoNuvola
 4. Keep B3-A OPEN until a justification for the exact target verifies under the replayed active set and its transition provenance is independently accepted.
 
 No authority set is substituted, no V3/Reveal or protocol semantics are changed, no external request is made, and no on-chain action occurs.
+
+
+### Follow-up review of the replay implementation and genesis anchor
+
+A source-level review of `poc/materios-grandpa/src/scan-grandpa-digest-history.mjs` and its imported `hashMateriosHeader` helper confirms that the scan:
+- encodes each Substrate header in canonical SCALE field order and hashes it with Blake2b-256;
+- compares the recomputed hash with `chain_getBlockHash` at every height;
+- checks each header's parent hash against the immediately preceding verified header;
+- decodes FRNK ScheduledChange and ForcedChange SCALE payloads with length/trailing-byte checks.
+
+The separate `genesis-trust-manifest-preprod-v6.json` is `VERIFIED`: it records a recomputed genesis hash matching the configured anchor and GRANDPA authorities decoded from hash-bound raw genesis storage and cross-checked against the pinned Materios source. It explicitly still marks post-genesis authority-transition history and post-genesis GRANDPA finality as unverified. The digest scanner currently pins the same four genesis authorities directly in source rather than loading the manifest at runtime; a future hardening test should assert exact equality to the manifest and pin its digest.
+
+The scanner's set counter is the number of ScheduledChange plus ForcedChange logs. Review of the full artifact shows all 4,408 ScheduledChange logs have delay 0; all 26 ForcedChange logs have delay 30 and occur before block 534,962, with each `median_last_finalized + delay` at least 370 blocks before its digest header. Therefore the delayed forced changes have already passed their enactment boundary well before the set-4343 transition at block 2,455,115 and the target at 2,509,824. This supports the late-height set-ID mapping in this artifact, while a general-purpose replay should still model and test enactment semantics explicitly rather than relying on this chain-specific distribution.
+
+**Additional next-step focus:** the target justification is for round 1253 and exact block 2,509,824; the isolated snapshot voter log says set 4343 and round 1264 finalized block 2,509,826 with 5/5 weight. Capture raw signed blocks/justifications at 2,455,115 (set-4343 activation), 2,455,116, 2,509,528 (set-4434 activation), 2,509,824, and 2,509,826 from both public WebSocket routes and the isolated snapshot where available. Bind every proof to its exact header and verify only under the set ID active at that height. This should distinguish a stale retained justification from a voter process that continues to operate with stale auxiliary set state. Do not treat the local snapshot's mock main-chain follower as validator evidence; the probe runs isolated and its warning explicitly labels that mode development-only.
