@@ -7023,3 +7023,11 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Reference layer now has seven direct CEX spot sources plus three MARKET_DATA_AGGREGATOR observations. Aggregators are kept in a distinct category; they may reuse underlying exchange/DEX data and are not three extra venues or independent oracle networks.
 - CoinPaprika exposes last_updated, CoinGecko can expose last_updated_at, CoinLore currently returns no provider timestamp; freshness is treated accordingly.
 - Docs updated; ten-source live rerun pending. No aggregator or CEX value is used as USDM/USD peg evidence.
+
+
+## 10.75 Agent A — Orcfax on-chain CER observer reviewed (2026-10-31)
+
+- Reviewed the official Orcfax Mainnet feed registry version `2026.05.18.0001` and consumer documentation. The registry declares `ADA-USD` as CEX median, 3600s heartbeat, 1% deviation; `ADA-USDM` as DEX weighted mean, 3600s heartbeat, 2% deviation; both sponsored.
+- The observer `scripts/observeOrcfaxCerFeedsReadOnly.mjs` resolves the FS script hash via the FSP state NFT, scans FS token UTxOs, validates FS payment credential, exact feed-id prefixes, positive rational numerator/denominator, and provider-defined freshness. It captures transaction/block context and raw response hashes.
+- Source semantics: this is a distinct Cardano-native oracle publication channel, but ADA/USD is an aggregate of CEX inputs and ADA/USDM is an aggregate of DEX inputs. It is not a new market venue, not an issuer redemption price and not direct USDM/USD peg evidence.
+- No successful live Orcfax artifact has yet been inspected; the current run is queued behind prior read-only workflow runs. Do not claim feed values/freshness until the artifact is captured and inspected. No ratio orientation conversion until actual statement semantics are confirmed.
