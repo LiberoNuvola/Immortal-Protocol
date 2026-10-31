@@ -308,7 +308,7 @@ jobs:
   read-only-saturnswap-orderbook:
     if: ${{ github.event_name == 'push' }}
     needs:
-      - read-only-danogo-clmm-observation
+      - read-only-muesliswap-onchain-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -453,7 +453,7 @@ jobs:
   read-only-muesliswap-onchain-observation:
     if: ${{ github.event_name == 'push' }}
     needs:
-      - read-only-saturnswap-orderbook
+      - read-only-danogo-clmm-observation
       - read-only-muesliswap-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
