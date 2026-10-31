@@ -6950,3 +6950,13 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Pyth public Hermes feed list identifies Crypto.ADA/USD ID 2a01deaec9e51a579277b34b122399984d0bbf57e2458a7e42fecd2829867a0d without auth, but latest updates require an API key; metadata is free, live price is not assumed permanently free.
 - Charli3 mainnet ADA/USD feed discovered: address addr1wyvxns52tsgz8ggvrh4np5gjyfk0g5fshqq2ytvu9t7pe8qp3adw6; NFT policy 08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e; token name 4f7261636c6546656564. Published config: 5 nodes, 3/5 update threshold, 6h freshness/cadence, 15% deviation threshold, 2 signatories. Separate read-only observer still required.
 - No wallet, signing, transaction, oracle refresh, EEV, deployment, or chain write.
+
+
+## 10.72 Agent A — Float Minswap V2 coverage reconciliation complete (2026-10-31)
+
+- Actions run 41239467040 completed the Float collector, Koios Minswap V2 observer, Minswap API collector, and reconcile-float-indexer job successfully.
+- Float returned 58 exact-USDM markets across 12 venue families; 18 direct ADA/USDM rows (12 not stale, 6 stale).
+- Float exposed 14 Minswap V2 pools. All 14 matched same-run Koios LP pool keys and unordered datum asset pairs: 14/14; zero Float-only rows, zero pair mismatches, zero duplicate keys.
+- Koios had 31 Minswap V2 pools; 17 were absent from Float's asset-market response. Classification: Float provider coverage gap, not missing on-chain pools. Minswap API/Koios remains 31/31.
+- Reconciliation artifact ID 13056244341, ZIP digest b00032a14423db2aa4824506dfa13790f4f8048409ab8ac9056f11401d836870. Run URL https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41239467040.
+- Float is not exhaustive for Minswap V2 and is not a separate DEX venue or independent USD oracle. Its 18 direct ADA/USDM entries include six stale rows; none is promoted to a quote by this census.
