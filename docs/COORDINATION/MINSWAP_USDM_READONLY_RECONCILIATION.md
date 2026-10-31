@@ -156,6 +156,8 @@ Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic Plutus
 
 The implementation constants were cross-checked against the official Minswap V2 source: `PoolDatum` has ten fields; `min_pool_ada` is 4,500,000 lovelace; `compute_lp_asset_name` uses SHA3-256 over each concatenated policy/name pair and then over the two hashes; the deployed Mainnet batching stake key hash and Pool NFT identity match the pinned values already recorded above. See the official [Minswap V2 repository](https://github.com/minswap/minswap-dex-v2), particularly `lib/amm_dex_v2/types.ak`, `lib/amm_dex_v2/utils.ak`, and `deployed/mainnet/params.json`.
 
-**CI harness added:** `.github/workflows/minswap-v2-observer-tests.yml` runs the focused Vitest suite on relevant pushes to `work/immortal-green-closure` and pull requests. Workflow commit: `58188c06c4dc26a9707699bd6933f5502da3e9aa`. Its run result has not yet been verified.
+**CI harness added:** `.github/workflows/minswap-v2-observer-tests.yml` runs the focused Vitest suite on relevant pushes to `work/immortal-green-closure` and pull requests. Workflow commit: `58188c06c4dc26a9707699bd6933f5502da3e9aa`. Its first run is green: Actions run 41203141441, job decoder-fixtures; logs confirm 9/9 synthetic tests passed on Node 22.23.4 / Vitest 1.6.1.
 
-**Next gate:** verify the focused workflow run; then capture a real Koios UTxO fixture, compare its raw inline datum representation with the decoder, and only after that attempt a strictly read-only Mainnet reconciliation.
+**CI evidence:** 9/9 synthetic decoder tests passed in Actions run [41203141441](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41203141441), source commit 58188c06c4dc26a9707699bd6933f5502da3e9aa. This does not validate a real provider serialization.
+
+**Next gate:** capture a real Koios UTxO fixture, compare its raw inline datum representation with the decoder, and only after that attempt a strictly read-only Mainnet reconciliation.
