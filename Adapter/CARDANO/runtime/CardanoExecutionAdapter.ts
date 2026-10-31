@@ -50,8 +50,10 @@ type CmlTransactionLike = {
   body: () => {
     inputs: () => CmlInputListLike
   }
-  /** Exact serialization of this CML transaction, used only for in-flight integrity. */
-  to_bytes: () => Uint8Array
+  /** Legacy lucid-cardano exact serialization. */
+  to_bytes?: () => Uint8Array
+  /** Lucid Evolution exact, non-canonical CBOR serialization. */
+  to_cbor_hex?: () => string
 }
 
 type CompletedLucidTransactionLike = {
@@ -260,14 +262,28 @@ function readCompletedTransactionBytes(tx: unknown): Uint8Array {
   } catch {
     throw new Error('Unable to access completed Lucid transaction for integrity snapshot')
   }
-  if (!transaction || typeof transaction.to_bytes !== 'function') {
+  if (!transaction) {
     throw new Error('Completed Lucid transaction does not expose exact CML bytes')
   }
-  const bytes = transaction.to_bytes()
-  if (!(bytes instanceof Uint8Array)) {
-    throw new Error('Completed Lucid transaction returned malformed CML bytes')
+  if (typeof transaction.to_bytes === 'function') {
+    const bytes = transaction.to_bytes()
+    if (!(bytes instanceof Uint8Array)) {
+      throw new Error('Completed Lucid transaction returned malformed CML bytes')
+    }
+    return Uint8Array.from(bytes)
   }
-  return Uint8Array.from(bytes)
+  if (typeof transaction.to_cbor_hex === 'function') {
+    const hex = transaction.to_cbor_hex()
+    if (typeof hex !== 'string' || hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
+      throw new Error('Completed Lucid transaction returned malformed CML CBOR hex')
+    }
+    const bytes = new Uint8Array(hex.length / 2)
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16)
+    }
+    return bytes
+  }
+  throw new Error('Completed Lucid transaction does not expose exact CML bytes')
 }
 
 function assertCompletedInputReferencesUnchanged(
