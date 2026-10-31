@@ -1,6 +1,6 @@
 # Minswap USDM — read-only market / UTxO reconciliation
 
-**Status:** design and source reconnaissance; live execution not yet evidenced.  
+**Status:** source implementation and contract-bound decoder added; fixture/runtime and live execution not yet evidenced.  
 **Branch:** `work/immortal-green-closure`  
 **Scope:** Agent A only. No V3, Reveal, Materios, Kernel, Oracle consumer, EEV, R1/Kc, wallet, deployment or transaction changes.
 
@@ -75,6 +75,12 @@ Official source files:
 
 For V2, the contract source describes `PoolDatum` asset pair and reserve fields and requires consistency between reserve fields and the output `Value`. The observer must compare both, not choose one.
 
+## V2 decoder implementation status
+
+The read-only observer now implements a strict V2 PoolDatum JSON decoder for the published 10-field constructor and validates the configured batching stake key credential, canonical ordered asset pair, exact USDM membership, exact Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed output Value composition, and datum reserve quantities against output Value. The ADA reserve comparison follows the validator's `min_pool_ada = 4,500,000 lovelace` adjustment. Unsupported/missing datum JSON remains unqualified.
+
+This is a source implementation awaiting fixtures and runtime verification, not a live qualification.
+
 ## 6. Protocol-specific handling
 
 Do not share a single datum decoder across V1, V2 and StableSwap.
@@ -117,7 +123,7 @@ No mismatch is resolved by preferring the API or the chain without retaining bot
 - [ ] Verify exact asset lookup, all protocol pagination and all pool-history responses.
 - [ ] Confirm exact V1, V2 and Stable pool identities from official contract deployment material.
 - [ ] Implement/read-only UTxO acquisition per verified script address or Pool NFT.
-- [ ] Decode each datum family against source-verified schema; fail closed for unknown variants.
+- [ ] Decode each datum family against source-verified schema; fail closed for unknown variants. (V2 decoder source added; fixture/runtime verification pending.)
 - [ ] Reconcile API data to UTxO/value/datum at an aligned chain state.
 - [ ] Add fixtures/tests for orientation, decimals, duplicate pool identity, stale indexer, datum mismatch, incomplete pages and unsupported datum.
 - [ ] Record hashes, run identity, code commit, timestamps and limitations in an evidence packet.
