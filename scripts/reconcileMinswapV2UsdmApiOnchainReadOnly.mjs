@@ -119,6 +119,13 @@ async function main() {
         datumAssetB: datum.assetB,
         datumReserveARaw: datum.reserveARaw,
         datumReserveBRaw: datum.reserveBRaw,
+        datumFees: {
+          baseFeeANumeratorRaw: datum.baseFeeANumeratorRaw ?? null,
+          baseFeeBNumeratorRaw: datum.baseFeeBNumeratorRaw ?? null,
+          feeSharingNumeratorRaw: datum.feeSharingNumeratorRaw ?? null,
+          allowDynamicFee: datum.allowDynamicFee ?? null,
+          feeBasis: '10000',
+        },
         valueSurplusARaw: candidate.datumValidation.valueSurplusARaw,
         valueSurplusBRaw: candidate.datumValidation.valueSurplusBRaw,
         apiPoolProtocol: apiPool.protocol,
