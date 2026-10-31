@@ -6697,3 +6697,13 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - SundaeSwap V3 tests prove all 5 captured Koios datums decode; all 5 exact-USDM UTxOs pass script/NFT/pair/Value/protocol-fee structural checks; all 5 pool IDs, CIP-68 333 LP identities, asset pairs, reserve quantities and circulating LP values reconcile against the captured official SundaeSwap API records. Negative tests cover NFT quantity, API reserve and LP identity mismatch.
 - The earlier failed assertion was corrected: V3 datum does not store an ADA reserve field, so reserve consistency is checked by deriving it from Value/protocol fees and comparing with the official API current reserve. The structural decoder alone must not pretend to have an independent ADA reserve datum value.
 - The full run's read-only Mainnet Sundae V3 observer job is still pending behind serialized Koios jobs; live same-run 5/5 output is not claimed until that job and artifact are inspected.
+
+
+## 10.61 Agent A — SundaeSwap V3 live API/Koios reconciliation green (2026-10-31)
+
+- Full Actions run **41226055552** completed with conclusion `success`; all 15 jobs green, including decoder fixtures (3 files / 26 tests) and the same-run SundaeSwap V3 API/Koios observer.
+- Koios exact-USDM UTxOs at official V3 payment credential: **5**; payment credential matches: 5; inline datum: 5; strict structural validation: **5 MATCH / 0 UNQUALIFIED**.
+- Same-run official SundaeSwap API V3 pools: 5; API reconciliation: **5 MATCH / 0 MISMATCH / 0 API-only**. Checks cover pool identifier, CIP-68 222 NFT, CIP-68 333 LP asset identity, ordered asset pair, Value-derived reserves, protocol fees and circulating LP quantity.
+- Live observer artifact ID `13051323349`, ZIP digest `8d7f9695567386e96e936e39f4cb59f74bb95e09193ce42c1537e6e0fb607669`. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41226055552
+- This is structural pool/API evidence for Sundae V3 only. The 2 Sundae Stableswaps and 1 V1 API pools remain unqualified. No price/peg/oracle/EEV/deployment qualification is implied.
+- Subsequent code changes add the validated Sundae V3 constant-product reserve ratio to the cross-reference calculator (`f7cf66536fbc1e440c2a2d2649130fce4457c0fa`) and workflow dependencies/artifact transfer (`c8856b2f96ba3ad3b0bd818a7eb7ea9ae37b9cc2`). The resulting cross-reference rerun is pending.
