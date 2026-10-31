@@ -122,7 +122,7 @@ No mismatch is resolved by preferring the API or the chain without retaining bot
 - [ ] Execute the existing Minswap collector against Mainnet and preserve full output.
 - [ ] Verify exact asset lookup, all protocol pagination and all pool-history responses.
 - [ ] Confirm exact V1, V2 and Stable pool identities from official contract deployment material.
-- [ ] Implement/read-only UTxO acquisition per verified script address or Pool NFT.
+- [ ] Implement/read-only UTxO acquisition by exact asset, filtered to the verified script address.
 - [ ] Decode each datum family against source-verified schema; fail closed for unknown variants. (V2 decoder source added; fixture/runtime verification pending.)
 - [ ] Reconcile API data to UTxO/value/datum at an aligned chain state.
 - [ ] Add fixtures/tests for orientation, decimals, duplicate pool identity, stale indexer, datum mismatch, incomplete pages and unsupported datum.
@@ -161,3 +161,10 @@ The implementation constants were cross-checked against the official Minswap V2 
 **CI evidence:** 9/9 synthetic decoder tests passed in Actions run [41203141441](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41203141441), source commit 58188c06c4dc26a9707699bd6933f5502da3e9aa. This does not validate a real provider serialization.
 
 **Next gate:** capture a real Koios UTxO fixture, compare its raw inline datum representation with the decoder, and only after that attempt a strictly read-only Mainnet reconciliation.
+
+
+## 11. Mainnet acquisition attempt and targeted retry
+
+The first live read-only execution was attempted in Actions run [41203284220](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41203284220). Koios `/address_utxos` timed out with HTTP 504 on the first page after approximately 121 seconds. The raw error body and SHA-256 were preserved in the job log; no rows or datum were returned. This is classified as `SOURCE_UNAVAILABLE`, not as zero matching pools.
+
+To avoid enumerating every UTxO at the shared V2 validator address, the observer now uses Koios `POST /asset_utxos` with the exact USDM policy/name pair and a PostgREST `address=eq.<official-address>` filter, retaining `_extended: true` and the same explicit pagination. Official Koios examples document the `_asset_list` pair structure and extended UTxO fields. The exact-asset/address-filtered retry is queued automatically by the observer workflow; its outcome must be recorded separately. No fallback to ticker or approximate asset identity is allowed.
