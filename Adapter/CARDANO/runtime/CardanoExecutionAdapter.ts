@@ -472,15 +472,14 @@ export function createCardanoExecutionAdapter(
 
       const signedTx = await signCompletedTransaction(lucid, tx)
       const signedBodyBytes = readSignedTransactionBodyBytes(signedTx)
-      if (signedBodyBytes) {
-        assertByteSequencesEqual(
-          signedBodyBytes,
-          validatedTransactionBodyBytes,
-          'Signed transaction body changed after economic admission validation',
-        )
-      } else if (typeof lucid.signTx !== 'function') {
-        throw new Error('Native Lucid signing result does not expose inspectable CML transaction body bytes')
+      if (!signedBodyBytes) {
+        throw new Error('Signed transaction does not expose inspectable CML transaction body bytes')
       }
+      assertByteSequencesEqual(
+        signedBodyBytes,
+        validatedTransactionBodyBytes,
+        'Signed transaction body changed after economic admission validation',
+      )
       const transactionRef = await submitSignedTransaction(lucid, signedTx)
       if (!transactionRef.trim()) {
         throw new Error('Cardano submission returned an empty transaction reference')
