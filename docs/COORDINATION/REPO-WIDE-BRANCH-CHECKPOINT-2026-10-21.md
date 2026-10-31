@@ -6979,3 +6979,11 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Added workflow syntax/test and live observer job at commit cda2116aa59f0e58bad378e328a11d4e0306ce05. First live run pending.
 - No price is admitted into the cross-rate until live datum schema, exact symbols, scale, expiry, source quorum and freshness are verified.
 - No wallet, signing, transaction, oracle refresh, EEV, deployment or chain write.
+
+
+## 10.75 Agent A — direct ADA/USD CEX reference set expanded to seven (2026-10-31)
+
+- Extended scripts/collectAdaUsdPublicReferencesReadOnly.mjs at commit 6ec026b9a7a77ceb16ceae04127ddd782931e947 with Crypto.com Exchange (ADA_USD public ticker) and BTSE Spot (ADA-USD public price endpoint).
+- Crypto.com records last, best bid/ask and exchange timestamp. BTSE exposes last and index price but no bid/ask; the collector preserves both and does not synthesize a midpoint. Midpoint ranges include only sources with both bid and ask.
+- Seven direct ADA/USD CEX sources are now Coinbase, Kraken, Bitstamp, Gemini, Bitfinex, Crypto.com and BTSE. ADA/USDT and ADA/USDC remain excluded from the direct USD set.
+- Docs updated in USDM_USD_MULTI_SOURCE_CROSS_REFERENCE.md. First seven-source live rerun pending. These are CEX market references, not decentralized oracles or proof of USDM/USD parity.
