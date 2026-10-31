@@ -95,3 +95,21 @@ For the captured Mainnet candidate, this reconstruction yields active reserve AD
 The transient 45-second Koios timeout in run 41238599020 was not persistent. In run [41238996378](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238996378), the SundaeSwap V3 observer completed successfully: **5 rows, 5 payment credential matches, 5 inline datums, 5 structural matches, 0 unqualified, 5 API matches, 0 API mismatches, 0 API-only pools**. Artifact ID `13056956033`, ZIP SHA-256 `a368f846268a65c5ef131edfd3672045b4aafacb88a9254c6904fe347e19cb19`; extracted JSON SHA-256 `1e1577af21e3b7bd83fda706c937218c8aaf49e2bb4aa9e50b4d29e433355f87`.
 
 This is a new successful structural/API snapshot, not a new USD price or independent venue: it confirms the same five on-chain V3 pools match the same-run official SundaeSwap API. The downstream USDM/USD cross-reference in this run remains pending the other pool and market-data dependencies.
+
+
+## Integrated multi-venue / CEX snapshot — Actions run 41238996378
+
+The full read-only workflow completed successfully in [run 41238996378](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238996378). The resulting cross-reference artifact is `usdm-usd-cross-reference-readonly-41238996378` (artifact ID `13056627144`, ZIP SHA-256 `734820927de6375a0d80b7bbdcd2d7e2a8644da15f82dba8dad90e7c767acfac`; extracted JSON SHA-256 `c018...` to be recorded after exact digest verification).
+
+Primary observations:
+
+- **6 structurally checked ADA/USDM pools across 5 DEX venues:** 4 constant-product pools (Minswap V2, SundaeSwap V3, WingRiders V2, MuesliSwap) plus 2 Danogo CLMM pools using the official SDK virtual-reserve marginal formula.
+- **18 indicative cross-rates:** each of the six DEX pool observations crossed with three separate ADA/USD CEX references (Coinbase Exchange, Kraken, Bitstamp).
+- ADA/USDM marginal spot range: **4.99999919–5.27796218 ADA per USDM**. Indicative cross-rate range from the full Cartesian set: approximately **0.9630–1.0167 USD per USDM**. No average, peg band, outlier filter or qualification decision is made.
+- Danogo observer discovered 12 pool NFTs and matched all 12 current UTxOs structurally. Two direct ADA/USDM pools had reward state resolved by epoch and entered the CLMM calculation. Three additional ADA/USDM pools were excluded because the ADA-side reward amount is unresolved; seven other matched pools were not direct ADA/USDM pairs.
+- Pool UTxO ages at calculation ranged from **589 seconds to 158,844 seconds (~44.1 hours)**. Age is reported but no freshness threshold is applied. The cross-market observations are not atomic and the oldest pool observations must not be interpreted as fresh quotes.
+- CSWAP produced three separate provisional cross-rates (about **1.00619–1.00632 USD/USDM**) using the third-party Dexter SDK reconstruction. These are excluded from the primary 18 cross-rates and remain unverified against the deployed PlutusV3 validator.
+
+SaturnSwap CLOB result in the same run: 20,026 order UTxOs scanned across three deployments; no direct ADA/USDM orders were detected in the scanned rows, but the `saturn-v2-mainnet-4pct-runoff` deployment hit the pagination cap. Overall status remains `READ_ONLY_SATURNSWAP_ORDERBOOK_PARTIAL`, with 8 invalid rows and no best bid/ask. Therefore **zero detected orders is not proof of zero orders** and this source contributes no CLOB quote yet.
+
+These observations broaden the market reference set, but they are still research cross-rates—not an issuer redemption quote, not proof of a 1 USD peg, not a qualified oracle and not EEV evidence. Staleness, market depth, venue independence and reserve risk remain explicit limitations.
