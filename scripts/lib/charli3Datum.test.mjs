@@ -19,6 +19,22 @@ describe('Charli3 standard oracle datum decoder', () => {
     })
   })
 
+
+  it('accepts the official minimal datum when optional precision and symbols are omitted', () => {
+    const datum = c(0, [c(2, [map([
+      [0, i(239761)], [1, i(1779859290404)], [2, i(1779880890404)],
+    ])])])
+    const result = decodeCharli3Datum(datum)
+    expect(result.prices[0]).toMatchObject({
+      priceRaw: '239761',
+      timestampMs: '1779859290404',
+      expiryMs: '1779880890404',
+      precision: null,
+      baseSymbol: null,
+      quoteSymbol: null,
+    })
+  })
+
   it('merges shared price fields with local fields and reads extended metadata', () => {
     const datum = c(0, [
       c(0, [map([[3, i(6)], [6, b('ADA')], [7, b('USD')]])]),
