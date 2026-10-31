@@ -99,7 +99,7 @@ This is a new successful structural/API snapshot, not a new USD price or indepen
 
 ## Integrated multi-venue / CEX snapshot — Actions run 41238996378
 
-The full read-only workflow completed successfully in [run 41238996378](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238996378). The resulting cross-reference artifact is `usdm-usd-cross-reference-readonly-41238996378` (artifact ID `13056627144`, ZIP SHA-256 `734820927de6375a0d80b7bbdcd2d7e2a8644da15f82dba8dad90e7c767acfac`; extracted JSON SHA-256 `c018...` to be recorded after exact digest verification).
+The full read-only workflow completed successfully in [run 41238996378](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41238996378). The resulting cross-reference artifact is `usdm-usd-cross-reference-readonly-41238996378` (artifact ID `13056627144`, ZIP SHA-256 `734820927de6375a0d80b7bbdcd2d7e2a8644da15f82dba8dad90e7c767acfac`; extracted JSON SHA-256 `e3bcb527ca8fb2991e3bcf89ffa5c98a61335c42750531f7a557a6b5ee3001fe`).
 
 Primary observations:
 
