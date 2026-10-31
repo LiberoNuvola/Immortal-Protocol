@@ -384,6 +384,21 @@ function decodeSetId(hex: string): bigint {
   return value;
 }
 
+const GRANDPA_CURRENT_SET_ID_STORAGE_KEY =
+  "0x5f9cc45b7a00c5898a2d09463effcc78";
+
+function decodeStorageU64(hex: string): bigint {
+  const bytes = hexToBytes(hex, "Grandpa.CurrentSetId storage");
+  if (bytes.length !== 8) {
+    throw new Error("Grandpa.CurrentSetId storage must be exactly u64");
+  }
+  let value = 0n;
+  for (let i = 0; i < 8; i += 1) {
+    value |= BigInt(bytes[i]!) << BigInt(8 * i);
+  }
+  return value;
+}
+
 
 type RpcBatchCall = {
   method: string;
@@ -1264,6 +1279,49 @@ async function main(): Promise<void> {
   );
   const parentStateEndpoint = snapshotWindowBindingValid ? AUTHORITY_RPC : RPC;
 
+  const directStorageSetIdDiagnostic: {
+    status: string;
+    storage_key: string;
+    source_block_hash: string;
+    raw_value?: string | null;
+    decoded_set_id?: string | null;
+    runtime_api_set_id?: string;
+    matches_runtime_api?: boolean;
+    error?: string;
+    trust_scope: string;
+  } = {
+    status: "NOT_ATTEMPTED",
+    storage_key: GRANDPA_CURRENT_SET_ID_STORAGE_KEY,
+    source_block_hash: witness.blockHash,
+    trust_scope: "Diagnostic comparison only; storage/runtime state is not independently bound to GRANDPA finality.",
+  };
+  if (snapshotWindowBindingValid) {
+    try {
+      const rawStorageValue = await rpc<string | null>(
+        "state_getStorage",
+        [GRANDPA_CURRENT_SET_ID_STORAGE_KEY, witness.blockHash],
+        AUTHORITY_RPC,
+      );
+      directStorageSetIdDiagnostic.raw_value = rawStorageValue;
+      if (rawStorageValue === null) {
+        directStorageSetIdDiagnostic.status = "STORAGE_VALUE_NULL";
+      } else {
+        const directSetId = decodeStorageU64(rawStorageValue);
+        directStorageSetIdDiagnostic.decoded_set_id = directSetId.toString();
+        directStorageSetIdDiagnostic.runtime_api_set_id = setId.toString();
+        directStorageSetIdDiagnostic.matches_runtime_api = directSetId === setId;
+        directStorageSetIdDiagnostic.status = directSetId === setId
+          ? "DIRECT_STORAGE_MATCHES_RUNTIME_API"
+          : "DIRECT_STORAGE_RUNTIME_API_MISMATCH";
+      }
+    } catch (error) {
+      directStorageSetIdDiagnostic.status = "QUERY_FAILED";
+      directStorageSetIdDiagnostic.error = error instanceof Error ? error.message : String(error);
+    }
+  } else {
+    directStorageSetIdDiagnostic.status = "NOT_ATTEMPTED_NO_VERIFIED_SNAPSHOT";
+  }
+
   const observeGrandpaRoundState = async (endpoint: string) => {
     try {
       const rawResult = await rpc<unknown>("grandpa_roundState", [], endpoint);
@@ -1495,6 +1553,7 @@ async function main(): Promise<void> {
     },
     parent_state_diagnostic: parentStateDiagnostic,
     authority_set_state_window: authoritySetStateWindow,
+    direct_storage_set_id_diagnostic: directStorageSetIdDiagnostic,
     grandpa_round_state_diagnostic: grandpaRoundStateDiagnostic,
     authority_state: {
       source_block_hash: authorityStateSource,
