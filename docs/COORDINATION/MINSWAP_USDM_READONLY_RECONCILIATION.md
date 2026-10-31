@@ -321,3 +321,18 @@ Same-run source artifacts:
 - SuperCardano artifact ID `13050850055`, ZIP SHA-256 `147a61eefffab293dc52879a94456595ea517be1c966c1575dc02823571e4b5c`.
 
 **Boundary:** this validates pool identity, pair and reserve serialization for Minswap V2. It does not make SuperCardano or Minswap API independent DEX venues, does not independently validate USD conversion, USDM/USD peg, Moneta reserves, or a price oracle quorum. SuperCardano's non-Minswap pool list and trades are useful venue-discovery observations, but their freshness and venue-specific contract authenticity remain separate gates. Many of the 81 pool records are older than seven days; freshness buckets are recorded and must be used before interpreting them as live market depth.
+
+
+## 21. Danogo CLMM official identity and decoder gate
+
+The public official SDK `dano-finance/clmm-sdk` provides pinned Mainnet constants and the pool datum schema:
+
+- Mainnet pool NFT policy / pool script hash: `d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb`.
+- Mainnet pool script reference UTxO: `64d111b957e7d7848ffdde5149aa77fa4090a7fa1ad0ac108067900614848501#0`.
+- Mainnet protocol config reference UTxO: `2cafd7c92f7093e5229af274be83dea660b0590b4174bbed79ba662b44fbd1ee#0`.
+- The SDK identifies a pool by a unique token name under the pool script policy; it decodes an inline `PoolDatum` with 12 fields: tokenX, tokenY, LP fee rate, platformFeeX/Y, totalSwapFee, lower/upper sqrt price ratios, minX/Y change, circulating LP supply and last withdraw epoch.
+- `getPoolsFromOgmiosTx` finds pool outputs by the pool NFT policy and quantity 1, decodes the inline datum and extracts raw token reserves from the output Value. Its swap math subtracts platform fees and the ADA/min-ADA plus total-swap-fee reserve before calculating active reserves. This means a CLMM reserve ratio alone is not an executable marginal price; current sqrt range/liquidity and fee state matter.
+
+Added `scripts/observeDanogoClmmUsdmReadOnly.mjs` to take Danogo CLMM USDM pool keys discovered by SuperCardano, query those exact pool NFT policy/name pairs from Koios `/asset_utxos`, validate current NFT UTxO cardinality, decode the 12-field datum, verify exact USDM pair membership and compare raw Value reserves with the SuperCardano observation. The observer records payment credential vs the official pool script hash, datum CBOR/hash, output ref, block/time, and per-pool freshness. It makes public GET/POST read-only queries only; no wallet, signature, transaction, or chain write.
+
+The first run is pending. Important limits: this gate proves only current pool identity/datum/Value structure and independent indexer reserve agreement; it does not calculate the CLMM quote, USD price, peg, issuer reserves, or oracle qualification. Pool rows with no current NFT UTxO are recorded as missing/currently closed rather than assumed active.
