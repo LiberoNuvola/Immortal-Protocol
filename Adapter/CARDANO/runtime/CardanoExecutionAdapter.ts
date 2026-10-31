@@ -243,6 +243,14 @@ function readCompletedTransactionBytes(tx: unknown): Uint8Array {
     throw new Error('Economic submission requires a completed Lucid transaction')
   }
   const candidate = tx as CompletedLucidTransactionLike
+  if (
+    typeof candidate.toTransaction !== 'function' &&
+    !candidate.txComplete
+  ) {
+    throw new Error(
+      'Economic submission requires a completed Lucid transaction with toTransaction() or txComplete',
+    )
+  }
   let transaction: CmlTransactionLike | undefined
   try {
     transaction =
