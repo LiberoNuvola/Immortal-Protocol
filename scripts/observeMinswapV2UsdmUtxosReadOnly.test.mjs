@@ -88,6 +88,10 @@ describe('Minswap V2 PoolDatum decoder (synthetic fixtures)', () => {
     expect(result.datum.poolBatchingStakeScriptHash).toBe(STAKE)
     expect(result.datum.reserveARaw).toBe('7')
     expect(result.datum.reserveBRaw).toBe('16')
+    expect(result.datum.baseFeeANumeratorRaw).toBe('30')
+    expect(result.datum.baseFeeBNumeratorRaw).toBe('30')
+    expect(result.datum.feeSharingNumeratorRaw).toBe('1666')
+    expect(result.datum.allowDynamicFee).toBe(false)
     expect(result.lpAsset.assetNameHex).toBe('10ae5aabdad4fec6e5d061eafb681ae0989ee0ecc60224a3a638c228d9885907')
   })
 
