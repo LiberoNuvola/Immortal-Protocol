@@ -199,16 +199,25 @@ async function main() {
   const requested = [...shareMap.values()]
   if (requested.length === 0) throw new Error('WINGRIDERS_NO_USDM_POOLS_DISCOVERED')
 
+  const factoryTxHash = FACTORY_TOKEN_UTXO.split('#')[0]
   const [factoryResponse, poolResponse] = await Promise.all([
-    koios('/utxo_info', { _utxo_refs: [FACTORY_TOKEN_UTXO], _extended: true }),
+    // The official factory-token seed output is historical and already spent.
+    // /tx_info preserves the original output Value; /utxo_info would return
+    // an is_spent row without its original asset list.
+    koios('/tx_info', { _tx_hashes: [factoryTxHash] }),
     koios('/asset_utxos?limit=1000&offset=0', {
       _asset_list: requested.map(({ share }) => [share.policyId, share.assetNameHex]),
       _extended: true,
     }),
   ])
-  const factoryUtxo = factoryResponse.json.find((x) =>
+  const factoryTx = factoryResponse.json.find((x) => String(x.tx_hash).toLowerCase() === factoryTxHash)
+  const factoryUtxo = (factoryTx?.outputs ?? []).find((x) =>
     String(x.tx_hash).toLowerCase() + '#' + String(x.tx_index) === FACTORY_TOKEN_UTXO)
-  if (!factoryUtxo) throw new Error('WINGRIDERS_OFFICIAL_FACTORY_TOKEN_UTXO_NOT_FOUND')
+  if (!factoryUtxo) {
+    throw Object.assign(new Error('WINGRIDERS_OFFICIAL_FACTORY_TOKEN_OUTPUT_NOT_FOUND_IN_TX_INFO'), {
+      evidence: { factoryResponse: factoryResponse.evidence, factoryTx },
+    })
+  }
   const factoryToken = (factoryUtxo.asset_list ?? []).find((a) =>
     String(a.asset_name ?? '').toLowerCase() === FACTORY_TOKEN_NAME_HEX)
   if (!factoryToken) {
@@ -375,7 +384,14 @@ async function main() {
     startedAt,
     completedAt: new Date().toISOString(),
     acquisition: {
-      factoryUtxo: factoryResponse.evidence,
+      factoryTransaction: factoryResponse.evidence,
+      factoryOutput: {
+        txHash: factoryTxHash,
+        txIndex: Number(FACTORY_TOKEN_UTXO.split('#')[1]),
+        address: factoryUtxo.address ?? factoryUtxo.payment_addr?.bech32 ?? null,
+        value: factoryUtxo.value ?? null,
+        assetList: factoryUtxo.asset_list ?? [],
+      },
       poolAssetUtxos: poolResponse.evidence,
       requestedShareTokens: requested.map(({ share }) => share),
     },
