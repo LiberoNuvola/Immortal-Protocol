@@ -6750,3 +6750,15 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Cross-reference calculator updated at `48537de0efe4cbd9738d20a296d5035a78b65c41` to include MuesliSwap's verified ADA/USDM pool; workflow now downloads same-run Muesli artifact and depends on its observer at `f2999efecd32311bba79d6a6472014040c1a43ff`. Current run 41232463082 is exercising this integration; result pending.
 - Documentation updated at `945ea1aaf270864c9afefdf428e40c9b2dde1470`.
 - No oracle/peg/EEV/deployment qualification, no chain writes, and no V3/Reveal/Materios/Kernel/R1-Kc changes.
+
+
+## 10.49 Agent A — four DEX × three CEX cross-reference and Saturn CLOB coverage correction (2026-10-31)
+
+- Run 41232463082 completed successfully. Read-only cross-reference includes four distinct constant-product DEX venues: Minswap V2 5.14704289 ADA/USDM, SundaeSwap V3 5.11782952, WingRiders V2 5.17286012, MuesliSwap 5.27796218.
+- Three CEX ADA/USD spot references succeeded: Coinbase mid 0.193585, Kraken 0.193549, Bitstamp 0.193595. Four pool spots × three exchange mids = 12 derived combinations (not 12 independent oracles). Indicative USDM/USD cross-rate range 0.99055079–1.02178709.
+- Pool ages at calculation: Minswap ~1.0h, SundaeSwap ~19.1h, WingRiders ~34.1h, MuesliSwap ~42.7h. No freshness cutoff or averaging is applied; timestamps are non-atomic. This is not peg or oracle qualification.
+- Cross-reference artifact ID `13054296365`, ZIP digest `f058af4c0cadfd36a89ba2a0907e3aa6e7fc1ea24ad424863eb98bf0781454ce`, extracted JSON digest `67bdc6da9932b7f44752c3e0a2215fdc5e54a94fcfa027b7a8b5e723fb348274`.
+- SaturnSwap CLOB read-only scan in run 41232463082 scanned 20,026 UTxOs across three deployments, found 0 direct USDM/ADA orders in scanned rows, 48 invalid rows, and pagination incomplete. Prior console label `COMPLETE` was misleading because it ignored paginationComplete.
+- Corrected Saturn observer at `700c15881541bbd0a32912094a643177f1b12edb` so coverage is `PARTIAL` whenever any deployment pagination is incomplete or errors occur; added coverage classification tests at `c5e4248ed7d589afb8ccecd9e373b0dbb7d28090`. New CI run 41232826901 is pending. Do not treat the earlier 0-order result as a complete orderbook census.
+- Added `docs/COORDINATION/USDM_USD_MULTI_SOURCE_CROSS_REFERENCE.md` at `b96858ea2e3ed9748654ce7d8ad5ad6fa944ba29`.
+- Aggregators/indexers (SuperCardano, GeckoTerminal, DexScreener) are not counted as independent venues. Danogo CLMM and Sundae stables remain excluded pending curve math. No wallet, signing, transaction, chain write, oracle refresh, EEV or deployment action.
