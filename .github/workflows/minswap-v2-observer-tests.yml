@@ -24,6 +24,7 @@ on:
       - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
       - "scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs"
       - "scripts/collectMuesliSwapCardanoUsdmReadOnly.mjs"
+      - "scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs"
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs"
       - ".github/workflows/minswap-v2-observer-tests.yml"
   pull_request:
