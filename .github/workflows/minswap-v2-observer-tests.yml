@@ -33,3 +33,25 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Run synthetic decoder fixtures
         run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs --reporter=verbose
+
+  read-only-mainnet-observation:
+    # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Observe official Minswap V2 address on Mainnet (read-only)
+        run: node scripts/observeMinswapV2UsdmUtxosReadOnly.mjs --out audit/oracles/minswap-v2-usdm-utxos-readonly.json
+      - name: Upload raw UTxO and datum evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minswap-v2-usdm-mainnet-readonly-${{ github.run_id }}
+          path: audit/oracles/minswap-v2-usdm-utxos-readonly.json
+          if-no-files-found: warn
