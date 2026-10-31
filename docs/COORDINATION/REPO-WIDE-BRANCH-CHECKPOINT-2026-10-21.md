@@ -6689,3 +6689,11 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Six indicative cross-rates: Minswap 0.99427442–0.99473749; WingRiders 0.99962935–1.00009491 USDM/USD. No averaging/peg decision. The WingRiders UTxO is materially older; source age is explicit and no arbitrary freshness threshold was introduced.
 - Sundae V3 real-fixture tests in run 41225981040: 6/7 passed; the remaining test incorrectly expected a datum-vs-lovelace check even though Sundae V3 datum has no ADA reserve field. The correct invariant is cross-source: decoded ADA reserve from Value must match the official API's current quantityA. Test corrected at `d2f03fa17abcc6b92949d1bc19a647ef665c581a`; next run pending.
 - Matrix updated at `f1e095671f9c69e87e6c98b63dfce6ffc24f3587` with source-age/rate details. No price/peg qualification or economic parameter changes.
+
+
+## 10.60 Agent A — SundaeSwap V3 real-fixture CI green (2026-10-31)
+
+- Focused decoder job in Actions run **41226055552** (source commit `d2f03fa17abcc6b92949d1bc19a647ef665c581a`) is green: **3 test files, 26 tests passed** (Minswap V2, SaturnSwap orderbook, SundaeSwap V3 real fixtures).
+- SundaeSwap V3 tests prove all 5 captured Koios datums decode; all 5 exact-USDM UTxOs pass script/NFT/pair/Value/protocol-fee structural checks; all 5 pool IDs, CIP-68 333 LP identities, asset pairs, reserve quantities and circulating LP values reconcile against the captured official SundaeSwap API records. Negative tests cover NFT quantity, API reserve and LP identity mismatch.
+- The earlier failed assertion was corrected: V3 datum does not store an ADA reserve field, so reserve consistency is checked by deriving it from Value/protocol fees and comparing with the official API current reserve. The structural decoder alone must not pretend to have an independent ADA reserve datum value.
+- The full run's read-only Mainnet Sundae V3 observer job is still pending behind serialized Koios jobs; live same-run 5/5 output is not claimed until that job and artifact are inspected.
