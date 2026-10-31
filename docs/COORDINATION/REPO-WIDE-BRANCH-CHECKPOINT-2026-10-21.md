@@ -5910,3 +5910,47 @@ Commit `11d17e2eff1465fdc72ecea1f229dd157348f533` changes the snapshot node's lo
 If the local node's persisted voter set ID is 4343 while runtime storage is 4434, record a concrete snapshot aux-state/runtime-state discrepancy; if it is 4434, the shared WebSocket FRNK candidate is not valid under the local node's current set. In either case, retain fail-closed status until the full historical digest chain is reconstructed and the proof passes.
 
 **B3-A remains OPEN.** No 4343 promotion, no external request, no authority action, no transaction and no changes to protocol semantics, V3, Reveal or economic rules.
+
+
+## Agent C addendum — Snapshot-persisted GRANDPA voter set contradicts runtime set ID (2026-10-31)
+
+Exact-head workflow [#41174445548](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41174445548), commit `11d17e2eff1465fdc72ecea1f229dd157348f533`, completed with the real GRANDPA witness verification failing as before. The snapshot-state artifact [materios-snapshot-state-probe #13032587479](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41174445548/artifacts/13032587479) now includes the node's GRANDPA voter startup logs, collected with `-linfo,grandpa=debug`.
+
+### Snapshot node's persisted voter state
+
+The official Materios node, started from the checksum-verified snapshot in isolated FULL role (0 peers, no block import), logged:
+
+- `Starting new voter with set ID 4343`;
+- voter rounds 1263, 1264 and 1265 under set ID 4343;
+- round 1264 completed with finality target **block 2509826**;
+- precommit weight for round 1264: **5/5 actual**, threshold 4/5.
+
+This is a direct observation of the snapshot node's **persisted GRANDPA authority-set state**, loaded from its local GRANDPA auxiliary data. It is independent of the `GrandpaApi_current_set_id` runtime API query.
+
+### Exact contradiction at the same snapshot
+
+At target block **2509824**:
+- runtime API and direct `Grandpa.CurrentSetId` storage: **4434**;
+- `PalletSession.CurrentIndex`: **4434**;
+- direct `Grandpa.Authorities` storage matches runtime API's five authorities;
+- `Grandpa.PendingChange` and `Grandpa.Stalled`: absent;
+- the raw FRNK justification for block 2509824 has all four signatures valid under set ID **4343**, not 4434;
+- the snapshot node's persisted voter set is **4343** and it finalizes block 2509826 in that set.
+
+Therefore the 4343 match is not merely a mathematical search candidate: it matches the snapshot's persisted GRANDPA voter state and the set used by its completed finality round. Conversely, the runtime state at the same block is 91 set IDs ahead. This is a concrete **runtime-state / persisted-voter-state divergence inside the published snapshot**.
+
+**Trust boundary:** the snapshot node is isolated and has no peers; its aux voter state is a source observation, not an independently authenticated statement of the live network's canonical voter set. It may represent the snapshot publisher's persisted state, including a stale aux database. Do not promote 4343 as canonical solely from this log. The raw WebSocket candidate and snapshot voter log agree, but the runtime state disagrees.
+
+### Strongest next investigation
+
+The official Materios source's GRANDPA pallet increments `CurrentSetId` when `on_new_session` successfully schedules a change, and emits the corresponding FRNK digest in the block header. The snapshot has raw headers available at sampled heights as far back as **block 1509824**, despite state pruning 256. This opens an autonomous path:
+
+1. scan the retained historical headers from genesis to block 2509824;
+2. verify each header hash and parent link, anchored to the known genesis hash and exact target hash;
+3. decode every FRNK ScheduledChange / ForcedChange digest and replay the set-ID transitions;
+4. compare the replayed set ID and final authority list with runtime storage (4434) and snapshot voter aux state (4343);
+5. only then decide whether the snapshot aux state is stale, the runtime set counter is divergent, or the header chain contains missing/malformed authority-change evidence.
+
+The 256-block digest window had zero FRNK logs, and sampled headers at 2508824, 2499824, 2409824, 2009824 and 1509824 were all retrievable. A full historical scan is the next decisive step. The existing verifier remains fail-closed; no change to set-ID selection or signature verification has been made.
+
+**B3-A remains OPEN.** No authority set is promoted as canonical, no external request was sent, and no V3, Reveal, economic, authority-selector, wallet or on-chain behavior was changed.
