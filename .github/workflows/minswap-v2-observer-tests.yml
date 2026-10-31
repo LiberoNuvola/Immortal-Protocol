@@ -31,6 +31,9 @@ on:
       - "scripts/lib/danogoClmmMath.test.mjs"
       - "scripts/lib/cswapAmmMath.mjs"
       - "scripts/lib/cswapAmmMath.test.mjs"
+      - "scripts/lib/floatPoolIdentity.mjs"
+      - "scripts/lib/floatPoolIdentity.test.mjs"
+      - "scripts/reconcileFloatUsdmReadOnly.mjs"
       - "scripts/observeCswapUsdmPoolReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs"
@@ -90,6 +93,9 @@ jobs:
           node --check scripts/lib/danogoClmmMath.test.mjs
           node --check scripts/lib/cswapAmmMath.mjs
           node --check scripts/lib/cswapAmmMath.test.mjs
+          node --check scripts/lib/floatPoolIdentity.mjs
+          node --check scripts/lib/floatPoolIdentity.test.mjs
+          node --check scripts/reconcileFloatUsdmReadOnly.mjs
           node --check scripts/observeCswapUsdmPoolReadOnly.mjs
           node --check scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs
           node --check scripts/observeWingRidersV2UsdmReadOnly.mjs
