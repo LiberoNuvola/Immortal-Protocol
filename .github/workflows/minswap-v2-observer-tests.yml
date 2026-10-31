@@ -9,6 +9,7 @@ on:
       - "scripts/collectMinswapUsdmReadOnly.mjs"
       - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
       - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
+      - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs"
       - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
       - "scripts/observeDanogoClmmUsdmReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs"
@@ -49,6 +50,7 @@ jobs:
           node --check scripts/observeMinswapV2UsdmUtxosReadOnly.mjs
           node --check scripts/collectMinswapUsdmReadOnly.mjs
           node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
+          node --check scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs
           node --check scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
           node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
@@ -400,4 +402,27 @@ jobs:
         with:
           name: sundaeswap-usdm-api-readonly-${{ github.run_id }}
           path: audit/oracles/sundaeswap-usdm-readonly.json
+          if-no-files-found: warn
+
+  read-only-sundaeswap-v3-mainnet-observation:
+    if: ${{ github.event_name == 'push' }}
+    needs:
+      - read-only-sundaeswap-api-observation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Capture exact-USDM SundaeSwap V3 pool UTxOs (read-only)
+        run: node scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs --out audit/oracles/sundaeswap-v3-usdm-utxos-readonly.json
+      - name: Upload raw SundaeSwap V3 pool datum evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sundaeswap-v3-usdm-utxos-readonly-${{ github.run_id }}
+          path: audit/oracles/sundaeswap-v3-usdm-utxos-readonly.json
           if-no-files-found: warn
