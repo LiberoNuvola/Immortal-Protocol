@@ -453,7 +453,7 @@ jobs:
   read-only-muesliswap-onchain-observation:
     if: ${{ github.event_name == 'push' }}
     needs:
-      - read-only-danogo-clmm-observation
+      - read-only-supercardano-observation
       - read-only-muesliswap-observation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -464,8 +464,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Capture exact-USDM UTxOs at official MuesliSwap pool addresses (read-only)
-        run: node scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs --out audit/oracles/muesliswap-usdm-utxos-readonly.json
+      - name: Download same-run SuperCardano exact-USDM pool discovery
+        uses: actions/download-artifact@v4
+        with:
+          name: supercardano-usdm-readonly-${{ github.run_id }}
+          path: audit/indexer
+      - name: Capture exact Muesli pool NFT UTxOs on Mainnet (read-only)
+        run: node scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs --supercardano audit/indexer/supercardano-usdm-readonly.json --out audit/oracles/muesliswap-usdm-utxos-readonly.json
       - name: Upload raw MuesliSwap pool datum evidence
         if: always()
         uses: actions/upload-artifact@v4
