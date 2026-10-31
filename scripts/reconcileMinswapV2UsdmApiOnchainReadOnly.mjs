@@ -3,6 +3,7 @@
  * Reconcile exact-USDM Minswap V2 pool identities between:
  *   1) Koios Mainnet UTxO + decoded PoolDatum observations
  *   2) Minswap public API pool metrics
+ *   3) optional SuperCardano independent indexer pool/trade observation
  *
  * Read-only local artifact processing. No network, wallet, signing, or chain write.
  */
@@ -33,10 +34,14 @@ async function main() {
   const argv = process.argv.slice(2)
   const onchainPath = argValue(argv, '--onchain', 'audit/onchain/minswap-v2-usdm-utxos-readonly.json')
   const apiPath = argValue(argv, '--api', 'audit/api/minswap-usdm-readonly.json')
+  const supercardanoPath = argv.includes('--supercardano')
+    ? argValue(argv, '--supercardano', 'audit/indexer/supercardano-usdm-readonly.json')
+    : null
   const outPath = argValue(argv, '--out', 'audit/oracles/minswap-v2-api-onchain-reconciliation.json')
-  const [onchain, api] = await Promise.all([
+  const [onchain, api, supercardano] = await Promise.all([
     readFile(onchainPath, 'utf8').then(JSON.parse),
     readFile(apiPath, 'utf8').then(JSON.parse),
+    supercardanoPath ? readFile(supercardanoPath, 'utf8').then(JSON.parse) : Promise.resolve(null),
   ])
 
   if (onchain.network !== 'cardano-mainnet' || api.network !== 'cardano-mainnet') {
@@ -46,6 +51,11 @@ async function main() {
   if (api.exactAsset?.policyId?.toLowerCase() !== ASSET.policyId ||
       api.exactAsset?.assetNameHex?.toLowerCase() !== ASSET.assetNameHex) {
     throw new Error('API_EXACT_USDM_IDENTITY_MISMATCH')
+  }
+
+  if (supercardano && (supercardano.network !== 'cardano-mainnet' ||
+      supercardano.unit?.toLowerCase() !== exactUsdmUnit)) {
+    throw new Error('SUPERCARDANO_EXACT_ASSET_OR_NETWORK_MISMATCH')
   }
 
   const apiV2 = api.pools.filter((pool) => pool.protocol === 'MinswapV2')
@@ -132,8 +142,105 @@ async function main() {
     .filter((lpId) => !onchainByLp.has(lpId))
     .map((lpAssetUnit) => ({ lpAssetUnit }))
 
+
+  let supercardanoEvidence = null
+  if (supercardano) {
+    const prefix = 'minswap-v2:'
+    const scPools = (supercardano.pools ?? []).filter((pool) =>
+      String(pool.venue ?? '') === 'minswap-v2' &&
+      String(pool.key ?? '').startsWith(prefix))
+    const scByLp = new Map()
+    const duplicateScIds = []
+    for (const pool of scPools) {
+      const lpId = String(pool.key).slice(prefix.length).toLowerCase()
+      if (scByLp.has(lpId)) duplicateScIds.push(lpId)
+      else scByLp.set(lpId, pool)
+    }
+
+    const scMatched = []
+    const scOnchainOnly = []
+    const scPairMismatch = []
+    const scReserveMismatch = []
+    for (const [lpId, candidates] of onchainByLp) {
+      const pool = scByLp.get(lpId)
+      for (const candidate of candidates) {
+        if (!pool) {
+          scOnchainOnly.push({ lpAssetUnit: lpId, utxoRef: candidate.utxoRef })
+          continue
+        }
+        const datum = candidate.datumValidation.datum
+        const datumA = assetUnit(datum.assetA)
+        const datumB = assetUnit(datum.assetB)
+        const poolA = String(pool.assetA ?? '').toLowerCase()
+        const poolB = String(pool.assetB ?? '').toLowerCase()
+        const sameOrder = poolA === datumA && poolB === datumB
+        const reverseOrder = poolA === datumB && poolB === datumA
+        if (!sameOrder && !reverseOrder) {
+          scPairMismatch.push({ lpAssetUnit: lpId, utxoRef: candidate.utxoRef, datumPair: [datumA, datumB], supercardanoPair: [poolA, poolB] })
+          continue
+        }
+        const reserveA = String(sameOrder ? pool.reserveA : pool.reserveB)
+        const reserveB = String(sameOrder ? pool.reserveB : pool.reserveA)
+        const reserveMatches = reserveA === String(datum.reserveARaw) && reserveB === String(datum.reserveBRaw)
+        const row = {
+          lpAssetUnit: lpId,
+          utxoRef: candidate.utxoRef,
+          venue: pool.venue,
+          poolKey: pool.key,
+          poolHeight: pool.height,
+          poolTime: pool.time,
+          poolFreshnessAtSourceAsOf: pool.freshnessAtSourceAsOf ?? 'NOT_CLASSIFIED',
+          datumReserveARaw: String(datum.reserveARaw),
+          datumReserveBRaw: String(datum.reserveBRaw),
+          supercardanoReserveARaw: reserveA,
+          supercardanoReserveBRaw: reserveB,
+          reserveExactMatch: reserveMatches,
+        }
+        if (reserveMatches) scMatched.push(row)
+        else scReserveMismatch.push(row)
+      }
+    }
+    const scOnly = [...scByLp.keys()]
+      .filter((lpId) => !onchainByLp.has(lpId))
+      .map((lpAssetUnit) => ({ lpAssetUnit }))
+    const venueFreshness = {}
+    for (const pool of supercardano.pools ?? []) {
+      const venue = pool.venue ?? 'UNKNOWN'
+      venueFreshness[venue] ??= { total: 0, UNDER_24H: 0, ONE_TO_SEVEN_DAYS: 0, OVER_SEVEN_DAYS: 0, UNKNOWN: 0 }
+      venueFreshness[venue].total += 1
+      const bucket = pool.freshnessAtSourceAsOf ?? 'UNKNOWN'
+      venueFreshness[venue][bucket] = (venueFreshness[venue][bucket] ?? 0) + 1
+    }
+    supercardanoEvidence = {
+      source: supercardano.source,
+      startedAt: supercardano.startedAt,
+      completedAt: supercardano.completedAt,
+      sourceMeta: supercardano.sourceMeta,
+      summary: {
+        supercardanoPoolCount: (supercardano.pools ?? []).length,
+        poolCountByVenue: supercardano.summary?.poolCountByVenue ?? {},
+        poolFreshnessByVenueAtSourceAsOf: venueFreshness,
+        tradeCountByVenue: supercardano.summary?.exactUsdmTradeRowsByVenue ?? {},
+        onchainMinswapV2PoolCount: onchainByLp.size,
+        supercardanoMinswapV2PoolCount: scByLp.size,
+        exactPoolIdentityAndPairAndReserveMatches: scMatched.length,
+        onchainOnlyCount: scOnchainOnly.length,
+        supercardanoOnlyCount: scOnly.length,
+        pairMismatchCount: scPairMismatch.length,
+        reserveMismatchCount: scReserveMismatch.length,
+        duplicateSupercardanoLpIds: duplicateScIds.length,
+      },
+      matched: scMatched,
+      onchainOnly: scOnchainOnly,
+      supercardanoOnly: scOnly,
+      pairMismatch: scPairMismatch,
+      reserveMismatch: scReserveMismatch,
+      duplicateLpIds: duplicateScIds,
+    }
+  }
+
   const evidence = {
-    schema: 'immortal-minswap-v2-usdm-api-onchain-reconciliation-v1',
+    schema: 'immortal-minswap-v2-usdm-multi-indexer-reconciliation-v2',
     classification: 'POOL_SET_AND_ASSET_PAIR_RECONCILIATION_NOT_PRICE_OR_ORACLE_QUALIFICATION',
     network: 'cardano-mainnet',
     exactAsset: ASSET,
@@ -144,6 +251,12 @@ async function main() {
         completedAt: onchain.completedAt,
         acquisition: onchain.acquisition,
       },
+      supercardano: supercardanoEvidence ? {
+        source: supercardanoEvidence.source,
+        startedAt: supercardanoEvidence.startedAt,
+        completedAt: supercardanoEvidence.completedAt,
+        sourceMeta: supercardanoEvidence.sourceMeta,
+      } : null,
       api: {
         source: api.source,
         startedAt: api.startedAt,
@@ -164,7 +277,9 @@ async function main() {
       pairMismatchCount: pairMismatch.length,
       onchainUnqualifiedCount: onchainUnqualified.length,
       duplicateApiLpIdCount: duplicateApiIds.length,
+      supercardano: supercardanoEvidence?.summary ?? null,
     },
+    supercardano: supercardanoEvidence,
     matched,
     onchainOnly,
     apiOnly,
@@ -174,6 +289,9 @@ async function main() {
     limitations: [
       'A match confirms LP asset identity and exact unordered pair identity between Koios on-chain datum/value evidence and the Minswap API record.',
       'Minswap API and Koios are two observations of the same Cardano/DEX state, not independent market venues or independent price oracles.',
+      'SuperCardano is a separately operated on-chain indexer observation; it is not a separate DEX venue and its USD display uses DexHunter ADA/USD according to its published methodology.',
+      'SuperCardano pool freshness is classified against its own asOf timestamp; historical pool rows must not be interpreted as live liquidity without checking block/time and reserves.',
+      'Exact reserve agreement is an observed comparison only; mismatches are preserved and must be investigated against each provider decoder and the actual contract datum semantics.'
       'Minswap API USD liquidity/volume metrics are preserved as source data and are not independently verified by this reconciliation.',
       'No USDM/USD price, peg, oracle qualification, EEV valuation, deployment approval, or economic parameter is produced.',
       'Snapshot times are close but not a cryptographic atomic snapshot; each source has its own observation timestamp and raw response hashes.',
