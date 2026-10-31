@@ -72,13 +72,33 @@ function assetsFor(utxo) {
 
 async function main() {
   const startedAt = new Date().toISOString()
-  const utxosResponse = await readJson('/address_utxos', {
-    _addresses: [ADDRESS],
-    _extended: true,
-  })
-  if (!Array.isArray(utxosResponse.json)) throw new Error('KOIOS_ADDRESS_UTXOS_SHAPE_INVALID')
+  // Koios is PostgREST-backed: use explicit limit/offset paging and retain
+  // every page's raw response evidence. A full page triggers another request.
+  const PAGE_SIZE = 1000
+  const MAX_UTXO_PAGES = 20
+  const utxoPages = []
+  const allUtxos = []
+  for (let page = 0; page < MAX_UTXO_PAGES; page += 1) {
+    const offset = page * PAGE_SIZE
+    const response = await readJson(
+      '/address_utxos?limit=' + PAGE_SIZE + '&offset=' + offset,
+      { _addresses: [ADDRESS], _extended: true },
+    )
+    if (!Array.isArray(response.json)) throw new Error('KOIOS_ADDRESS_UTXOS_SHAPE_INVALID')
+    utxoPages.push({
+      page,
+      offset,
+      returnedCount: response.json.length,
+      response: response.evidence,
+    })
+    allUtxos.push(...response.json)
+    if (response.json.length < PAGE_SIZE) break
+    if (page === MAX_UTXO_PAGES - 1) {
+      throw new Error('KOIOS_ADDRESS_UTXOS_PAGE_CAP_REACHED_INCOMPLETE')
+    }
+  }
 
-  const candidates = utxosResponse.json
+  const candidates = allUtxos
     .map((u) => {
       const assets = assetsFor(u)
       const usdm = assets.filter((a) => a.unit === exactUnit)
@@ -140,8 +160,9 @@ async function main() {
     acquisition: {
       endpoint: '/address_utxos',
       extended: true,
-      requestEvidence: utxosResponse.evidence,
-      returnedUtxoCount: utxosResponse.json.length,
+      requestEvidence: utxoPages.map((page) => page.response),
+      returnedUtxoCount: allUtxos.length,
+      pagination: { pageSize: PAGE_SIZE, maxPages: MAX_UTXO_PAGES, pages: utxoPages, complete: utxoPages.length > 0 && utxoPages[utxoPages.length - 1].returnedCount < PAGE_SIZE },
       exactUsdmCandidateCount: observed.length,
       transactionLookups: txHashes.length,
       transactionContextResponses: Object.fromEntries(Object.entries(txContext).map(([hash, value]) => [hash, value.response])),
