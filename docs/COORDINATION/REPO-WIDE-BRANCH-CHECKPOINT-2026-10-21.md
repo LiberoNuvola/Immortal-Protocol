@@ -6398,3 +6398,17 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - **Next safe work:** read-only collector using Minswap API/SDK for exact policy+asset match, V1/V2/Stable pools, IDs, reserves, token orientation, fees, price/volume/TVL time series; compare against direct on-chain UTxOs. Separate venue independence from API/indexer independence. For a two-leg derivation, obtain independent ADA/USD and aligned timestamps.
 - Issue #37 detailed record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6542044437
 - No API collector code, Oracle consumer, PriceReference, economic kernel, EEV approval, R1/Kc certificate, wallet signature, deployment or transaction was changed/executed. Option B remains OPEN/UNQUALIFIED; V3/Reveal untouched.
+
+
+
+## 10.33 — Agent A: primo collector Minswap USDM read-only aggiunto (2026-10-31)
+
+- Aggiunto `scripts/collectMinswapUsdmReadOnly.mjs` su `work/immortal-green-closure`; commit iniziale `cf19730c30f3c5883cd5dc598e6e3004ed5bf5fb`, seguito da correzione `48b057e018092d296e7c0d2ca82ae61ffeb3c754`.
+- Il collector usa esclusivamente API pubbliche Minswap: GET asset catalog e pool metrics query POST, poi GET per metrics e serie storiche price/volume/TVL dei pool trovati. Nessun endpoint di transazione, wallet, firma o refresh.
+- Identità vincolante: policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad` + asset name `0014df105553444d`; verifica inoltre decimals=6. Il ticker USDM è solo metadata, mai criterio di inclusione.
+- Interroga separatamente `Minswap`, `MinswapV2` e `MinswapStable`; la ricerca pool non limita i counterparties a token verificati, quindi il filtro esatto USDM viene applicato localmente e non perde pool solo perché l'altro asset non è verificato.
+- Registra timestamp di raccolta, HTTP Date, URL/metodo/status, SHA-256 del body grezzo, cursor/pagine, asset orientation, LP asset ID, metriche e serie storiche. Output predefinito: `audit/oracles/minswap-usdm-readonly.json`; nessun dato viene inviato al protocollo.
+- Limiti espliciti nell'artefatto: API/indexer ≠ osservazione diretta UTxO; Minswap API e GeckoTerminal non sono venue indipendenti; metriche in USD dipendono dalla metodologia di valorizzazione Minswap e non sono feed indipendente USD/USDM.
+- **Stato verifica:** codice aggiunto ma non ancora eseguito né testato su una macchina/rete. La lettura API live non è stata ottenuta dagli strumenti di questa sessione; non dichiarare pool count, liveness o raccolta riuscita. Il collector non implementa ancora il confronto con UTxO on-chain diretti.
+- Prossimo gate: eseguire in ambiente repo con Node compatibile, ispezionare l'output e le risposte/limitazioni API; poi aggiungere una seconda osservazione on-chain read-only via provider già autorizzato e confrontare pool ID, reserve quantities e block/slot. Nessuna credenziale va committata.
+- **Disposition invariata:** nessuna fonte USD/USDM qualificata; Option B OPEN/UNQUALIFIED; nessun EEV approval, R1/Kc certificate, Oracle consumer, PriceReference o kernel change; nessuna firma, deploy o transazione; V3/Reveal intatti.
