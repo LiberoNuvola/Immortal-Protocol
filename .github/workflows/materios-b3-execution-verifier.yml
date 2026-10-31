@@ -183,6 +183,9 @@ jobs:
         run: npx tsx src/capture-real-witness.ts
         env:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
+          # Optional archive endpoint for historical GRANDPA authority state.
+          # Empty/unset safely falls back to the public RPC and preserves OPEN.
+          MATERIOS_AUTHORITY_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_WITNESS_LOOKBACK: 1024
           MATERIOS_WS_EVIDENCE_PATH: ${{ github.workspace }}/poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
