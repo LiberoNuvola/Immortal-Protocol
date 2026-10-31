@@ -21,6 +21,7 @@ function completedLucidTransaction() {
           }),
         }),
       }),
+      to_bytes: () => new TextEncoder().encode(pool),
     }),
   }
 }
