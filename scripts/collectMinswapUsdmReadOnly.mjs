@@ -134,7 +134,7 @@ async function collectPools(protocol) {
       throw new Error(`Pagination safety limit reached for ${protocol}`)
     }
   }
-  return { pages, pools: [...pools.entries()].map(([id, metrics]) => ({ id, metrics })) }
+  return { protocol, pages, pools: [...pools.entries()].map(([id, metrics]) => ({ id, metrics })) }
 }
 
 async function collectPoolHistory(poolId) {
@@ -154,14 +154,21 @@ async function main() {
   const pages = []
   for (const result of protocolResults) {
     pages.push(...result.pages)
-    for (const pool of result.pools) poolMap.set(pool.id, pool.metrics)
+    for (const pool of result.pools) {
+      // Preserve protocol family in the key: identical LP asset identifiers
+      // must not silently overwrite a distinct API record from another family.
+      const key = result.protocol + ':' + pool.id
+      poolMap.set(key, { ...pool, protocol: result.protocol })
+    }
   }
 
   const pools = []
-  for (const [id, metrics] of poolMap) {
+  for (const [identityKey, pool] of poolMap) {
+    const { id, metrics, protocol } = pool
     pools.push({
       id,
-      protocol: metrics.type,
+      identityKey,
+      protocol,
       exactUsdmSide: exactAsset(metrics.asset_a) ? 'asset_a' : 'asset_b',
       assetA: metrics.asset_a,
       assetB: metrics.asset_b,
