@@ -122,11 +122,44 @@ describe('Minswap V2 PoolDatum decoder (synthetic fixtures)', () => {
     expect(validateV2Candidate(f.utxo, changed, f.datum).reasons).toContain('DERIVED_LP_ASSET_MISSING_OR_NONPOSITIVE')
   })
 
-  it('fails closed on datum-vs-Value reserve mismatch', () => {
+  it('accepts Value reserves above datum reserves as retained fee surplus', () => {
     const f = candidate()
     const changed = f.assets.map((a) => a.unit === USDM.policyId + USDM.assetNameHex
       ? { ...a, quantityRaw: String(RESERVE_A + 1n) } : a)
-    expect(validateV2Candidate(f.utxo, changed, f.datum).reasons).toContain('RESERVE_A_VALUE_MISMATCH')
+    const result = validateV2Candidate(f.utxo, changed, f.datum)
+    expect(result.status).toBe('MATCH')
+    expect(result.valueSurplusARaw).toBe('1')
+    expect(result.valueSurplusBRaw).toBe('0')
+  })
+
+  it('fails closed when Value reserve is below the datum reserve', () => {
+    const f = candidate()
+    const changed = f.assets.map((a) => a.unit === USDM.policyId + USDM.assetNameHex
+      ? { ...a, quantityRaw: String(RESERVE_A - 1n) } : a)
+    expect(validateV2Candidate(f.utxo, changed, f.datum).reasons)
+      .toContain('VALUE_RESERVE_A_BELOW_DATUM_RESERVE')
+  })
+
+  it('accepts ADA pair Value containing min ADA, datum reserve and retained surplus', () => {
+    const f = candidate()
+    const ada = { policyId: '', assetNameHex: '' }
+    const datum = fixtureDatum()
+    datum.fields[1] = constr(0, [bytes(ada.policyId), bytes(ada.assetNameHex)])
+    datum.fields[2] = constr(0, [bytes(USDM.policyId), bytes(USDM.assetNameHex)])
+    const lpName = expectedLpAssetName(ada, USDM)
+    const assets = [
+      { unit: USDM.policyId + USDM.assetNameHex, quantityRaw: String(RESERVE_B + 5n) },
+      { unit: NFT_POLICY + NFT_NAME, quantityRaw: '1' },
+      { unit: NFT_POLICY + lpName, quantityRaw: '9223372036854775792' },
+    ]
+    const result = validateV2Candidate(
+      { value: String(MIN_ADA + RESERVE_A + 100n) },
+      assets,
+      datum,
+    )
+    expect(result.status).toBe('MATCH')
+    expect(result.valueSurplusARaw).toBe('100')
+    expect(result.valueSurplusBRaw).toBe('5')
   })
 
   it('fails closed on unexpected assets in the pool Value', () => {
