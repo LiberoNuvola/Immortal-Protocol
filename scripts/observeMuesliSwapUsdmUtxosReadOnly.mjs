@@ -98,7 +98,7 @@ async function fetchAddressPage(scriptHash, offset) {
   })
   const rawBody = await response.text()
   const evidence = {
-    url, method: 'POST', status: response.status,
+    url, method: 'GET', status: response.status,
     responseDate: response.headers.get('date'),
     startedAt, completedAt: new Date().toISOString(),
     bodyBytes: Buffer.byteLength(rawBody),
@@ -199,7 +199,7 @@ async function main() {
       scriptHashFilter: poolScriptHash,
       exactAssetFilterAppliedLocally: { policyId: USDM.policyId, assetNameHex: USDM.assetNameHex },
       pageSize: PAGE_SIZE,
-      maxPagesPerAddress: MAX_PAGES,
+      maxPages: MAX_PAGES,
       completePagination: complete,
       officialAddresses: addressCredentials,
       scriptUtxoCount: scriptRows.length,
