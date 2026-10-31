@@ -38,6 +38,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Syntax-check all read-only market observers and reconcilers
+        run: |
+          node --check scripts/observeMinswapV2UsdmUtxosReadOnly.mjs
+          node --check scripts/collectMinswapUsdmReadOnly.mjs
+          node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
+          node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
+          node --check scripts/observeDanogoClmmUsdmReadOnly.mjs
       - name: Run synthetic decoder fixtures
         run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs --reporter=verbose
 
