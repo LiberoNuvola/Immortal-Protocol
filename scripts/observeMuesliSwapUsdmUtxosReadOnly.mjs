@@ -145,7 +145,7 @@ async function main() {
     discoveredPoolNfts = [...new Set((discovery.pools ?? [])
       .filter((pool) => pool.venue === 'muesliswap' && String(pool.key ?? '').startsWith('muesliswap:'))
       .map((pool) => String(pool.key).slice('muesliswap:'.length).toLowerCase())
-      .filter((unit) => unit.length === 112 && unit.slice(0, 56) === POOL_NFT_POLICY_ID)
+      .filter((unit) => unit.length === 120 && unit.slice(0, 56) === POOL_NFT_POLICY_ID)
       .map((unit) => unit.slice(56)))]
     if (discoveredPoolNfts.length === 0) {
       throw new Error('MUESLI_SUPERCARDANO_DISCOVERY_HAS_NO_POOL_NFTS_UNDER_OFFICIAL_POLICY')
