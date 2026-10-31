@@ -6681,3 +6681,11 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - First test run on commit `84327917aaaf78e9cbf2b4bfabf532cd03f6a8e6` passed all 5 real-datum decodes, all 5 structural validations and all 5 API reconciliations, but one deliberately mutated ADA-Value test asserted an impossible standalone datum check. Since V3 datum has no ADA reserve field, the correct guard is the cross-check against official API reserve. Test corrected at `d2f03fa17abcc6b92949d1bc19a647ef665c581a` to assert API reserve mismatch. Latest run 41226055552 pending.
 - The ADA/USDM V3 pool identifier `64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef` has Value lovelace `75817851679`, protocol fees `1239772000`, derived ADA reserve `74578079679`, USDM reserve `14572208659`, and circulating LP `25568555601`. API reconciliation is the authority for matching these reserves; no price/peg qualification is made.
 - No new oracle consumer, economic parameter, threshold, wallet, signature, transaction, deployment or chain write.
+
+
+## 10.59 Agent A — cross-reference timestamps and Sundae V3 test correction (2026-10-31)
+
+- Run 41225927034 successfully executed the timestamp-corrected cross-reference. Minswap pool UTxO block time is now read from `candidate.transactionContext.blockTime`: 2026-10-31 17:36:08Z, age 554 s at calculation. WingRiders pool block time: 2026-10-30 09:02:49Z, age 117,753 s (~32.7 h). CEX references observed around 17:43:54Z.
+- Six indicative cross-rates: Minswap 0.99427442–0.99473749; WingRiders 0.99962935–1.00009491 USDM/USD. No averaging/peg decision. The WingRiders UTxO is materially older; source age is explicit and no arbitrary freshness threshold was introduced.
+- Sundae V3 real-fixture tests in run 41225981040: 6/7 passed; the remaining test incorrectly expected a datum-vs-lovelace check even though Sundae V3 datum has no ADA reserve field. The correct invariant is cross-source: decoded ADA reserve from Value must match the official API's current quantityA. Test corrected at `d2f03fa17abcc6b92949d1bc19a647ef665c581a`; next run pending.
+- Matrix updated at `f1e095671f9c69e87e6c98b63dfce6ffc24f3587` with source-age/rate details. No price/peg qualification or economic parameter changes.
