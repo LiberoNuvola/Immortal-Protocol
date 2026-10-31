@@ -5976,3 +5976,27 @@ Exact-head run [#41175284220](https://github.com/LiberoNuvola/Immortal-Protocol/
 - The checksum-verified snapshot probe completed **SUCCESS** using the stored `Constrained(256)` mode. It ran the runtime API and raw-storage cross-checks at the exact target block; the resulting artifact will be inspected before interpreting equality or mismatch.
 - The next step, `Reconstruct GRANDPA authority changes from genesis-anchored headers`, is currently **in progress**. It must complete before the witness verification step can consume the digest-history artifact.
 - The real witness verifier has not yet run in this exact-head job. No B3-A closure is claimed.
+
+
+## Agent C addendum — Historical header scan transport boundary and current replay run (2026-10-31)
+
+### Public RPC scan attempt
+
+A separate read-only workflow [#41175490373](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41175490373) attempted the genesis-to-target header scan against `https://materios.fluxpointstudios.com/rpc`, using the previously captured snapshot evidence fixture. It verified the first 256 headers, then the next `chain_getBlockHash` batch returned JSON-RPC `-32999: RPC rate limit exceeded`. The artifact [#13032950229](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41175490373/artifacts/13032950229) records this as FAIL. Therefore the public HTTP RPC is not a viable transport for the complete 2.5M-header replay at the current request budget. No authority conclusion is drawn from this failed scan.
+
+The exact snapshot evidence fixture is now retained at `docs/04-verification/MATERIOS-SNAPSHOT-STATE-PROBE-2509824.json`, derived from snapshot artifact #13032587479. It pins the target hash, runtime authorities, runtime/storage set ID 4434, absent PendingChange/Stalled values, and snapshot voter startup set ID 4343. The fixture's authority SCALE bytes were corrected to the exact 201-byte value from the artifact after the first public scan caught a four-hex-character transcription omission.
+
+### Current local-snapshot replay
+
+The local-snapshot path remains the primary scan source. Exact-head workflow [#41175284220](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41175284220), commit `493256dfa9201891396f504d9af9b60e230bc439`, has:
+- verifier: SUCCESS;
+- live storage proof: SUCCESS;
+- finalized-state capture: SUCCESS;
+- snapshot retained-state probe: SUCCESS (completed 06:08:53Z);
+- genesis-anchored GRANDPA digest replay: IN PROGRESS (started 06:08:53Z).
+
+Agent C's parallel commit `f156289fc4b7e8c553411c1ca7a9c6341669936c` adds an exact-target `Grandpa.CurrentSetId` direct-storage comparison to the witness capture. Follow-up commit `493256dfa9201891396f504d9af9b60e230bc439` corrects its Twox128 storage key to the complete 32-byte `Twox128("Grandpa") ++ Twox128("CurrentSetId")` key. These are diagnostics only; no verifier set selection or consensus semantics changed.
+
+**Next action:** wait for the local snapshot digest replay artifact. Compare replayed ScheduledChange/ForcedChange count and final authority list against runtime set 4434 and persisted voter set 4343. If the scan is interrupted by the workflow timeout, increase the bounded job timeout or split the scan into resumable ranges; do not substitute the rate-limited public RPC or weaken hash/parent-link checks.
+
+**B3-A remains OPEN.** The snapshot voter/runtime contradiction is confirmed as an observation, not yet reconciled with the full genesis-to-target header history.
