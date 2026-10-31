@@ -218,3 +218,27 @@ The metrics-only read-only collection succeeded in Actions run [41204489438](htt
 A direct comparison of that API artifact with the same-run Koios artifact (run 41204489438) found **31/31 exact LP asset identity matches** between MinswapV2 API and the 31 Koios candidates, and **31/31 exact unordered asset-pair matches**. This is a pool-set/identity reconciliation only. It does not validate API USD liquidity or volume values, price/peg, independent market depth, or oracle suitability.
 
 A deterministic reconciliation script, `scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs`, and a dependent GitHub Actions job were added to reproduce this comparison from same-run artifacts. The first automated reconciliation run is pending.
+
+
+## 17. Automated same-run API / Koios reconciliation — first pass
+
+The new dependent Actions job `reconcile-api-vs-onchain` completed successfully in run [41204657669](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204657669), source commit `d4283fe12e25d315165c88379e9db99d5d372564`. It downloaded both artifacts from the same workflow run and executed `scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs`.
+
+Automated summary:
+
+| Measure | Result |
+|---|---:|
+| Koios exact-USDM candidates | 31 |
+| Koios structurally matched | 31 |
+| Minswap API pools, all protocols | 43 |
+| Minswap API V2 pools | 31 |
+| Exact LP identity + pair matches | **31** |
+| On-chain only | 0 |
+| API only | 0 |
+| Pair mismatches | 0 |
+| On-chain unqualified | 0 |
+| Duplicate API LP IDs | 0 |
+
+Reconciliation artifact ID `13044411182`, ZIP SHA-256 `b0c2d9b3c93f9e4c6098eb7c7303ad080ed30d77fbac7cc959617ec87ebfc339`; extracted JSON SHA-256 `c01872590804b698dd5ad6adb1328809ea4139467320bdc5abf50a4bbbc07c80`.
+
+The source windows were close but not atomic: API `13:14:27.946Z`–`13:14:28.758Z`; Koios `13:14:29.034Z`–`13:15:46.121Z`. Both preserve per-request raw response hashes and timestamps. This is strong evidence of **pool-set and exact asset-pair identity agreement** between Minswap V2 API and the Koios Mainnet view at the captured times. It is not independent market validation: both sources describe the same Minswap venue / Cardano ledger state. It does not qualify USD-denominated API liquidity/volume, USDM/USD price, peg, oracle, EEV, or deployment. Per-pool history remains deferred after the documented HTTP 429.
