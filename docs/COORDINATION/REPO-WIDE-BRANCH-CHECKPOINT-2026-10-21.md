@@ -7059,3 +7059,12 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Root cause: concurrent extension added API LP-unit and Float reserve comparison helpers, but referenced the block-scoped datum validation variable after its loop. Corrected to use c.datumValidation.lpAsset at commit 3b52da14a06fab42c5c554927402c19f6b4ddcfd.
 - No source acquisition failure. No new reconciliation artifact was produced in that run. Earlier 14/14 identity/pair result from run 41239467040 remains valid for its narrower logic; it is not a result of the newer reserve-aware reconciler.
 - Updated spec records the failure and fix. New workflow rerun pending.
+
+
+## 10.81 Agent A — DIA keyless Cardano ADA/USD reference path added (2026-10-31)
+
+- Added DIA free API test reference to scripts/collectAdaUsdPublicReferencesReadOnly.mjs at commit 8d61d2363d449522a993e27a1adc6d6d54553550.
+- Exact endpoint: GET https://api.diadata.org/v1/assetQuotation/cardano/0x0000000000000000000000000000000000000000. It is queried by Cardano native ADA identity, not ticker alone.
+- DIA advertises its free REST API as no-key, aggregating direct CEX/DEX trade data across 100+ venues; free API is for testing/evaluation, not production. Classified separately as ORACLE_REFERENCE_API_TEST_ONLY, not a separate venue or production on-chain oracle.
+- Collector now contains 7 CEX, 3 market aggregators and 1 DIA test-only reference. Live CI rerun pending.
+- No DIA value is admitted to a production cross-rate or USDM peg decision.
