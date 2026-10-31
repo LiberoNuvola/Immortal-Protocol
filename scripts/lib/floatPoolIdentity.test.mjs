@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { apiMinswapLpUnit, compareFloatReservesToDatum, floatPoolKey } from './floatPoolIdentity.mjs'
+import { apiAssetUnit, apiMinswapLpUnit, compareFloatReservesToDatum, floatPoolKey } from './floatPoolIdentity.mjs'
 
 const USDM = {
   policyId: 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad',
@@ -19,6 +19,10 @@ describe('Float Minswap V2 cross-indexer identity helpers', () => {
     expect(apiMinswapLpUnit({
       apiMetrics: { lp_asset: { currency_symbol: 'AA'.repeat(28), token_name: 'BB' } },
     })).toBe('aa'.repeat(28) + 'bb')
+  })
+
+  it('normalizes API asset currency symbol and token name', () => {
+    expect(apiAssetUnit({ currency_symbol: 'AA'.repeat(28), token_name: 'BB' })).toBe('aa'.repeat(28) + 'bb')
   })
 
   it('extracts the pool key suffix from a Float Minswap V2 market id', () => {
