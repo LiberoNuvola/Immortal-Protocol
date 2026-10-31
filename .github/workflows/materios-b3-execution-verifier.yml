@@ -181,6 +181,15 @@ jobs:
           MATERIOS_FINALITY_CANDIDATE_FORCE: "true"
           MATERIOS_WS_EVIDENCE_OUT: out/MateriosWebSocketRpcProbe.json
 
+      - name: Capture raw historical FRNK candidate over primary WebSocket route
+        working-directory: poc/materios-checkpoint
+        run: node src/probe-websocket-rpc-capabilities.mjs
+        env:
+          MATERIOS_WS: wss://materios.fluxpointstudios.com/rpc
+          MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: 2509824
+          MATERIOS_FINALITY_CANDIDATE_FORCE: "true"
+          MATERIOS_WS_EVIDENCE_OUT: out/MateriosWebSocketRpcProbePrimary.json
+
       - name: Probe retained state in official Materios snapshot
         id: snapshot_state_probe
         continue-on-error: true
@@ -206,6 +215,16 @@ jobs:
         with:
           name: materios-snapshot-state-probe
           path: poc/materios-grandpa/out/MateriosSnapshotStateProbe.json
+          if-no-files-found: warn
+
+      - name: Upload Materios WebSocket route comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-websocket-rpc-probes
+          path: |
+            poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
+            poc/materios-checkpoint/out/MateriosWebSocketRpcProbePrimary.json
           if-no-files-found: warn
 
       - name: Upload real GRANDPA witness

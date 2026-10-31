@@ -23,6 +23,7 @@ TARGET_RUNTIME_VERSION=""
 DIGEST_WINDOW_JSON="[]"
 DIGEST_SCAN_START=""
 GRANDPA_STORAGE_JSON="{}"
+HISTORICAL_HEADER_PROBES_JSON="[]"
 TARGET_NUMBER=""
 TARGET_HASH=""
 DB_DIR=""
@@ -46,6 +47,7 @@ finish() {
     --arg target_header "$TARGET_HEADER_JSON" --arg runtime_version "$TARGET_RUNTIME_VERSION" \
     --arg digest_window "$DIGEST_WINDOW_JSON" --arg digest_scan_start "$DIGEST_SCAN_START" \
     --arg grandpa_storage "$GRANDPA_STORAGE_JSON" \
+    --arg historical_header_probes "$HISTORICAL_HEADER_PROBES_JSON" \
     --arg rpc_url "$RPC_URL" --arg log "$(tail -n 35 "$LOG" 2>/dev/null || true)" \
     '{
       schema_version:"materios-snapshot-state-probe-v1",
@@ -69,6 +71,7 @@ finish() {
         blocks_with_frnk_consensus_logs:($digest_window|fromjson)
       },
       grandpa_storage_diagnostic:($grandpa_storage|fromjson),
+      historical_header_retention_probes:($historical_header_probes|fromjson),
       local_rpc_url:(if $rpc_url=="" then null else $rpc_url end),
       node_log_tail:$log,
       trust_boundary:"Isolated FULL-role diagnostic only: snapshot DB is Constrained(256); USE_MAIN_CHAIN_FOLLOWER_MOCK is used solely to start local RPC; no validator role, no peers, no block import. This proves availability only inside the retained window, not archive history. RPC authority state remains untrusted until independently authenticated."
@@ -242,6 +245,27 @@ for ((block_number=DIGEST_SCAN_START; block_number<=TARGET_NUMBER; block_number+
   fi
 done
 
+echo "Probe historical block/header retention beyond the 256-block state window"
+for delta in 1000 10000 100000 500000 1000000; do
+  probe_number=$(( TARGET_NUMBER - delta ))
+  (( probe_number >= 0 )) || continue
+  probe_hash_json="$(rpc_nullable chain_getBlockHash "[$probe_number]")" || probe_hash_json="null"
+  probe_hash="$(jq -r 'if type=="string" then . else empty end' <<<"$probe_hash_json")"
+  if [[ ! "$probe_hash" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
+    HISTORICAL_HEADER_PROBES_JSON="$(jq -cn --argjson acc "$HISTORICAL_HEADER_PROBES_JSON" --argjson n "$probe_number" '$acc + [{block_number:$n,status:"BLOCK_HASH_UNAVAILABLE"}]')"
+    continue
+  fi
+  probe_header_params="$(jq -cn --arg hash "$probe_hash" '[$hash]')"
+  probe_header_json="$(rpc_nullable chain_getHeader "$probe_header_params")" || probe_header_json="null"
+  if [[ "$probe_header_json" == "null" ]]; then
+    HISTORICAL_HEADER_PROBES_JSON="$(jq -cn --argjson acc "$HISTORICAL_HEADER_PROBES_JSON" --argjson n "$probe_number" --arg hash "$probe_hash" '$acc + [{block_number:$n,block_hash:$hash,status:"HEADER_UNAVAILABLE"}]')"
+    continue
+  fi
+  probe_digest_logs="$(jq -c '.digest.logs // []' <<<"$probe_header_json")"
+  probe_frnk_logs="$(jq -c '[.digest.logs[]? | select((ascii_downcase | contains("46524e4b")))]' <<<"$probe_header_json")"
+  HISTORICAL_HEADER_PROBES_JSON="$(jq -cn --argjson acc "$HISTORICAL_HEADER_PROBES_JSON" --argjson n "$probe_number" --arg hash "$probe_hash" --argjson digest "$probe_digest_logs" --argjson frnk "$probe_frnk_logs" '$acc + [{block_number:$n,block_hash:$hash,status:"HEADER_AVAILABLE",digest_logs:$digest,frnk_consensus_logs:$frnk}]')"
+done
+
 echo "Query GRANDPA authorities and set id at exact target hash"
 AUTHORITY_HEX="$(rpc_result state_call "[\"GrandpaApi_grandpa_authorities\",\"0x\",\"$TARGET_HASH\"]")" \
   || fail HISTORICAL_AUTHORITIES_QUERY_FAILED "historical authority state_call failed"
@@ -281,11 +305,11 @@ GRANDPA_STORAGE_JSON="$(jq -cn \
   --arg session_current_index_storage "$SESSION_INDEX_STORAGE" \
   '{
     current_set_id_runtime_api:$current_set_id_runtime_api,
-    current_set_id_raw_storage:$current_set_id_storage,
-    current_set_id_api_matches_storage:($current_set_id_runtime_api==$current_set_id_storage),
+    current_set_id_raw_storage:($current_set_id_storage|fromjson),
+    current_set_id_api_matches_storage:($current_set_id_runtime_api==($current_set_id_storage|fromjson)),
     authorities_runtime_api:$authorities_runtime_api,
-    authorities_raw_storage:$authorities_storage,
-    authorities_api_matches_storage:($authorities_runtime_api==$authorities_storage),
+    authorities_raw_storage:($authorities_storage|fromjson),
+    authorities_api_matches_storage:($authorities_runtime_api==($authorities_storage|fromjson)),
     pending_change_raw_storage:($pending_change_storage|fromjson),
     stalled_raw_storage:($stalled_storage|fromjson),
     session_current_index_raw_storage:($session_current_index_storage|fromjson),
