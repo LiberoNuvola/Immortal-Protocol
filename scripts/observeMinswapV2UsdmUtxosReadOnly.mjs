@@ -3,9 +3,10 @@
  * Read-only Koios observer for exact Moneta USDM candidates at the official
  * Minswap V2 mainnet pool validator address.
  *
- * This is a discovery/evidence collector, NOT a pool datum decoder or price
- * oracle. It preserves raw UTxO/datum bytes and transaction context so a
- * separately reviewed decoder can validate pool identity and reserves.
+ * This is a read-only discovery/evidence collector with a fail-closed decoder
+ * for the published Minswap V2 PoolDatum shape. It is NOT a price oracle:
+ * it preserves raw UTxO/datum bytes and transaction context, and reports
+ * candidate validation separately from any market/oracle qualification.
  *
  * Usage:
  *   KOIOS_MAINNET_URL=https://api.koios.rest/api/v1 node scripts/observeMinswapV2UsdmUtxosReadOnly.mjs
