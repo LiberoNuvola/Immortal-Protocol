@@ -42,6 +42,12 @@ const RPC =
   process.env.MATERIOS_RPC ??
   "https://materios.fluxpointstudios.com/rpc";
 
+// Historical state may be available only from an archive node. This endpoint
+// is used solely for GRANDPA authority-state reads; block/header acquisition
+// and cross-route binding continue to use the public RPC above.
+const AUTHORITY_RPC =
+  process.env.MATERIOS_AUTHORITY_RPC?.trim() || RPC;
+
 const CHAIN_ID =
   process.env.MATERIOS_CHAIN_ID ??
   "materios_preprod_v6";
@@ -130,8 +136,9 @@ function sha256Hex(value: string): string {
 async function rpc<T>(
   method: string,
   params: unknown[] = [],
+  endpoint: string = RPC,
 ): Promise<T> {
-  const response = await fetch(RPC, {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -902,6 +909,7 @@ async function main(): Promise<void> {
         "0x",
         witness.blockHash,
       ],
+      AUTHORITY_RPC,
     );
     setIdHex = await rpc<string>(
       "state_call",
@@ -910,6 +918,7 @@ async function main(): Promise<void> {
         "0x",
         witness.blockHash,
       ],
+      AUTHORITY_RPC,
     );
   } catch (historicalError) {
     authorityStateOriginalError =
@@ -930,6 +939,7 @@ async function main(): Promise<void> {
           "0x",
           finalizedHash,
         ],
+        AUTHORITY_RPC,
       );
       setIdHex = await rpc<string>(
         "state_call",
@@ -938,6 +948,7 @@ async function main(): Promise<void> {
           "0x",
           finalizedHash,
         ],
+        AUTHORITY_RPC,
       );
     } catch (fallbackError) {
       const outDir = join(HERE, "..", "out");
