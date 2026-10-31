@@ -8,6 +8,7 @@
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { deriveDanogoClmmSpotPrice } from './lib/danogoClmmMath.mjs'
 
 const ADA_UNIT = ''
 const USDM_UNIT = 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d'
@@ -57,20 +58,23 @@ async function main() {
   const wingPath = arg('--wingriders', 'audit/wingriders/wingriders-v2-usdm-readonly.json')
   const muesliPath = arg('--muesli', 'audit/muesliswap/muesliswap-usdm-utxos-readonly.json')
   const adaUsdPath = arg('--ada-usd', 'audit/ada-usd/ada-usd-public-references-readonly.json')
+  const danogoPath = arg('--danogo', 'audit/danogo/danogo-clmm-usdm-readonly.json')
   const outPath = arg('--out', 'audit/oracles/usdm-usd-cross-reference-readonly.json')
   const calculationStartedAt = new Date().toISOString()
-  const [onchain, sundae, wing, muesli, adaUsd] = await Promise.all([
+  const [onchain, sundae, wing, muesli, adaUsd, danogo] = await Promise.all([
     readFile(onchainPath, 'utf8').then(JSON.parse),
     readFile(sundaePath, 'utf8').then(JSON.parse),
     readFile(wingPath, 'utf8').then(JSON.parse),
     readFile(muesliPath, 'utf8').then(JSON.parse),
     readFile(adaUsdPath, 'utf8').then(JSON.parse),
+    readFile(danogoPath, 'utf8').then(JSON.parse),
   ])
 
   if (onchain.network !== 'cardano-mainnet' || wing.network !== 'cardano-mainnet' || muesli.network !== 'cardano-mainnet') {
     throw new Error('CARDANO_NETWORK_MISMATCH')
   }
   if (adaUsd.pair !== 'ADA/USD') throw new Error('ADA_USD_PAIR_MISMATCH')
+  if (danogo.network !== 'cardano-mainnet') throw new Error('DANOGO_NETWORK_MISMATCH')
 
   const dexPools = []
   for (const candidate of onchain.candidates ?? []) {
@@ -158,6 +162,55 @@ async function main() {
     })
   }
 
+
+  const danogoPricePools = []
+  const danogoExcluded = []
+  for (const pool of danogo.pools ?? []) {
+    try {
+      const quote = deriveDanogoClmmSpotPrice(pool)
+      if (!quote) {
+        danogoExcluded.push({
+          poolKey: pool.poolKey ?? null,
+          utxoRef: pool.utxoRef ?? null,
+          status: pool.status,
+          reason: pool.rewardEpochBehind === true && pool.rewardAmountRead !== true
+            ? 'REWARD_AMOUNT_UNRESOLVED'
+            : 'NOT_A_VALID_DIRECT_ADA_USDM_MATCH',
+        })
+        continue
+      }
+      danogoPricePools.push(quote)
+      dexPools.push({
+        venue: 'Danogo CLMM',
+        poolType: 'CONCENTRATED_LIQUIDITY',
+        utxoRef: quote.utxoRef,
+        sourceBlockHeight: quote.sourceBlockHeight,
+        sourceBlockTime: quote.sourceBlockTime,
+        adaReserveRaw: null,
+        usdmReserveRaw: null,
+        priceAdaPerUsdm: quote.priceAdaPerUsdm,
+        priceNumeratorRaw: quote.priceNumeratorRaw,
+        priceDenominatorRaw: quote.priceDenominatorRaw,
+        priceMethod: quote.priceMethod,
+        virtualReserveXRaw: quote.virtualReserveXRaw,
+        virtualReserveYRaw: quote.virtualReserveYRaw,
+        activeReserveXRaw: quote.activeReserveXRaw,
+        activeReserveYRaw: quote.activeReserveYRaw,
+        lpFeeRateBasisPoints: quote.lpFeeRateBasisPoints,
+        rewardAmountRead: quote.rewardAmountRead,
+        rewardAmountAssumedRaw: quote.rewardAmountAssumedRaw,
+        priceLimit: quote.priceLimit,
+      })
+    } catch (error) {
+      danogoExcluded.push({
+        poolKey: pool.poolKey ?? null,
+        utxoRef: pool.utxoRef ?? null,
+        status: pool.status,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   const cex = (adaUsd.sources ?? []).filter((x) => x.status === 'MATCHED' && x.midUsd)
   const crossRates = []
   for (const pool of dexPools) {
@@ -209,21 +262,25 @@ async function main() {
       sundaeswapV3Onchain: { startedAt: sundae.startedAt, completedAt: sundae.completedAt, summary: sundae.summary },
       wingridersOnchain: { startedAt: wing.startedAt, completedAt: wing.completedAt },
       muesliswapOnchain: { startedAt: muesli.startedAt, completedAt: muesli.completedAt, summary: muesli.summary },
+      danogoClmmOnchain: { startedAt: danogo.startedAt, completedAt: danogo.completedAt, summary: danogo.summary },
       adaUsdReferences: { startedAt: adaUsd.startedAt, completedAt: adaUsd.completedAt, summary: adaUsd.summary },
     },
     summary: {
       directConstantProductPools: dexPools.length,
       distinctDexVenues: [...new Set(dexPools.map((x) => x.venue))],
       successfulAdaUsdReferences: cex.length,
+      danogoClmmDirectAdaUsdmPools: danogoPricePools.length,
+      danogoClmmExcludedPools: danogoExcluded.length,
       crossRateCount: crossRates.length,
       adaPerUsdmSpotRange: priceSpread,
     },
     dexPools,
+    danogoClmm: { included: danogoPricePools, excluded: danogoExcluded },
     adaUsdReferences: cex,
     indicativeCrossRates: crossRates,
     limitations: [
-      'AMM spot is the ratio of the on-chain active reserve quantities before trade fees and slippage; it is not a guaranteed execution price.',
-      'Only structurally verified constant-product USDM/ADA pools are used. MuesliSwap is included only for candidates passing the official four-field PoolDatum, pool NFT, factory token, pair and Value checks. SundaeSwap V3 is included after official contract-source review and live API/Koios reserve reconciliation. Danogo CLMM and Sundae Stableswaps remain excluded until their own curve math is implemented.',
+      'AMM spot is a marginal pool price before taker execution fees and slippage; constant-product venues use active reserve ratios, while Danogo CLMM uses the official SDK virtual-reserve marginal ratio. Neither is a guaranteed execution price.',
+      'Constant-product pools are included only after venue-specific structural validation. Danogo CLMM uses the official SDK virtual-reserve formula, not a raw reserve ratio; ADA pools with unresolved current-epoch reward amounts are excluded. MuesliSwap is included only for candidates passing the official four-field PoolDatum, pool NFT, factory token, pair and Value checks. SundaeSwap V3 is included after official contract-source review and live API/Koios reserve reconciliation.',
       'Each CEX midpoint is a separate centralized-exchange market reference. It is not a decentralized oracle and may be stale, thin, or venue-specific.',
       'MuesliSwap public API DNS was unavailable in the captured run; its direct on-chain pool observation is validated against the official MuesliSwap pool contract source. A separate MuesliSwap USDM/USADA pool is not a direct ADA/USDM quote and is not included in this cross-rate.',
       'The ADA/USD and USDM/ADA observations have separate timestamps and are not an atomic cross-market snapshot.',
