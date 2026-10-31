@@ -24,6 +24,8 @@ DIGEST_WINDOW_JSON="[]"
 DIGEST_SCAN_START=""
 GRANDPA_STORAGE_JSON="{}"
 HISTORICAL_HEADER_PROBES_JSON="[]"
+GRANDPA_VOTER_LOGS_JSON="[]"
+GRANDPA_VOTER_SET_IDS_JSON="[]"
 TARGET_NUMBER=""
 TARGET_HASH=""
 DB_DIR=""
@@ -33,6 +35,8 @@ GENESIS_HASH=0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf
 finish() {
   local rc=$?
   trap - EXIT
+  GRANDPA_VOTER_LOGS_JSON="$(grep -Ei 'Starting new voter with set ID|GRANDPA voter|authority_set_id' "$LOG" 2>/dev/null | tail -n 100 | jq -Rsc 'split("\\n") | map(select(length > 0))' || printf '[]')"
+  GRANDPA_VOTER_SET_IDS_JSON="$(grep -Eo 'Starting new voter with set ID [0-9]+' "$LOG" 2>/dev/null | sed -E 's/.* ([0-9]+)$/\\1/' | jq -Rsc 'split("\\n") | map(select(length > 0))' || printf '[]')"
   if [[ "$STATUS" != PASS && -n "$NODE_PID" ]]; then
     kill "$NODE_PID" 2>/dev/null || true
     wait "$NODE_PID" 2>/dev/null || true
@@ -48,6 +52,8 @@ finish() {
     --arg digest_window "$DIGEST_WINDOW_JSON" --arg digest_scan_start "$DIGEST_SCAN_START" \
     --arg grandpa_storage "$GRANDPA_STORAGE_JSON" \
     --arg historical_header_probes "$HISTORICAL_HEADER_PROBES_JSON" \
+    --arg grandpa_voter_logs "$GRANDPA_VOTER_LOGS_JSON" \
+    --arg grandpa_voter_set_ids "$GRANDPA_VOTER_SET_IDS_JSON" \
     --arg rpc_url "$RPC_URL" --arg log "$(tail -n 35 "$LOG" 2>/dev/null || true)" \
     '{
       schema_version:"materios-snapshot-state-probe-v1",
@@ -72,6 +78,8 @@ finish() {
       },
       grandpa_storage_diagnostic:($grandpa_storage|fromjson),
       historical_header_retention_probes:($historical_header_probes|fromjson),
+      grandpa_voter_start_logs:($grandpa_voter_logs|fromjson),
+      grandpa_voter_start_set_ids:($grandpa_voter_set_ids|fromjson),
       local_rpc_url:(if $rpc_url=="" then null else $rpc_url end),
       node_log_tail:$log,
       trust_boundary:"Isolated FULL-role diagnostic only: snapshot DB is Constrained(256); USE_MAIN_CHAIN_FOLLOWER_MOCK is used solely to start local RPC; no validator role, no peers, no block import. This proves availability only inside the retained window, not archive history. RPC authority state remains untrusted until independently authenticated."
@@ -183,7 +191,7 @@ nohup env \
   "$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$NODE_BASE_PATH" \
   --name immortal-b3-snapshot-probe --rpc-port 9945 --rpc-methods unsafe \
   --state-pruning 256 --reserved-only --in-peers 0 --out-peers 0 --in-peers-light 0 \
-  --listen-addr /ip4/127.0.0.1/tcp/0 --no-mdns --no-telemetry --no-prometheus -linfo \
+  --listen-addr /ip4/127.0.0.1/tcp/0 --no-mdns --no-telemetry --no-prometheus -linfo,grandpa=debug \
   >"$LOG" 2>&1 </dev/null &
 NODE_PID=$!
 echo "Waiting for local RPC (maximum five minutes)"
