@@ -68,11 +68,12 @@ function unit(address) {
   return String(address?.policyId ?? '').toLowerCase() + String(address?.name ?? '').toLowerCase()
 }
 
-function poolSummary(pool, queryName, onlyVerified) {
+function poolSummary(pool, queryName, onlyVerified, tokenSide) {
   const baseUnit = unit(pool.baseAddress)
   const quoteUnit = unit(pool.quoteAddress)
   return {
     queryName,
+    tokenSide,
     onlyVerifiedQuery: onlyVerified,
     provider: pool.provider ?? pool.providerName ?? pool.dex ?? null,
     poolId: pool.id ?? pool.poolId ?? pool.lpAssetId ?? null,
@@ -122,7 +123,7 @@ async function main() {
   }))
   const summaries = queryResults.flatMap((result) =>
     (Array.isArray(result.json) ? result.json : [])
-      .map((pool) => poolSummary(pool, result.tokenSide, result.onlyVerified)),
+      .map((pool) => poolSummary(pool, result.queryName, result.onlyVerified, result.tokenSide)),
   )
   const byKey = new Map()
   for (const pool of summaries) {
@@ -132,8 +133,8 @@ async function main() {
     else if (!existing.queryVariants.includes(pool.queryName)) existing.queryVariants.push(pool.queryName)
   }
   const pools = [...byKey.values()]
-  const basePools = summaries.filter((pool) => pool.queryName === 'token-a').length
-  const quotePools = summaries.filter((pool) => pool.queryName === 'token-b').length
+  const basePools = summaries.filter((pool) => pool.tokenSide === 'token-a').length
+  const quotePools = summaries.filter((pool) => pool.tokenSide === 'token-b').length
   const evidence = {
     schema: 'immortal-muesliswap-cardano-usdm-readonly-v1',
     classification: 'INDEPENDENT_DEX_VENUE_OBSERVATION_NOT_ORACLE_QUALIFICATION',
