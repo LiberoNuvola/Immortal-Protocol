@@ -6345,3 +6345,43 @@ The previous implementation gate is narrowed by inspecting the exact upstream Ru
 - This addendum was committed to `work/immortal-green-closure`; no snapshot, external Flux Point request, chain operation, or runtime/V3/Reveal change was made.
 
 **Next gate:** when an authorized local snapshot copy is supplied, verify its archive hash/backend/CF metadata first, then compile a tiny standalone extractor pinned to `rocksdb = "=0.21.0"` and open only the copy with `open_cf_for_read_only`; stop on any backend/CF mismatch. Keep B3-A OPEN until the AUX bytes and GRANDPA state decode are actually observed.
+
+
+## 10.31 — Agent A: expanded multi-oracle / market-data reconnaissance (2026-10-31)
+
+This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta asset identity remains policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`, asset name `0014df105553444d`.
+
+### DIA — Cardano-native custom-feed candidate
+- Official custom-oracle process supports selecting assets, sources/pools, methodology (MAIR/VWAPIR), update frequency, deviation trigger and heartbeat: https://www.diadata.org/docs/guides/how-to-guides/request-a-custom-oracle
+- Public MIT/Aiken Cardano integration includes feeder and read-only indexer. Consumers authenticate Pair UTxOs via Pair NFT. Reading an already-published feed on-chain is free; feed updates charge a configurable prepaid ADA protocol fee.
+- DIA's 2026-08-10 close-out states only one continuously published Mainnet feed (ARS/USDT) and 16 distinct feeds on Preview. Custom NAV/additional feed requests may be separately negotiated/priced: https://github.com/diadata-org/dia-cardano-oracle/blob/main/docs/milestones/close-out-report.md
+- Candidate request: custom USDM/USD feed bound to the exact Moneta asset, with disclosed source venues, methodology, liquidity, outlier controls, heartbeat and total costs. No request submitted.
+
+### Orcfax — direct ADA/USDM feed exists, but is stale
+- Mainnet `CER/ADA-USDM/3` exists; source DEX, schedule 1h or 2%, sponsored. Explorer latest displayed fact was ~27 days old; selected fact 2026-06-14: https://explorer.orcfax.io/feeds/CER/ADA-USDM/facts/5cbbb7ee-a232-4f36-844a-5c00ceaeb645
+- Mainnet `CER/ADA-USD/3` exists; source CEX, schedule 1h or 1%, sponsored. Explorer latest displayed fact was ~2 months old; selected fact 2026-06-18: https://explorer.orcfax.io/feeds/CER/ADA-USD/facts/11aa4839-0760-4079-8d0d-524e16d8d3eb
+- These two legs could mathematically derive USD/USDM only after direction, precision, timestamp compatibility and current liveness are established. They are not currently qualified. No direct USDM/USD feed found. Mainnet explorer's active-feed count does not prove freshness of each feed: https://explorer.orcfax.io/
+
+### Free/public market-data observers (not independent oracle consensus)
+- GeckoTerminal documents Cardano token-address pool lookup, pool/trade and simple token-price endpoints; public tier 10 calls/min: https://api.geckoterminal.com/docs/index.html
+- DEX Screener documents token/pair APIs; pair lookup limit up to 300 requests/min: https://docs.dexscreener.com/api/reference
+- CoinGecko identifies `USDM-2` as Moneta USDM in Cardano ecosystem with matching contract prefix `c48cb...`, distinct from Mountain Protocol USDM: https://www.coingecko.com/en/coins/usdm-2
+- CoinGecko contract-address API requires Pro API key; public webpage visibility is not free API entitlement: https://docs.coingecko.com/reference/coins-contract-address
+- DeFiLlama tracks Moneta USDM and displayed peg $1 / market cap $13.33m as of 2026-10-28: https://defillama.com/stablecoin/moneta-usdm
+- API/dashboard count is not source independence: many may repackage overlapping DEX pools. Count upstream venues and source overlap, not dashboards.
+- Exact token pool API responses were not retrievable through current web tools; no current pool count, reserves, volume or depth is asserted.
+
+### Charli3
+- Current docs describe a separate Cardano Token Data API with multi-DEX aggregation across 7+ DEXs: https://docs.charli3.io/
+- Pull Oracle remains marked “Upgrade Coming Soon”: https://charli3.io/products/pull-oracle
+- Developer Portal showed zero active oracle feeds: https://portal.charli3.io/dev/feeds
+- Token API remains observational market data, not a qualified signed/on-chain feed.
+
+### Next gates
+1. Query GeckoTerminal and DEX Screener with exact policy+asset unit; collect pool address, DEX, reserves, volume, depth, timestamps and token orientation.
+2. Inspect Orcfax ADA-USDM and ADA-USD current on-chain facts/archive; verify actual liveness.
+3. Obtain DIA technical specification and quote for custom Moneta USDM/USD Cardano feed.
+4. Keep Pyth feed 3326 NAV separate from a per-token USD quote.
+5. Do not count dashboards derived from the same pools as independent sources.
+
+**Disposition:** no qualified USD/USDM source; Option B remains open; no Oracle consumer/PriceReference/kernel change, EEV approval, R1/Kc certificate, signature, deployment or transaction. V3/Reveal untouched. Detailed research recorded in Issue #37 comment https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6541417739.
