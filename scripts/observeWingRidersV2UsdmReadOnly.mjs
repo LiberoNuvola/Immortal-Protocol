@@ -392,9 +392,15 @@ async function main() {
       poolAndFactoryTokenAssetUtxos: poolResponse.evidence,
       factoryToken: {
         unit: factoryTokenUnit,
-        quantityRaw: factoryTokenTotal.toString(),
-        utxoRef: String(factoryTokenUtxo.tx_hash) + '#' + String(factoryTokenUtxo.tx_index),
-        address: factoryTokenUtxo.address ?? null,
+        totalQuantityRaw: factoryTokenTotal.toString(),
+        utxoCount: factoryTokenRows.length,
+        utxos: factoryTokenRows.map((row) => ({
+          utxoRef: String(row.tx_hash) + '#' + String(row.tx_index),
+          quantityRaw: quantityOf(row, factoryTokenUnit).toString(),
+          address: row.address ?? null,
+          paymentCredential: row.payment_cred ?? null,
+          datumHash: row.datum_hash ?? null,
+        })),
       },
       requestedShareTokens: requested.map(({ share }) => share),
     },
