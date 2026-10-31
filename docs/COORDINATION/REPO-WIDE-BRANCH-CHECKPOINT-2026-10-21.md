@@ -6581,3 +6581,12 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Same-run evidence artifacts: Koios `13050436975` / digest `74bba8e5846e3c1936bff777d0664703e917c07a283b85b8d17d3f36ba9eb09f`; Minswap API `13049768317` / digest `afb00e2af4e6103862f372d7f847546e0b43e9b7a36762a68c0f453e466d6b69`; SuperCardano `13050850055` / digest `147a61eefffab293dc52879a94456595ea517be1c966c1575dc02823571e4b5c`.
 - Interpretation: structural pool identity/reserve serialization is corroborated by an independent on-chain indexer. This is not an independent venue, USD price source, USDM/USD peg, issuer reserve, or oracle quorum. The 81 SuperCardano pool rows include historical records; per-venue freshness is mandatory. Other DEX pool contracts still need independent identity/decoder gates.
 - Reconciliation spec updated at `c8a310b83b70999a68c63dced4978e89d24f926a`.
+
+
+## 10.50 Agent A — Danogo CLMM official pool identity gate (2026-10-31)
+
+- Official public SDK `dano-finance/clmm-sdk` inspected. Mainnet pool NFT policy / pool script hash: `d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb`; pool script reference UTxO `64d111b957e7d7848ffdde5149aa77fa4090a7fa1ad0ac108067900614848501#0`; protocol config reference UTxO `2cafd7c92f7093e5229af274be83dea660b0590b4174bbed79ba662b44fbd1ee#0`.
+- Official SDK's `PoolDatum` has 12 fields including pair, LP fee, platform fees, total swap fee, sqrt lower/upper price bounds, min changes, circulating LP and last withdraw epoch. Its SDK discovers pool outputs via unique NFT under the pool script policy and quantity 1, then decodes datum and Value reserves.
+- Added `scripts/observeDanogoClmmUsdmReadOnly.mjs` at `c3f0c4cd643d3f21c19bfe5af4f9024973e7c7b1`; it takes exact Danogo pool NFT IDs from same-run SuperCardano, queries Koios `/asset_utxos`, validates NFT quantity/cardinality, datum schema, exact USDM pair and raw Value reserve match. It records credential, datum CBOR/hash and block/time; no wallet/signing/transactions/chain writes.
+- Added CI job `read-only-danogo-clmm-observation` at workflow commit `437881f6150733531519a3809725eb285b1ae722`, dependent on the same-run SuperCardano discovery artifact. First run pending.
+- Interpretation boundary: Danogo is a separate venue; its CLMM price cannot be inferred from a simple reserve ratio. Need decode current sqrt range, active liquidity and fee math before using it for executable/marginal price evidence. No USD/peg/oracle qualification.
