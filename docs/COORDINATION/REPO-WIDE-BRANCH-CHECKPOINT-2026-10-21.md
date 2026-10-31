@@ -6844,3 +6844,13 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - In the same run, the SundaeSwap V3 observer failed with a 45-second request timeout during Koios acquisition; it produced an incomplete error artifact and is classified `SOURCE_UNAVAILABLE_OR_INCOMPLETE`, not zero pools or a contract mismatch. Earlier 5/5 live API/Koios evidence remains the last successful snapshot; no new snapshot is claimed.
 - The mainnet Minswap/Koios acquisition job was still in progress at the time of this checkpoint; therefore downstream WingRiders, Danogo and cross-reference results for run 41238599020 are pending. Do not infer that Danogo live pricing has been included yet.
 - No wallet, transaction, signing, chain write, oracle refresh, EEV, deployment, or economic rule change.
+
+
+## 10.67 Agent A — CSWAP provisional SDK pricing channel (2026-10-31)
+
+- Reviewed the MIT-licensed `Flux-Point-Studios/dexter` source: `src/dex/cswap.ts`, `src/pricing/cswap-pricing.ts`, `src/dex/definitions/cswap/pool.ts`. The adapter decodes the 8-field pool datum, requires ADA as token A, subtracts 2 ADA min pool deposit, interprets `lp_fee_10k` on a 10,000 basis, and derives a constant-product reserve ratio. It also documents 690,000 lovelace batcher fee, 2 ADA order deposit and 15/10,000 platform fee on the target minimum output.
+- Added `scripts/lib/cswapAmmMath.mjs` and six tests; cross-reference emits CSWAP only in a separate `cswapProvisional` / `provisionalCswapCrossRates` channel. It is not merged into the primary qualified DEX pool set or primary indicative cross-rate series.
+- On the captured candidate, third-party SDK reconstruction gives reserves ADA `1,039.525670` (after 2 ADA min deposit), USDM `198.980533`, fee numerator `85` = 0.85% per SDK, and provisional marginal spot `5.22425814 ADA/USDM`.
+- This is not PlutusV3 contract qualification. CSWAP official source code is not available in the inspected public repositories; fee/Datum/LP/Value semantics remain subject to independent validation. Do not use this provisional figure for EEV/oracle qualification.
+- Commits: math `563c50e462f245155ee7e706587592034f2f7359`; fee formatting fix `4724fe640490f25789e08ce74d9264e0d6449440`; tests `526d2dce625ed000903a8a7c5d575b7e52dfe97a`; cross-reference integration `ec67334b103463eb6c00c57a7bc8c836abbfdff7`; workflow `fb6229fefc2835a3aba823c71b6d713d41ebd62a`; docs `c88b06fa9a106f67aedd778e504cdb773beb7737`.
+- New CI run pending. No wallet, transaction, signing, chain write, oracle refresh, EEV, deployment or economic rule change.
