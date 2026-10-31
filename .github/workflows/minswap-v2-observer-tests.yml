@@ -19,6 +19,8 @@ on:
       - "scripts/fixtures/sundaeswap-v3-usdm-mainnet-2026-10-31.json"
       - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
       - "scripts/observeDanogoClmmUsdmReadOnly.mjs"
+      - "scripts/lib/danogoClmmMath.mjs"
+      - "scripts/lib/danogoClmmMath.test.mjs"
       - "scripts/observeCswapUsdmPoolReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs"
       - "scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs"
@@ -68,11 +70,13 @@ jobs:
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
           node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
           node --check scripts/observeDanogoClmmUsdmReadOnly.mjs
+          node --check scripts/lib/danogoClmmMath.mjs
+          node --check scripts/lib/danogoClmmMath.test.mjs
           node --check scripts/observeCswapUsdmPoolReadOnly.mjs
           node --check scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs
           node --check scripts/observeWingRidersV2UsdmReadOnly.mjs
       - name: Run synthetic decoder fixtures
-        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs scripts/observeSundaeSwapV3UsdmUtxosReadOnly.test.mjs --reporter=verbose
+        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs scripts/observeSundaeSwapV3UsdmUtxosReadOnly.test.mjs scripts/lib/danogoClmmMath.test.mjs --reporter=verbose
 
   read-only-mainnet-observation:
     # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
@@ -366,6 +370,7 @@ jobs:
       - read-only-wingriders-v2-observation
       - read-only-muesliswap-onchain-observation
       - read-only-sundaeswap-v3-mainnet-observation
+      - read-only-danogo-clmm-observation
       - read-only-ada-usd-public-references
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -398,6 +403,11 @@ jobs:
         with:
           name: muesliswap-usdm-utxos-readonly-${{ github.run_id }}
           path: audit/muesliswap
+      - name: Download verified Danogo CLMM pool evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: danogo-clmm-usdm-readonly-${{ github.run_id }}
+          path: audit/danogo
       - name: Download public ADA/USD reference evidence
         uses: actions/download-artifact@v4
         with:
