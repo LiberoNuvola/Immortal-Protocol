@@ -16,8 +16,13 @@ type LucidWalletPort = {
 }
 
 export type CardanoLucidExecutionPort = {
-  signTx(tx: unknown): Promise<unknown>
-  submitTx(signedTx: unknown): Promise<string>
+  /**
+   * Optional direct adapter port. The application currently uses legacy
+   * lucid-cardano, whose signing/submission API is TxComplete.sign().complete()
+   * and TxSigned.submit(), rather than top-level lucid.signTx/submitTx.
+   */
+  signTx?: (tx: unknown) => Promise<unknown>
+  submitTx?: (signedTx: unknown) => Promise<string>
   /**
    * Optional only for transactions with additional spending inputs. Legacy
    * Lucid exposes wallet as an object; Lucid Evolution exposes wallet() as a
@@ -33,7 +38,7 @@ export type CardanoSubmissionReceipt = {
 
 type CmlInputLike = {
   transaction_id: () => { to_hex: () => string }
-  index: () => number | bigint
+  index: () => number | bigint | { to_str: () => string }
 }
 
 type CmlInputListLike = {
@@ -41,12 +46,19 @@ type CmlInputListLike = {
   get: (index: number) => CmlInputLike
 }
 
-type CompletedLucidTransactionLike = {
-  toTransaction: () => {
-    body: () => {
-      inputs: () => CmlInputListLike
-    }
+type CmlTransactionLike = {
+  body: () => {
+    inputs: () => CmlInputListLike
   }
+}
+
+type CompletedLucidTransactionLike = {
+  /** Lucid Evolution completed transaction API. */
+  toTransaction?: () => CmlTransactionLike
+  /** lucid-cardano@0.10.11 exposes its completed CML transaction publicly. */
+  txComplete?: CmlTransactionLike
+  /** lucid-cardano@0.10.11 signing API. */
+  sign?: () => { complete: () => Promise<unknown> }
 }
 
 function canonicalInputReference(value: string): string {
@@ -59,21 +71,33 @@ function canonicalInputReference(value: string): string {
 
 /**
  * Read spending inputs from the completed Lucid transaction body, not from
- * the caller's parallel reference list. The adapter fails closed if the
- * completed transaction does not expose the documented CML transaction API.
+ * the caller's parallel reference list. Both supported transaction shapes
+ * expose the same CML body: Evolution through toTransaction(), legacy Lucid
+ * through its TxComplete.txComplete property.
  */
 function readCompletedTransactionInputs(tx: unknown): readonly string[] {
-  if (!tx || typeof tx !== 'object' || !('toTransaction' in tx)) {
-    throw new Error('Economic submission requires a completed Lucid transaction with toTransaction()')
+  if (!tx || typeof tx !== 'object') {
+    throw new Error('Economic submission requires a completed Lucid transaction')
   }
   const candidate = tx as CompletedLucidTransactionLike
-  if (typeof candidate.toTransaction !== 'function') {
-    throw new Error('Economic submission requires a completed Lucid transaction with toTransaction()')
+  let transaction: CmlTransactionLike | undefined
+  try {
+    transaction =
+      typeof candidate.toTransaction === 'function'
+        ? candidate.toTransaction()
+        : candidate.txComplete
+  } catch {
+    throw new Error('Unable to access completed Lucid transaction body')
+  }
+  if (!transaction || typeof transaction.body !== 'function') {
+    throw new Error(
+      'Economic submission requires a completed Lucid transaction with toTransaction() or txComplete',
+    )
   }
 
   let inputs: CmlInputListLike
   try {
-    inputs = candidate.toTransaction().body().inputs()
+    inputs = transaction.body().inputs()
   } catch {
     throw new Error('Unable to inspect actual inputs in completed Lucid transaction body')
   }
@@ -85,15 +109,27 @@ function readCompletedTransactionInputs(tx: unknown): readonly string[] {
   for (let i = 0; i < inputs.len(); i += 1) {
     const input = inputs.get(i)
     const txHash = input.transaction_id().to_hex()
-    const outputIndex = input.index()
+    const rawOutputIndex = input.index()
     if (!/^[0-9a-f]{64}$/i.test(txHash)) {
       throw new Error('Completed transaction contains a malformed input transaction id')
     }
-    if (
-      (typeof outputIndex !== 'number' && typeof outputIndex !== 'bigint') ||
-      !Number.isSafeInteger(Number(outputIndex)) ||
-      Number(outputIndex) < 0
+    let outputIndex: number
+    if (typeof rawOutputIndex === 'number' || typeof rawOutputIndex === 'bigint') {
+      outputIndex = Number(rawOutputIndex)
+    } else if (
+      rawOutputIndex &&
+      typeof rawOutputIndex === 'object' &&
+      typeof rawOutputIndex.to_str === 'function'
     ) {
+      const encodedIndex = rawOutputIndex.to_str()
+      if (!/^(0|[1-9][0-9]*)$/.test(encodedIndex)) {
+        throw new Error('Completed transaction contains a malformed input output index')
+      }
+      outputIndex = Number(encodedIndex)
+    } else {
+      throw new Error('Completed transaction contains a malformed input output index')
+    }
+    if (!Number.isSafeInteger(outputIndex) || outputIndex < 0) {
       throw new Error('Completed transaction contains a malformed input output index')
     }
     references.push(canonicalInputReference(`${txHash}#${outputIndex}`))
@@ -205,6 +241,47 @@ function assertCompletedInputReferencesUnchanged(
   }
 }
 
+async function signCompletedTransaction(
+  lucid: CardanoLucidExecutionPort,
+  tx: unknown,
+): Promise<unknown> {
+  if (typeof lucid.signTx === 'function') {
+    return lucid.signTx(tx)
+  }
+
+  if (tx && typeof tx === 'object') {
+    const candidate = tx as CompletedLucidTransactionLike
+    if (typeof candidate.sign === 'function') {
+      const signingBuilder = candidate.sign()
+      if (signingBuilder && typeof signingBuilder.complete === 'function') {
+        return signingBuilder.complete()
+      }
+    }
+  }
+
+  throw new Error('Cardano signing port is unavailable for the supplied Lucid transaction')
+}
+
+async function submitSignedTransaction(
+  lucid: CardanoLucidExecutionPort,
+  signedTx: unknown,
+): Promise<string> {
+  if (typeof lucid.submitTx === 'function') {
+    return lucid.submitTx(signedTx)
+  }
+
+  if (
+    signedTx &&
+    typeof signedTx === 'object' &&
+    'submit' in signedTx &&
+    typeof signedTx.submit === 'function'
+  ) {
+    return signedTx.submit()
+  }
+
+  throw new Error('Cardano submission port is unavailable for the supplied signed transaction')
+}
+
 /** Chain-execution boundary for the Cardano adapter. */
 export function createCardanoExecutionAdapter(
   lucid: CardanoLucidExecutionPort,
@@ -216,8 +293,8 @@ export function createCardanoExecutionAdapter(
      * Economically material transitions must use submitEconomic().
      */
     async submitInfrastructure(tx: unknown): Promise<CardanoSubmissionReceipt> {
-      const signedTx = await lucid.signTx(tx)
-      const transactionRef = await lucid.submitTx(signedTx)
+      const signedTx = await signCompletedTransaction(lucid, tx)
+      const transactionRef = await submitSignedTransaction(lucid, signedTx)
       if (!transactionRef.trim()) {
         throw new Error('Cardano submission returned an empty transaction reference')
       }
