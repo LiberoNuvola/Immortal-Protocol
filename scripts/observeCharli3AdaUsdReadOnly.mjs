@@ -90,14 +90,19 @@ async function main() {
       try {
         const datum = decodeCharli3Datum(u.inline_datum?.value ?? null)
         const adaUsd = datum.prices.filter((p) =>
-          p.baseSymbol === EXPECTED.baseSymbol && p.quoteSymbol === EXPECTED.quoteSymbol,
+          (p.baseSymbol === null && p.quoteSymbol === null) ||
+          (p.baseSymbol === EXPECTED.baseSymbol && p.quoteSymbol === EXPECTED.quoteSymbol),
         )
         if (adaUsd.length !== 1) throw new Error('CHARLI3_ADA_USD_PRICE_CARDINALITY:' + adaUsd.length)
+        if ((adaUsd[0].baseSymbol === null) !== (adaUsd[0].quoteSymbol === null)) {
+          throw new Error('CHARLI3_PARTIAL_ASSET_SYMBOL_FIELDS')
+        }
         const price = adaUsd[0]
         const priceRaw = BigInt(price.priceRaw)
         const timestampMs = BigInt(price.timestampMs)
         const expiryMs = BigInt(price.expiryMs)
-        if (priceRaw <= 0n || timestampMs <= 0n || expiryMs <= timestampMs || price.precision < 0 || price.precision > 18) {
+        if (priceRaw <= 0n || timestampMs <= 0n || expiryMs <= timestampMs ||
+            (price.precision !== null && (price.precision < 0 || price.precision > 18))) {
           throw new Error('CHARLI3_ADA_USD_PRICE_FIELDS_INVALID')
         }
         const ageMs = observedAt - Number(timestampMs)
@@ -120,7 +125,8 @@ async function main() {
           quoteSymbol: price.quoteSymbol,
           priceRaw: price.priceRaw,
           precision: price.precision,
-          priceDecimal: formatScaled(priceRaw, price.precision),
+          priceDecimal: price.precision === null ? null : formatScaled(priceRaw, price.precision),
+          pairEvidence: price.baseSymbol === null ? 'PINNED_MAINNET_FEED_ADDRESS_AND_ORACLE_NFT' : 'DATUM_BASE_AND_QUOTE_SYMBOLS',
           timestampMs: timestampMs.toString(),
           timestampIso: new Date(Number(timestampMs)).toISOString(),
           expiryMs: expiryMs.toString(),
