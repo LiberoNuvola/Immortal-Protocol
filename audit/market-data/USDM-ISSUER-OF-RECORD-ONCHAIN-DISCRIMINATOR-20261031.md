@@ -80,3 +80,31 @@ Until then:
 ## Change boundary
 
 Documentation/evidence only. No code, schema, policy, oracle, economic constant, transaction, signature, deployment, or on-chain state changed.
+
+
+## 4. Additional primary-source inconsistency identified
+
+A Moneta-authored article dated 6 May 2026 states that USDM is issued by Moneta Digital LLC and that every USDM token in circulation was minted by Moneta's Cardano-native smart contract. It repeats the same policy ID, asset name and fingerprint.
+
+Source: https://moneta.global/learn/usdm-core-fundamentals/
+
+This statement is not readily reconcilable with NBX's 17 July 2026 Terms, which state that NBX issues a separate NBX-issued USDM obligation within the EEA, distinct from Moneta-issued USDM outside the EEA. NBX's USDM page also links an EU issuer whitepaper updated 24 September 2026.
+
+This is now classified as a **PRIMARY-SOURCE ISSUER-SCOPE CONFLICT / UNRESOLVED**, not merely an absent public mapping. The evidence reviewed does not establish whether:
+- NBX's EEA issuance uses the same minting policy and asset identity with a different reserve/liability attribution;
+- NBX's issuance is a distribution/redemption arrangement while Moneta remains the sole on-chain minter;
+- there is a mint-transaction, issuance-batch, address, or other ledger-level discriminator; or
+- the Moneta article's “every token” statement predates or does not account for the NBX EU issuer arrangement.
+
+Do not choose among these interpretations without authoritative evidence. The September 2026 NBX EU issuer whitepaper and a reproducible mint-history analysis are required next. Cardano token-security documentation confirms that a policy ID identifies the minting policy, and transfers do not execute that policy; it does not establish legal reserve liability or holder-specific issuer status.
+
+Additional sources:
+- Moneta-authored USDM Core article (6 May 2026): https://moneta.global/learn/usdm-core-fundamentals/
+- NBX USDM page, including 24 September 2026 EU issuer whitepaper links: https://nbx.com/en/usdm
+- Cardano Developer Portal, Token Security: https://developers.cardano.org/docs/developers/curriculum/smart-contracts/security/vulnerabilities/token-security/
+
+Updated status:
+- Public issuer narratives consistent with one another: **NO — CONFLICT**
+- Deterministic on-chain issuer-of-record binding: **NOT ESTABLISHED**
+- Option B: **NOT QUALIFIED for reserve/redemption inference**
+- EEV / first Issue: **UNCHANGED — BLOCKED**.
