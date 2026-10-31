@@ -6530,3 +6530,12 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Minswap API collector updated at `b087bc8d2cc9e9f84d5c586f481f7a25a0379380` to key records by `protocol + LP asset id`, preventing a duplicate LP identity across protocol families from silently overwriting another result.
 - Workflow now includes a separate read-only Minswap API collection job, commit `d34f2a61f5e7651324317acdfbfb7cd63f420b48`; no transaction endpoints, signing or chain writes. First collection result pending.
 - Market-source qualification remains open. Minswap API and GeckoTerminal are not independent market venues; cross-indexer comparison and an independent venue/oracle remain separate requirements.
+
+
+## 10.46 Agent A — Minswap API census and automated cross-source gate (2026-10-31)
+
+- Initial full-history API collection hit HTTP 429 at the first per-pool history request; response body said retry in one minute. No artifact was produced. This is API rate limiting, not source absence.
+- Collector changed at `e39f977b0ad75c12761b50966ae6e2264e4ed509`: current pool metrics are collected by default; per-pool history is opt-in via `--with-history`. The earlier fix `b087bc8d2cc9e9f84d5c586f481f7a25a0379380` preserves protocol family in pool identity keys.
+- Metrics-only collection succeeded in run 41204489438: exact verified USDM (decimals 6); 43 total pools (31 MinswapV2, 8 Minswap V1, 4 Stable). History deliberately deferred. API artifact ID `13044046954`, ZIP digest `f716856f91f59b521accc4749a25673ef067037fbdf57af6fc107c7bd6346a0e`.
+- Manual same-run artifact comparison against Koios found 31/31 MinswapV2 LP identity matches and 31/31 exact unordered pair matches. This is not a price or oracle qualification.
+- Added deterministic reconciler `scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs` (commit `13662f56fdf44834bb76967e73e5baba7bb2295a`) and same-run dependent workflow job (commit `d4283fe12e25d315165c88379e9db99d5d372564`). Automated result pending.
