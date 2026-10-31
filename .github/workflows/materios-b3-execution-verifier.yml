@@ -177,7 +177,8 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: node src/probe-websocket-rpc-capabilities.mjs
         env:
-          MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: 2471424
+          MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: 2509312
+          MATERIOS_FINALITY_CANDIDATE_FORCE: "true"
           MATERIOS_WS_EVIDENCE_OUT: out/MateriosWebSocketRpcProbe.json
 
       - name: Probe official Materios archive snapshot

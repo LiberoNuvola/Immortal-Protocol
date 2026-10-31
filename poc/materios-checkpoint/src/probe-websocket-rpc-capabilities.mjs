@@ -24,14 +24,15 @@ const TARGET_GRANDPA_METHODS = [
   "grandpa_unsubscribeJustifications",
 ];
 
-// A configured candidate is a hint, never a trust anchor. The runtime
-// selection below replaces it if it has fallen more than 1024 blocks behind
-// the observed finalized head; this keeps the candidate in the bounded HTTP
-// scan used to cross-check the WebSocket header. The target's FRNK payload is
-// always treated as untrusted until the local verifier validates it.
+// A configured candidate is normally a hint, never a trust anchor. The
+// explicit FORCE switch exists only for bounded historical snapshot probes;
+// the selected header and FRNK bytes remain untrusted until independently
+// cross-bound and verified by the local verifier.
 const CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER = Number(
   process.env.MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER || "0"
 );
+const FORCE_CONFIGURED_FINALITY_CANDIDATE =
+  process.env.MATERIOS_FINALITY_CANDIDATE_FORCE === "true";
 let FINALITY_CANDIDATE_BLOCK_NUMBER = CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER;
 if (!Number.isSafeInteger(FINALITY_CANDIDATE_BLOCK_NUMBER) ||
     FINALITY_CANDIDATE_BLOCK_NUMBER < 0) {
@@ -495,6 +496,7 @@ async function main() {
     const currentFinalityBoundary =
       Math.floor(observedFinalizedHeight / 512) * 512;
     const configuredCandidateIsUsable =
+      FORCE_CONFIGURED_FINALITY_CANDIDATE ||
       CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER > observedFinalizedHeight ||
       observedFinalizedHeight - CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER <= 1024;
     FINALITY_CANDIDATE_BLOCK_NUMBER =
@@ -508,10 +510,13 @@ async function main() {
       observed_finalized_head_number: observedFinalizedHeight,
       selected_boundary_block_number: currentFinalityBoundary,
       selected_block_number: FINALITY_CANDIDATE_BLOCK_NUMBER,
-      reason: FINALITY_CANDIDATE_BLOCK_NUMBER === CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER &&
+      reason: FORCE_CONFIGURED_FINALITY_CANDIDATE
+        ? "FORCED_HISTORICAL_CANDIDATE_FOR_ARCHIVE_SNAPSHOT_PROBE"
+        : (FINALITY_CANDIDATE_BLOCK_NUMBER === CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER &&
           CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER > 0
-        ? "CONFIGURED_CANDIDATE_STILL_WITHIN_RANGE"
-        : "LATEST_FINALIZED_512_BLOCK_BOUNDARY",
+          ? "CONFIGURED_CANDIDATE_STILL_WITHIN_RANGE"
+          : "LATEST_FINALIZED_512_BLOCK_BOUNDARY"),
+      forced_for_diagnostic: FORCE_CONFIGURED_FINALITY_CANDIDATE,
       trust_scope: "UNTRUSTED CANDIDATE SELECTION ONLY",
     };
 

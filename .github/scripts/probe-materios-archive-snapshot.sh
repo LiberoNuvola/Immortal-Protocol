@@ -54,7 +54,7 @@ finish() {
         set_id_hex:(if $set_id=="" then null else $set_id end)},
       local_rpc_url:(if $rpc_url=="" then null else $rpc_url end),
       node_log_tail:$log,
-      trust_boundary:"Availability probe only; RPC authority state is not independently authenticated."
+      trust_boundary:"Isolated FULL-role diagnostic only: USE_MAIN_CHAIN_FOLLOWER_MOCK is used solely to start a local RPC process; no validator role, no peers, no block import. Historical authority state remains untrusted until independently authenticated."
     }' > "$OUT"
   if [[ -n "$GITHUB_OUTPUT" ]]; then
     printf 'rpc_url=%s\nprobe_status=%s\n' "$RPC_URL" "$STATUS" >> "$GITHUB_OUTPUT"
@@ -92,6 +92,8 @@ SNAPSHOT_HEAD="$(jq -r .head_block_at_publish "$TMP/latest.json")"
 SNAPSHOT_SIZE="$(jq -r .size_bytes "$TMP/latest.json")"
 [[ "$SNAPSHOT_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || fail SNAPSHOT_CHECKSUM_INVALID "bad sha256"
 (( SNAPSHOT_SIZE > 0 && SNAPSHOT_SIZE <= 10000000000 )) || fail SNAPSHOT_SIZE_OUT_OF_POLICY "snapshot exceeds 10 GB"
+(( SNAPSHOT_HEAD >= TARGET_NUMBER )) || fail TARGET_AFTER_SNAPSHOT_HEAD "candidate block is newer than the snapshot"
+(( SNAPSHOT_HEAD - TARGET_NUMBER > 256 )) || fail TARGET_NOT_BEYOND_PRUNING_WINDOW "candidate is not more than 256 blocks behind snapshot head"
 
 echo "Fetch official checksums and verify node + chain spec"
 curl -fsSL --retry 3 https://materios.fluxpointstudios.com/releases/SHA256SUMS -o "$TMP/SHA256SUMS" \
@@ -144,12 +146,24 @@ fi
 [[ -d "$DB_DIR" ]] || fail SNAPSHOT_LAYOUT_INVALID "RocksDB directory absent after normalization"
 [[ -f "$DB_DIR/CURRENT" || -f "$DB_DIR/full/CURRENT" ]] || fail SNAPSHOT_LAYOUT_INVALID "RocksDB CURRENT marker absent after normalization"
 
-echo "Start node with explicit --state-pruning archive"
-nohup "$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$NODE_BASE_PATH" \
-  --name immortal-b3-archive-probe --port 30334 --rpc-port 9945 \
-  --rpc-methods unsafe --state-pruning archive \
-  --bootnodes /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM \
-  --out-peers 24 --in-peers 0 --no-telemetry --no-prometheus -linfo >"$LOG" 2>&1 </dev/null &
+echo "Start isolated FULL node: no validator role, no peers, no block import"
+printf '[]\n' > "$TMP/registrations.json"
+nohup env \
+  USE_MAIN_CHAIN_FOLLOWER_MOCK=true \
+  MAIN_CHAIN_FOLLOWER_MOCK_REGISTRATIONS_FILE="$TMP/registrations.json" \
+  MC__FIRST_EPOCH_TIMESTAMP_MILLIS=1654041600000 \
+  MC__EPOCH_DURATION_MILLIS=432000000 \
+  MC__FIRST_EPOCH_NUMBER=0 \
+  MC__FIRST_SLOT_NUMBER=0 \
+  MC__SLOT_DURATION_MILLIS=1000 \
+  CARDANO_SECURITY_PARAMETER=2160 \
+  CARDANO_ACTIVE_SLOTS_COEFF=0.05 \
+  BLOCK_STABILITY_MARGIN=0 \
+  "$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$NODE_BASE_PATH" \
+  --name immortal-b3-archive-probe --rpc-port 9945 --rpc-methods unsafe \
+  --state-pruning archive --reserved-only --in-peers 0 --out-peers 0 --in-peers-light 0 \
+  --listen-addr /ip4/127.0.0.1/tcp/0 --no-mdns --no-telemetry --no-prometheus -linfo \
+  >"$LOG" 2>&1 </dev/null &
 NODE_PID=$!
 READY=false
 for _ in $(seq 1 60); do
@@ -167,28 +181,22 @@ LOCAL_GENESIS="$(rpc_result chain_getBlockHash '[0]')" || fail LOCAL_GENESIS_QUE
 LOCAL_GENESIS="$(tr '[:upper:]' '[:lower:]' <<<"$LOCAL_GENESIS")"
 [[ "$LOCAL_GENESIS" == "$GENESIS_HASH" ]] || fail LOCAL_GENESIS_MISMATCH "restored chain genesis differs"
 
-echo "Wait for target witness block to be finalized"
-DEADLINE=$((SECONDS+1500))
-TARGET_READY=false
-while (( SECONDS < DEADLINE )); do
-  kill -0 "$NODE_PID" 2>/dev/null || fail ARCHIVE_NODE_EXITED "node exited during sync"
-  LOCAL_TARGET="$(rpc_result chain_getBlockHash "[$TARGET_NUMBER]" 2>/dev/null || true)"
-  if [[ "$LOCAL_TARGET" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
-    LOCAL_TARGET="$(tr '[:upper:]' '[:lower:]' <<<"$LOCAL_TARGET")"
-    [[ "$LOCAL_TARGET" == "$TARGET_HASH" ]] || fail TARGET_BLOCK_HASH_MISMATCH "target block hash differs"
-    FINALIZED_HASH="$(rpc_result chain_getFinalizedHead '[]' 2>/dev/null || true)"
-    if [[ "$FINALIZED_HASH" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
-      FINALIZED_HEADER="$(rpc_result chain_getHeader "[\"$FINALIZED_HASH\"]" 2>/dev/null || true)"
-      FINALIZED_NUMBER="$(jq -r '.number // empty' <<<"$FINALIZED_HEADER" 2>/dev/null || true)"
-      if [[ "$FINALIZED_NUMBER" =~ ^0x[0-9a-fA-F]+$ ]]; then
-        FINALIZED_DECIMAL=$((16#$(sed 's/^0x//' <<<"$FINALIZED_NUMBER")))
-        if (( FINALIZED_DECIMAL >= TARGET_NUMBER )); then TARGET_READY=true; break; fi
-      fi
-    fi
-  fi
-  sleep 15
-done
-[[ "$TARGET_READY" == true ]] || fail ARCHIVE_SYNC_TIMEOUT "target was not finalized within 25 minutes"
+echo "Check the snapshot's already-finalized historical block; no P2P sync is permitted"
+HEALTH_JSON="$(rpc_raw system_health '[]')" || fail ARCHIVE_NODE_HEALTH_FAILED "system_health failed"
+PEERS="$(jq -r '.result.peers // -1' <<<"$HEALTH_JSON")"
+[[ "$PEERS" == "0" ]] || fail ARCHIVE_PROBE_NOT_ISOLATED "isolated probe unexpectedly has peers"
+LOCAL_TARGET="$(rpc_result chain_getBlockHash "[$TARGET_NUMBER]")" \
+  || fail SNAPSHOT_TARGET_BLOCK_UNAVAILABLE "snapshot does not contain the candidate block"
+LOCAL_TARGET="$(tr '[:upper:]' '[:lower:]' <<<"$LOCAL_TARGET")"
+[[ "$LOCAL_TARGET" == "$TARGET_HASH" ]] || fail TARGET_BLOCK_HASH_MISMATCH "local snapshot hash differs from WebSocket candidate"
+FINALIZED_HASH="$(rpc_result chain_getFinalizedHead '[]')" \
+  || fail SNAPSHOT_FINALIZED_HEAD_UNAVAILABLE "snapshot finalized head is unavailable"
+FINALIZED_HEADER="$(rpc_result chain_getHeader "[\"$FINALIZED_HASH\"]")" \
+  || fail SNAPSHOT_FINALIZED_HEADER_UNAVAILABLE "snapshot finalized header is unavailable"
+FINALIZED_NUMBER="$(jq -r '.number // empty' <<<"$FINALIZED_HEADER")"
+[[ "$FINALIZED_NUMBER" =~ ^0x[0-9a-fA-F]+$ ]] || fail SNAPSHOT_FINALIZED_HEIGHT_INVALID "snapshot finalized height is malformed"
+FINALIZED_DECIMAL=$((16#$(sed 's/^0x//' <<<"$FINALIZED_NUMBER")))
+(( FINALIZED_DECIMAL >= TARGET_NUMBER )) || fail SNAPSHOT_FINALIZED_HEAD_BEHIND_TARGET "snapshot is not finalized through candidate block"
 
 echo "Query GRANDPA authorities and set id at exact target hash"
 AUTHORITY_HEX="$(rpc_result state_call "[\"GrandpaApi_grandpa_authorities\",\"0x\",\"$TARGET_HASH\"]")" \
