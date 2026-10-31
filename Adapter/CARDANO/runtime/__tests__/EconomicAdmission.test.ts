@@ -276,6 +276,28 @@ describe('economic Cardano submission boundary', () => {
     expect(api.submitTx).not.toHaveBeenCalled()
   })
 
+  it('rejects a legacy TxComplete body replacement during CIP-30 signing before submit', async () => {
+    const { lucid, api } = await makeSimulatedCip30Lucid()
+    const original = legacyCmlTransaction([pool0], 5_000_000n)
+    const replacement = legacyCmlTransaction([pool0], 6_000_000n)
+    const tx = new TxComplete(lucid, original)
+    const replacementWitnesses = bytesToHex(C.TransactionWitnessSet.new().to_bytes())
+    api.signTx.mockImplementation(async () => {
+      // TxComplete.complete() awaits the wallet response and then reads its
+      // public txComplete property again to construct TxSigned.
+      tx.txComplete = replacement
+      return replacementWitnesses
+    })
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(tx, admission, [pool0], [pool0]),
+    ).rejects.toThrow('Signed transaction body changed after economic admission validation')
+
+    expect(api.signTx).toHaveBeenCalledTimes(1)
+    expect(api.submitTx).not.toHaveBeenCalled()
+  })
+
   it('treats the pinned CML Transaction.body input collection as a detached copy', () => {
     const transaction = legacyCmlTransaction([pool0])
     const bodyInputs = transaction.body().inputs()
