@@ -319,7 +319,9 @@ async function main() {
       adaUsdReferences: { startedAt: adaUsd.startedAt, completedAt: adaUsd.completedAt, summary: adaUsd.summary },
     },
     summary: {
-      directConstantProductPools: dexPools.length,
+      directDexPools: dexPools.length,
+      directConstantProductPools: dexPools.filter((pool) => pool.poolType === 'CONSTANT_PRODUCT').length,
+      directConcentratedLiquidityPools: dexPools.filter((pool) => pool.poolType === 'CONCENTRATED_LIQUIDITY').length,
       distinctDexVenues: [...new Set(dexPools.map((x) => x.venue))],
       successfulAdaUsdReferences: cex.length,
       danogoClmmDirectAdaUsdmPools: danogoPricePools.length,
