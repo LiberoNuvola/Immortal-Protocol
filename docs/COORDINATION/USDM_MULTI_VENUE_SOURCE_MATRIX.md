@@ -32,7 +32,7 @@ This is one venue observed through two data channels. Minswap API and Koios are 
 
 | Venue / protocol | Discovery evidence | Candidate route | Qualification status |
 |---|---|---|---|
-| SundaeSwap V3 / Stable | Official SundaeSwap GraphQL API returned 8 exact-USDM pools in run 41225082594: 5 V3, 2 Stableswaps, 1 V1. Five V3 pool IDs and reserves matched the independent SuperCardano indexer (5/5); the other five SuperCardano V3 records were old/zero-reserve. | Direct Koios exact-USDM UTxO capture at official V3 script hash `e0302560...`; decode real PoolDatum and validate pool NFT, asset pair, circulating LP, protocol fees and reserves. StableSwaps and V1 need separate protocol-specific readers. | **API census complete; 5/5 V3 cross-indexer matches; direct Koios decoder gate pending.** |
+| SundaeSwap V3 / Stable | Official SundaeSwap GraphQL API returned 8 exact-USDM pools in run 41225082594: 5 V3, 2 Stableswaps, 1 V1. Five V3 pool IDs and reserves matched the independent SuperCardano indexer (5/5); the other five SuperCardano V3 records were old/zero-reserve. | Direct Koios exact-USDM UTxO capture at official V3 script hash `e0302560...`; decode real PoolDatum and validate pool NFT, asset pair, circulating LP, protocol fees and reserves. StableSwaps and V1 need separate protocol-specific readers. | **API census complete; 5 exact-USDM V3 UTxOs captured from Koios with real inline datums; strict decoder/API reconciliation CI pending.** |
 | WingRiders V2 / Stable | Moneta ecosystem lists WingRiders; third-party DEX Screener currently shows a USDM/NIGHT pair, but it reports very low liquidity. WingRiders publishes an open-source Rapid DEX SDK and its own tRPC pool data interface. | Use official SDK/tRPC or direct UTxO observation; enumerate all USDM pairs, not only USDM/ADA; decode V2 and StableSwap separately. | **Candidate; exact official pool state and current liquidity unverified.** |
 | Danogo CLMM | Third-party DanoNight tracker reports USDM/USDCx and USDM/USDA CLMM pools. Danogo publishes an open-source CLMM SDK and integration documentation. | Discover protocol/config and pool script identifiers from official SDK/constants; exact-asset UTxO scan; implement a dedicated CLMM decoder and tick/liquidity-aware quote logic. | **Candidate only; third-party inventory is not sufficient evidence.** |
 | Splash | Official Cardano directory identifies Splash as an active DEX; no exact USDM pair confirmed in reviewed sources. | Query public pool registry/API and exact-asset on-chain state; only retain if exact USDM appears in a live pool. | **Venue discovery only; USDM listing unconfirmed.** |
@@ -77,7 +77,7 @@ No new weighted average, confidence coefficient, threshold, economic parameter o
 
 ## 7. Immediate next work
 
-1. SundaeSwap next: API census found 8 exact-USDM pools (5 V3, 2 Stableswaps, 1 V1); direct Koios V3 UTxO capture/decoder is now in progress.
+1. SundaeSwap next: API census found 8 exact-USDM pools (5 V3, 2 Stableswaps, 1 V1); 5 V3 UTxOs with real datums have been captured. Finish decoder/API reconciliation, then implement separate Stableswaps and V1 decoders.
 2. WingRiders second: inspect official Rapid DEX tRPC/SDK and identify exact USDM pool records.
 3. Danogo third: use official CLMM SDK and decode real on-chain state; third-party pool lists are only discovery hints.
 4. Check NBX public order book/API and CoinGecko/CoinPaprika listing lineage.
@@ -97,3 +97,19 @@ Actions run [41225082594](https://github.com/LiberoNuvola/Immortal-Protocol/acti
 - The API result is discovery/venue data only; it is not direct UTxO validation. The 2 Stableswaps pools and 1 V1 pool have not been decoded or qualified.
 
 A read-only Koios acquisition job has now been added for the official SundaeSwap V3 pool payment credential `e0302560ced2fdcbfcb2602697df970cd0d6a38f94b32703f51c312b`, filtered by exact USDM and `payment_cred`. It preserves raw inline datum CBOR/JSON first; no decoder is assumed until a real fixture is captured. Workflow run pending.
+
+
+## 9. SundaeSwap V3 — real Mainnet UTxO capture and decoder gate
+
+Read-only Actions run [41225473861](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41225473861) queried Koios `POST /asset_utxos` with exact USDM and `payment_cred=eq.e0302560...` (official V3 pool script). It returned **5 UTxOs**, all with the expected payment credential, exact USDM and inline datum JSON/CBOR. Artifact ID `13051362189`, ZIP SHA-256 `448da612257d58ac4613423b44ab22e792602da5b4546404322dc15b040ce220`; raw Koios page body SHA-256 `b42e028163e6e7e3e79b82c0a639543794793b1244eb6c77837be66e82736185`.
+
+The real datum shape is `Constr 0` with 8 fields: identifier bytes; a list of two asset-pair lists (each `[policy bytes, asset-name bytes]`); circulating LP; bid fee; ask fee; fee-manager Option; market-open slot; protocol-fee lovelace. This differs from Minswap's constructor layout and has its own decoder.
+
+Official SundaeSwap V3 contract semantics reviewed from `lib/calculation/process.ak`, `lib/shared.ak` and `validators/pool.ak`:
+- CIP-68 222 pool NFT name is `000de140 || identifier`; CIP-68 333 LP asset name is `0014df10 || identifier`.
+- If asset A is ADA, subtract datum `protocol_fees` from lovelace to derive the ADA reserve. If asset A is not ADA, the lovelace component is protocol fees only.
+- The pool UTxO Value contains ADA, the two pair assets (unless one is ADA), and exactly one pool NFT. LP supply is represented by datum `circulating_lp` and the CIP-68 333 asset; it is not an extra asset in the pool UTxO.
+
+The one ADA/USDM pool (identifier `64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef`) has raw Value lovelace `75817851679`, protocol fees `1239772000`, therefore ADA reserve `74578079679`; USDM reserve is `14572208659`; circulating LP is `25568555601`. The datum/Value arithmetic is directly supported by the captured UTxO, but the new validator/API reconciliation job has not yet produced its green run.
+
+Added `scripts/lib/sundaeV3PoolDatum.mjs`, observer integration and real-fixture Vitest tests. The fixture is stored in `scripts/fixtures/sundaeswap-v3-usdm-mainnet-2026-10-31.json`. The observer will reconcile pool identifier, CIP-68 333 LP identity, pair, reserves and circulating LP against the same-run official API artifact. This is structural evidence only, not a market price or peg qualification. Stableswaps and V1 remain separate unqualified protocol types.
