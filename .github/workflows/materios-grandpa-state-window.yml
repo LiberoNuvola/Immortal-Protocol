@@ -1,0 +1,112 @@
+name: Materios GRANDPA Historical State Window
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - ".github/workflows/materios-grandpa-state-window.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    name: Exact runtime set state around ${ matrix.target_block }
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        target_block:
+          - 2455115
+          - 2455116
+          - 2509528
+          - 2509824
+          - 2509826
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read exact target and parent GRANDPA runtime/storage state
+        env:
+          TARGET_BLOCK: ${ matrix.target_block }
+          OUT_PATH: ${ runner.temp }/MateriosGrandpaStateWindow-${ matrix.target_block }.json
+          RPC_URL: https://materios.fluxpointstudios.com/rpc
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const target = Number(process.env.TARGET_BLOCK);
+          const expectedGenesis = '0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf';
+          const storageKey = '0x5f9cc45b7a00c5899361e1c6099678dc8a2d09463effcc78a22d75b9cb87dffc';
+          const evidence = {
+            schema_version: 'materios-grandpa-historical-state-window-v1',
+            captured_at: new Date().toISOString(),
+            chain_id: 'materios_preprod_v6',
+            target_block: target,
+            trust_scope: 'Read-only RPC state observations. Historical runtime/storage responses are untrusted and do not authenticate GRANDPA finality or authority-transition provenance.'
+          };
+          const rpc = async (method, params) => {
+            const response = await fetch(process.env.RPC_URL, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+              signal: AbortSignal.timeout(20000)
+            });
+            if (!response.ok) throw new Error('HTTP_' + response.status + '_' + method);
+            const body = await response.json();
+            if (body.error) throw new Error('RPC_' + method + '_' + JSON.stringify(body.error));
+            if (!Object.prototype.hasOwnProperty.call(body, 'result')) throw new Error('RPC_RESULT_MISSING_' + method);
+            return body.result;
+          };
+          const decodeU64 = value => {
+            if (typeof value !== 'string' || !/^0x[0-9a-f]{16}$/i.test(value)) return null;
+            return Buffer.from(value.slice(2), 'hex').readBigUInt64LE(0).toString();
+          };
+          const inspect = async (number, hash) => {
+            const result = { block_number: number, block_hash: hash };
+            const methods = [
+              ['runtime_set_id', () => rpc('state_call', ['GrandpaApi_current_set_id', '0x', hash])],
+              ['runtime_authorities', () => rpc('state_call', ['GrandpaApi_grandpa_authorities', '0x', hash])],
+              ['storage_set_id', () => rpc('state_getStorage', [storageKey, hash])]
+            ];
+            for (const [key, call] of methods) {
+              try {
+                const value = await call();
+                result[key + '_hex'] = value;
+                if (key !== 'runtime_authorities') result[key] = decodeU64(value);
+                else result.runtime_authorities_sha256 = createHash('sha256').update(Buffer.from(value.slice(2), 'hex')).digest('hex');
+              } catch (error) {
+                result[key + '_error'] = String(error);
+              }
+            }
+            return result;
+          };
+          try {
+            const genesis = await rpc('chain_getBlockHash', [0]);
+            if (String(genesis).toLowerCase() !== expectedGenesis) throw new Error('GENESIS_HASH_MISMATCH');
+            const [parentHash, targetHash] = await Promise.all([
+              rpc('chain_getBlockHash', [target - 1]),
+              rpc('chain_getBlockHash', [target])
+            ]);
+            evidence.genesis_hash_match = true;
+            evidence.parent = await inspect(target - 1, parentHash);
+            evidence.target = await inspect(target, targetHash);
+            evidence.status = 'CAPTURED';
+          } catch (error) {
+            evidence.status = 'ERROR';
+            evidence.error = String(error);
+          }
+          fs.writeFileSync(process.env.OUT_PATH, JSON.stringify(evidence, null, 2) + '\n');
+          console.log(JSON.stringify(evidence, null, 2));
+          NODE
+
+      - name: Upload exact historical state evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-grandpa-state-window-${ matrix.target_block }-${ github.run_id }-${ github.run_attempt }
+          path: ${ runner.temp }/MateriosGrandpaStateWindow-${ matrix.target_block }.json
+          if-no-files-found: warn
+          retention-days: 30
