@@ -62,7 +62,7 @@ jobs:
           node --check scripts/observeSaturnSwapUsdmOrderbookReadOnly.mjs
           node --check scripts/observeWingRidersV2UsdmReadOnly.mjs
       - name: Run synthetic decoder fixtures
-        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs --reporter=verbose
+        run: npx vitest run scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs scripts/observeSaturnSwapUsdmOrderbookReadOnly.test.mjs scripts/observeSundaeSwapV3UsdmUtxosReadOnly.test.mjs --reporter=verbose
 
   read-only-mainnet-observation:
     # Public-chain reads only. Never signs, submits, refreshes an oracle or writes to Cardano.
