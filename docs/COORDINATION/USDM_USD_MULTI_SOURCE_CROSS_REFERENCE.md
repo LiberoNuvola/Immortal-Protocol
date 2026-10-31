@@ -259,3 +259,8 @@ The expanded collector succeeded in run [41240334298](https://github.com/LiberoN
 - Aggregators successful: CoinPaprika, CoinLore, CoinGecko. CoinLore has no provider timestamp; its capture timestamp is not a provider freshness guarantee.
 
 Artifact ID 13057132705, ZIP SHA-256 1f9cc9756474ced7ae5be8e82fc2408715d3faf31cd4e8ec56da5a4e989ca82a, extracted JSON SHA-256 8e298c6cc47021f0f0a8074e1e8548621d1c496954f1cc37dd031de345ab31c2. These are ADA/USD references only and do not establish USDM/USD.
+
+
+### Float cross-indexer rerun note
+
+The same-run Float reconciliation job in run 41240334298 failed before producing its artifact with a JavaScript scope error (`v is not defined`) in the join path. The decoder, Float collector, Koios observer and Minswap API collector artifacts all downloaded successfully; the failure is in the local reconciler, not the source providers. The scope reference was corrected to use the current candidate's `datumValidation.lpAsset` (commit 3b52da14a06fab42c5c554927402c19f6b4ddcfd). The rerun is pending; do not carry forward the previous 14/14 result as if it were produced by this updated reconciler.
