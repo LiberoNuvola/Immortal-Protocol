@@ -11,7 +11,6 @@ on:
       - "scripts/collectDexScreenerCardanoUsdmReadOnly.mjs"
       - "scripts/collectGeckoTerminalCardanoUsdmReadOnly.mjs"
       - "scripts/collectMuesliSwapCardanoUsdmReadOnly.mjs"
-      - "scripts/observeCharli3PreprodUsdmUsdReadOnly.mjs"
       - "scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs"
       - ".github/workflows/minswap-v2-observer-tests.yml"
   pull_request:
@@ -188,23 +187,3 @@ jobs:
           path: audit/oracles/muesliswap-cardano-usdm-readonly.json
           if-no-files-found: warn
 
-  read-only-charli3-preprod-observation:
-    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'scripts/observeCharli3PreprodUsdmUsdReadOnly.mjs') }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact source
-        uses: actions/checkout@v4
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Observe documented Charli3 Preprod USDM/USD feed (read-only)
-        run: node scripts/observeCharli3PreprodUsdmUsdReadOnly.mjs --out audit/oracles/charli3-preprod-usdm-usd-readonly.json
-      - name: Upload Charli3 Preprod evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: charli3-preprod-usdm-usd-readonly-${{ github.run_id }}
-          path: audit/oracles/charli3-preprod-usdm-usd-readonly.json
-          if-no-files-found: warn
