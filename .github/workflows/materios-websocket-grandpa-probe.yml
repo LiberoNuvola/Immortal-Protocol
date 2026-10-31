@@ -1,4 +1,4 @@
-name: Materios WebSocket GRANDPA Probe
+name: Materios WebSocket GRANDPA Historical Window Probe
 
 concurrency:
   group: materios-websocket-grandpa-probe-${{ github.ref }}
@@ -16,7 +16,7 @@ on:
         description: "Bounded wait for live justification notification in milliseconds"
         required: true
         type: string
-        default: "15000"
+        default: "0"
   push:
     branches:
       - work/b3-materios-provenance-evidence
@@ -29,9 +29,18 @@ permissions:
 
 jobs:
   ws-grandpa-probe:
-    name: Probe existing public WebSocket RPC
+    name: Historical GRANDPA target ${{ matrix.target_block }}
     runs-on: ubuntu-latest
     timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        target_block:
+          - 2455115
+          - 2455116
+          - 2509528
+          - 2509824
+          - 2509826
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4
@@ -47,7 +56,7 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: npm ci --ignore-scripts
 
-      - name: Run WebSocket GRANDPA capability and capture probe
+      - name: Run WebSocket probe against exact historical block
         id: probe
         continue-on-error: true
         working-directory: poc/materios-checkpoint
@@ -56,74 +65,167 @@ jobs:
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
           MATERIOS_WS_TIMEOUT_MS: "12000"
-          MATERIOS_WS_SUBSCRIPTION_WAIT_MS: ${{ github.event.inputs.subscription_wait_ms || '15000' }}
-          MATERIOS_WS_EVIDENCE_OUT: ${{ runner.temp }}/MateriosWebSocketRpcProbe.json
+          MATERIOS_WS_SUBSCRIPTION_WAIT_MS: ${{ github.event.inputs.subscription_wait_ms || '0' }}
+          MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: ${{ matrix.target_block }}
+          MATERIOS_FINALITY_CANDIDATE_FORCE: "true"
+          MATERIOS_FINALITY_WAIT_SECONDS: "0"
+          MATERIOS_WS_EVIDENCE_OUT: ${{ runner.temp }}/MateriosWebSocketRpcProbe-${{ matrix.target_block }}.json
         run: node src/probe-websocket-rpc-capabilities.mjs
 
-      - name: Upload raw WebSocket acquisition evidence
+      - name: Cross-check exact target over independent public HTTP RPC
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: materios-websocket-grandpa-probe-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/MateriosWebSocketRpcProbe.json
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Summarize WebSocket proof availability (not verification)
-        if: always()
+        working-directory: poc/materios-checkpoint
         env:
-          EVIDENCE_PATH: ${{ runner.temp }}/MateriosWebSocketRpcProbe.json
+          TARGET_BLOCK: ${{ matrix.target_block }}
+          WS_EVIDENCE_PATH: ${{ runner.temp }}/MateriosWebSocketRpcProbe-${{ matrix.target_block }}.json
+          OUT_PATH: ${{ runner.temp }}/MateriosGrandpaTargetCrossRoute-${{ matrix.target_block }}.json
+          MATERIOS_HTTP_RPC: https://materios.fluxpointstudios.com/rpc
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const path = process.env.EVIDENCE_PATH;
-          if (!fs.existsSync(path)) {
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '# Materios WebSocket GRANDPA Probe\n\nNo evidence JSON was produced.\n');
-            process.exit(1);
-          }
-          const e = JSON.parse(fs.readFileSync(path, 'utf8'));
-          const lines = [
-            '# Materios WebSocket GRANDPA Probe',
-            '',
-            '- Endpoint connected: **' + String(e.websocket?.connected ?? false) + '**',
-            '- Chain ID label: **' + String(e.chain_id ?? 'unknown') + '**',
-            '- Observed system chain: **' + String(e.identity?.system_chain ?? 'unknown') + '**',
-            '- Genesis hash match: **' + String(e.identity?.genesis_hash_match ?? false) + '**',
-            '- RPC catalogue status: **' + String(e.catalogue?.status ?? 'unknown') + '**',
-            '- Advertised method count: **' + String(e.catalogue?.method_count ?? 'unknown') + '**',
-            '- grandpa_proveFinality: **' + String(e.catalogue?.grandpa_methods?.grandpa_proveFinality ?? 'unknown') + '**',
-            '- grandpa_subscribeJustifications: **' + String(e.catalogue?.grandpa_methods?.grandpa_subscribeJustifications ?? 'unknown') + '**',
-            '- grandpa_unsubscribeJustifications: **' + String(e.catalogue?.grandpa_methods?.grandpa_unsubscribeJustifications ?? 'unknown') + '**',
-            '- Direct grandpa_proveFinality call: **' + String(e.finality_probe?.prove_finality?.status ?? 'unknown') + '**',
-            '- Direct grandpa_subscribeJustifications call: **' + String(e.finality_probe?.subscribe_justifications?.status ?? 'unknown') + '**',
-            '- Subscription notification received: **' + String(e.finality_probe?.subscribe_justifications?.notification_received ?? false) + '**',
-            '- Latest-head FRNK justification entries: **' + String(e.head_block_justifications?.frnk_entry_count ?? 'unknown') + '**',
-            '- Raw finality payload captured: **' + String(e.claims?.raw_grandpa_finality_payload_captured ?? false) + '**',
-            '- Raw FRNK justification captured: **' + String(e.claims?.raw_grandpa_justification_captured ?? false) + '**',
-            '',
-            '**This is read-only acquisition evidence. The probe does not verify GRANDPA signatures/quorum, authority-set history, or B3-A.**',
-          ];
-          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
-          const identityValid = e.websocket?.connected === true && e.identity?.genesis_hash_match === true;
-          const witnessCaptured =
-            e.claims?.raw_grandpa_finality_payload_captured === true ||
-            e.claims?.raw_grandpa_justification_captured === true;
+          import { createHash } from 'node:crypto';
+          import { hashMateriosHeader } from '../materios-smoldot/target-ancestry-bridge.mjs';
 
-          if (!identityValid) {
-            lines.push('', '- Acquisition classification: **ACQUISITION_ERROR**');
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '\n## Classification\n\nThe endpoint did not establish the pinned Materios chain identity. B3-A remains OPEN.\n');
-            console.error('Fail-closed: WebSocket did not establish the expected Materios chain identity.');
-            process.exit(1);
+          const target = Number(process.env.TARGET_BLOCK);
+          const expectedGenesis = '0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf';
+          const evidence = {
+            schema_version: 'materios-grandpa-exact-target-cross-route-v1',
+            captured_at: new Date().toISOString(),
+            chain_id: 'materios_preprod_v6',
+            target_block_number: target,
+            endpoints: {
+              websocket: 'wss://materios.fluxpointstudios.com/preprod-rpc',
+              http: 'https://materios.fluxpointstudios.com/rpc'
+            },
+            websocket: null,
+            http: { status: 'NOT_ATTEMPTED' },
+            comparison: { status: 'NOT_COMPARABLE' },
+            trust_scope: 'Read-only raw acquisition and cross-route header binding only. No GRANDPA signature, quorum, active-set, authority-transition, or finality claim.'
+          };
+          const norm = x => typeof x === 'string' ? x.toLowerCase() : x;
+          const headerShape = h => ({
+            parentHash: norm(h?.parentHash),
+            number: norm(h?.number),
+            stateRoot: norm(h?.stateRoot),
+            extrinsicsRoot: norm(h?.extrinsicsRoot),
+            digest: (h?.digest?.logs ?? []).map(norm)
+          });
+          const rpc = async (method, params) => {
+            const response = await fetch(process.env.MATERIOS_HTTP_RPC, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+              signal: AbortSignal.timeout(20000)
+            });
+            if (!response.ok) throw new Error('HTTP_' + response.status + '_' + method);
+            const body = await response.json();
+            if (body.error) throw new Error('RPC_' + method + '_' + JSON.stringify(body.error));
+            if (!Object.prototype.hasOwnProperty.call(body, 'result')) throw new Error('RPC_RESULT_MISSING_' + method);
+            return body.result;
+          };
+          const frnk = list => {
+            if (!Array.isArray(list)) return [];
+            return list.filter(x => Array.isArray(x) && x.length === 2 &&
+              (x[0] === '0x46524e4b' || x[0] === 'FRNK') &&
+              typeof x[1] === 'string' && /^0x(?:[0-9a-f]{2})+$/i.test(x[1]))
+              .map(x => ({ engine_id: '0x46524e4b', raw_hex: x[1].toLowerCase(),
+                sha256: createHash('sha256').update(Buffer.from(x[1].slice(2), 'hex')).digest('hex') }));
+          };
+
+          if (fs.existsSync(process.env.WS_EVIDENCE_PATH)) {
+            const ws = JSON.parse(fs.readFileSync(process.env.WS_EVIDENCE_PATH, 'utf8'));
+            const c = ws.historical_candidate_probe ?? {};
+            evidence.websocket = {
+              connected: ws.websocket?.connected === true,
+              genesis_hash_match: ws.identity?.genesis_hash_match === true,
+              requested_block_number: c.requested_block_number ?? null,
+              returned_block_number: c.returned_block_number ?? null,
+              requested_block_hash: c.requested_block_hash ?? null,
+              status: c.status ?? 'UNKNOWN',
+              header: c.header ?? null,
+              frnk_entries: c.justifications?.entries?.filter(x => x.engineId === '0x46524e4b') ?? [],
+              error: c.error ?? null
+            };
+          } else {
+            evidence.websocket = { status: 'EVIDENCE_FILE_MISSING' };
           }
 
-          if (!witnessCaptured) {
-            lines.push('', '- Acquisition classification: **WITNESS_UNAVAILABLE**');
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '\n## Classification\n\nThe probe completed and the endpoint identity matched, but no raw GRANDPA finality payload or FRNK justification was returned. This is a valid negative acquisition result, not a verifier result. B3-A remains OPEN as MATERIOS_FINALITY_PROOF_UNAVAILABLE.\n');
-            console.log('WITNESS_UNAVAILABLE: probe completed; no raw GRANDPA witness returned. B3-A remains OPEN.');
-            process.exit(0);
+          try {
+            const genesis = await rpc('chain_getBlockHash', [0]);
+            if (norm(genesis) !== expectedGenesis) throw new Error('HTTP_GENESIS_HASH_MISMATCH');
+            const blockHash = await rpc('chain_getBlockHash', [target]);
+            if (typeof blockHash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(blockHash)) {
+              throw new Error('HTTP_TARGET_HASH_UNAVAILABLE');
+            }
+            const [header, block] = await Promise.all([
+              rpc('chain_getHeader', [blockHash]),
+              rpc('chain_getBlock', [blockHash])
+            ]);
+            if (!block?.block?.header) throw new Error('HTTP_SIGNED_BLOCK_MALFORMED');
+            const computedHash = hashMateriosHeader(header);
+            if (norm(computedHash) !== norm(blockHash)) throw new Error('HTTP_HEADER_HASH_RECOMPUTE_MISMATCH');
+            if (JSON.stringify(headerShape(header)) !== JSON.stringify(headerShape(block.block.header))) {
+              throw new Error('HTTP_HEADER_BLOCK_RESPONSE_MISMATCH');
+            }
+            evidence.http = {
+              status: 'CAPTURED',
+              genesis_hash_match: true,
+              block_hash: norm(blockHash),
+              computed_header_hash: norm(computedHash),
+              header,
+              frnk_entries: frnk(block.justifications),
+              justification_entry_count: Array.isArray(block.justifications) ? block.justifications.length : null
+            };
+          } catch (error) {
+            evidence.http = { status: 'ERROR', error: String(error) };
           }
 
-          lines.push('', '- Acquisition classification: **WITNESS_CAPTURED_UNVERIFIED**');
-          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '\n## Classification\n\nA raw GRANDPA payload was captured but has not been independently verified. B3-A remains OPEN until the full genesis-rooted and Materios-specific verification boundary passes.\n');
-          console.log('WITNESS_CAPTURED_UNVERIFIED: raw payload acquired; B3-A remains OPEN pending independent verification.');
+          const w = evidence.websocket;
+          const h = evidence.http;
+          if (w?.genesis_hash_match === true && h.status === 'CAPTURED' &&
+              Number(w.returned_block_number) === target &&
+              Number(w.requested_block_number) === target &&
+              norm(w.requested_block_hash) === h.block_hash) {
+            const sameHeader = JSON.stringify(headerShape(w.header)) === JSON.stringify(headerShape(h.header));
+            const wsFrnk = w.frnk_entries ?? [];
+            const httpFrnk = h.frnk_entries ?? [];
+            const wsPayloads = wsFrnk.map(x => String(x.rawPayloadHex).toLowerCase()).sort();
+            const httpPayloads = httpFrnk.map(x => x.raw_hex).sort();
+            evidence.comparison = {
+              status: sameHeader ? 'HEADER_BOUND_BOTH_ROUTES' : 'HEADER_FIELDS_DISAGREE',
+              same_header_fields: sameHeader,
+              websocket_frnk_count: wsPayloads.length,
+              http_frnk_count: httpPayloads.length,
+              same_frnk_payload_set: JSON.stringify(wsPayloads) === JSON.stringify(httpPayloads),
+              websocket_frnk_sha256: wsFrnk.map(x => x.payloadSha256 ?? null),
+              http_frnk_sha256: httpFrnk.map(x => x.sha256)
+            };
+          } else {
+            evidence.comparison = {
+              status: 'ROUTES_NOT_CROSS_BOUND',
+              websocket_genesis_ok: w?.genesis_hash_match === true,
+              http_genesis_ok: h.status === 'CAPTURED',
+              websocket_target_ok: Number(w?.returned_block_number) === target,
+              websocket_hash: w?.requested_block_hash ?? null,
+              http_hash: h?.block_hash ?? null
+            };
+          }
+          fs.writeFileSync(process.env.OUT_PATH, JSON.stringify(evidence, null, 2) + '\n');
+          console.log(JSON.stringify({
+            target,
+            http: evidence.http.status,
+            websocket: evidence.websocket?.status ?? 'UNKNOWN',
+            comparison: evidence.comparison
+          }, null, 2));
           NODE
+
+      - name: Upload raw WebSocket and HTTP cross-route evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-grandpa-target-${{ matrix.target_block }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/MateriosWebSocketRpcProbe-${{ matrix.target_block }}.json
+            ${{ runner.temp }}/MateriosGrandpaTargetCrossRoute-${{ matrix.target_block }}.json
+          if-no-files-found: warn
+          retention-days: 30
