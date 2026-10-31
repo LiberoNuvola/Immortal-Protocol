@@ -6244,3 +6244,23 @@ A local runtime/container inspection found only previously downloaded small GitH
 The SDK's AUX column and key contract are now exact, but a safe raw reader is not yet approved. The candidate route is to use a separately opened RocksDB secondary/read-only view (or an immutable working copy) with the exact 13 column-family names `col0` through `col12`, read key bytes `grandpa_schema_version`, `grandpa_voters`, and `grandpa_completed_round` from column 8, and never call the SDK migration/open helper on the source. Before implementation, verify that the pinned kvdb-rocksdb 0.19.0 API supports this read-only/secondary mode and that the snapshot actually uses RocksDB rather than ParityDB. The SDK supports both database backends; the snapshot's backend must be established from its files/configuration, not guessed.
 
 B3-A remains OPEN. The physical storage contract is now known; the source database itself is still unavailable, and the stale-AuxStore diagnosis remains a leading hypothesis rather than a proven root cause.
+
+
+## Agent A — Pyth Pro Cardano entitlement path (2026-10-31)
+
+A fresh review of the official Intersect onboarding announcement identified a concrete access route for the existing Pyth Pro investigation:
+
+- Intersect announced on 2026-06-17 a free one-year Pyth Pro subscription for every project building on Cardano, described as full access with no usage caps.
+- Published onboarding path: contact `genia@dourolabs.xyz`, provide the project name and what is being built; Pyth issues the API key and onboarding support.
+- Official announcement: https://www.intersectmbo.org/news/pyth-pro-on-cardano-subscription-offer
+- Pyth API-key guidance: https://docs.pyth.network/pro/acquire-api-key
+
+IMMORTAL-specific status:
+- The protected `PYTH_LAZER_TOKEN` was configured in the project environment and its authentication succeeded in the prior probe. The probe of feed ID 16 (ADA/USD) returned `403 FEED_ENTITLEMENT_REQUIRED`; this is a feed-entitlement result, not an authentication failure.
+- That result does not establish entitlement for feed ID 3326. The current key's feed entitlements should be checked using the documented `GET /v1/symbols?entitled_only=true` filter, then the Pyth team should confirm that the existing Cardano project key is covered by the one-year offer and whether it includes `Crypto.NAV.USDM/RESERVES` (ID 3326, asset type `nav`).
+- If entitlement is granted, the next read-only acquisition is the signed feed-3326 update on `fixed_rate@200ms`, preserving raw price, exponent, publisher count, feed-update timestamp and signed payload. No authenticated request to feed 3326 has been made in this pass.
+- Feed 3326 remains a reserve NAV cross-check only, not a USD-per-USDM unit quote. It cannot close Option B or change direct-USDM EEV.
+
+Issue #37 access-route record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6540273424.
+
+**Disposition unchanged:** Option B selected; no qualified USD/USDM unit-price source; Pyth feed 3326 not qualified for economic use; no code, consumer, Oracle schema, Kernel, V3, Reveal, deployment, EEV approval, wallet signature, or on-chain state changed. Do not dispatch or modify Agent B's runner for this Agent A entitlement check.
