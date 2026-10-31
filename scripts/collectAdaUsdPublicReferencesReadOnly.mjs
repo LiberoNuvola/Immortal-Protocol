@@ -75,6 +75,44 @@ const SOURCES = [
       return { bid: data[0], ask: data[2], last: data[6], sourceTime: null }
     },
   },
+
+  {
+    id: 'coinpaprika',
+    venue: 'CoinPaprika Aggregator',
+    sourceType: 'MARKET_DATA_AGGREGATOR',
+    url: 'https://api.coinpaprika.com/v1/tickers/ada-cardano',
+    parse(data) {
+      if (data.id !== 'ada-cardano' || data.symbol !== 'ADA' || !data.quotes?.USD) throw new Error('COINPAPRIKA_ADA_USD_SHAPE_INVALID')
+      return { last: data.quotes.USD.price, bid: null, ask: null, sourceTime: data.last_updated ?? null, volume24hUsd: data.quotes.USD.volume_24h }
+    },
+  },
+  {
+    id: 'coinlore',
+    venue: 'CoinLore Aggregator',
+    sourceType: 'MARKET_DATA_AGGREGATOR',
+    url: 'https://api.coinlore.net/api/ticker/?id=257',
+    parse(data) {
+      const ticker = Array.isArray(data) ? data.find((x) => x.id === '257' && x.symbol === 'ADA') : null
+      if (!ticker) throw new Error('COINLORE_ADA_USD_SHAPE_INVALID')
+      return { last: ticker.price_usd, bid: null, ask: null, sourceTime: null, volume24hUsd: ticker.volume24 }
+    },
+  },
+  {
+    id: 'coingecko',
+    venue: 'CoinGecko Aggregator',
+    sourceType: 'MARKET_DATA_AGGREGATOR',
+    url: 'https://api.coingecko.com/api/v3/simple/price?ids=cardano&vs_currencies=usd&include_last_updated_at=true',
+    parse(data) {
+      const ticker = data.cardano
+      if (!ticker || ticker.usd === undefined) throw new Error('COINGECKO_ADA_USD_SHAPE_INVALID')
+      return {
+        last: ticker.usd,
+        bid: null,
+        ask: null,
+        sourceTime: ticker.last_updated_at ? new Date(ticker.last_updated_at * 1000).toISOString() : null,
+      }
+    },
+  },
 ]
 
 const sha256 = (raw) => createHash('sha256').update(raw, 'utf8').digest('hex')
@@ -122,7 +160,8 @@ async function collect(source) {
       id: source.id,
       venue: source.venue,
       market: 'ADA/USD',
-      marketType: 'CENTRALIZED_EXCHANGE_SPOT',
+      marketType: source.sourceType ?? 'CENTRALIZED_EXCHANGE_SPOT',
+      sourceType: source.sourceType ?? 'CEX_SPOT',
       status: 'MATCHED',
       observedAt,
       sourceTime: parsed.sourceTime,
@@ -131,6 +170,7 @@ async function collect(source) {
       lastUsd: fromScaled(last),
       midUsd: bid === null || ask === null ? null : fromScaled((bid + ask) / 2n),
       indexUsd: index === null ? null : fromScaled(index),
+      volume24hUsd: parsed.volume24hUsd ?? null,
       bidAskAvailable: bid !== null && ask !== null,
       evidence,
     }
@@ -138,6 +178,7 @@ async function collect(source) {
     return {
       id: source.id,
       venue: source.venue,
+      sourceType: source.sourceType ?? 'CEX_SPOT',
       market: 'ADA/USD',
       status: 'SOURCE_UNAVAILABLE',
       error: error instanceof Error ? error.message : String(error),
@@ -156,8 +197,8 @@ async function main() {
   const results = await Promise.all(SOURCES.map(collect))
   const successful = results.filter((x) => x.status === 'MATCHED')
   const evidence = {
-    schema: 'immortal-ada-usd-public-cex-reference-v1',
-    classification: 'CEX_ADA_USD_MARKET_REFERENCES_NOT_DECENTRALIZED_ORACLE',
+    schema: 'immortal-ada-usd-public-reference-v2',
+    classification: 'CEX_AND_MARKET_AGGREGATOR_ADA_USD_REFERENCES_NOT_DECENTRALIZED_ORACLE',
     network: 'off-chain-public-market-data',
     pair: 'ADA/USD',
     startedAt,
@@ -166,6 +207,12 @@ async function main() {
       sourceCount: SOURCES.length,
       successfulSourceCount: successful.length,
       unavailableSourceCount: results.length - successful.length,
+      successfulCexSourceCount: successful.filter((x) => x.sourceType === 'CEX_SPOT').length,
+      successfulAggregatorSourceCount: successful.filter((x) => x.sourceType === 'MARKET_DATA_AGGREGATOR').length,
+      bySourceType: Object.fromEntries([...new Set(results.map((x) => x.sourceType ?? 'CEX_SPOT'))].map((type) => [
+        type,
+        { total: results.filter((x) => (x.sourceType ?? 'CEX_SPOT') === type).length, successful: successful.filter((x) => x.sourceType === type).length },
+      ])),
       bidAskMidRangeUsd: successful.filter((x) => x.midUsd !== null).length
         ? {
             min: successful.filter((x) => x.midUsd !== null).map((x) => Number(x.midUsd)).reduce((a, b) => Math.min(a, b)).toFixed(8),
@@ -181,8 +228,10 @@ async function main() {
     },
     sources: results,
     limitations: [
-      'These are centralized-exchange spot tickers, not decentralized oracle feeds.',
+      'CEX spot tickers and market aggregators are separate source classes; aggregators may reuse or weight the same CEX/DEX venue data and are not independent exchanges.',
       'Each exchange is a separate venue, but all may share correlated global crypto market conditions.',
+      'CoinPaprika, CoinLore and CoinGecko are aggregator references, not independent oracle networks or direct venue quotes.',
+      'Aggregator timestamps and methodologies differ; CoinLore may provide no source timestamp, so its capture time is not a provider freshness guarantee.',
       'Bid/ask midpoint and last trade are not a guaranteed executable price for a particular order size.',
       'This dataset only provides ADA/USD references. Any USDM/USD cross-rate must combine it with a separately qualified USDM/ADA venue observation and must preserve both timestamps and fees.',
       'No USD/USDM peg, issuer reserve, redemption, EEV, oracle quorum, or deployment qualification is produced.',
