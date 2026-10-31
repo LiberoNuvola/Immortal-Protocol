@@ -199,38 +199,37 @@ async function main() {
   const requested = [...shareMap.values()]
   if (requested.length === 0) throw new Error('WINGRIDERS_NO_USDM_POOLS_DISCOVERED')
 
-  const factoryTxHash = FACTORY_TOKEN_UTXO.split('#')[0]
-  const [factoryResponse, poolResponse] = await Promise.all([
-    // The official factory-token seed output is historical and already spent.
-    // /tx_info preserves the original output Value; /utxo_info would return
-    // an is_spent row without its original asset list.
-    koios('/tx_info', { _tx_hashes: [factoryTxHash] }),
+  const policyIds = [...new Set(requested.map(({ share }) => share.policyId))]
+  if (policyIds.length !== 1) throw new Error('WINGRIDERS_MULTIPLE_SHARE_TOKEN_POLICIES')
+  const observedPolicyId = policyIds[0]
+  const factoryTokenUnit = observedPolicyId + FACTORY_TOKEN_NAME_HEX
+  const validityTokenUnit = observedPolicyId + POOL_VALIDITY_TOKEN_NAME_HEX
+  const [poolResponse] = await Promise.all([
     koios('/asset_utxos?limit=1000&offset=0', {
-      _asset_list: requested.map(({ share }) => [share.policyId, share.assetNameHex]),
+      _asset_list: [
+        ...requested.map(({ share }) => [share.policyId, share.assetNameHex]),
+        [observedPolicyId, FACTORY_TOKEN_NAME_HEX],
+      ],
       _extended: true,
     }),
   ])
-  const factoryTx = factoryResponse.json.find((x) => String(x.tx_hash).toLowerCase() === factoryTxHash)
-  const factoryUtxo = (factoryTx?.outputs ?? []).find((x) =>
-    String(x.tx_hash).toLowerCase() + '#' + String(x.tx_index) === FACTORY_TOKEN_UTXO)
-  if (!factoryUtxo) {
-    throw Object.assign(new Error('WINGRIDERS_OFFICIAL_FACTORY_TOKEN_OUTPUT_NOT_FOUND_IN_TX_INFO'), {
-      evidence: { factoryResponse: factoryResponse.evidence, factoryTx },
+  const factoryTokenRows = poolResponse.json.filter((row) => quantityOf(row, factoryTokenUnit) > 0n)
+  const factoryTokenTotal = factoryTokenRows.reduce((sum, row) => sum + quantityOf(row, factoryTokenUnit), 0n)
+  if (factoryTokenRows.length !== 1 || factoryTokenTotal !== 1n) {
+    throw Object.assign(new Error('WINGRIDERS_FACTORY_TOKEN_F_CARDINALITY_OR_QUANTITY_INVALID'), {
+      evidence: {
+        policyId: observedPolicyId,
+        factoryTokenUnit,
+        factoryTokenUtxos: factoryTokenRows.map((row) => ({
+          utxoRef: String(row.tx_hash) + '#' + String(row.tx_index),
+          quantityRaw: quantityOf(row, factoryTokenUnit).toString(),
+          address: row.address ?? null,
+        })),
+        poolAssetResponse: poolResponse.evidence,
+      },
     })
   }
-  const factoryToken = (factoryUtxo.asset_list ?? []).find((a) =>
-    String(a.asset_name ?? '').toLowerCase() === FACTORY_TOKEN_NAME_HEX)
-  if (!factoryToken) {
-    throw Object.assign(new Error('WINGRIDERS_FACTORY_TOKEN_F_NOT_FOUND'), {
-      evidence: { factoryResponse: factoryResponse.evidence, factoryUtxo },
-    })
-  }
-  if (BigInt(String(factoryToken.quantity ?? '0')) !== 1n) {
-    throw Object.assign(new Error('WINGRIDERS_FACTORY_TOKEN_F_QUANTITY_NOT_ONE'), {
-      evidence: { factoryResponse: factoryResponse.evidence, factoryToken },
-    })
-  }
-  const officialPolicyId = String(factoryToken.policy_id).toLowerCase()
+  const factoryTokenUtxo = factoryTokenRows[0]
   const byShare = new Map()
   for (const row of poolResponse.json) {
     for (const a of row.asset_list ?? []) {
@@ -255,10 +254,10 @@ async function main() {
     }
     const utxo = rows[0]
     try {
-      if (share.policyId !== officialPolicyId) throw new Error('WINGRIDERS_POOL_POLICY_DIFFERS_FROM_OFFICIAL_FACTORY_POLICY')
+      if (share.policyId !== observedPolicyId) throw new Error('WINGRIDERS_POOL_POLICY_DIFFERS_FROM_FACTORY_POLICY')
       const shareQty = quantityOf(utxo, share.fullUnit)
       if (shareQty <= 0n) throw new Error('WINGRIDERS_SHARE_TOKEN_QUANTITY_NONPOSITIVE')
-      const validityUnit = officialPolicyId + POOL_VALIDITY_TOKEN_NAME_HEX
+      const validityUnit = validityTokenUnit
       const validityQty = quantityOf(utxo, validityUnit)
       if (validityQty !== 1n) throw new Error('WINGRIDERS_POOL_VALIDITY_TOKEN_NOT_ONE')
       if (!utxo.inline_datum?.value) throw new Error('WINGRIDERS_POOL_INLINE_DATUM_MISSING')
@@ -295,7 +294,7 @@ async function main() {
       if (assetCount !== expectedAssetCount) throw new Error('WINGRIDERS_POOL_ASSET_COMPOSITION_COUNT_INVALID')
       results.push({
         status: reserveMatch ? 'MATCH' : 'ACTIVE_RESERVE_MISMATCH',
-        officialPolicyIdMatches: share.policyId === officialPolicyId,
+        officialPolicyIdMatches: share.policyId === observedPolicyId,
         poolKey: pool.key,
         poolType: datum.poolType,
         shareToken: share,
@@ -345,7 +344,7 @@ async function main() {
     } catch (cause) {
       results.push({
         status: 'UNQUALIFIED_POOL',
-        officialPolicyIdMatches: share.policyId === officialPolicyId,
+        officialPolicyIdMatches: share.policyId === observedPolicyId,
         poolKey: pool.key,
         shareToken: share,
         utxoRef: String(utxo.tx_hash).toLowerCase() + '#' + String(utxo.tx_index),
@@ -371,7 +370,8 @@ async function main() {
       officialFactoryTokenUtxo: FACTORY_TOKEN_UTXO,
       officialFactoryTokenNameHex: FACTORY_TOKEN_NAME_HEX,
       poolValidityTokenNameHex: POOL_VALIDITY_TOKEN_NAME_HEX,
-      officialPolicyIdDerivedFromFactoryUtxo: officialPolicyId,
+      observedPolicyIdFromShareAndFactoryTokens: observedPolicyId,
+      policySeedReferenceUtxo: FACTORY_TOKEN_UTXO,
       mainnetPoolScriptHashes: MAINNET_POOL_SCRIPT_HASHES,
     },
     discoverySource: {
@@ -384,15 +384,13 @@ async function main() {
     startedAt,
     completedAt: new Date().toISOString(),
     acquisition: {
-      factoryTransaction: factoryResponse.evidence,
-      factoryOutput: {
-        txHash: factoryTxHash,
-        txIndex: Number(FACTORY_TOKEN_UTXO.split('#')[1]),
-        address: factoryUtxo.address ?? factoryUtxo.payment_addr?.bech32 ?? null,
-        value: factoryUtxo.value ?? null,
-        assetList: factoryUtxo.asset_list ?? [],
+      poolAndFactoryTokenAssetUtxos: poolResponse.evidence,
+      factoryToken: {
+        unit: factoryTokenUnit,
+        quantityRaw: factoryTokenTotal.toString(),
+        utxoRef: String(factoryTokenUtxo.tx_hash) + '#' + String(factoryTokenUtxo.tx_index),
+        address: factoryTokenUtxo.address ?? null,
       },
-      poolAssetUtxos: poolResponse.evidence,
       requestedShareTokens: requested.map(({ share }) => share),
     },
     summary: {
@@ -404,6 +402,8 @@ async function main() {
       missingCurrentUtxoCount: results.filter((r) => r.status === 'NO_CURRENT_UTXO_FOR_SHARE_TOKEN').length,
       cardinalityErrorCount: results.filter((r) => r.status === 'POOL_UTXO_CARDINALITY_INVALID').length,
       paymentCredentialOfficialMatches: results.filter((r) => r.paymentCredentialMatchesOfficial).length,
+      factoryTokenUtxoCount: factoryTokenRows.length,
+      factoryTokenQuantityRaw: factoryTokenTotal.toString(),
       shareQtyMatchesSupercardanoCount: results.filter((r) => r.shareQtyMatchesSupercardano).length,
     },
     pools: results,
