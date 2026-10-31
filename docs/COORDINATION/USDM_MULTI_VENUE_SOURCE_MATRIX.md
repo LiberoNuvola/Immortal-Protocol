@@ -32,7 +32,7 @@ This is one venue observed through two data channels. Minswap API and Koios are 
 
 | Venue / protocol | Discovery evidence | Candidate route | Qualification status |
 |---|---|---|---|
-| SundaeSwap V3 / Stable | Official SundaeSwap GraphQL API returned 8 exact-USDM pools in run 41225082594: 5 V3, 2 Stableswaps, 1 V1. Five V3 pool IDs and reserves matched the independent SuperCardano indexer (5/5); the other five SuperCardano V3 records were old/zero-reserve. | Direct Koios exact-USDM UTxO capture at official V3 script hash `e0302560...`; decode real PoolDatum and validate pool NFT, asset pair, circulating LP, protocol fees and reserves. StableSwaps and V1 need separate protocol-specific readers. | **API census complete; 5 exact-USDM V3 UTxOs captured from Koios with real inline datums; strict decoder/API reconciliation CI pending.** |
+| SundaeSwap V3 / Stable | Official SundaeSwap GraphQL API returned 8 exact-USDM pools in run 41225082594: 5 V3, 2 Stableswaps, 1 V1. Five V3 pool IDs and reserves matched the independent SuperCardano indexer (5/5); the other five SuperCardano V3 records were old/zero-reserve. | Direct Koios exact-USDM UTxO capture at official V3 script hash `e0302560...`; decode real PoolDatum and validate pool NFT, asset pair, circulating LP, protocol fees and reserves. StableSwaps and V1 need separate protocol-specific readers. | **<badge> 5/5 V3 pools decoded and reconciled live against official API + Koios Mainnet; 2 Stableswaps and 1 V1 remain unqualified.** |
 | WingRiders V2 / Stable | Moneta ecosystem lists WingRiders; third-party DEX Screener currently shows a USDM/NIGHT pair, but it reports very low liquidity. WingRiders publishes an open-source Rapid DEX SDK and its own tRPC pool data interface. | Use official SDK/tRPC or direct UTxO observation; enumerate all USDM pairs, not only USDM/ADA; decode V2 and StableSwap separately. | **Candidate; exact official pool state and current liquidity unverified.** |
 | Danogo CLMM | Third-party DanoNight tracker reports USDM/USDCx and USDM/USDA CLMM pools. Danogo publishes an open-source CLMM SDK and integration documentation. | Discover protocol/config and pool script identifiers from official SDK/constants; exact-asset UTxO scan; implement a dedicated CLMM decoder and tick/liquidity-aware quote logic. | **Candidate only; third-party inventory is not sufficient evidence.** |
 | Splash | Official Cardano directory identifies Splash as an active DEX; no exact USDM pair confirmed in reviewed sources. | Query public pool registry/API and exact-asset on-chain state; only retain if exact USDM appears in a live pool. | **Venue discovery only; USDM listing unconfirmed.** |
@@ -124,3 +124,16 @@ The cross-reference job in run [41225927034](https://github.com/LiberoNuvola/Imm
 - CEX references were observed around 17:43:54Z. Resulting indicative USDM/USD cross-rates: Minswap 0.99427442–0.99473749; WingRiders 0.99962935–1.00009491.
 
 These are reserve-ratio × CEX-midpoint calculations, not executable quotes. The WingRiders state is materially older than the CEX observations; the source ages are exposed, but no arbitrary freshness threshold is applied. The 6 values must not be averaged or represented as a peg proof. The Minswap ADA/USDM reserve ratio also changed between successive snapshots, reinforcing the need for timestamp-aware evidence.
+
+
+## 11. SundaeSwap V3 live structural reconciliation — green
+
+Actions run [41226055552](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41226055552) completed all 15 jobs successfully, including the 26-test suite and same-run Sundae V3 API/Koios observer.
+
+- Koios exact-USDM UTxOs: 5; official V3 payment credential matches: 5; inline datum: 5.
+- Strict V3 PoolDatum/Value validation: **5 MATCH, 0 UNQUALIFIED**.
+- Same-run SundaeSwap API V3 pool count: 5; API reconciliations: **5 MATCH, 0 MISMATCH, 0 API-only**.
+- Compared fields: pool identifier, CIP-68 222 NFT, CIP-68 333 LP asset ID, ordered pair, Value-derived reserves, protocol fees and circulating LP quantity.
+- Observer artifact ID `13051323349`, ZIP SHA-256 `8d7f9695567386e96e936e39f4cb59f74bb95e09193ce42c1537e6e0fb607669`.
+
+This establishes structural on-chain/API consistency for the five Sundae V3 pools at the captured time. It does not qualify the two Stableswaps pools or the V1 pool, nor any market price, USDM/USD peg, oracle, EEV or deployment. Sundae V3 ADA/USDM is now a third independently operated DEX venue with direct on-chain structural evidence, but its spot reserve ratio remains a pre-fee, pre-slippage indicative observation.
