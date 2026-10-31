@@ -55,6 +55,11 @@ on:
 permissions:
   contents: read
 
+# Keep only the latest same-branch evidence run; older read-only snapshots are superseded.
+concurrency:
+  group: agent-a-usdm-market-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   decoder-fixtures:
     runs-on: ubuntu-24.04
