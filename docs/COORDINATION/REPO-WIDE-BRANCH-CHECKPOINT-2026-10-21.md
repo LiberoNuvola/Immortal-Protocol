@@ -6455,7 +6455,7 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 
 ## 10.38 — Agent A: Minswap V2 PoolDatum decoding and reserve checks (2026-10-31)
 
-- Added a strict decoder for the official 10-field V2 `PoolDatum` JSON constructor and checks for the configured batching stake key credential, canonical asset ordering, exact USDM pair membership, Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed Value composition, and reserve-vs-Value consistency.
+- Added a strict decoder for the official 10-field V2 `PoolDatum` JSON constructor and checks for the configured pool batching Script credential, canonical asset ordering, exact USDM pair membership, Pool NFT quantity 1, derived LP asset identity/presence, positive liquidity/reserves, exact allowed Value composition, and reserve-vs-Value consistency.
 - The reserve check uses the official V2 `min_pool_ada = 4,500,000` lovelace adjustment when ADA is one of the pair assets.
 - Relevant commits: `ff427eb` (datum decoder), `e5a08bb` (exact Value composition/reserve checks), `d756d2c` (integer parser correction), `7ff55f5` (batching stake credential validation).
 - Official source basis: V2 `types.ak`, `utils.ak`, `pool_validation.ak`, `pool_validator.ak`, and deployed Mainnet params/script files.
@@ -6468,7 +6468,7 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 
 - Pure Minswap V2 decoder and candidate validator are now exported from `scripts/observeMinswapV2UsdmUtxosReadOnly.mjs`; a direct-execution guard prevents import-time network activity.
 - Added `scripts/observeMinswapV2UsdmUtxosReadOnly.test.mjs` with synthetic fixtures covering the 10-field PoolDatum shape, exact-USDM candidate, batching stake credential, Pool NFT quantity, derived LP asset, reserve/Value mismatch, unexpected assets and missing USDM.
-- Official-source cross-check: Minswap V2 `PoolDatum` has ten fields; `min_pool_ada=4,500,000`; LP asset name derivation uses SHA3-256; deployed Mainnet params confirm the batching stake key hash. Official source paths are documented in `docs/COORDINATION/MINSWAP_USDM_READONLY_RECONCILIATION.md`.
+- Official-source cross-check: Minswap V2 `PoolDatum` has ten fields; `min_pool_ada=4,500,000`; LP asset name derivation uses SHA3-256; deployed Mainnet script.json confirms the pool batching Script hash 1eae…; params.json separately confirms the pool address Key stake hash 5256…. Official source paths are documented in `docs/COORDINATION/MINSWAP_USDM_READONLY_RECONCILIATION.md`.
 - Added isolated GitHub Actions workflow `.github/workflows/minswap-v2-observer-tests.yml` to run only the synthetic decoder suite on relevant pushes/PRs; workflow commit `58188c06c4dc26a9707699bd6933f5502da3e9aa`. Verified green: Actions run 41203141441, job decoder-fixtures, commit 58188c06c4dc26a9707699bd6933f5502da3e9aa; logs show all 9/9 tests passed (Vitest 1.6.1, Node 22.23.4; suite duration 414 ms).
 - **Evidence limit:** fixture suite is committed but not yet evidenced as executed; fixtures are synthetic, not a captured Koios response. Koios `inline_datum.value` compatibility and any live UTxO/API reconciliation remain unverified.
 - Current commits: observer export/guard `edb75e3c2a524eb34c7deb04323de501cface042`; synthetic test file `a77a96c2268d1131bf7e4525aacc6fe2e5ac8083`, test correction `3de91c44ccead5ad4b4125c1ef24e3c4be61cd35`; reconciliation spec `d29da344907b5344e9922817fa62dd66f621c90d`.
@@ -6492,3 +6492,14 @@ This pass broadens the USD/USDM source search beyond Pyth. Exact Mainnet Moneta 
 - Observer updated at commit `0d916ec531b47cc5116aa34f2379bc607679b8d8` to use exact-asset `POST /asset_utxos` with `_asset_list: [[policyId, assetNameHex]]`, `_extended: true`, and PostgREST address equality filter for the official Minswap V2 address. This avoids scanning every UTxO at the shared validator address.
 - Reconciliation specification records the failed attempt and targeted retry method at commit `3cf57979ab7da8107c6adc3000bcb4600902ad7a`.
 - A new push-triggered run is expected for the exact-asset query. Do not infer success until its run, job logs and evidence artifact are inspected. No chain writes, wallet operations, oracle refresh, or economic qualification.
+
+
+## 10.42 Agent A — Real Koios datum fixture and credential correction (2026-10-31)
+
+- The targeted exact-USDM/address-filtered Koios Mainnet observer succeeded in Actions run 41203478980 and returned 31 UTxO candidates. Artifact ID 13043376113; artifact ZIP digest `2c4ac5bc51cb1db194bc3e388d0b06c555cd003f3b12ff53d9ede58dfd74ffb6`.
+- The actual datum revealed `pool_batching_stake_credential = Inline(ScriptCredential(hash))`, constructor path `Constr 0 -> Constr 1 -> bytes`, hash `1eae96baf29e27682ea3f815aba361a0c6059d45e4bfbe95bbd2f44a`.
+- Prior decoder incorrectly treated this as VerificationKeyCredential and compared it to `52563c…`. Official deployment files distinguish the two: `deployed/mainnet/script.json` says `poolBatchingCredential` is Script `1eae…`; `deployed/mainnet/params.json` says `poolStakeCredential` is Key `5256…`. The captured output stake address decodes to Key `5256…`.
+- Observer corrected at `2677b299dc8c01b07d1fbaef5857b15894c4986d`; synthetic fixture updated at `8e535af40be1310a6bd257c12a6e28b70806c7b2`.
+- Preserved the first real Koios datum, raw CBOR, UTxO Value/assets, datum hash, tx/block context and response provenance in `scripts/fixtures/minswap-v2-usdm-mainnet-2026-10-31.json` (commit `5a0d20505a51a84d116dfcb68f9df09d5da509aa`). Added an end-to-end real-fixture assertion to the Vitest suite (commit `6ce1eaa89156b75d9a7d857643c5d56c94e6bbe8`).
+- The corrected real-fixture test has not yet run. The latest push should trigger the focused CI and read-only observer; inspect both before classifying any candidates. 31 is an acquisition count, not a count of valid pools.
+- Scope remains Agent A only. No V3, Reveal, Materios, Kernel, Oracle consumer, EEV, R1/Kc, wallet, deployment, transaction, or chain-write changes.
