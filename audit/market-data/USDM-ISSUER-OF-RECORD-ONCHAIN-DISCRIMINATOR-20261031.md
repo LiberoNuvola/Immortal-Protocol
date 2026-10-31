@@ -108,3 +108,56 @@ Updated status:
 - Deterministic on-chain issuer-of-record binding: **NOT ESTABLISHED**
 - Option B: **NOT QUALIFIED for reserve/redemption inference**
 - EEV / first Issue: **UNCHANGED — BLOCKED**.
+
+
+---
+
+## 5. Follow-up: NBX H1 2026 report narrows the apparent issuer conflict
+
+The primary NBX H1 2026 report (published 18 September 2026 through the Oslo Børs disclosure channel) states explicitly:
+- NBX is the **sole issuer of USDM within the EEA**; Moneta Digital LLC separately issues USDM outside the EEA.
+- NBX continued to mint and redeem NBX-issued USDM during H1 2026.
+- NBX-issued USDM reserves are held in USD with Sparebanken Norge and an Amundi USD money market fund; the reserve value is reported daily on Cardano by Charli3.
+- At 30 June 2026, NBX reported USD 3,879,541 of safeguarded assets and USD 3,865,909 of corresponding NBX-issued USDM redemption liability, presented gross and not offset.
+- The CEO's report states that the NBX whitepaper had been filed with Finanstilsynet in summer 2025 and that registration was still in process at the H1 reporting date.
+
+Primary issuer report (49-page H1 report, published 18 September 2026):
+https://storage.mfn.se/c/aHR0cHM6Ly9hcGkzLm9zbG9ib3JzLm5vL3YxL25ld3NyZWFkZXIvYXR0YWNobWVudD9tZXNzYWdlSWQ9NjgyNzI1JmF0dGFjaG1lbnRJZD0zMzM2MTA/nbx-h1report-2026.pdf?news-id=b8befff0-b652-5b30-8d95-7bc796bf8612
+
+Relevant report passages:
+- Issuer distinction and reserve reporting: pages 8–9 (PDF pages 8–9).
+- Safeguarded reserve and redemption liability: Note 5, PDF page 44.
+- NBX whitepaper registration still in process at H1 reporting date: CEO letter, PDF page 4.
+
+The NBX public explainer separately states that mint/burn data and total supply are stored on-chain in a special "counter UTXO", and describes NBX as EEA issuer and Moneta as US issuer:
+https://nbx.com/en/whatisusdm
+
+### Corrected interpretation of the earlier source conflict
+
+The Moneta article's statement that every USDM token was minted by Moneta's Cardano-native smart contract is not sufficient to contradict NBX's separately documented legal issuance and reserve obligations. It may describe technical contract ownership/operation rather than the legal issuer-of-record for every issuance. The inspected sources do not settle that distinction. Accordingly, the previous classification is refined:
+
+- Legal issuer split by jurisdiction: **CORROBORATED by NBX Terms, NBX H1 report, and NBX's own explainer**.
+- Moneta technical minting-contract role vs NBX EEA legal issuance: **NOT RECONCILED**.
+- Exact on-chain mechanism for distinguishing NBX-issued from Moneta-issued quantities: **NOT ESTABLISHED**.
+- NBX aggregate reserve/liability disclosure at 30 June 2026: **DOCUMENTED**, but historical and aggregate; H1 report financial statements are interim/unaudited and do not prove current reserve value or backing of any particular UTxO.
+- Holder-specific issuer-of-record / redemption eligibility: **NOT ESTABLISHED**.
+
+The reported difference between safeguarded assets and redemption liability is USD 13,632 at 30 June 2026. This is only arithmetic on NBX's aggregate reported figures; it is not a haircut, buffer, protocol parameter, available liquidity calculation, or evidence for any particular pool/UTxO.
+
+### Next reproducible evidence gate
+
+1. Obtain and parse the NBX EU Issuer whitepaper dated 24 September 2026 (PDF and XHTML/iXBRL). The official page exposes both links, but direct retrieval failed in this inspection environment:
+   https://nbx.com/en/usdm
+2. Resolve the "counter UTxO" from authoritative NBX/Moneta documentation: policy ID, asset name, script/address, datum schema, update rules, and how the counter represents total supply and burns.
+3. Read the counter UTxO and complete mint/burn transaction history from independent Cardano ledger sources; preserve transaction hashes, slots, block numbers, output references, datum CBOR/hash and raw evidence.
+4. Determine whether mint/burn events encode issuer identity, or whether NBX/Moneta maintain a separate authenticated off-chain issuance registry required to assign issuer-of-record.
+5. Reconcile issuance totals with the issuer's own reporting periods and reserve/liability figures. Do not treat a matching aggregate total as holder-level provenance.
+
+No policy ID alone, address clustering, geographic inference, or market data may substitute for an authenticated issuer mapping.
+
+Updated status:
+- Legal EEA/US issuer split: **CORROBORATED**
+- Technical minter/operator attribution: **OPEN**
+- Per-issuance / per-holding issuer discriminator: **OPEN**
+- Current reserve qualification / holder redemption proof: **NOT ESTABLISHED**
+- Option B remains observational only; EEV / first Issue remains blocked.
