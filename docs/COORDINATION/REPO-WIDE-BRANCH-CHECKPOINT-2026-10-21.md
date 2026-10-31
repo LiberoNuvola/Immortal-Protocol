@@ -6228,3 +6228,19 @@ API references: https://docs.pyth.network/pro/api/rest · https://docs.pyth.netw
 **Disposition:** Moneta reserve NAV feed **IDENTIFIED / NOT QUALIFIED FOR ECONOMIC USE**; Moneta USDM/USD unit feed **NOT FOUND IN THE PUBLIC CATALOG QUERY**; Option B **OPEN**. Preserve existing branch ownership: no duplicate Pyth consumer or new converter, and no Agent B/V3/Reveal changes.
 
 Issue #37 record: https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6540194166.
+
+
+### Exact AuxStore physical location and read-only opening hazard
+
+Read-only inspection of the pinned Polkadot SDK commit c455194a2ae2f613c1c671e00dbf397b83ed8171, in substrate/client/db/src/lib.rs and substrate/client/db/src/utils.rs, establishes:
+
+- The full-node database has 13 columns; `columns::AUX` is numeric column 8.
+- `Backend<Block>::get_aux(key)` is exactly `storage.db.get(columns::AUX, key)`; `insert_aux` writes to the same column.
+- For the pinned SDK lockfile, `kvdb-rocksdb` is version 0.19.0.
+- The normal `sc-client-db::utils::open_database` path is unsuitable for an evidence-preserving read: it invokes `maybe_migrate_to_type_subdir`, the RocksDB opener invokes `upgrade_db` and `update_version`, and `check_database_type` writes metadata if the DB type marker is missing. Do not use that path against the source snapshot.
+
+A local runtime/container inspection found only previously downloaded small GitHub Actions evidence ZIPs and extracted JSON artifacts. The approximately 2.39 GB published Materios snapshot is not present in the active working filesystem, so no AuxStore bytes can be extracted in this session. No new snapshot download or request to Flux Point was made.
+
+The SDK's AUX column and key contract are now exact, but a safe raw reader is not yet approved. The candidate route is to use a separately opened RocksDB secondary/read-only view (or an immutable working copy) with the exact 13 column-family names `col0` through `col12`, read key bytes `grandpa_schema_version`, `grandpa_voters`, and `grandpa_completed_round` from column 8, and never call the SDK migration/open helper on the source. Before implementation, verify that the pinned kvdb-rocksdb 0.19.0 API supports this read-only/secondary mode and that the snapshot actually uses RocksDB rather than ParityDB. The SDK supports both database backends; the snapshot's backend must be established from its files/configuration, not guessed.
+
+B3-A remains OPEN. The physical storage contract is now known; the source database itself is still unavailable, and the stale-AuxStore diagnosis remains a leading hypothesis rather than a proven root cause.
