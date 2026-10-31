@@ -270,8 +270,6 @@ async function main() {
       ],
     }
 
-    await mkdir(dirname(out), { recursive: true })
-    await writeFile(out, JSON.stringify(result, null, 2) + '\n', 'utf8')
     const complete = TARGETS.every((t) => feedRows[t.pair].length > 0 && feedRows[t.pair].some((x) => x.statementValid))
     const fresh = complete && TARGETS.every((t) => summaries[t.pair].freshnessStatus === 'FRESH')
     const status = !complete
@@ -280,6 +278,8 @@ async function main() {
         ? 'READ_ONLY_ORCFAX_CER_FEEDS_COMPLETE'
         : 'READ_ONLY_ORCFAX_CER_FEEDS_STALE'
     result.status = status
+    await mkdir(dirname(out), { recursive: true })
+    await writeFile(out, JSON.stringify(result, null, 2) + '\n', 'utf8')
     console.log(JSON.stringify({
       status,
       output: out,
