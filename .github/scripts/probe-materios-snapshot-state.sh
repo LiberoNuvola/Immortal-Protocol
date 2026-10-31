@@ -2,7 +2,7 @@
 # Read-only probe of the official Materios snapshot with archive state pruning.
 # RPC-returned authority data remains untrusted; this tests availability only.
 set -Eeuo pipefail
-OUT="$GITHUB_WORKSPACE/poc/materios-grandpa/out/MateriosArchiveSnapshotProbe.json"
+OUT="$GITHUB_WORKSPACE/poc/materios-grandpa/out/MateriosSnapshotStateProbe.json"
 TMP="$RUNNER_TEMP/materios-archive-snapshot-probe"
 mkdir -p "$(dirname "$OUT")" "$TMP"
 LOG="$TMP/node.log"
@@ -40,7 +40,7 @@ finish() {
     --arg authorities "$AUTHORITY_HEX" --arg set_id "$SET_ID_HEX" \
     --arg rpc_url "$RPC_URL" --arg log "$(tail -n 35 "$LOG" 2>/dev/null || true)" \
     '{
-      schema_version:"materios-archive-snapshot-probe-v1",
+      schema_version:"materios-snapshot-state-probe-v1",
       status:$status, classification:$classification, detail:$detail,
       network:"materios_preprod_v6", genesis_hash:"0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf",
       snapshot:{url:$snapshot_url,sha256:$snapshot_sha256,
@@ -54,7 +54,7 @@ finish() {
         set_id_hex:(if $set_id=="" then null else $set_id end)},
       local_rpc_url:(if $rpc_url=="" then null else $rpc_url end),
       node_log_tail:$log,
-      trust_boundary:"Isolated FULL-role diagnostic only: USE_MAIN_CHAIN_FOLLOWER_MOCK is used solely to start a local RPC process; no validator role, no peers, no block import. Historical authority state remains untrusted until independently authenticated."
+      trust_boundary:"Isolated FULL-role diagnostic only: snapshot DB is Constrained(256); USE_MAIN_CHAIN_FOLLOWER_MOCK is used solely to start local RPC; no validator role, no peers, no block import. This proves availability only inside the retained window, not archive history. RPC authority state remains untrusted until independently authenticated."
     }' > "$OUT"
   if [[ -n "$GITHUB_OUTPUT" ]]; then
     printf 'rpc_url=%s\nprobe_status=%s\n' "$RPC_URL" "$STATUS" >> "$GITHUB_OUTPUT"
@@ -93,7 +93,7 @@ SNAPSHOT_SIZE="$(jq -r .size_bytes "$TMP/latest.json")"
 [[ "$SNAPSHOT_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || fail SNAPSHOT_CHECKSUM_INVALID "bad sha256"
 (( SNAPSHOT_SIZE > 0 && SNAPSHOT_SIZE <= 10000000000 )) || fail SNAPSHOT_SIZE_OUT_OF_POLICY "snapshot exceeds 10 GB"
 (( SNAPSHOT_HEAD >= TARGET_NUMBER )) || fail TARGET_AFTER_SNAPSHOT_HEAD "candidate block is newer than the snapshot"
-(( SNAPSHOT_HEAD - TARGET_NUMBER > 256 )) || fail TARGET_NOT_BEYOND_PRUNING_WINDOW "candidate is not more than 256 blocks behind snapshot head"
+(( SNAPSHOT_HEAD - TARGET_NUMBER <= 256 )) || fail TARGET_OUTSIDE_RETAINED_WINDOW "candidate is more than 256 blocks behind snapshot head"
 
 echo "Fetch official checksums and verify node + chain spec"
 curl -fsSL --retry 3 https://materios.fluxpointstudios.com/releases/SHA256SUMS -o "$TMP/SHA256SUMS" \
@@ -161,7 +161,7 @@ nohup env \
   BLOCK_STABILITY_MARGIN=0 \
   "$NODE" --chain "$TMP/chain-spec-v6-raw.json" --base-path "$NODE_BASE_PATH" \
   --name immortal-b3-archive-probe --rpc-port 9945 --rpc-methods unsafe \
-  --state-pruning archive --reserved-only --in-peers 0 --out-peers 0 --in-peers-light 0 \
+  --state-pruning 256 --reserved-only --in-peers 0 --out-peers 0 --in-peers-light 0 \
   --listen-addr /ip4/127.0.0.1/tcp/0 --no-mdns --no-telemetry --no-prometheus -linfo \
   >"$LOG" 2>&1 </dev/null &
 NODE_PID=$!
@@ -207,7 +207,7 @@ SET_ID_HEX="$(rpc_result state_call "[\"GrandpaApi_current_set_id\",\"0x\",\"$TA
 [[ "$SET_ID_HEX" =~ ^0x[0-9a-fA-F]{16}$ ]] || fail HISTORICAL_SET_ID_ENCODING_INVALID "set-id result is not u64 SCALE hex"
 
 STATUS=PASS
-CLASSIFICATION=ARCHIVE_HISTORICAL_STATE_QUERY_PASS
-DETAIL="Verified snapshot checksum; normalized RocksDB path; node started with archive pruning; WebSocket FRNK candidate hash matched and was finalized; both historical GRANDPA state calls succeeded."
+CLASSIFICATION=SNAPSHOT_WINDOW_HISTORICAL_STATE_QUERY_PASS
+DETAIL="Verified snapshot checksum; normalized RocksDB path; node started with the stored Constrained(256) pruning mode; WebSocket FRNK candidate matched a finalized block inside the retained snapshot window; both historical GRANDPA state calls succeeded."
 RPC_URL=http://127.0.0.1:9945
 echo "PASS: local archive authority RPC available at $RPC_URL"

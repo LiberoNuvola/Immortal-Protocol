@@ -15,7 +15,7 @@ on:
       - "poc/materios-checkpoint/**"
       - "poc/materios-grandpa/**"
       - ".github/workflows/materios-b3-execution-verifier.yml"
-      - ".github/scripts/probe-materios-archive-snapshot.sh"
+      - ".github/scripts/probe-materios-snapshot-state.sh"
   pull_request:
     branches:
       - b1-hardening
@@ -177,14 +177,14 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: node src/probe-websocket-rpc-capabilities.mjs
         env:
-          MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: 2509312
+          MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: 2509824
           MATERIOS_FINALITY_CANDIDATE_FORCE: "true"
           MATERIOS_WS_EVIDENCE_OUT: out/MateriosWebSocketRpcProbe.json
 
-      - name: Probe official Materios archive snapshot
+      - name: Probe retained state in official Materios snapshot
         id: archive_probe
         continue-on-error: true
-        run: bash .github/scripts/probe-materios-archive-snapshot.sh
+        run: bash .github/scripts/probe-materios-snapshot-state.sh
 
       - name: Capture and verify real Materios GRANDPA witness
         working-directory: poc/materios-grandpa
@@ -199,12 +199,12 @@ jobs:
           MATERIOS_WS_EVIDENCE_PATH: ${{ github.workspace }}/poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
           MATERIOS_BLOCK_BATCH_SIZE: 64
 
-      - name: Upload Materios archive snapshot probe
+      - name: Upload Materios snapshot state probe
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: materios-archive-snapshot-probe
-          path: poc/materios-grandpa/out/MateriosArchiveSnapshotProbe.json
+          name: materios-snapshot-state-probe
+          path: poc/materios-grandpa/out/MateriosSnapshotStateProbe.json
           if-no-files-found: warn
 
       - name: Upload real GRANDPA witness
