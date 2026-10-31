@@ -98,6 +98,14 @@ async function main() {
     }
   }
 
+  const invalidAddressRows = allUtxos.filter((u) =>
+    String(u.address ?? '') !== ADDRESS ||
+    String(u.payment_cred ?? '').toLowerCase() !== V2_POOL_SCRIPT_HASH
+  )
+  if (invalidAddressRows.length > 0) {
+    throw new Error('KOIOS_V2_VALIDATOR_IDENTITY_MISMATCH:' + invalidAddressRows.length)
+  }
+
   const candidates = allUtxos
     .map((u) => {
       const assets = assetsFor(u)
@@ -162,6 +170,7 @@ async function main() {
       extended: true,
       requestEvidence: utxoPages.map((page) => page.response),
       returnedUtxoCount: allUtxos.length,
+      validatorIdentityCheck: { expectedPaymentCredential: V2_POOL_SCRIPT_HASH, validatedRows: allUtxos.length, invalidRows: invalidAddressRows.length },
       pagination: { pageSize: PAGE_SIZE, maxPages: MAX_UTXO_PAGES, pages: utxoPages, complete: utxoPages.length > 0 && utxoPages[utxoPages.length - 1].returnedCount < PAGE_SIZE },
       exactUsdmCandidateCount: observed.length,
       transactionLookups: txHashes.length,
