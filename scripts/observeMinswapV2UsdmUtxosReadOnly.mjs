@@ -25,6 +25,11 @@ const ASSET = Object.freeze({
   decimals: 6,
 })
 const V2_POOL_SCRIPT_HASH = 'ea07b733d932129c378af627436e7cbc2ef0bf96e0036bb51b3bde6b'
+// Official deployed/mainnet/script.json: poolAuthenAsset.
+const V2_POOL_AUTH_NFT = Object.freeze({
+  policyId: 'f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c',
+  assetNameHex: '4d5350',
+})
 const MAX_TX_LOOKUPS = 500
 
 const sha256 = (value) => createHash('sha256').update(value, 'utf8').digest('hex')
@@ -136,6 +141,8 @@ async function main() {
       valueLovelaceRaw: String(u.value ?? ''),
       assets,
       exactUsdmQuantityRaw: usdm[0].quantityRaw,
+      poolAuthNftQuantityRaw: assets.find((a) => a.unit === V2_POOL_AUTH_NFT.policyId + V2_POOL_AUTH_NFT.assetNameHex)?.quantityRaw ?? '0',
+      poolAuthNftValidated: assets.find((a) => a.unit === V2_POOL_AUTH_NFT.policyId + V2_POOL_AUTH_NFT.assetNameHex)?.quantityRaw === '1',
       datumHash: u.datum_hash ?? null,
       inlineDatumCborHex: u.inline_datum?.bytes ?? null,
       inlineDatumJson: u.inline_datum?.value ?? null,
@@ -163,6 +170,7 @@ async function main() {
       protocol: 'MinswapV2',
       poolValidatorAddress: ADDRESS,
       expectedPoolScriptHash: V2_POOL_SCRIPT_HASH,
+      expectedPoolAuthenticationNft: V2_POOL_AUTH_NFT,
       exactAsset: ASSET,
     },
     acquisition: {
@@ -179,7 +187,7 @@ async function main() {
     candidates: observed,
     limitations: [
       'The validator address is a discovery boundary; a matching USDM asset does not by itself prove that an output is a valid Minswap V2 pool.',
-      'Pool NFT/authentication asset and datum schema must be validated against the deployed V2 contract before reserve fields are accepted.',
+      'A USDM candidate is not pool-authenticated unless the exact deployed Pool NFT is present at quantity 1; datum schema and reserve consistency still require validation.',
       'No datum decoder or reserve interpretation is performed by this script.',
       'Koios is one indexed view of the Cardano ledger; optional Blockfrost/Maestro checks remain separate provider observations, not independent market venues.',
       'This output is not a USD/USDM price, peg proof, oracle quote, EEV evidence, or deployment approval.',
