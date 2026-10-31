@@ -51,6 +51,7 @@ jobs:
           node --check scripts/collectMinswapUsdmReadOnly.mjs
           node --check scripts/collectSundaeSwapUsdmReadOnly.mjs
           node --check scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs
+          node --check scripts/lib/sundaeV3PoolDatum.mjs
           node --check scripts/deriveUsdmUsdCrossReferenceReadOnly.mjs
           node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
           node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
@@ -422,8 +423,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Capture exact-USDM SundaeSwap V3 pool UTxOs (read-only)
-        run: node scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs --out audit/oracles/sundaeswap-v3-usdm-utxos-readonly.json
+      - name: Download same-run official SundaeSwap API pool census
+        uses: actions/download-artifact@v4
+        with:
+          name: sundaeswap-usdm-api-readonly-${{ github.run_id }}
+          path: audit/api
+      - name: Capture and reconcile exact-USDM SundaeSwap V3 pool UTxOs (read-only)
+        run: node scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs --api audit/api/sundaeswap-usdm-readonly.json --out audit/oracles/sundaeswap-v3-usdm-utxos-readonly.json
       - name: Upload raw SundaeSwap V3 pool datum evidence
         if: always()
         uses: actions/upload-artifact@v4
