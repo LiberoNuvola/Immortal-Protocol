@@ -28,6 +28,7 @@ import Types
   , B1PrizePoolAction (..)
   , PrizeDatum (..)
   , PrizeStatus (..)
+  , BeaconStatus (..)
   )
 
 import OracleTypes
@@ -1037,10 +1038,6 @@ mkValidator
         TicketExpired ->
 
              traceIfFalse
-               "B1PrizePool: count must be positive"
-               (ppUnresolvedTicketCount datum > 0)
-
-          && traceIfFalse
                "B1PrizePool: continuing output missing"
                (isJust nextDatum)
 
@@ -1056,24 +1053,43 @@ mkValidator
 
                    Just pd ->
                      let
-                       expiresAt =
-                         pdExpiresAt pd
+                       expiresAt = pdExpiresAt pd
+                       payout = pdPrizeAmount pd
+                       reservePerTicket = pdPriceUsdm pd
 
-                       payout =
-                         pdPrizeAmount pd
+                       pendingExpiry =
+                            pdStatus pd == Pending
+                         && (pdBeaconStatus pd == BeaconPending
+                               || pdBeaconStatus pd == BeaconReady)
+                         && payout == 0
+                         && reservePerTicket > 0
+                         && ppUnresolvedTicketCount datum > 0
+                         && ppUnresolvedReserve datum >= reservePerTicket
+                         && ppUnresolvedTicketCount n
+                              == ppUnresolvedTicketCount datum - 1
+                         && ppUnresolvedReserve n
+                              == ppUnresolvedReserve datum
+                                   + EconomicKernel.reserveExpiryDelta reservePerTicket
+                         && ppPendingLiabilities n
+                              == ppPendingLiabilities datum
 
-                       -- Deterministic reserve:
-                       -- one ticket releases exactly its own
-                       -- pdPriceUsdm reservation.
-                       reservePerTicket =
-                         pdPriceUsdm pd
+                       revealedExpiry =
+                            pdStatus pd == Revealed
+                         && pdBeaconStatus pd == BeaconReady
+                         && payout >= 0
+                         && ppPendingLiabilities datum >= payout
+                         && ppUnresolvedTicketCount n
+                              == ppUnresolvedTicketCount datum
+                         && ppUnresolvedReserve n
+                              == ppUnresolvedReserve datum
+                         && ppPendingLiabilities n
+                              == ppPendingLiabilities datum
+                                   + EconomicKernel.liabilityClaimDelta payout
 
                      in
                            traceIfFalse
                              "B1PrizePool: not expired"
-                             (transactionAtOrAfter
-                               expiresAt
-                               info)
+                             (transactionAtOrAfter expiresAt info)
 
                        && traceIfFalse
                             "B1PrizePool: prize pool binding mismatch"
@@ -1082,16 +1098,17 @@ mkValidator
                                  pdPrizePoolHash pd == h)
 
                        && traceIfFalse
-                            "B1PrizePool: payout must be zero for unrevealed"
-                            (payout == 0)
-
-                       && traceIfFalse
-                            "B1PrizePool: status must be Pending"
-                            (pdStatus pd == Pending)
-
-                       && traceIfFalse
                             "B1PrizePool: price must be positive"
                             (reservePerTicket > 0)
+
+                       && traceIfFalse
+                            "B1PrizePool: unsupported expiry lifecycle"
+                            (pendingExpiry || revealedExpiry)
+
+                       && traceIfFalse
+                            "B1PrizePool: physical pool value changed"
+                            (txOutValue (ownInputResolved ctx)
+                              == ownOutputValue ctx)
 
                        && ppTotalLiquidity n
                             == ppTotalLiquidity datum
@@ -1108,17 +1125,8 @@ mkValidator
                        && ppPrizeHash n
                             == ppPrizeHash datum
 
-                       && ppUnresolvedTicketCount n
-                            == ppUnresolvedTicketCount datum - 1
-
-                       && ppUnresolvedReserve n
-                            == ppUnresolvedReserve datum
-                                 + EconomicKernel.reserveExpiryDelta reservePerTicket
-                       && ppPendingLiabilities n
-                            == ppPendingLiabilities datum
-
                        && ppUnresolvedReserve n >= 0
-
+                       && ppPendingLiabilities n >= 0
                        && solvencyInvariant n
 
 -- ============================================================
