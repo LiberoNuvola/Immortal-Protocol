@@ -1177,9 +1177,9 @@ export async function expirePrize(opts: {
     status: expiryStatus,
     ticketPriceUsdm: BigInt(priceUsdm),
     prizeAmountUsdm: BigInt(prizeAmount),
-    pendingLiabilities,
-    unresolvedReserve,
-    unresolvedTicketCount: currentCount,
+    pendingLiabilities: BigInt(pendingLiabilities),
+    unresolvedReserve: BigInt(unresolvedReserve),
+    unresolvedTicketCount: BigInt(currentCount),
   })
   poolFields[1] = expiryAccounting.pendingLiabilities
   poolFields[2] = expiryAccounting.unresolvedReserve
