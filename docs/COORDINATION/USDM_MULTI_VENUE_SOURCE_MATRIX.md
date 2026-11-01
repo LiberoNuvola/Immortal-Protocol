@@ -377,3 +377,53 @@ Consequently, the difference may involve burn/withdrawal settlement timing, API 
 - USD/USDM source Option B remains **NOT QUALIFIED**; P-01 **BLOCKED**; P-16 **NOT ISSUED**.
 
 No new parity assumption, haircut, fee, freshness threshold, oracle quorum or economic formula is introduced. No contract, OracleQuote, PriceReference, Kernel, EEV or Issue-admission code changed. No signature, transaction, approval or deployment. V3/Reveal untouched.
+
+
+## 17. IOG read-only burn-to-release history: live endpoint probe (2026-11-01)
+
+### Interface observed
+
+A third-party public audit in M2AF/Magic-Money-Wallet documents a Portal backend GET route:
+`https://production-docker.usdcx.aws.iohkdev.io/withdrawal-history/{cardanoAddress}`
+
+This route was discovered from the deployed IOG Portal frontend, not from a versioned public IOG API contract. Treat it as an **observed operator/backend interface**, not a guaranteed supported third-party integration surface. The request is read-only GET; no Portal UI scraping, burn construction, signing, transaction submission, POST or state mutation was performed.
+
+### Live response for one public address
+
+A direct live GET was made for the public Cardano address already included in the independent M2AF fixture:
+`addr1qyx7pgg87pl7a07vv33h2dxkdyynlex8el8lqjyw828eydspqp5q20s9dvgq3ug8xkqmnkf2swdz09husagsrtjy240qj05jmp`
+
+The current response returned **19 rows**:
+- earliest `createdAt`: 2026-10-02T06:18:37.263726Z;
+- latest `createdAt`: 2026-10-21T14:53:56.126903Z;
+- all 19 provider statuses: `finalized`;
+- every row contains `cardanoBurnTxHash`, `ethereumTxHash`, `amount`, `confirmations`, `createdAt`, `status`, `lastError`;
+- sum of the 19 provider `amount` fields: **28,988.000000 USDCx**. The field is kept as the operator's burn amount, not automatically treated as the net USDC release amount.
+
+The known sample burn appears:
+- Cardano burn `887333810ea503013f1e17c503ed6e691940e177e82f88baa76d19409de76e86`, amount 2,802.000000 USDCx;
+- IOG row status `finalized`, with Ethereum release `0x37dce9fab6f48033691f841be3c783bd9154998054490d535795cac2876b5630`;
+- independent Ethereum RPC fixture/receipt confirms status 1 and exact pinned-USDC transfer credit **2,800 USDC** to `0x720f28c62b844e7dd8705ab0a7651f3f575384f4`.
+- The 2,802 burn vs 2,800 payout difference is the observed fee-cap structure for this sample only; do not generalize it into a fixed fee schedule.
+
+Independent third-party source files:
+- [M2AF read-only history implementation](https://github.com/M2AF/Magic-Money-Wallet/blob/6e982a15fb9c99e11fc320a4a72937614a206e0b/src/main/iog-withdrawal-history.ts)
+- [M2AF public history fixture](https://github.com/M2AF/Magic-Money-Wallet/blob/6e982a15fb9c99e11fc320a4a72937614a206e0b/src/main/__fixtures__/iog/withdrawal-history-public.json)
+- [M2AF Ethereum release fixture](https://github.com/M2AF/Magic-Money-Wallet/blob/6e982a15fb9c99e11fc320a4a72937614a206e0b/src/main/__fixtures__/iog/ethereum-release-37dce9fa.json)
+- [M2AF routing / settlement plan](https://github.com/M2AF/Magic-Money-Wallet/blob/6e982a15fb9c99e11fc320a4a72937614a206e0b/docs/USDCX-STABLECOIN-ROUTING-PLAN.md)
+
+### Reconciliation boundary
+
+This live history query is for **one public address**, with latest entry 21 October. It does not contain the two 450,000 USDCx burns observed on 29 and 30 October, which belong to other Cardano transactions / wallets. It therefore cannot reconcile the aggregate Circle expected-balance vs Koios supply gap of ~458,842–460,345 USDCx.
+
+The endpoint provides a potentially useful burn hash → Ethereum transaction hash → provider status link for addresses that can be queried. It does not expose Circle withdrawal IDs in the returned row, does not prove the entire Cardano supply is covered, and is not a published, versioned third-party API contract. For each target wallet, the exact Cardano payment address is needed; a staking address alone is not a substitute.
+
+### Qualification disposition
+
+- IOG burn-history route: **LIVE GET OBSERVED** for one public address.
+- One historical burn → IOG finalized row → Ethereum release: **CORROBORATED**; exact 2,800 USDC recipient credit independently verified.
+- Current recent-burn coverage for the 450k events: **NOT OBTAINED**.
+- Circle expected balance / Cardano net supply reconciliation: **OPEN**.
+- USD/USDM source Option B remains **NOT QUALIFIED**; P-01 BLOCKED; P-16 NOT ISSUED.
+
+No scraping of the Portal UI, no POST, wallet/signature, transaction, approval or deployment. No economic assumptions or code integration. V3/Reveal untouched.
