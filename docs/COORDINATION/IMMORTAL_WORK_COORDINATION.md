@@ -4045,3 +4045,46 @@ At this HEAD, `plutus/PrizeValidator.hs` lines 731–799 document and enforce Pe
 - No runtime, validator, V3, Reveal, or economic-policy changes made.
 
 This entry is operational evidence only. It does not amend the canonical expiry semantics or decide how D-09's broader cases should be implemented. Any implementation proposal must preserve the current Pending transition and be reviewed as an atomic PrizeValidator/B1PrizePool/DApp/test change.
+
+## 45.47 AGENT B — D-09 MATRIX + EXPIRY WORKFLOW WIRING (2026-11-01)
+
+### D-09/T2 test design
+
+Added `docs/COORDINATION/PRE-RICH-D09-EXPIRY-CONFORMANCE-MATRIX-2026-11-01.md`.
+
+The matrix keeps the sources separate:
+
+- D-09 enumerates unresolved expiry, revealed-loss expiry, unclaimed crystallized-win expiry, and optional historical reveal.
+- T2 §G3 specifies the unresolved EXPIRE path and its ledger-verifiable accounting.
+- T2 §G4 specifies late reveal as `EXPIRED + LATE_REVEAL -> EXPIRED` with zero economic effect.
+- Historical reveal remains conditional; no source inspected here establishes that the application profile has enabled it.
+
+The matrix defines positive assertions and negative twins for E1–E4, plus expiry-boundary, duplicate, post-claim, post-expiry claim, late LOSS/WIN, attempted late-WIN claim, concurrency, and malformed-accounting cases. It distinguishes reference-model, validator, local-ledger and Preprod evidence. It does not invent E2/E3 pool deltas or an E4 implementation.
+
+### Dedicated expiry workflow wiring
+
+Updated `.github/workflows/pre-rich-expiry-conformance.yml` to:
+- include `PreRichExpireRefinement.ts` and `preRichExpireRefinement.test.ts` in both push and pull-request path filters;
+- use the actual `src/__tests__` paths for both event types;
+- execute Evidence, Policy and ExpireRefinement test files in the dedicated job.
+
+**Exact workflow run evidence:**
+- Run #41271499613 — [PRE-RICH Expiry Refinement Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41271499613)
+- Run HEAD: `63b06ff9ab56cfea026d8df0f9b585bb5fa27abb`
+- Job `expiry`: completed `success`; install and test command steps both succeeded.
+
+This run proves the three existing test files pass with the corrected workflow wiring. It does not prove D-09 E2/E3 validator conformance or E4 historical-mode behavior.
+
+### Source/implementation boundary
+
+At the inspected implementation:
+- E1 Pending expiry remains the only implemented on-chain EXPIRE case.
+- E2 Revealed Loss and E3 unclaimed Revealed Win are not implemented in the inspected PrizeValidator/B1PrizePool/DApp path.
+- E4 historical reveal is conditional in D-09/T2; the current Reveal validator rejects after-expiry Reveal and no historical-mode enablement was verified.
+- No validator, gameFlow, V3, Reveal semantics, or economic policy code changed.
+
+### CI at matrix-doc HEAD
+
+At HEAD `4aade8a88be8b5deab1846762f3be49ebdbf45dd`, Documentation Link Check and Algorithmic Governability Adversarial Lab were success; Cardano Adapter Sale, Protocol Declaration, IMMORTAL Portability and Flux Point DoD Pilot were still queued/in progress at the time of this checkpoint update. Do not transfer these outcomes to a subsequent checkpoint-only commit.
+
+**STATUS: EXISTING EXPIRY REFINEMENT TEST NOW RUNS IN ITS DEDICATED WORKFLOW; D-09 MATRIX DOCUMENTED; BROADER ON-CHAIN EXPIRY CONFORMANCE REMAINS OPEN. NO RUNTIME CHANGE.**
