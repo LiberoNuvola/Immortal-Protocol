@@ -4253,3 +4253,28 @@ The previous two attempts both failed in Lucid transaction construction at 16,54
 
 **STATUS: EXPLICIT CML REFERENCE-WITNESS PROBE COMMITTED; YACI VERIFICATION PENDING. KEEP E1/E2/E3 OPEN UNTIL THE THREE HASKELL V2 EXPIRE TRACE STEPS PASS.**
 
+## 45.53 AGENT B — CML REFERENCE WITNESS HASH-INTERCEPTION DIAGNOSTIC (2026-11-01)
+
+### Completed evidence at source commit fc42
+
+- Integration Lab run #41280038100: [run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41280038100).
+- Aiken V3 economic EXPIRE completed successfully on local Yaci. The log records `CML.new_ref` for both expected Aiken Prize and B1PrizePool script hashes, with `inlineFallbackForExpectedScripts=false`; the trace confirms transaction submission, pool continuation, ticket NFT retention and replay rejection.
+- The separate Haskell V2 Pending EXPIRE step failed before submission in Lucid/CML transaction completion: `Max transaction size of 16384 exceeded. Found: 16540`. Haskell V2 Revealed Loss/Win were skipped.
+- The `expireReferenceWitnesses` summary from that run belongs to the successful Aiken V3 trace. Because the Haskell builder failed before the helper's post-completion summary, that summary alone did not establish whether the Haskell script hash interceptions occurred.
+- Earlier Haskell unit/accounting conformance remains green; this is a transaction-builder size failure, not a typed on-chain validator rejection.
+
+### Diagnostic-only follow-up
+
+- Commit `2c2c23360dd77614399cf3b9208b27261dc2e8ce` adds a log at the exact point inside the temporary CML `new_script` interception, recording each matched hash and script byte length before calling `CML.PlutusScriptWitness.new_ref(hash)`.
+- The purpose is to distinguish (a) an expected Haskell validator hash not being intercepted from (b) both Haskell witnesses being converted but another component of the provisional transaction still exceeding 16,384 bytes.
+- No validator, ABI, accounting logic, datum/redeemer, production adapter, V3 or Reveal code changed.
+
+### Verification after diagnostic
+
+- New Integration Lab run #41281081359: [run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41281081359).
+- Exact head: `2c2c23360dd77614399cf3b9208b27261dc2e8ce`.
+- At checkpoint update time, the workflow had passed initial project dependency setup and was still preparing the isolated lab.
+- No post-diagnostic Haskell hash-interception or ledger result is yet available.
+
+**STATUS: Aiken V3 EXPIRE PASS; HASKELL V2 PENDING STILL BLOCKED BY 16,540-BYTE BUILDER SIZE. EXACT HASKELL HASH-INTERCEPTION DIAGNOSTIC COMMITTED; RE-RUN PENDING. KEEP E1/E2/E3 ON-CHAIN CONFORMANCE OPEN.**
+
