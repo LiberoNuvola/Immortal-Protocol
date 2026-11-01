@@ -4227,3 +4227,29 @@ The expiry trace had already published the Prize and B1PrizePool validators as r
 
 **STATUS: REFERENCE-SCRIPT BUILDER CORRECTED; POST-FIX YACI VALIDATION PENDING. E2/E3 MUST REMAIN OPEN UNTIL THE EXACT HASKELL V2 PENDING, REVEALED LOSS AND REVEALED WIN STEPS COMPLETE.**
 
+## 45.52 AGENT B — EXPIRE CML REFERENCE WITNESS PROBE (2026-11-01)
+
+### Exact code snapshot
+
+- Branch: `work/immortal-green-closure`
+- Source commit: `fc42cac5d6c6cceab614cebd12d88f8a5925e770`
+- Changed file: `audit/cardano-integration/expire-ledger-trace.ts`
+- The trace temporarily routes only the PrizeValidator and B1PrizePool script hashes already present in the two `readFrom` reference UTxOs through `CML.PlutusScriptWitness.new_ref(hash)`.
+- It asserts that both expected hashes were actually routed through the reference-witness constructor and restores the original `new_script` method in a `finally` block.
+- All other script hashes retain Lucid's original constructor path.
+- This is a bounded integration-harness compatibility probe. It does not change the production adapter, Plutus validator code, datum/redeemer ABI, accounting semantics, Reveal, V3, EEV or Materios.
+
+### Why this probe exists
+
+The previous two attempts both failed in Lucid transaction construction at 16,540 bytes, before submission. Removing the explicit `.attach.SpendingValidator(...)` calls did not change the measured size. The next experiment explicitly selects CML's reference-script witness representation for the two known reference-backed validator hashes, instead of assuming that `readFrom` alone produced a reference witness in the final transaction.
+
+### Verification status
+
+- New Integration Lab run #41280038100: [run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41280038100).
+- Exact head at run start: `fc42cac5d6c6cceab614cebd12d88f8a5925e770`.
+- At checkpoint time: project dependency install and Cabal cache restore passed; `Setup canonical Plutus CI` was in progress.
+- Aiken V3 Reveal/Expire and Haskell V2 Pending / Revealed Loss / Revealed Win had not yet been reached.
+- No transaction-size reduction, Yaci acceptance, or E2/E3 ledger PASS is claimed at this checkpoint.
+
+**STATUS: EXPLICIT CML REFERENCE-WITNESS PROBE COMMITTED; YACI VERIFICATION PENDING. KEEP E1/E2/E3 OPEN UNTIL THE THREE HASKELL V2 EXPIRE TRACE STEPS PASS.**
+
