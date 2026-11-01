@@ -116,3 +116,67 @@ The queried address is live and contains AMM-marked pool outputs, but none of th
 The observer preserves the raw Koios response and hashes it. It is read-only and submits no transactions. The pool datum decoder has not yet been run; no quote, reserve value, price, depth, or TVL is inferred from this observation.
 
 **Classification: DISCOVERY ONLY — NO CURRENT USDM UTxO AT THE PINNED AMM ADDRESS.** MuesliSwap remains excluded from the qualified USDM venue/source set. P-01 remains BLOCKED and P-16 remains NOT ISSUED.
+
+
+## 7. Factory-wide Mainnet census and decoded USDM pools — 2026-11-01
+
+The earlier negative result applied only to the first observed stake-address variant. The follow-up queried the exact factory marker asset from the official contract, not only the first pool address:
+
+- Factory policy: `de9b756719341e79785aa13c164e7fe68c189ed04d61c9876b2fe53f`
+- Factory asset name: `4d7565736c69537761705f414d4d` (`MuesliSwap_AMM`)
+- Query: Koios `POST /asset_utxos`, exact factory policy/name, extended output; then `POST /datum_info` for the two USDM candidates.
+- Workflow run: [41297529519](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297529519), **SUCCESS**, source SHA `97cc6095e7b98dc70bc796e18508b1ccb7f3cf13`.
+- Artifact: [muesliswap-mainnet-usdm-observation-41297529519](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297529519/artifacts/13079986452), ZIP SHA-256 `85cf6d7a84d92a7ccd3f8f98b1cd3a1196bca1a277f240c79eb14020fc2fbb14`.
+- Observation interval: `2026-11-01T10:27:06.139Z`–`2026-11-01T10:27:10.095Z`.
+- Tip: slot `201962516`, block `14143688`, hash `81d5ef1b517662c37a85f792ce45b6e2db58ce123e7713de9421a744bc9bc8ef`.
+
+### Factory census
+
+- Live UTxOs holding the exact factory marker: **71**.
+- Distinct Cardano addresses: **2**.
+- Distinct payment credentials: **1**, `7045237d1eb0199c84dffe58fe6df7dc5d255eb4d418e4146d5721f8`.
+- Distinct stake addresses: **2**.
+- Every returned factory UTxO had marker quantity `1`; every one also contained exactly one pool NFT under the official NFT policy. Invalid marker rows: **0**; missing pool NFT rows: **0**.
+- USDM-bearing factory UTxOs: **2**, both at the second address:
+  `addr1z9cy2gmar6cpn8yymll93lnd7lw96f27kn2p3eq5d4tjr7xnh3gfhnqcwez2pzmr4tryugrr0uahuk49xqw7dc645chscql0d7`.
+- The two address variants share the same payment script credential and differ in stake credential. Thus the first address-only query was incomplete as a venue census, not evidence that the factory deployment had no USDM pools.
+
+### Candidate 1 — USDM / USDA
+
+- UTxO: `b580187dfc01a1b4e09a12ecc585712bcc11468cec127247d2040c92447bbebf#1`.
+- Datum hash: `e0f2bc2c15500537953f987e58bb8db1201f1ffa52c217f963b5cf70e090c86e`.
+- Pool NFT unit: `909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093fa9140bcc45214aa332147582673f0706bded0486f0aa85e7cdac7a8cbae377fe`, quantity `1`.
+- Datum pair: USDM (`c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d`) / token name `USDA` (`fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456.55534441`).
+- Value reserves: USDM `14,517,925` base units; USDA `14,517,925` base units; ADA `2,096,510` lovelace.
+- Datum `pdTotalLiquidity=14,517,925`; `pdSwapFee=30`.
+
+### Candidate 2 — ADA / USDM
+
+- UTxO: `04f0130e2e907a48d1f8752e7a5e90ebeda91183808ab0ed3a7d50a53ed625c1#3`.
+- Datum hash: `3afb18f4450d38d2bfa19f9e46d8141ca08cdb59d80ce80dafbcb1c5c442b345`.
+- Pool NFT unit: `909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093fd3c94acf86c65c2942a2ccd5a8c9fcecfb502a5b6c1ae8ad3ad9c2bd659e44ea`, quantity `1`.
+- Datum pair: ADA (`lovelace`) / USDM (`c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad.0014df105553444d`).
+- Value reserves: ADA `1,605,647,750` lovelace; USDM `304,217,365` base units.
+- Datum `pdTotalLiquidity=685,640,428`; `pdSwapFee=30`.
+
+### Datum and Value reconciliation
+
+Koios returned both datum CBOR byte strings and decoded Plutus data. The collector decoded the official four-field `PoolDatum` and verified for both candidates:
+- datum pair includes the exact USDM policy/name;
+- both datum assets have positive quantities in the corresponding UTxO Value;
+- the USDM amount in Value equals the datum-side USDM reserve;
+- factory marker quantity is exactly one;
+- exactly one pool NFT is present under the official NFT policy.
+
+The two datum hashes were independently recomputed from the returned CBOR bytes using BLAKE2b-256 and matched the on-chain datum hashes. Raw-response SHA-256 values in the observation manifest:
+- factory `asset_utxos`: `49ba3b44e0a251f219082a0f30a0447cf94e93021e162fcfbc31b6dfce6b6ed4`;
+- `datum_info`: `5ee348a3321df36c3437729ad0531127091eaabdd05fb6dd8a8edc49ed6c18e2`;
+- pinned-address `address_utxos`: `ecd624088d808cd6884b560b5dfca0014523ab128afeb2c493b2773bca990ee0`.
+
+Official contract source: [PoolDatum and PoolRedeemer](https://github.com/MuesliSwapTeam/muesliswap-cardano-pool-contracts/blob/main/dex/src/MuesliSwapPools/ConstantProductPool/Types.hs), [constant-product validator](https://github.com/MuesliSwapTeam/muesliswap-cardano-pool-contracts/blob/main/dex/src/MuesliSwapPools/ConstantProductPool/OnChain.hs), and [fee-aware getAmountOut](https://github.com/MuesliSwapTeam/muesliswap-cardano-pool-contracts/blob/main/dex/src/MuesliSwapPools/ConstantProductPool/Utils.hs). The validator uses fee denominator `10000`; `pdSwapFee=30` is the contract's 30/10,000 fee parameter (0.30%). No executable quote has been calculated.
+
+### Updated disposition
+
+MuesliSwap is no longer discovery-only: the exact factory census establishes **two live USDM pool UTxOs** at the captured Mainnet tip, with datum/Value reconciliation. It is qualified as an observed liquidity venue for these two pairs only, not as an oracle or USD/USDM conversion source. The USDM/USDA reserve quantities happen to be equal at this snapshot; this is not evidence of a USD peg, redemption parity, or independent USD price.
+
+No executable quote, slippage/depth curve, USD price, TVL valuation, oracle independence claim, or production integration is asserted. The pool-specific fee-aware integer formula must be used for any later quote. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV, Issue-admission or economic rule changes. No transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
