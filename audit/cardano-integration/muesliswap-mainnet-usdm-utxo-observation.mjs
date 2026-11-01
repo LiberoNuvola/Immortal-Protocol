@@ -9,7 +9,7 @@ const POOL_NFT_POLICY = '909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093
 const BASE = 'https://api.koios.rest/api/v1';
 const OUT = 'audit/muesliswap-evidence';
 
-async function post(path, body, timeoutMs = 45000) {
+async function post(path, body, timeoutMs = 90000) {
   const response = await fetch(BASE + path, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
@@ -58,6 +58,8 @@ try {
       txHash: row.tx_hash,
       outputIndex: Number(row.tx_index),
       address: row.address,
+      paymentCred: row.payment_cred ?? null,
+      stakeAddress: row.stake_address ?? null,
       lovelace: String(row.value),
       markerQuantity: markerQuantity.toString(),
       poolNftAssets: nftAssets,
@@ -78,19 +80,14 @@ try {
     factoryRows.find(row => row.tx_hash === pool.txHash && Number(row.tx_index) === pool.outputIndex)?.datum_hash
   ).filter(Boolean))];
   let datumResult = { raw: '[]', data: [] };
+  let datumInfoError = null;
   if (candidateDatumHashes.length) {
-    let lastDatumError;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        datumResult = await post('/datum_info', { _datum_hashes: candidateDatumHashes }, 90000);
-        lastDatumError = null;
-        break;
-      } catch (error) {
-        lastDatumError = error;
-        console.warn(`KOIOS_DATUM_INFO_ATTEMPT_${attempt}_FAILED:${String(error)}`);
-      }
+    try {
+      datumResult = await post('/datum_info', { _datum_hashes: candidateDatumHashes }, 90000);
+    } catch (error) {
+      datumInfoError = String(error?.stack ?? error);
+      console.warn(`KOIOS_DATUM_INFO_UNAVAILABLE:${datumInfoError}`);
     }
-    if (lastDatumError) throw lastDatumError;
   }
   if (!Array.isArray(datumResult.data)) throw new Error('KOIOS_DATUM_INFO_SHAPE_INVALID');
   const datumByHash = new Map(datumResult.data.map(datum => [datum.datum_hash ?? datum.hash, datum]));
@@ -172,10 +169,13 @@ try {
   manifest.factoryPoolUtxoCount = factoryPools.length;
   manifest.distinctFactoryPoolAddressCount = distinctPoolAddresses.length;
   manifest.distinctFactoryPoolAddresses = distinctPoolAddresses;
+  manifest.distinctPaymentCredentials = [...new Set(factoryPools.map(pool => pool.paymentCred).filter(Boolean))].sort();
+  manifest.distinctStakeAddresses = [...new Set(factoryPools.map(pool => pool.stakeAddress).filter(Boolean))].sort();
   manifest.factoryPoolUsdmCandidateCount = factoryUsdmPools.length;
   manifest.factoryPoolUsdmCandidates = factoryUsdmPools;
   manifest.candidateDatumHashes = candidateDatumHashes;
   manifest.datumInfoResponseSha256 = createHash('sha256').update(datumResult.raw, 'utf8').digest('hex');
+  manifest.datumInfoError = datumInfoError;
   manifest.decodedUsdmPools = decodedUsdmPools;
   await writeFile(`${OUT}/candidate-datum-info-response.json`, datumResult.raw + '\\n');
   manifest.invalidFactoryMarkerCount = invalidMarkerRows.length;
@@ -195,9 +195,12 @@ try {
     `pinnedAddressUsdmCandidateCount=${candidates.length}`,
     `factoryPoolUtxoCount=${factoryPools.length}`,
     `distinctFactoryPoolAddressCount=${distinctPoolAddresses.length}`,
+    `distinctPaymentCredentialCount=${manifest.distinctPaymentCredentials.length}`,
+    `distinctStakeAddressCount=${manifest.distinctStakeAddresses.length}`,
     `factoryPoolUsdmCandidateCount=${factoryUsdmPools.length}`,
     `candidateDatumCount=${datumResult.data.length}`,
     `decodedUsdmPoolCount=${decodedUsdmPools.filter(pool => pool.decodedPoolDatum !== null).length}`,
+    `datumInfoError=${datumInfoError ? 'present' : 'none'}`,
     `datumPairUsdmMatches=${decodedUsdmPools.filter(pool => pool.datumPairContainsUsdm).length}`,
     `reserveValueMatchesDatum=${decodedUsdmPools.filter(pool => pool.reserveValueMatchesDatum).length}`,
     `factoryPoolAddresses=${distinctPoolAddresses.join(',')}`,
