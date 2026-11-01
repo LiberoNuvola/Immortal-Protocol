@@ -1,8 +1,10 @@
 /**
- * Real Yaci/Cardano EXPIRE realization trace.
+ * Real Yaci/Cardano EXPIRE realization trace for Pending, Revealed Loss and
+ * Revealed Win pre-states. Revealed fixtures are synthetic state fixtures; they
+ * do not claim an end-to-end Reveal transaction.
  *
  * C3 target:
- *   expired Pending PrizeDatum + B1PrizePool
+ *   expired PrizeDatum + B1PrizePool
  *     -> atomic EXPIRE
  *     -> PrizeDatum consumed (no continuing PrizeValidator output)
  *     -> pool reserve/count released exactly once
@@ -681,6 +683,25 @@ const postPoolUtxos = await waitFor(
 const postPool = postPoolUtxos.find(
   (u) => u.txHash === txHash && u.assets[poolUnit] === 1n,
 ) as UTxO
+
+const prePoolFields = datumFields(poolUtxo)
+if (
+  bigintField(prePoolFields, 1) !== EXPIRE_PRE_LIABILITIES ||
+  bigintField(prePoolFields, 2) !== EXPIRE_PRE_RESERVE ||
+  bigintField(prePoolFields, 3) !== EXPIRE_PRE_COUNT
+) {
+  throw new Error('EXPIRE fixture pre-state accounting does not match the selected case')
+}
+const poolAssetsAsEntries = (assets: Record<string, bigint>) =>
+  Object.entries(assets)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([unit, quantity]) => [unit, quantity.toString()])
+if (
+  JSON.stringify(poolAssetsAsEntries(poolUtxo.assets)) !==
+  JSON.stringify(poolAssetsAsEntries(postPool.assets))
+) {
+  throw new Error('EXPIRE changed the physical B1PrizePool UTxO value')
+}
 
 // Check only outputs created by this EXPIRE transaction. Another trace may
 // legitimately leave a separate Prize UTxO at the same validator address.
