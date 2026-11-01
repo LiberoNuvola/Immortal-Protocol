@@ -1,0 +1,49 @@
+name: Danogo USDM-USDCx Read-only Cross-reference
+
+on:
+  push:
+    branches: [work/immortal-green-closure]
+    paths:
+      - 'scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.mjs'
+      - 'scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.test.mjs'
+      - 'scripts/fixtures/danogo-usdm-usdcx-mainnet-2026-10-31.json'
+      - '.github/workflows/danogo-usdm-usdcx-cross-reference.yml'
+  pull_request:
+    paths:
+      - 'scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.mjs'
+      - 'scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.test.mjs'
+      - 'scripts/fixtures/danogo-usdm-usdcx-mainnet-2026-10-31.json'
+      - '.github/workflows/danogo-usdm-usdcx-cross-reference.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: danogo-usdm-usdcx-cross-reference-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  read-only-cross-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run integer-math regressions
+        run: node --test scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.test.mjs
+      - name: Rebuild read-only cross-reference from preserved real fixture
+        run: |
+          mkdir -p audit/oracles
+          node scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.mjs \
+            --danogo scripts/fixtures/danogo-usdm-usdcx-mainnet-2026-10-31.json \
+            --out audit/oracles/danogo-usdm-usdcx-cross-reference-readonly.json
+      - name: Upload read-only evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: danogo-usdm-usdcx-cross-reference-readonly-${{ github.run_id }}
+          path: audit/oracles/danogo-usdm-usdcx-cross-reference-readonly.json
+          if-no-files-found: error
+          retention-days: 90
