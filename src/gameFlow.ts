@@ -46,6 +46,7 @@ import {
 import { signAndSubmitTx, signAndSubmitEconomicTx } from './txHelpers'
 import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 import { assertObservedTicketNft, certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/src/PreRichCertifiedTicket'
+import { deriveExpiryAccounting } from '../PRE-RICH/src/PreRichExpireAccounting'
 
 import {
   assertSettlementQuoteMatchesPrize,
@@ -1123,17 +1124,29 @@ export async function expirePrize(opts: {
   const datum = decodePrizeDatum(prizeUtxo)
   if (!datum) throw new Error('PrizeDatum not decodable')
 
-  if (constrIndex(datum.fields[10]) !== 0) {
-    throw new Error('EXPIRE requires a Pending PrizeDatum')
-  }
-
+  const statusIndex = constrIndex(datum.fields[10])
+  const beaconStatusIndex = constrIndex(datum.fields[14])
   const priceUsdm = integerField(datum.fields[3])
+  const prizeAmount = integerField(datum.fields[7])
   const expiresAt = integerField(datum.fields[20])
-  if (priceUsdm === null || priceUsdm <= 0) {
-    throw new Error('EXPIRE requires a positive ticket price')
+  if (priceUsdm === null || prizeAmount === null || priceUsdm <= 0) {
+    throw new Error('EXPIRE requires a valid positive ticket price and payout')
   }
   if (expiresAt === null || !Number.isSafeInteger(expiresAt) || expiresAt < 0) {
     throw new Error('EXPIRE requires a valid expiresAt')
+  }
+
+  const expiryStatus =
+    statusIndex === 0 ? 'Pending'
+    : statusIndex === 1 ? 'Revealed'
+    : statusIndex === 2 ? 'Claimed'
+    : null
+  if (!expiryStatus) throw new Error('EXPIRE requires a known PrizeDatum status')
+  if (
+    (expiryStatus === 'Pending' && beaconStatusIndex !== 0 && beaconStatusIndex !== 1) ||
+    (expiryStatus === 'Revealed' && beaconStatusIndex !== 1)
+  ) {
+    throw new Error('EXPIRE PrizeDatum has an inconsistent beacon lifecycle')
   }
 
   const poolUtxo =
@@ -1144,26 +1157,33 @@ export async function expirePrize(opts: {
   if (!poolDatum) throw new Error('B1PrizePool datum not decodable')
 
   const poolFields = [...poolDatum.fields]
-  const unresolvedReserve = b1ppInt(poolDatum, 2)
   // B1 field layout:
   //   0 totalLiquidity
   //   1 pendingLiabilities
   //   2 unresolvedReserve
   //   3 unresolvedTicketCount
-  if (unresolvedReserve === null) {
+  const pendingLiabilities = b1ppInt(poolDatum, 1)
+  const unresolvedReserve = b1ppInt(poolDatum, 2)
+  const currentCount = b1ppInt(poolDatum, 3)
+  if (
+    pendingLiabilities === null ||
+    unresolvedReserve === null ||
+    currentCount === null
+  ) {
     throw new Error('B1PrizePool datum has incomplete expiry accounting')
   }
 
-  const currentCount = b1ppInt(poolDatum, 3)
-  if (currentCount === null || currentCount <= 0) {
-    throw new Error('B1PrizePool has no unresolved ticket to expire')
-  }
-  if (unresolvedReserve < priceUsdm) {
-    throw new Error('B1PrizePool unresolved reserve is insufficient for ticket expiry')
-  }
-
-  poolFields[2] = BigInt(unresolvedReserve - priceUsdm)
-  poolFields[3] = BigInt(currentCount - 1)
+  const expiryAccounting = deriveExpiryAccounting({
+    status: expiryStatus,
+    ticketPriceUsdm: BigInt(priceUsdm),
+    prizeAmountUsdm: BigInt(prizeAmount),
+    pendingLiabilities,
+    unresolvedReserve,
+    unresolvedTicketCount: currentCount,
+  })
+  poolFields[1] = expiryAccounting.pendingLiabilities
+  poolFields[2] = expiryAccounting.unresolvedReserve
+  poolFields[3] = expiryAccounting.unresolvedTicketCount
 
   const nextPoolDatum = datumFromFields(poolFields)
   const executor = await lucid.wallet.address()
