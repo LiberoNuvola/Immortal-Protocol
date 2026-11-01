@@ -12,6 +12,8 @@ on:
       - "PRE-RICH/src/PreRichExpiryEvidence.ts"
       - "PRE-RICH/src/PreRichExpiryPolicy.ts"
       - "PRE-RICH/src/PreRichExpireRefinement.ts"
+      - "src/__tests__/preRichExpireAccounting.test.ts"
+      - "PRE-RICH/src/PreRichExpireAccounting.ts"
       - "src/__tests__/preRichExpiryEvidence.test.ts"
       - "src/__tests__/preRichExpiryPolicy.test.ts"
       - "src/__tests__/preRichExpireRefinement.test.ts"
@@ -42,4 +44,4 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Run PRE-RICH expiry conformance
-        run: npx vitest run src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichExpiryPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts
+        run: npx vitest run src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichExpiryPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichExpireAccounting.test.ts
