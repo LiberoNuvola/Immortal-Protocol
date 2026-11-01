@@ -315,35 +315,3 @@ jobs:
           name: immortal-real-preprod-reveal-evidence
           path: audit/preprod-evidence/
           if-no-files-found: warn
-
-
-  muesliswap-mainnet-usdm-observation:
-    # Read-only Mainnet observation. Independent from Preprod deploy/Reveal/V3 jobs.
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout exact branch head
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Query Koios Mainnet for MuesliSwap USDM UTxOs
-        id: observe
-        continue-on-error: true
-        run: node audit/cardano-integration/muesliswap-mainnet-usdm-utxo-observation.mjs
-      - name: Upload raw response and observation manifest
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: muesliswap-mainnet-usdm-observation-${{ github.run_id }}
-          path: audit/muesliswap-evidence/
-          if-no-files-found: warn
-          retention-days: 30
-      - name: Preserve observer result
-        if: steps.observe.outcome != 'success'
-        run: exit 1
