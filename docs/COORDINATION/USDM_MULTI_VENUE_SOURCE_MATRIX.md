@@ -224,7 +224,7 @@ Circle's official xReserve API documents:
 - `GET /v1/info` — source and remote domain mapping / supported token configuration: https://developers.circle.com/api-reference/xreserve/all/get-info
 - `GET /v1/balances/{remoteDomain}` — expected USDC reserve balance associated with a specific remote domain, based on deposits: https://developers.circle.com/api-reference/xreserve/all/get-balances
 
-The xReserve API documentation explicitly says requests authenticate with an API key. This read-only research pass did not have an authorized xReserve API key and could not retrieve the production Cardano remote-domain mapping or domain-specific reserve balance. A global USDC balance at the Ethereum xReserve contract, if independently read, would not on its own attribute the backing to Cardano because xReserve supports multiple partner chains. The Cardano-specific `remoteDomain` and remote token identifier must be bound to the exact USDCx policy/fingerprint before a reserve-backing observation is accepted.
+**Correction from 2026-11-01 live read-only GETs:** no API key was supplied by this research pass, yet Circle GET /v1/info, GET /v1/balances/10004?token=USDC, and GET /v1/remote-domains/10004/attestations?pageSize=5 all returned data. The live domain configuration identifies Cardano Mainnet remoteDomain=10004, remote token USDCx, opaque remoteTokenIdentifier=0x9ea9794d33dbcef3f77718e903816e877ab2577f4d7ee653638f1f60fc671dd6, and associated native token USDC. The balance endpoint returned 39,925,160.413646 USDC. Circle's OpenAPI description calls this an expected token balance based on deposit amounts made into xReserve, not an independently measured reserve account balance or net circulating-supply proof. The 32-byte remoteTokenIdentifier is not the Cardano policy/name unit and must not be derived from it: an independent public audit explicitly found it does not equal simple SHA-256/SHA-3/Blake2 hashes of the unit and says to pin the registered value. Circle's supported-domains table separately identifies the exact Cardano USDCx asset unit (policy 1f3aec..., asset name 5553444378). A global Ethereum contract balance is not a substitute for domain-specific data.
 
 No API call was simulated or claimed; the missing key is a source-access limitation, not evidence of missing reserves.
 
@@ -284,3 +284,96 @@ The route is neither a free real-time oracle nor an unconditional atomic redempt
 - how pre-fee AMM marginal spot differs from size-dependent execution, bridge latency, fees and redemption timing.
 
 Until those exact conditions are resolved, the chain of documents proves a *candidate conversion route*, not a currently executable USD/USDM price. Option B remains OPEN/NOT QUALIFIED, P-01 BLOCKED and P-16 NOT ISSUED. No parity/peg assumption, fee, haircut, threshold or quorum is added; no production integration or economic semantic change is made.
+
+## 16. Circle live xReserve domain mapping, expected balance and Koios supply reconciliation (2026-11-01)
+
+### Circle GET evidence (read-only; no API key supplied)
+
+The following public read-only GETs returned JSON during this research pass:
+
+- GET https://xreserve-api.circle.com/v1/info
+  - Source domain Ethereum Mainnet: 0, xReserve contract 0x8888888199b2df864bf678259607d6d5ebb4e3ce, token USDC.
+  - Source domain Arc Mainnet: 26, same xReserve contract, token USDC.
+  - Remote domain Cardano Mainnet: **10004**.
+  - Registered remote token: USDCx.
+  - Opaque remoteTokenIdentifier: **0x9ea9794d33dbcef3f77718e903816e877ab2577f4d7ee653638f1f60fc671dd6**.
+  - Associated native token: USDC.
+- GET https://xreserve-api.circle.com/v1/balances/10004?token=USDC
+  - Returned **39,925,160.413646 USDC**.
+- GET https://xreserve-api.circle.com/v1/remote-domains/10004/attestations?pageSize=5
+  - Returned five recent Cardano-domain attestations; each returned payload begins with Cardano domain 10004 and the same registered 32-byte remoteTokenIdentifier.
+
+Circle API specification:
+- [Get domain information](https://developers.circle.com/api-reference/xreserve/all/get-info)
+- [Get expected token balances by remote domain](https://developers.circle.com/api-reference/xreserve/all/get-balances)
+- [List attestations by remote domain](https://developers.circle.com/api-reference/xreserve/all/list-attestations)
+- [Complete xReserve OpenAPI](https://developers.circle.com/openapi/xreserve.yaml)
+
+**Important semantics:** Circle OpenAPI describes /v1/balances/{remoteDomain} as returning expected token balances based on deposit amounts made into xReserve. It does not state in that description that this value is a direct balance read from the reserve contract, nor does it define how in-flight or finalized Cardano burns are reconciled in the returned value. Therefore the figure above is a domain-specific expected-balance observation, not an audited/independently measured reserve balance.
+
+### Exact token identity is separate from the opaque remote identifier
+
+Circle's official supported-domains table independently lists Cardano Mainnet USDCx as the exact Cardano asset unit:
+- Policy: 1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e34
+- Asset name: 5553444378
+- Full unit: 1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e345553444378
+- CIP-14 fingerprint: asset1e7eewpjw8ua3f2gpfx7y34ww9vjl63hayn80kl
+- [Circle supported blockchains and domains](https://developers.circle.com/xreserve/references/supported-blockchains-and-domains)
+
+The 32-byte remoteTokenIdentifier returned by Circle is **not** the Cardano policy ID + asset-name unit. An independent public burn-interface investigation compared SHA-256, SHA-3, Blake2b-256, Blake2s and double-SHA candidates and found it was not a plain hash of the unit/policy/name; the investigator's conclusion is to pin Circle's registered value, not derive it:
+[M2AF XRESERVE-BURN-INTERFACE-RESEARCH.md](https://github.com/M2AF/Magic-Money-Wallet/blob/6e982a15fb9c99e11fc320a4a72937614a206e0b/docs/XRESERVE-BURN-INTERFACE-RESEARCH.md).
+
+The correct join is therefore:
+1. Circle /v1/info registers remote domain 10004 and the opaque 32-byte remote token identifier.
+2. Circle's supported-domains reference identifies the exact native Cardano USDCx unit.
+3. Circle deposit attestations embed that registered remote token identifier.
+4. A confirmed Cardano mint transaction can be correlated to the specific attested deposit; do not compute the opaque identifier from the Cardano unit.
+
+### Public deposit → Circle attestation → Cardano mint correlation
+
+One publicly documented historical example (third-party independent audit, with both source-chain and destination-chain transactions publicly linkable):
+
+- Ethereum xReserve deposit: [0x9695d030fb33ac1267ca78847684331ec6a87b508fe51cfbc91d01d560504fa2](https://etherscan.io/tx/0x9695d030fb33ac1267ca78847684331ec6a87b508fe51cfbc91d01d560504fa2), 1,899.991033 USDC, Cardano remote domain 10004.
+- Circle's read-only GET /v1/attestations?txHash=... returned one attestation for domain 10004; its payload contains the registered remoteTokenIdentifier and the deposit amount.
+- Cardano destination mint: [24da9d4f5348c67d578ba18408df63c22c64e5468b3ea6b15797a5b4db1f2379](https://cardanoscan.io/transaction/24da9d4f5348c67d578ba18408df63c22c64e5468b3ea6b15797a5b4db1f2379), 1,899.991033 USDCx minted; 1,899.991032 to the payment credential corresponding to the Circle-attested recipient and one base unit to a secondary address.
+- The independent audit reports that Koios Cardano transaction CBOR contains Circle's 335-byte attestation payload and 65-byte signature byte-for-byte in the mint redeemer. That investigator did not independently verify the signature against Circle's signing key; this is public data correlation, not a separate cryptographic signature audit.
+- Full analysis: [M2AF XRESERVE-GATE2-RESEARCH.md](https://github.com/M2AF/Magic-Money-Wallet/blob/6e982a15fb9c99e11fc320a4a72937614a206e0b/docs/XRESERVE-GATE2-RESEARCH.md).
+
+### Koios USDCx supply / mint-burn history
+
+The exact Mainnet asset was read from public Koios GET endpoints:
+
+GET https://api.koios.rest/api/v1/policy_asset_info?_asset_policy=1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e34 returned:
+- total supply 39,466,317.687372 USDCx;
+- mint count 2,987;
+- burn count 1,308;
+- exact policy/name/fingerprint as above.
+
+The same response batch's GET /asset_history returned 4,296 mint/burn events:
+- positive mint events: 2,987; gross positive quantity **92,042,960.953781 USDCx**;
+- negative burn events: 1,309; gross negative quantity **52,578,145.266409 USDCx**;
+- arithmetic net of that returned history: **39,464,815.687372 USDCx**;
+- latest event: burn e66751ba64ac3e0f50c9a30ec55769fb83ef45b4cee442aa6443de55f95f7973, **1,502 USDCx**, Cardano block time 2026-11-01 04:12:41 UTC.
+
+The arithmetic net from asset_history is **1,502 USDCx below** the policy_asset_info total supply and its burn count is one higher (1,309 vs 1,308). The difference equals that latest burn exactly. This is evidence that the two Koios read endpoints were not at the same indexed snapshot; it is not a token accounting anomaly conclusion. The policy_asset_info figure should be treated as its own returned indexer snapshot, not substituted into the event-history sum.
+
+Circle's domain expected-balance observation (39,925,160.413646 USDC) exceeds the history-derived net Cardano supply (39,464,815.687372 USDCx) by **460,344.726274**; against the policy_asset_info snapshot the difference is **458,842.726274**. These figures are not an approved coverage ratio:
+- Circle describes /balances/{remoteDomain} as expected balances calculated from deposit amounts.
+- Koios supply is net minted less all recorded burn events.
+- The read interfaces do not provide a public listing of withdrawal IDs/statuses keyed by Cardano burn transaction hash. Circle's GET /v1/withdrawal/{withdrawalId} requires a withdrawal ID, normally returned during the remote-partner POST /v1/withdraw workflow.
+- Recent Cardanoscan pages show individual USDCx burns (for example 450,000 USDCx on 30 October and 1,502 USDCx on 1 November), but those transaction records alone do not prove Circle completed the corresponding USDC release.
+
+Consequently, the difference may involve burn/withdrawal settlement timing, API accounting semantics, indexing windows or other reconciliation factors. **No one explanation is asserted.** A verified withdrawal-ID / burn-hash / Ethereum release linkage and common as-of block/time are still needed to reconcile expected backing with outstanding Cardano supply.
+
+### Qualification disposition
+
+- Cardano remote domain and registered remote token config: **LIVE GET OBSERVED**.
+- Exact USDCx unit mapping: **OFFICIAL CIRCLE REGISTRY IDENTIFIED**.
+- One historical deposit → attestation → mint link: **PUBLICLY CORROBORATED**, not a full cryptographic signature audit by this project.
+- Current domain expected-balance endpoint: **READ SUCCESSFUL**, but not an audited reserve balance.
+- Current Cardano supply: **READ SUCCESSFUL**, with a 1,502 USDCx cross-endpoint indexing mismatch.
+- Expected-balance vs net-supply reconciliation: **OPEN**.
+- USDCx/USD live redemption and current IOG burn/attestation availability: **NOT PROVEN**.
+- USD/USDM source Option B remains **NOT QUALIFIED**; P-01 **BLOCKED**; P-16 **NOT ISSUED**.
+
+No new parity assumption, haircut, fee, freshness threshold, oracle quorum or economic formula is introduced. No contract, OracleQuote, PriceReference, Kernel, EEV or Issue-admission code changed. No signature, transaction, approval or deployment. V3/Reveal untouched.
