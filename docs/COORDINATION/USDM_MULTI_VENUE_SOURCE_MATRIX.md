@@ -608,3 +608,15 @@ The above establishes asset identity and the issuer's published product descript
 A third-party stablecoin tracker lists USDA/USDCx and USDM/USDA Danogo CLMM pools, but its USDA/USD estimates are derived through ADA-paired liquidity and CoinGecko ADA/USD; stable-to-stable pools are listed separately. This is discovery evidence, not an independent USDA/USD oracle: https://danonight.com/cardano/stablecoins. Pyth's documented Cardano feed ID 16 is ADA/USD, not USDA/USD: https://developers.cardano.org/docs/developers/curriculum/dapps/oracles/pyth/. No direct USDA/USD feed was qualified in this pass.
 
 Disposition: MuesliSwap adds observed USDM/USDA relative liquidity only. It does not add an independent USD anchor. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**; no OracleQuote/PriceReference/Kernel/EEV integration or economic rule changes.
+
+
+## 23. MuesliSwap repeatability snapshot and valid datum artifact (2026-11-01)
+
+A second complete factory census followed the observer's datum-artifact serialization correction:
+- Run [41297549569](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297549569): **SUCCESS**, source SHA `7370c3c487cde5adf6833e166259e71cdd9fec79`.
+- Artifact [13079452509](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297549569/artifacts/13079452509), ZIP SHA-256 `b3b2816ea176a9cc8f1317ff8f6ef6698fabd422afaf0ec99219cdb3868a3131`.
+- Tip slot `201962540`, block `14143690`.
+- Same 71 factory-marker UTxOs, two address variants, one payment credential, two stake addresses, and two exact USDM pool candidates.
+- Both PoolDatum records decoded; exact pair identities, datum/Value reserves and USDM quantities matched. No datum endpoint error. The artifact's datum-info JSON and observation manifest were independently parsed as valid JSON.
+
+The repeat snapshot confirms reproducibility and valid evidence serialization; it does not add a third pool or change the liquidity-venue-only qualification. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**.
