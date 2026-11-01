@@ -406,6 +406,24 @@ jobs:
           IMMORTAL_EXPIRE_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
+      # Run the Haskell V2 PrizeValidator + B1PrizePool expiry profile separately.
+      # These are synthetic post-state fixtures for the EXPIRE transition only;
+      # they do not claim an end-to-end Reveal transaction or production issuance.
+      - name: Execute Haskell V2 Pending EXPIRE ledger trace
+        env:
+          IMMORTAL_EXPIRE_CASE: "pending"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Execute Haskell V2 Revealed Loss EXPIRE ledger trace
+        env:
+          IMMORTAL_EXPIRE_CASE: "revealed-loss"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Execute Haskell V2 Revealed Win EXPIRE ledger trace
+        env:
+          IMMORTAL_EXPIRE_CASE: "revealed-win"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
       # Hybrid Claim conformance fixture: Aiken V3 Prize validator + Haskell V2
       # B1PrizePool validator. This is not yet an all-Aiken Claim path or a
       # production Issue-admission witness. Do not allow a failed/non-run Aiken
