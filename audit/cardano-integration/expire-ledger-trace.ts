@@ -568,9 +568,10 @@ if (!prizeUtxo || !poolUtxo) {
   throw new Error('EXPIRE bootstrap did not materialize its exact Prize and Pool outpoints')
 }
 
-// EXPIRE must use the same reference-script architecture as the canonical
-// Reveal path. Attaching both parameterized validators inline creates a
-// 26,189-byte transaction and violates Cardano's observed 16,384-byte limit.
+// EXPIRE uses the published reference scripts below. Keep the spending
+// transaction on the reference-script path: readFrom supplies both scripts;
+// do not also attach them as witnesses, which would inline the validators and
+// defeat the transaction-size benefit of the reference inputs.
 const prizeReferenceTx = await lucid
   .newTx()
   .pay.ToAddressWithData(
@@ -652,9 +653,7 @@ const expireTx = await lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(3)))
-  .attach.SpendingValidator(scripts.prizeValidator as Script)
   .collectFrom([poolUtxo], Data.to(c(4)))
-  .attach.SpendingValidator(scripts.b1PrizePool as Script)
   .pay.ToAddress(address, {
     lovelace: prizeUtxo.assets.lovelace ?? 0n,
   })
