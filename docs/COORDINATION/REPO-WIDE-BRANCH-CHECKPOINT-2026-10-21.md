@@ -7139,3 +7139,15 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV, Issue-admission or economic rule changes; no wallet action, signature, transaction, approval or deployment. V3, Reveal and Materios untouched.
 - Canonical detailed evidence: [MuesliSwap audit](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md) and [USDM Multi-Venue Source Matrix §21](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/USDM_MULTI_VENUE_SOURCE_MATRIX.md).
 
+
+
+## 10.86 Agent A — USDA exact asset identity and USD-reference boundary (2026-11-01)
+
+- The MuesliSwap USDM/USDA candidate's second datum asset is the exact Anzens USDA unit `fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456.55534441`, not a ticker-only match. Cardanoscan identifies the full unit as Anzens USDA Stablecoin and lists 6 decimals: https://cardanoscan.io/token/fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae45655534441.
+- Cardano's official stablecoin page describes USDA as fiat-backed, with US Treasury reserves, BitGo custody and EMURGO issuer partnership: https://cardano.org/stablecoins/. This is an issuer/product description, not a current reserve audit or proof of redemption at par.
+- Therefore the Muesli pool snapshot contains 14.517925 USDM and 14.517925 USDA. Equal reserves in one pool are not a peg, redemption, or independent USD reference.
+- A third-party tracker lists USDA/USDCx and USDM/USDA Danogo CLMM markets, but says its USD estimates are derived from ADA-paired pools plus CoinGecko ADA/USD; stable-to-stable pools are reported separately. Treat it as discovery/market analytics, not an independent USDA/USD oracle: https://danonight.com/cardano/stablecoins.
+- Pyth's documented Cardano feed ID 16 is ADA/USD, not USDA/USD: https://developers.cardano.org/docs/developers/curriculum/dapps/oracles/pyth/. No direct USDA/USD feed was qualified in this pass.
+- MuesliSwap remains a confirmed observed liquidity venue for USDM/USDA and ADA/USDM only; it does not add an independent USD anchor. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV or Issue-admission integration; no economic rule changes, transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
+- Canonical details: [MuesliSwap audit §8](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md) and [USDM Multi-Venue Source Matrix §22](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/USDM_MULTI_VENUE_SOURCE_MATRIX.md).
+
