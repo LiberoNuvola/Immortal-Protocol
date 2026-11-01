@@ -151,9 +151,10 @@ PlutusTx.unstableMakeIsData ''PrizeDatum
 -- | SyncBeacon: copy R from registry ref input.
 --   Reveal playerSecret
 --   Claim: pay once, keep NFT, status → Claimed (no mandatory burn)
---   Expire: consume the Pending PrizeDatum at/after pdExpiresAt.
---     No continuing PrizeDatum is produced; the ticket NFT itself is not
---     required to be burned and may remain with its holder.
+--   Expire: consume a Pending or Revealed PrizeDatum at/after pdExpiresAt.
+--     Pending releases unresolved reserve/count; Revealed Loss closes without
+--     a pool delta; an unclaimed Revealed Win releases its pending liability.
+--     No continuing PrizeDatum is produced; the ticket NFT may remain held.
 --
 -- Constructor indices are compatibility API: SyncBeacon=0, Reveal=1,
 -- Claim=2, Expire=3.
@@ -338,9 +339,10 @@ instance UnsafeFromData B1PrizePoolDatum where
 -- TicketClaimed: claimedAmount must match the crystallised payout.
 -- Cannot claim more than once because status transitions to Claimed.
 --
--- TicketExpired: B1PrizePool computes reserveRelease deterministically
--- from the consumed PrizeDatum's pdPriceUsdm. NOT an average across
--- unresolved tickets.
+-- TicketExpired: Pending releases its exact pdPriceUsdm reserve and
+-- decrements unresolved count. Revealed Loss leaves pool accounting unchanged;
+-- Revealed Win releases only its unpaid pdPrizeAmount liability. The PrizePool
+-- physical value is preserved. No average across unresolved tickets is used.
 data B1PrizePoolAction
   = FundTreasury
   -- ^ Treasury deposits funds. Actual value increase verified on-chain.
@@ -354,9 +356,9 @@ data B1PrizePoolAction
   | TicketClaimed Integer
   -- ^ Ticket claimed. claimedAmount > 0, matches crystallised payout.
   | TicketExpired
-  -- ^ Ticket expired unrevealed. Decreases count and reserve by the
-  --   deterministic reserve derived from the ticket's pdPriceUsdm.
-  --   NOT an average across unresolved tickets.
+  -- ^ Ticket expiry after pdExpiresAt. Pending releases its exact ticket-price
+  --   reserve/count; Revealed Loss has no accounting delta; Revealed Win
+  --   releases only its unpaid crystallized liability. Pool assets are preserved.
 
 PlutusTx.unstableMakeIsData ''B1PrizePoolAction
 
