@@ -91,3 +91,28 @@ No pool has been qualified by this checkpoint. No price, depth, TVL, executable 
 - P-16: NOT ISSUED.
 
 Read-only research only. No wallet, signature, transaction, deployment, approval, OracleQuote/PriceReference/Kernel/EEV integration, or economic rule changes. V3, Reveal and Materios remain untouched.
+
+
+## Live Mainnet observation — 2026-11-01
+
+A read-only Koios Mainnet observation was executed through GitHub Actions after the discovery-only review.
+
+- Workflow run: [41296617811](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41296617811)
+- Observation interval: `2026-11-01T10:14:48.239Z` – `2026-11-01T10:14:52.167Z`
+- Network tip: slot `201961734`, block `14143654`, block hash `5cd82000c7b37ffc11dd3522ccb39286296fba9833a88ab3e3cfb5feb416ade3`
+- Queried address: the Mainnet AMM contract address pinned above
+- Koios `address_utxos`: 33 UTxOs returned
+- UTxOs containing the exact USDM unit `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d`: **0**
+- UTxOs carrying the MuesliSwap AMM marker policy `de9b756719341e79785aa13c164e7fe68c189ed04d61c9876b2fe53f`: 30
+- UTxOs carrying the pinned pool NFT policy `909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f`: 30
+- SHA-256 of the exact raw `address_utxos` response: `61261a6c16f8c15d6771b893efaf359670c18d4cafd298a0c6498cbb31bd075a`
+- GitHub artifact ZIP: [muesliswap-mainnet-usdm-observation-41296617811](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41296617811/artifacts/13079467093)
+- Artifact ZIP SHA-256: `bac479396a75d4fcef708467764b7e76690e5ecdb6592ef6636884d9316923d9`
+
+### Interpretation
+
+The queried address is live and contains AMM-marked pool outputs, but none of the 33 returned UTxOs contains the exact USDM asset unit. This is a direct negative observation for USDM reserves at this address and snapshot. It does **not** prove that no MuesliSwap USDM pool exists at any other script address or historical point in time.
+
+The observer preserves the raw Koios response and hashes it. It is read-only and submits no transactions. The pool datum decoder has not yet been run; no quote, reserve value, price, depth, or TVL is inferred from this observation.
+
+**Classification: DISCOVERY ONLY — NO CURRENT USDM UTxO AT THE PINNED AMM ADDRESS.** MuesliSwap remains excluded from the qualified USDM venue/source set. P-01 remains BLOCKED and P-16 remains NOT ISSUED.
