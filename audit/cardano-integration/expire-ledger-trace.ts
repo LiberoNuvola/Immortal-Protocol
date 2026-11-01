@@ -14,6 +14,7 @@
  */
 
 import {
+  CML,
   Constr,
   Data,
   Lucid,
@@ -70,6 +71,66 @@ const GAME_VERSION = new TextEncoder().encode('V1')
 
 function c(index: number, fields: any[] = []): any {
   return new Constr(index, fields)
+}
+
+
+/**
+ * Lucid 0.6.5 records scripts from readFrom(), but its collectFrom() path
+ * constructs PlutusScriptWitness.new_script(script). For this local-ledger
+ * conformance trace, switch only the two known reference-backed spend hashes
+ * to the CML reference witness constructor. Keep all other scripts on Lucid's
+ * original path and restore the constructor immediately after completion.
+ */
+async function completeWithReferenceScriptWitnesses<T>(
+  expectedScriptHashes: string[],
+  build: () => Promise<T>,
+): Promise<T> {
+  const expected = new Set(expectedScriptHashes.map((hash) => hash.toLowerCase()))
+  const witnessClass = CML.PlutusScriptWitness as unknown as {
+    new_script: (script: any) => any
+    new_ref: (hash: any) => any
+  }
+  if (typeof witnessClass.new_ref !== 'function') {
+    throw new Error('CML PlutusScriptWitness.new_ref is unavailable in the pinned Lucid runtime')
+  }
+  const descriptor = Object.getOwnPropertyDescriptor(witnessClass, 'new_script')
+  if (!descriptor || typeof descriptor.value !== 'function') {
+    throw new Error('CML PlutusScriptWitness.new_script is not patchable for the bounded reference-witness probe')
+  }
+  const originalNewScript = descriptor.value as (script: any) => any
+  const referenced = new Set<string>()
+
+  Object.defineProperty(witnessClass, 'new_script', {
+    ...descriptor,
+    value: (script: any) => {
+      const hash = script.hash()
+      const hashHex = hash.to_hex().toLowerCase()
+      if (!expected.has(hashHex)) {
+        return originalNewScript.call(witnessClass, script)
+      }
+      referenced.add(hashHex)
+      return witnessClass.new_ref(hash)
+    },
+  })
+
+  try {
+    const result = await build()
+    const missing = [...expected].filter((hash) => !referenced.has(hash))
+    if (missing.length > 0) {
+      throw new Error(
+        'Lucid did not route every EXPIRE script through a reference witness: ' +
+        missing.join(', '),
+      )
+    }
+    console.log(JSON.stringify({
+      expireReferenceWitnesses: 'CML.new_ref',
+      referencedScriptHashes: [...referenced].sort(),
+      inlineFallbackForExpectedScripts: false,
+    }))
+    return result
+  } finally {
+    Object.defineProperty(witnessClass, 'new_script', descriptor)
+  }
 }
 
 function hashJson(value: unknown): string {
@@ -649,22 +710,28 @@ console.log(JSON.stringify({
   latestBlockSlot: latestBlock.slot,
   latestBlockTimeMs,
 }))
-const expireTx = await lucid
-  .newTx()
-  .readFrom([prizeReferenceInput, poolReferenceInput])
-  .collectFrom([prizeUtxo], Data.to(c(3)))
-  .collectFrom([poolUtxo], Data.to(c(4)))
-  .pay.ToAddress(address, {
-    lovelace: prizeUtxo.assets.lovelace ?? 0n,
-  })
-  .pay.ToContract(
-    scripts.b1PrizePoolAddress as string,
-    { kind: 'inline', value: Data.to(postPoolDatum) },
-    poolUtxo.assets,
-  )
-  .addSigner(address)
-  .validFrom(Number(expiresAt + 1_000n))
-  .complete({ localUPLCEval: false })
+const expireTx = await completeWithReferenceScriptWitnesses(
+  [
+    validatorToScriptHash(scripts.prizeValidator as Script),
+    validatorToScriptHash(scripts.b1PrizePool as Script),
+  ],
+  () => lucid
+    .newTx()
+    .readFrom([prizeReferenceInput, poolReferenceInput])
+    .collectFrom([prizeUtxo], Data.to(c(3)))
+    .collectFrom([poolUtxo], Data.to(c(4)))
+    .pay.ToAddress(address, {
+      lovelace: prizeUtxo.assets.lovelace ?? 0n,
+    })
+    .pay.ToContract(
+      scripts.b1PrizePoolAddress as string,
+      { kind: 'inline', value: Data.to(postPoolDatum) },
+      poolUtxo.assets,
+    )
+    .addSigner(address)
+    .validFrom(Number(expiresAt + 1_000n))
+    .complete({ localUPLCEval: false }),
+)
 
 // This fixture qualifies the on-chain EXPIRE transition only. It does not
 // claim an authoritative production Issue-admission witness or bypass that gate.
