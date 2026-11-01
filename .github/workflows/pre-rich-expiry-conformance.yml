@@ -11,8 +11,10 @@ on:
     paths:
       - "PRE-RICH/src/PreRichExpiryEvidence.ts"
       - "PRE-RICH/src/PreRichExpiryPolicy.ts"
+      - "PRE-RICH/src/PreRichExpireRefinement.ts"
       - "src/__tests__/preRichExpiryEvidence.test.ts"
       - "src/__tests__/preRichExpiryPolicy.test.ts"
+      - "src/__tests__/preRichExpireRefinement.test.ts"
       - ".github/workflows/pre-rich-expiry-conformance.yml"
   pull_request:
     branches:
@@ -20,8 +22,10 @@ on:
     paths:
       - "PRE-RICH/src/PreRichExpiryEvidence.ts"
       - "PRE-RICH/src/PreRichExpiryPolicy.ts"
-      - "PRE-RICH/tests/conformance/PreRichExpiryEvidence.test.ts"
-      - "PRE-RICH/tests/conformance/PreRichExpiryPolicy.test.ts"
+      - "PRE-RICH/src/PreRichExpireRefinement.ts"
+      - "src/__tests__/preRichExpiryEvidence.test.ts"
+      - "src/__tests__/preRichExpiryPolicy.test.ts"
+      - "src/__tests__/preRichExpireRefinement.test.ts"
       - ".github/workflows/pre-rich-expiry-conformance.yml"
 
 jobs:
@@ -37,5 +41,5 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Run PRE-RICH expiry refinement conformance
-        run: npx vitest run src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichExpiryPolicy.test.ts
+      - name: Run PRE-RICH expiry conformance
+        run: npx vitest run src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichExpiryPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts
