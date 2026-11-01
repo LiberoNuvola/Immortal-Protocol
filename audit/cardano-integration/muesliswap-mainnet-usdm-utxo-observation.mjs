@@ -74,6 +74,58 @@ try {
   const factoryUsdmPools = factoryPools.filter(pool => BigInt(pool.usdmQuantity) > 0n);
   const invalidMarkerRows = factoryPools.filter(pool => pool.markerQuantity !== '1');
   const missingNftRows = factoryPools.filter(pool => pool.poolNftAssets.length === 0);
+  const candidateDatumHashes = [...new Set(factoryUsdmPools.map(pool =>
+    factoryRows.find(row => row.tx_hash === pool.txHash && Number(row.tx_index) === pool.outputIndex)?.datum_hash
+  ).filter(Boolean))];
+  const datumResult = candidateDatumHashes.length
+    ? await post('/datum_info', { _datum_hashes: candidateDatumHashes })
+    : { raw: '[]', data: [] };
+  if (!Array.isArray(datumResult.data)) throw new Error('KOIOS_DATUM_INFO_SHAPE_INVALID');
+  const datumByHash = new Map(datumResult.data.map(datum => [datum.hash, datum]));
+  function decodeAssetClass(value) {
+    if (!value || value.constructor !== 0 || !Array.isArray(value.fields) || value.fields.length !== 2
+      || typeof value.fields[0]?.bytes !== 'string' || typeof value.fields[1]?.bytes !== 'string') return null;
+    return { policy: value.fields[0].bytes.toLowerCase(), name: value.fields[1].bytes.toLowerCase() };
+  }
+  function decodePoolDatum(value) {
+    if (!value || value.constructor !== 0 || !Array.isArray(value.fields) || value.fields.length !== 4) return null;
+    const coinA = decodeAssetClass(value.fields[0]);
+    const coinB = decodeAssetClass(value.fields[1]);
+    const totalLiquidity = value.fields[2]?.int;
+    const swapFee = value.fields[3]?.int;
+    if (!coinA || !coinB || totalLiquidity === undefined || swapFee === undefined) return null;
+    return { coinA, coinB, totalLiquidity: String(totalLiquidity), swapFee: String(swapFee) };
+  }
+  const decodedUsdmPools = factoryUsdmPools.map(pool => {
+    const row = factoryRows.find(item => item.tx_hash === pool.txHash && Number(item.tx_index) === pool.outputIndex);
+    const datum = row?.datum_hash ? datumByHash.get(row.datum_hash) : null;
+    const decoded = decodePoolDatum(datum?.value);
+    const assetMap = new Map(pool.assets.map(asset => [asset.unit, BigInt(asset.quantity)]));
+    const reserveFor = coin => coin.policy === '' && coin.name === ''
+      ? BigInt(pool.lovelace)
+      : (assetMap.get(coin.policy + coin.name) ?? 0n);
+    const reserveA = decoded ? reserveFor(decoded.coinA) : null;
+    const reserveB = decoded ? reserveFor(decoded.coinB) : null;
+    const datumPairContainsUsdm = decoded
+      ? [decoded.coinA, decoded.coinB].some(coin => coin.policy + coin.name === USDM_UNIT)
+      : false;
+    return {
+      txHash: pool.txHash,
+      outputIndex: pool.outputIndex,
+      address: pool.address,
+      datumHash: row?.datum_hash ?? null,
+      datumBytes: datum?.bytes ?? null,
+      datumValue: datum?.value ?? null,
+      decodedPoolDatum: decoded,
+      reserveA: reserveA?.toString() ?? null,
+      reserveB: reserveB?.toString() ?? null,
+      reserveValueMatchesDatum: Boolean(decoded && reserveA > 0n && reserveB > 0n),
+      datumPairContainsUsdm,
+      usdmQuantityInValue: pool.usdmQuantity,
+      poolNftAssets: pool.poolNftAssets,
+      markerQuantity: pool.markerQuantity,
+    };
+  });
   const candidates = rows.filter(row => (row.asset_list ?? []).some(asset =>
     String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === USDM_UNIT
     && BigInt(String(asset.quantity ?? '0')) > 0n
@@ -105,6 +157,10 @@ try {
   manifest.distinctFactoryPoolAddresses = distinctPoolAddresses;
   manifest.factoryPoolUsdmCandidateCount = factoryUsdmPools.length;
   manifest.factoryPoolUsdmCandidates = factoryUsdmPools;
+  manifest.candidateDatumHashes = candidateDatumHashes;
+  manifest.datumInfoResponseSha256 = createHash('sha256').update(datumResult.raw, 'utf8').digest('hex');
+  manifest.decodedUsdmPools = decodedUsdmPools;
+  await writeFile(`${OUT}/candidate-datum-info-response.json`, datumResult.raw + '\\n');
   manifest.invalidFactoryMarkerCount = invalidMarkerRows.length;
   manifest.missingPoolNftCount = missingNftRows.length;
   manifest.addressResponseSha256 = createHash('sha256').update(addressUtxoResult.raw, 'utf8').digest('hex');
@@ -123,13 +179,17 @@ try {
     `factoryPoolUtxoCount=${factoryPools.length}`,
     `distinctFactoryPoolAddressCount=${distinctPoolAddresses.length}`,
     `factoryPoolUsdmCandidateCount=${factoryUsdmPools.length}`,
+    `candidateDatumCount=${datumResult.data.length}`,
+    `decodedUsdmPoolCount=${decodedUsdmPools.filter(pool => pool.decodedPoolDatum !== null).length}`,
+    `datumPairUsdmMatches=${decodedUsdmPools.filter(pool => pool.datumPairContainsUsdm).length}`,
+    `reserveValueMatchesDatum=${decodedUsdmPools.filter(pool => pool.reserveValueMatchesDatum).length}`,
     `factoryPoolAddresses=${distinctPoolAddresses.join(',')}`,
     `invalidFactoryMarkerCount=${invalidMarkerRows.length}`,
     `missingPoolNftCount=${missingNftRows.length}`,
     `addressResponseSha256=${manifest.addressResponseSha256}`,
     `factoryAssetUtxosResponseSha256=${manifest.factoryAssetUtxosResponseSha256}`,
     'readOnly=true',
-    'poolDatumDecoded=false',
+    'poolDatumDecoded=attempted-from-koios-datum-info',
     'scope=all-current-utxos-holding-exact-MuesliSwap-factory-marker',
   ];
   await writeFile(`${OUT}/summary.txt`, lines.join('\n') + '\n');
