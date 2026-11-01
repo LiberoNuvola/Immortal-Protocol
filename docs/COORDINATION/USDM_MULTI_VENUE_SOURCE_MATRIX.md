@@ -193,3 +193,61 @@ Circle states that USDCx on Cardano is issued by a Cardano protocol and backed b
 Therefore the two Danogo pools provide a stronger exact on-chain USDM/USDCx market observation, but **do not yet qualify USD/USDM**. No 1:1 USDCx/USD parity is inserted by the script; no rate is forwarded into OracleQuote, PriceReference, Kernel, EEV or Issue admission. The marginal spot is pre-LP-fee and not an executable quote; pool observations are asynchronous; no pool weighting, averaging, freshness threshold or peg rule is introduced.
 
 **Disposition:** Option B remains OPEN/NOT QUALIFIED; P-01 remains BLOCKED and P-16 NOT ISSUED. This is additional evidence and a read-only research path only. No contract, economic, V3 or Reveal changes; no wallet signature, transaction, approval or deployment.
+
+
+## 14. USDCx xReserve → native USDC → USD redemption path (2026-11-01)
+
+### Leg 1 — exact USDM / USDCx market observation
+
+The two exact Danogo CLMM USDM/USDCx pool UTxOs and virtual-reserve marginal spots are documented in §13 and backed by the preserved real fixture, same-run Koios/SuperCardano structural reconciliation, and the pinned official Danogo SDK calculation. They remain pre-LP-fee marginal spots, not executable quotes.
+
+### Leg 2 — USDCx → native USDC via xReserve
+
+Primary IOG Portal Terms (last updated 25 February 2026): https://usdcx.iog.io/docs/USDCx_portal_terms_of_use.pdf
+
+- USDCx on Cardano is described as collateralized 1:1 by USDC held in Circle xReserve on Ethereum. USDCx cannot be redeemed directly for USD; it is converted to native USDC.
+- The IOG portal route burns USDCx on Cardano and converts it to USDC. Under normal conditions this is described as approximately 2–4 hours, including 400 Cardano blocks (~2 hours), attestation processing and Circle reserve release.
+- The burn path requires IOG and Midgard Labs attestations confirming the Cardano burn and Circle attestation/release on Ethereum. Circle retains ultimate authority to release USDC from xReserve.
+- Circle may delay or deny release for compliance, security or operational reasons; IOG, Midgard Labs and Circle may pause bridge operations for security/incident reasons.
+- Fees are not fixed by the technical 1:1 ratio: network gas, burn, mint or relay/service charges may apply and may change; separate Circle/provider costs may also apply.
+- The portal's terms prohibit unauthorized automated systems accessing/scraping the portal. Do not build an observer that scrapes the bridge UI; use documented and authorized APIs or public on-chain evidence.
+
+Sources:
+- [IOG USDCx Portal Terms](https://usdcx.iog.io/docs/USDCx_portal_terms_of_use.pdf)
+- [Circle xReserve overview](https://www.circle.com/xreserve)
+- [Circle xReserve API](https://developers.circle.com/api-reference/xreserve)
+- [IOG USDCx launch announcement](https://www.iog.io/news/usdcx-on-cardano-is-live-a-new-chapter-for-stablecoin-utility)
+
+### Live reserve / remote-domain proof gap
+
+Circle's official xReserve API documents:
+- `GET /v1/info` — source and remote domain mapping / supported token configuration: https://developers.circle.com/api-reference/xreserve/all/get-info
+- `GET /v1/balances/{remoteDomain}` — expected USDC reserve balance associated with a specific remote domain, based on deposits: https://developers.circle.com/api-reference/xreserve/all/get-balances
+
+The xReserve API documentation explicitly says requests authenticate with an API key. This read-only research pass did not have an authorized xReserve API key and could not retrieve the production Cardano remote-domain mapping or domain-specific reserve balance. A global USDC balance at the Ethereum xReserve contract, if independently read, would not on its own attribute the backing to Cardano because xReserve supports multiple partner chains. The Cardano-specific `remoteDomain` and remote token identifier must be bound to the exact USDCx policy/fingerprint before a reserve-backing observation is accepted.
+
+No API call was simulated or claimed; the missing key is a source-access limitation, not evidence of missing reserves.
+
+### Leg 3 — native USDC → USD redemption (EEA)
+
+Circle's USDC MiCA White Paper was amended on **10 July 2026** and says that holders of EEA-issued USDC have a right of redemption at par. It identifies Circle Internet Financial Europe SAS as the EEA issuer and states USDC reserves are held in USD or equivalent USD-denominated assets for EEA holders:
+- [Circle USDC MiCA White Paper](https://www.circle.com/legal/mica-usdc-whitepaper)
+
+Circle's MiCA Redemption Policy describes the retail-holder route: eligibility assessment, KYC/KYT, an EEA IBAN capable of receiving USD, bank/third-party fee exposure, and payment normally within five business days once the checks are complete:
+- [Circle MiCA Redemption Policy](https://www.circle.com/legal/mica-redemption-policy)
+
+This is a contractual redemption path, not a public real-time market quote or unconditional instant exit. For non-retail/non-customer holders the policy requires a Circle Mint account and eligibility checks. Circle's non-EEA USDC Terms (updated 15 October 2026) likewise restrict direct USD redemption to eligible Circle Mint users; see https://www.circle.com/legal/usdc-terms.
+
+### Qualification classification
+
+The possible chain is now explicit:
+
+`Moneta USDM` → (Danogo CLMM exact on-chain USDM/USDCx marginal spot) → `USDCx` → (xReserve burn / multi-attester conversion) → `native USDC` → (Circle EEA redemption at par, subject to conditions) → `USD`.
+
+However this is **not yet a qualified production USD/USDM source**. Missing:
+1. authenticated Cardano `remoteDomain` / remote-token identity and domain-specific xReserve balance or independently verifiable, correctly scoped evidence;
+2. current live conversion availability, attestation state, fees and pause/deny status;
+3. a reviewed valuation/price-reference profile that distinguishes marginal spot from executable redemption value, conversion latency, fees and conditional eligibility;
+4. explicit governance adoption before this two-leg redemption route can feed P-02 / PriceReference / Issue admission.
+
+No (USDCx/USD=1) shortcut, haircut, fee, freshness threshold, oracle quorum or price is invented here. The two §13 pool observations remain research evidence only. Option B remains OPEN/NOT QUALIFIED; P-01 BLOCKED; P-16 NOT ISSUED. No OracleQuote, PriceReference, Kernel, EEV or Issue-admission implementation change; no approval, wallet signature, on-chain transaction or deployment. V3/Reveal semantics remain untouched.
