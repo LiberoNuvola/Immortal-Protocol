@@ -592,3 +592,19 @@ The official validator implements a fee-aware constant-product invariant; the he
 P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV, Issue-admission or economic rule change. No transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
 
 Detailed report: [MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md).
+
+
+## 22. USDA identity for the MuesliSwap USDM/USDA pool and external price-path boundary (2026-11-01)
+
+The second asset in the MuesliSwap PoolDatum is the exact Anzens USDA asset, not a ticker-only match:
+
+- Full unit: `fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae45655534441`.
+- Policy: `fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456`; asset name `55534441` (`USDA`).
+- Cardanoscan identifies the exact unit as Anzens USDA Stablecoin and lists 6 decimals: https://cardanoscan.io/token/fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae45655534441
+- Cardano's official stablecoin page describes USDA as fiat-backed with US Treasury reserves, BitGo custody and EMURGO issuer partnership: https://cardano.org/stablecoins/
+
+The above establishes asset identity and the issuer's published product description; it is not a current reserve audit or redemption guarantee. Muesli's equal 14.517925 USDM / 14.517925 USDA reserves are one AMM snapshot, not proof of peg or parity.
+
+A third-party stablecoin tracker lists USDA/USDCx and USDM/USDA Danogo CLMM pools, but its USDA/USD estimates are derived through ADA-paired liquidity and CoinGecko ADA/USD; stable-to-stable pools are listed separately. This is discovery evidence, not an independent USDA/USD oracle: https://danonight.com/cardano/stablecoins. Pyth's documented Cardano feed ID 16 is ADA/USD, not USDA/USD: https://developers.cardano.org/docs/developers/curriculum/dapps/oracles/pyth/. No direct USDA/USD feed was qualified in this pass.
+
+Disposition: MuesliSwap adds observed USDM/USDA relative liquidity only. It does not add an independent USD anchor. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**; no OracleQuote/PriceReference/Kernel/EEV integration or economic rule changes.
