@@ -3962,3 +3962,49 @@ A Notion connected-workspace search for corroborating GitHub/Slack decisions was
 No runtime/API change is authorized by this audit. Keep the exact-body integrity guard intact. The next implementation gate remains maintainer approval of (1) canonical producer/canonicalization provenance per action, (2) versioned semantic body predicates per transition, and (3) the phase-separated pre-sign intent versus post-submit/observed-ledger evidence contract. Then add positive/negative twins proving every semantic mismatch stops before signing. Do not change V3, Reveal semantics, economic policy, Agent A EEV/Issue authority or Agent C Materios work.
 
 **STATUS: EXACT-BODY INTEGRITY VERIFIED AT LIVE HEAD; SEMANTIC TRANSITION-TO-BODY BINDING, V08/V09 AND R1/K_c REMAIN OPEN. NO RUNTIME CHANGE.**
+
+
+
+## 45.45 AGENT B — EXPIRY TRANSITION PROFILE / NORMATIVE-ONCHAIN DRIFT (2026-11-01)
+
+### Exact source snapshot
+
+- Branch: `work/immortal-green-closure`
+- Source HEAD audited: `cc8b43c84c84de59a91ae1b9c63138856c00ec79`
+- `plutus/PrizeValidator.hs` blob: `2455f8283d87ff74a94b1b8bca1d1f96d60ae8b2`
+- `plutus/B1PrizePool.hs` blob: `106368b510a52447aa3de7ce951cf615466fc5e8`
+- `src/gameFlow.ts` blob: `cab3f9d1c7c971b4127f9ae61d1477dc93454fd9`
+
+### Normative source reconciliation
+
+The Notion **09 — Definitive Decision Register**, D-09 expiry section, records expiry as CLOSED semantically and describes these cases:
+1. UNRESOLVED → EXPIRED: release exactly the unresolved reserve; no liability/claim.
+2. REVEALED LOSS → EXPIRED: close the remaining economic state; no claim.
+3. CLAIMABLE WIN → EXPIRED: release the unclaimed crystallized liability; no later payment or recreated claim.
+4. UNRESOLVED → HISTORICAL_REVEALED, if the historical policy is enabled: historical information only; no pending winning liability and no claimability.
+
+The same register states that after `expiresAt` no transition may create/reactivate a claim, liability or payment obligation. T2 v0.1 §G3 describes EXPIRE primarily for an unresolved ticket; §G4 separately permits a late historical reveal only with zero economic effect. T2 is narrower in its EXPIRE examples than D-09.
+
+### Exact implementation observed
+
+- `PrizeValidator.validateExpire` requires `pdStatus == Pending`, `pdPrizeAmount == 0`, and beacon status Pending or Ready. It requires zero continuing Prize outputs and `txInfoValidRange` lower bound at/after `pdExpiresAt`.
+- `B1PrizePool`'s `TicketExpired` branch independently requires the consumed PrizeDatum status Pending and payout zero, then releases exactly `pdPriceUsdm` from unresolved reserve and decrements unresolved count.
+- `validateClaim` requires its validity upper bound at/before expiry.
+- `validateReveal` also calls `claimBeforeExpiry`; therefore current on-chain Reveal rejects after-expiry Reveal entirely. This is fail-closed and does not create a late-reveal liability, but it does not implement the optional historical-only record described by D-09/T2.
+- The production `gameFlow.ts` Expire builder assembles the Pending-ticket path; its PrizePool continuation is built by releasing the ticket price and decrementing unresolved count.
+
+### Conformance finding
+
+**Confirmed implementation/profile gap — not a proposed semantic change.** The current on-chain Expire path only closes Pending/unrevealed tickets. It has no path for a Revealed Loss or a Revealed Win whose crystallized liability remains unclaimed at expiry. Because Claim's validity range must end by expiry, a Revealed Win that remains unclaimed past expiry cannot use Claim; because Expire rejects non-Pending status and non-zero payout, it cannot use the current Expire path either. This is a potential stranded-liability / incomplete expiry-finality implementation relative to D-09.
+
+The current builder and validators are mutually aligned for the Pending-only path; changing only one of them would be unsafe. Any implementation must be a separately reviewed, atomic cross-validator transition with exact pool accounting and adversarial tests. Do not improvise output datums, status transitions, payout/liability deltas or beneficiary rules.
+
+### Safe disposition
+
+- Do not modify `PrizeValidator.hs`, `B1PrizePool.hs`, `gameFlow.ts`, V3 or Reveal in this pass.
+- Do not claim expiry conformance is complete from the Pending-only tests.
+- Ask protocol governance/maintainers to confirm whether D-09's REVEALED LOSS / CLAIMABLE WIN expiry cases remain the operative canonical requirements and whether historical-only Reveal is enabled. The Decision Register says expiry semantics are CLOSED; this is a conformance implementation question, not authority to reopen the economic policy.
+- After confirmation, define a single reviewed transition profile across PrizeValidator, B1PrizePool, builder and evidence tests; add positive/negative twins for Pending, Revealed Loss, Revealed Win unclaimed, Claim-before-expiry, Claim-at/after-expiry, and late historical reveal. Keep the exact current body-integrity guard.
+- The SDK proposal §11.4 currently describes Expire as Pending-only. Mark that row as a current implementation snapshot, not proof of full D-09 coverage.
+
+**STATUS: PENDING-ONLY EXPIRE PATH VERIFIED; D-09 REVEALED-LOSS / UNCLAIMED-WIN EXPIRY CONFORMANCE NOT IMPLEMENTED IN THE INSPECTED PATH. NO RUNTIME CHANGE.**
