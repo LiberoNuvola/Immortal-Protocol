@@ -1,0 +1,46 @@
+name: Agent A - MuesliSwap Mainnet USDM UTxO Observation
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/muesliswap-mainnet-usdm-utxo-observation.mjs"
+      - ".github/workflows/muesliswap-mainnet-usdm-observation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: muesliswap-mainnet-usdm-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Query Koios Mainnet (read-only)
+        id: observe
+        continue-on-error: true
+        run: node audit/cardano-integration/muesliswap-mainnet-usdm-utxo-observation.mjs
+      - name: Upload raw response and observation manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: muesliswap-mainnet-usdm-observation-${{ github.run_id }}
+          path: audit/muesliswap-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Preserve observer result
+        if: steps.observe.outcome != 'success'
+        run: exit 1
