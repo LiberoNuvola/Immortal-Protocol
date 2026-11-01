@@ -633,10 +633,11 @@ if (!prizeUtxo || !poolUtxo) {
   throw new Error('EXPIRE bootstrap did not materialize its exact Prize and Pool outpoints')
 }
 
-// EXPIRE uses the published reference scripts below. Keep the spending
-// transaction on the reference-script path: readFrom supplies both scripts;
-// do not also attach them as witnesses, which would inline the validators and
-// defeat the transaction-size benefit of the reference inputs.
+// EXPIRE uses the published reference scripts below. Lucid's
+// attach.SpendingValidator registers each validator in config.scripts so
+// collectFrom can resolve the script; the CML witness shim below turns the
+// resulting Plutus witness into Ref(hash), so the validator bytes are not
+// serialized in the spending transaction.
 const prizeReferenceTx = await lucid
   .newTx()
   .pay.ToAddressWithData(
@@ -722,6 +723,8 @@ const expireTx = await completeWithReferenceScriptWitnesses(
   () => lucid
     .newTx()
     .readFrom([prizeReferenceInput, poolReferenceInput])
+    .attach.SpendingValidator(scripts.prizeValidator as Script)
+    .attach.SpendingValidator(scripts.b1PrizePool as Script)
     .collectFrom([prizeUtxo], Data.to(c(3)))
     .collectFrom([poolUtxo], Data.to(c(4)))
     .pay.ToAddress(address, {
