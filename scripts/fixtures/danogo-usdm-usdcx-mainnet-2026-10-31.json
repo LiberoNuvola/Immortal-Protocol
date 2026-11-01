@@ -1,0 +1,108 @@
+{
+  "fixtureSchema": "immortal-danogo-usdm-usdcx-pool-fixture-v1",
+  "sourceWorkflowRun": 41241048258,
+  "sourceArtifactId": 13057745621,
+  "sourceArtifactZipSha256": "77c3c0c338f28deb70ff2a18186df334cacc0605d4b371e7f6ca5bff9f78795c",
+  "sourceJsonSha256": "deba3391f24d6bc30cc79a294d75ea23a05fe0458ad4df7ece8b5f00a9e8dc68",
+  "schema": "immortal-danogo-clmm-usdm-readonly-v1",
+  "network": "cardano-mainnet",
+  "exactAsset": {
+    "policyId": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad",
+    "assetNameHex": "0014df105553444d"
+  },
+  "source": {
+    "provider": "Koios",
+    "officialSdk": "https://github.com/dano-finance/clmm-sdk",
+    "officialPoolScriptHash": "d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb"
+  },
+  "startedAt": "2026-10-31T20:58:13.019Z",
+  "completedAt": "2026-10-31T20:58:14.208Z",
+  "pools": [
+    {
+      "status": "MATCH",
+      "nft": {
+        "unit": "d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb14bf240a4ade786cbbbb9e021f5f8b41a899b1658bf37f45f0497e453a6b49ed",
+        "policyId": "d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb",
+        "assetNameHex": "14bf240a4ade786cbbbb9e021f5f8b41a899b1658bf37f45f0497e453a6b49ed"
+      },
+      "poolKey": "danogo-clmm:d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb14bf240a4ade786cbbbb9e021f5f8b41a899b1658bf37f45f0497e453a6b49ed",
+      "utxoRef": "c8ca882352dc5267b24de82abbaed09bbe19d6c6fcf993b1fc5150333d1d091b#2",
+      "paymentCredential": "d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb",
+      "paymentCredentialMatchesPoolScript": true,
+      "nftQuantityRaw": "1",
+      "datumHash": "9ad95c01aa567ccf079fe413b72e8fa5c0cb98067ac29cbb8ae68c7ba0f9e121",
+      "inlineDatumCborHex": "d8799f9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dff9f581c1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e34455553444378ff051a06d87ff41a06c564751a2c387ee0d8799f1b00232b89c7270b521b002386f26fc10000ffd8799f1b00039b094ba8fe261b00038d7ea4c68000ff1a000186a01a000186a01b0000001763f70723190298ff",
+      "datum": {
+        "tokenX": {
+          "unit": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d"
+        },
+        "tokenY": {
+          "unit": "1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e345553444378"
+        },
+        "lpFeeRate": "5",
+        "sqrtLowerPrice": {
+          "numeratorRaw": "9899494936611666",
+          "denominatorRaw": "10000000000000000"
+        },
+        "sqrtUpperPrice": {
+          "numeratorRaw": "1014889156509222",
+          "denominatorRaw": "1000000000000000"
+        }
+      },
+      "activeReserveXRaw": "119092520614",
+      "activeReserveYRaw": "52293107305",
+      "valueReserveXRaw": "119207372442",
+      "valueReserveYRaw": "52406706910",
+      "supercardanoReserveXRaw": "119092520614",
+      "supercardanoReserveYRaw": "52293107305",
+      "exactActiveReserveMatch": true,
+      "rewardEpochBehind": false,
+      "blockHeight": 14140302,
+      "blockTime": 1793461144,
+      "poolFreshnessAtSourceAsOf": "UNDER_24H"
+    },
+    {
+      "status": "MATCH",
+      "nft": {
+        "unit": "d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb2988e2397e70e003f2ebbd2ce1af018a97c688c1c0ef13d3d3b64575d978f7ce",
+        "policyId": "d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb",
+        "assetNameHex": "2988e2397e70e003f2ebbd2ce1af018a97c688c1c0ef13d3d3b64575d978f7ce"
+      },
+      "poolKey": "danogo-clmm:d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb2988e2397e70e003f2ebbd2ce1af018a97c688c1c0ef13d3d3b64575d978f7ce",
+      "utxoRef": "e28aae486e31175b935382d9b657f44b4680a0d95fe936dd85a2d37dd0ef8588#1",
+      "paymentCredential": "d8b69fc53637bcfadbc4469083f706bc293f4d9d2296646c5ca167bb",
+      "paymentCredentialMatchesPoolScript": true,
+      "nftQuantityRaw": "1",
+      "datumHash": "678b94f28ef40983f81ffc069d17cb48d9e5c38c660898e79d1b4f26502b42c4",
+      "inlineDatumCborHex": "d8799f9f581cc48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad480014df105553444dff9f581c1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e34455553444378ff0a1a076fb6b21a0734fd821a12c684c0d8799f1b0023427a28ab6d731b002386f26fc10000ffd8799f1b0023cae7bcde280e1b002386f26fc10000ff186418641b0000001494e9eae6190298ff",
+      "datum": {
+        "tokenX": {
+          "unit": "c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d"
+        },
+        "tokenY": {
+          "unit": "1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e345553444378"
+        },
+        "lpFeeRate": "10",
+        "sqrtLowerPrice": {
+          "numeratorRaw": "9924716620639604",
+          "denominatorRaw": "10000000000000000"
+        },
+        "sqrtUpperPrice": {
+          "numeratorRaw": "10074720839804942",
+          "denominatorRaw": "10000000000000000"
+        }
+      },
+      "activeReserveXRaw": "122506229924",
+      "activeReserveYRaw": "55288255462",
+      "valueReserveXRaw": "122630991702",
+      "valueReserveYRaw": "55409168744",
+      "supercardanoReserveXRaw": "122506229924",
+      "supercardanoReserveYRaw": "55288255462",
+      "exactActiveReserveMatch": true,
+      "rewardEpochBehind": false,
+      "blockHeight": 14141144,
+      "blockTime": 1793477771,
+      "poolFreshnessAtSourceAsOf": "UNDER_24H"
+    }
+  ]
+}
