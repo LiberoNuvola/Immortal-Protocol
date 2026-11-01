@@ -177,7 +177,7 @@ try {
   manifest.datumInfoResponseSha256 = createHash('sha256').update(datumResult.raw, 'utf8').digest('hex');
   manifest.datumInfoError = datumInfoError;
   manifest.decodedUsdmPools = decodedUsdmPools;
-  await writeFile(`${OUT}/candidate-datum-info-response.json`, datumResult.raw + '\\n');
+  await writeFile(`${OUT}/candidate-datum-info-response.json`, datumResult.raw + '\n');
   manifest.invalidFactoryMarkerCount = invalidMarkerRows.length;
   manifest.missingPoolNftCount = missingNftRows.length;
   manifest.addressResponseSha256 = createHash('sha256').update(addressUtxoResult.raw, 'utf8').digest('hex');
