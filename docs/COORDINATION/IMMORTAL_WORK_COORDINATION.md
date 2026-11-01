@@ -4100,3 +4100,58 @@ The retrieved page contents were readable and supplied the D-09 / G3 / G4 text m
 Before implementation of E2/E3/E4, obtain maintainer/governance confirmation of the canonical applicable expiry source and whether historical-only Reveal is enabled. This does not reopen expiry semantics or authorize changing the protocol rules; it establishes the authority and profile configuration for conformance work.
 
 **STATUS: SOURCE TEXT RETRIEVED; NOTION VERIFICATION STATE UNVERIFIED; IMPLEMENTATION AUTHORIZATION NOT INFERRED.**
+
+## 45.49 AGENT B — E2/E3 REVEALED EXPIRY DATUM/REDEEMER RECONSTRUCTION
+
+### Exact implementation snapshot
+
+Source inspected at branch HEAD `3f8ceecf3da856248bf3a740fd3a8dcb300b157d`:
+- `plutus/Types.hs` — PrizeDatum / PrizeStatus / PrizeAction / B1PrizePoolDatum / B1PrizePoolAction.
+- `plutus/PrizeValidator.hs` — Reveal, Claim, Expire, time predicates.
+- `plutus/B1PrizePool.hs` — TicketRevealed, TicketClaimed, TicketExpired.
+- `src/gameFlow.ts` — revealPrize, claimPrize, expirePrize.
+- `IMMORTAL/kernel/EconomicKernel.hs` — reserve/liability delta definitions.
+
+Design reconstruction: `docs/COORDINATION/PRE-RICH-E2-E3-EXPIRE-TRANSITION-PROFILE-2026-11-01.md`.
+
+### Existing schema/redeemer capacity
+
+Existing `PrizeDatum` already carries `pdStatus`, `pdPrizeAmount`, `pdPriceUsdm`, and `pdExpiresAt`. Existing pool datum separately tracks unresolved reserve, unresolved ticket count and pending liabilities.
+
+Existing redeemer constructor indices can be reused:
+- `PrizeAction.Expire`: constructor index 3.
+- `B1PrizePoolAction.TicketExpired`: constructor index 4.
+
+E2/E3 do not inherently require a new datum field, a new `PrizeStatus` constructor, or new redeemer constructor. Current expiry consumes the PrizeDatum and leaves the NFT independently held.
+
+### Accounting reconstructed from existing code
+
+Reveal already:
+- releases ticket price (P) from unresolved reserve (`reserveRevealDelta(P) = -P`);
+- decrements unresolved ticket count;
+- adds `max(0, pdPrizeAmount)` to pending liabilities;
+- leaves total liquidity unchanged.
+
+Therefore:
+- **E2 Revealed Loss (`pdPrizeAmount == 0`):** expiry consumes the PrizeDatum; pool accounting fields remain unchanged. The unresolved reserve/count must not be decremented again.
+- **E3 Revealed Win (`pdPrizeAmount = W > 0`):** expiry consumes the PrizeDatum; pending liabilities decrease exactly by (W), while total liquidity, unresolved reserve and unresolved count remain unchanged. No owner payment occurs; unlike Claim, physical liquidity is not reduced.
+
+### New blockers identified
+
+1. B1 `TicketExpired` has an unconditional `ppUnresolvedTicketCount > 0` precondition. This cannot be imposed on E2/E3 because Reveal has already decremented the count for that ticket; it can legitimately be zero when no other unresolved tickets remain.
+2. B1 `TicketExpired` validates datum accounting but does not explicitly compare the physical Pool input `TxOut.value` with the continuing Pool output value. The singleton-NFT check does not prove that USDM/ADA pool assets were preserved. Builder behavior passing through the original assets is not an on-chain guarantee. Exact physical value preservation must be enforced for E1 as well as E2/E3, absent a separately reviewed canonical exception.
+3. Claim validity uses finite upper bound `<= expiresAt`; Expire uses finite lower bound `>= expiresAt`. Both helpers ignore interval-closure flags. Equality therefore satisfies both time predicates; the two transactions conflict on the same Prize UTxO, but boundary tests must make the chosen equality convention explicit. Do not alter either comparator without canonical authorization.
+4. E4 is separate: current Expire consumes the PrizeDatum, and PrizeStatus has no Expired constructor. A post-expiry historical reveal cannot update that consumed datum. If historical mode is confirmed enabled, it requires a persistent non-economic history representation. Historical-mode enablement remains unconfirmed.
+
+### Required coordinated implementation profile
+
+- PrizeValidator must preserve the current Pending branch and add state-specific Revealed expiry validation.
+- B1PrizePool must reuse TicketExpired and branch on the consumed PrizeDatum: Pending release as today; Revealed Loss no accounting delta; Revealed Win exact pending-liability release only.
+- B1 must verify the matching pool datum deltas and physical pool value preservation on-chain.
+- DApp `expirePrize` must build Pending, Revealed-Loss and Revealed-Win cases without using unresolved reserve/count for already-revealed tickets.
+- Add positive/negative twins against both validators together, then local-ledger and Preprod evidence.
+- E4 remains excluded until historical-mode activation and its retained-history shape are confirmed.
+
+No runtime code, datum schema, redeemer ABI, V3, Reveal semantics or economic policy changed in this audit.
+
+**STATUS: E2/E3 ACCOUNTING MAPPED TO EXISTING DATUM/REDEEMER SHAPES; CURRENT PENDING-ONLY IMPLEMENTATION AND PHYSICAL POOL-VALUE PRESERVATION GAP REMAIN OPEN. NO RUNTIME CHANGE.**
