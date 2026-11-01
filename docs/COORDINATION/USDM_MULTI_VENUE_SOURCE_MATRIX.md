@@ -427,3 +427,52 @@ The endpoint provides a potentially useful burn hash → Ethereum transaction ha
 - USD/USDM source Option B remains **NOT QUALIFIED**; P-01 BLOCKED; P-16 NOT ISSUED.
 
 No scraping of the Portal UI, no POST, wallet/signature, transaction, approval or deployment. No economic assumptions or code integration. V3/Reveal untouched.
+
+
+## 18. Follow-up on the two 450,000 USDCx burns: explorer I/O summary and stake-address probe (2026-11-01)
+
+### Transaction-level observations
+
+Read-only Cardanoscan transaction pages were fetched for both previously identified burns:
+
+- [30 October burn](https://cardanoscan.io/transaction/45f0cb262133e8e1de17845ba15a431af74b8fb7d7cc9c2fbafc39255150ba99): block 14,136,184; 2 inputs → 1 output; 450,000.000000 USDCx shown as sent; the explorer labels the output as returned to sender / change and reports only the 0.330705 ADA network fee as value leaving the wallet.
+- [29 October burn](https://cardanoscan.io/transaction/4e02f10062efee431f20bece5faaa53e6f96e02c74b8cdb5d0878ec0c7c4ef9d): block 14,132,302; 2 inputs → 1 output; 450,000.000000 USDCx shown as sent; the explorer gives the same returned-to-sender / change summary and 0.330705 ADA network fee.
+
+Both explorer summaries associate the transactions with stake address:
+`stake1u8ue3etyhp2lrru2xmxd7cuslcqkaqlakd4863sfjhwrflcx9y5xp`.
+
+**Interpretation boundary:** the explorer's human-readable net-value summary is not the transaction's full input/output address map. It confirms the displayed burn amount and change treatment, but does not identify the full `addr1...` payment address to use in IOG's address-keyed history route. It also does not independently establish whether a Circle release occurred.
+
+### Direct IOG history lookup using the stake address
+
+A read-only GET was attempted against the observed IOG route using the stake address above:
+
+`GET https://production-docker.usdcx.aws.iohkdev.io/withdrawal-history/stake1u8ue3etyhp2lrru2xmxd7cuslcqkaqlakd4863sfjhwrflcx9y5xp`
+
+The live endpoint returned an empty JSON list: `[]`.
+
+This is consistent with the route being keyed by a full Cardano payment address rather than a reward/stake address. It does **not** prove that no withdrawals exist for the stake credential; it only means this stake-address query returned no rows.
+
+### Address-resolution routes assessed
+
+- Koios documents `POST /account_addresses` for retrieving all payment addresses associated with a stake account. This is the most direct public-indexer route, but the available web-fetch interface cannot issue the required POST request.
+- Gridscan documents `GET /api/accounts/{stake_address}/addresses` and transaction UTxO endpoints, but its data API is hosted separately at `ada.api.gridscan.io` and returned HTTP 401 without an API key. No key was supplied or requested.
+- Cardanoscan documents a reward-account-addresses API operation, but it requires an API key; no key was supplied or requested.
+- The public IOG history route was not queried with a guessed or reconstructed payment address.
+
+References:
+- [Koios API documentation](https://www.koios.rest/api.html) — account addresses and transaction UTxO endpoints.
+- [Gridscan account / transaction API reference](https://ada.gridscan.io/) — account-associated addresses and transaction UTxOs; API key required on the separate data host.
+- [Cardanoscan API documentation](https://docs.cardanoscan.io/) — reward-account address lookup; API key required.
+- [Cardano address model](https://developers.cardano.org/docs/learn/core-concepts/addresses/) — payment and delegation credentials are distinct components of a base address.
+
+### Qualification disposition
+
+- Both 450,000 USDCx burn transaction summaries: **LIVE EXPLORER READ OBSERVED**.
+- Full payment address for either burn: **NOT RESOLVED**.
+- IOG history query using the shared stake address: **LIVE GET RETURNED EMPTY LIST**; not evidence of no withdrawal.
+- Burn-hash → IOG row → Ethereum release linkage for either 450,000 event: **NOT OBTAINED**.
+- Circle expected-balance / Cardano net-supply reconciliation: **OPEN**.
+- USD/USDM source Option B remains **NOT QUALIFIED**; P-01 **BLOCKED**; P-16 **NOT ISSUED**.
+
+No API key, private wallet data, signature, transaction, approval, deployment or state-changing request was used. No economic rule or threshold introduced. V3/Reveal and Materios untouched.
