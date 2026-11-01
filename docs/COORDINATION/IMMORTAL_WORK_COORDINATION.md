@@ -4155,3 +4155,46 @@ Therefore:
 No runtime code, datum schema, redeemer ABI, V3, Reveal semantics or economic policy changed in this audit.
 
 **STATUS: E2/E3 ACCOUNTING MAPPED TO EXISTING DATUM/REDEEMER SHAPES; CURRENT PENDING-ONLY IMPLEMENTATION AND PHYSICAL POOL-VALUE PRESERVATION GAP REMAIN OPEN. NO RUNTIME CHANGE.**
+
+## 45.50 AGENT B — E2/E3 STATE-AWARE EXPIRE IMPLEMENTATION (2026-11-01)
+
+### Exact branch state
+
+- Branch: `work/immortal-green-closure`
+- HEAD at this checkpoint: `073c9b5f2390da1cfd8c797ce8f38896c577dfcd`
+- E2/E3 transition profile: `docs/COORDINATION/PRE-RICH-E2-E3-EXPIRE-TRANSITION-PROFILE-2026-11-01.md`
+- Existing datum ABI and redeemer constructor indices are unchanged.
+
+### Runtime changes
+
+- `PRE-RICH/src/PreRichExpireAccounting.ts`: pure deterministic accounting helper; Pending releases exact price reserve/count, Revealed Loss has zero pool accounting delta, Revealed Win releases only the unclaimed crystallized liability.
+- `src/gameFlow.ts::expirePrize`: selects Pending/Revealed from PrizeDatum, validates beacon lifecycle and derives pool fields using the helper.
+- `plutus/PrizeValidator.hs::validateExpire`: retains Pending path and adds Revealed Loss/Win predicates. Pool continuation accounting must match the selected lifecycle case.
+- `plutus/B1PrizePool.hs::TicketExpired`: independently enforces matching Pending/Revealed deltas; no longer applies unresolved-count-positive to Revealed tickets; requires exact physical Pool input/output Value equality.
+- `plutus/Types.hs`: lifecycle comments updated. No new PrizeStatus or redeemer constructor.
+- `audit/cardano-integration/expire-ledger-trace.ts`: supports Pending, Revealed Loss and Revealed Win fixtures with unique ticket names; Revealed fixtures are synthetic post-Reveal state fixtures.
+- `.github/workflows/immortal-cardano-lab.yml`: preserves the existing Aiken V3 Pending trace and adds three separate Haskell V2 EXPIRE traces, one per state.
+
+### Bounded test evidence
+
+- Dedicated expiry workflow #41272261739: success — **4 test files, 34 tests passed** (Evidence, Policy, existing ExpireRefinement, new ExpireAccounting).
+- Cardano Adapter Sale #41272640593 at source HEAD: success (frontend build + economic conformance).
+- Protocol Declaration #41272640587: success.
+- Documentation Link Check #41272640613: success.
+- Algorithmic Governability #41272640658: success.
+- IMMORTAL Portability #41272640629: success.
+- C13 Cardano Semantic #41272640663: success.
+- PRE-RICH Emulator Reveal #41272640601, IMMORTAL Haskell Semantic #41272640621, IMMORTAL Cardano Integration Lab #41272640643, Flux Point #41272640640 and other triggered gates were still in progress when this checkpoint was written.
+
+The Cardano Integration Lab is configured to generate fresh Haskell validators and evaluate the three Haskell V2 EXPIRE fixtures on local Yaci. **No E2/E3 Yaci acceptance result is claimed until those exact steps complete.** Synthetic revealed pre-states prove only the expiry transition from the provided datum/pool pre-state; they are not an end-to-end Reveal execution or Preprod evidence.
+
+### Remaining boundaries
+
+- E1 Pending remains supported and its accounting is preserved.
+- E2 Revealed Loss releases no reserve and no liability.
+- E3 unclaimed Revealed Win releases exactly its outstanding liability, with physical pool liquidity and reserve/count unchanged.
+- The physical B1 PrizePool Value is now checked on-chain for TicketExpired, including E1.
+- E4 historical-only Reveal remains excluded until activation and retained-history representation are confirmed.
+- No V3, Reveal, Issue/EEV, Agent C/Materios, or economic policy changes.
+
+**STATUS: E2/E3 IMPLEMENTATION PRESENT; 34 UNIT/ACCOUNTING TESTS PASS; TYPESCRIPT/FRONTEND AND SELECTED CI GATES GREEN; HASKELL COMPILE + THREE-CASE YACI LEDGER EVIDENCE PENDING. DO NOT MARK EXPIRY FULLY CLOSED.**
