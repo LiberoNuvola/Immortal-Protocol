@@ -109,6 +109,10 @@ async function completeWithReferenceScriptWitnesses<T>(
         return originalNewScript.call(witnessClass, script)
       }
       referenced.add(hashHex)
+      console.log(JSON.stringify({
+        expireReferenceWitnessIntercepted: hashHex,
+        scriptBytes: typeof script.to_bytes === 'function' ? script.to_bytes().length : null,
+      }))
       return witnessClass.new_ref(hash)
     },
   })
