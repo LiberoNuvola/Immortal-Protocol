@@ -180,3 +180,19 @@ Official contract source: [PoolDatum and PoolRedeemer](https://github.com/Muesli
 MuesliSwap is no longer discovery-only: the exact factory census establishes **two live USDM pool UTxOs** at the captured Mainnet tip, with datum/Value reconciliation. It is qualified as an observed liquidity venue for these two pairs only, not as an oracle or USD/USDM conversion source. The USDM/USDA reserve quantities happen to be equal at this snapshot; this is not evidence of a USD peg, redemption parity, or independent USD price.
 
 No executable quote, slippage/depth curve, USD price, TVL valuation, oracle independence claim, or production integration is asserted. The pool-specific fee-aware integer formula must be used for any later quote. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV, Issue-admission or economic rule changes. No transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
+
+
+## 8. USDA identity and cross-market interpretation
+
+The second asset in the USDM/USDA PoolDatum is not merely a token-name guess:
+
+- Exact USDA unit: `fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae45655534441`.
+- Policy: `fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456`; asset name `55534441` (ASCII `USDA`).
+- Cardanoscan identifies this exact unit as **Anzens USDA Stablecoin**, with 6 decimals: https://cardanoscan.io/token/fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae45655534441
+- Cardano's official stablecoin page describes USDA as fiat-backed, with US Treasury instruments as reserves, BitGo custody and EMURGO as issuer partner: https://cardano.org/stablecoins/
+
+These are identity/issuer descriptions, not an independent audit of current reserves or a redemption guarantee for this pool. With 6 decimals, the Muesli USDM/USDA pool held 14.517925 USDM and 14.517925 USDA at the captured snapshot. The equal reserve amounts are a single AMM state; they do not prove USD peg, redemption parity, or an executable 1:1 quote.
+
+A third-party Cardano stablecoin tracker (last updated 2026-10-30) lists USDA/USDCx and USDM/USDA Danogo CLMM markets, and states that its stablecoin USD estimates are derived from ADA-paired pool rates plus CoinGecko ADA/USD; its stable-to-stable pool list is separate. This is useful market discovery, but it is not a direct USDA/USD oracle and is not independent of the underlying Cardano pools: https://danonight.com/cardano/stablecoins
+
+In this pass, no direct USDA/USD oracle feed was qualified. Pyth's documented Cardano feed example is ADA/USD feed ID 16, not USDA/USD: https://developers.cardano.org/docs/developers/curriculum/dapps/oracles/pyth/. The Muesli USDM/USDA pool therefore adds a second venue observation of the relative pair, not a USD anchor.
