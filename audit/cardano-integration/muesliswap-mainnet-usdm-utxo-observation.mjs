@@ -3,6 +3,9 @@ import { mkdir, writeFile } from 'node:fs/promises';
 
 const ADDRESS = 'addr1z9cy2gmar6cpn8yymll93lnd7lw96f27kn2p3eq5d4tjr7rshnr04ple6jjfc0cvcmcpcxmsh576v7j2mjk8tw890vespzvgwd';
 const USDM_UNIT = 'c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d';
+const FACTORY_POLICY = 'de9b756719341e79785aa13c164e7fe68c189ed04d61c9876b2fe53f';
+const FACTORY_NAME = '4d7565736c69537761705f414d4d';
+const POOL_NFT_POLICY = '909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093f';
 const BASE = 'https://api.koios.rest/api/v1';
 const OUT = 'audit/muesliswap-evidence';
 
@@ -21,7 +24,7 @@ async function post(path, body) {
 await mkdir(OUT, { recursive: true });
 const startedAt = new Date().toISOString();
 const manifest = {
-  schema: 'IMMORTAL_MUESLISWAP_USDM_UTXO_OBSERVATION_V1',
+  schema: 'IMMORTAL_MUESLISWAP_FACTORY_POOL_CENSUS_V1',
   network: 'cardano-mainnet',
   endpoint: BASE,
   address: ADDRESS,
@@ -31,13 +34,46 @@ const manifest = {
   transactionSubmission: false,
 };
 try {
-  const [tipResult, utxoResult] = await Promise.all([
+  const [tipResult, addressUtxoResult, factoryUtxoResult] = await Promise.all([
     post('/tip', {}),
     post('/address_utxos', { _addresses: [ADDRESS], _extended: true }),
+    post('/asset_utxos?limit=1000&offset=0', { _asset_list: [[FACTORY_POLICY, FACTORY_NAME]], _extended: true }),
   ]);
   if (!Array.isArray(tipResult.data) || tipResult.data.length !== 1) throw new Error('KOIOS_TIP_SHAPE_INVALID');
-  if (!Array.isArray(utxoResult.data)) throw new Error('KOIOS_ADDRESS_UTXOS_SHAPE_INVALID');
-  const rows = utxoResult.data;
+  if (!Array.isArray(addressUtxoResult.data)) throw new Error('KOIOS_ADDRESS_UTXOS_SHAPE_INVALID');
+  if (!Array.isArray(factoryUtxoResult.data)) throw new Error('KOIOS_ASSET_UTXOS_SHAPE_INVALID');
+  const rows = addressUtxoResult.data;
+  const factoryRows = factoryUtxoResult.data;
+  const factoryPools = factoryRows.map(row => {
+    const assets = (row.asset_list ?? []).map(asset => ({
+      unit: String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase(),
+      quantity: String(asset.quantity ?? '0'),
+    }));
+    const markerQuantity = assets.filter(asset => asset.unit === FACTORY_POLICY + FACTORY_NAME)
+      .reduce((sum, asset) => sum + BigInt(asset.quantity), 0n);
+    const nftAssets = assets.filter(asset => asset.unit.startsWith(POOL_NFT_POLICY));
+    const usdmQuantity = assets.filter(asset => asset.unit === USDM_UNIT)
+      .reduce((sum, asset) => sum + BigInt(asset.quantity), 0n);
+    return {
+      txHash: row.tx_hash,
+      outputIndex: Number(row.tx_index),
+      address: row.address,
+      lovelace: String(row.value),
+      markerQuantity: markerQuantity.toString(),
+      poolNftAssets: nftAssets,
+      usdmQuantity: usdmQuantity.toString(),
+      assets,
+      datumHash: row.datum_hash ?? null,
+      inlineDatum: row.inline_datum ?? null,
+      blockHeight: row.block_height ?? null,
+      blockTime: row.block_time ?? null,
+      addressMatchesPinnedPoolScript: row.address === ADDRESS,
+    };
+  });
+  const distinctPoolAddresses = [...new Set(factoryPools.map(pool => pool.address))].sort();
+  const factoryUsdmPools = factoryPools.filter(pool => BigInt(pool.usdmQuantity) > 0n);
+  const invalidMarkerRows = factoryPools.filter(pool => pool.markerQuantity !== '1');
+  const missingNftRows = factoryPools.filter(pool => pool.poolNftAssets.length === 0);
   const candidates = rows.filter(row => (row.asset_list ?? []).some(asset =>
     String(asset.policy_id ?? '').toLowerCase() + String(asset.asset_name ?? '').toLowerCase() === USDM_UNIT
     && BigInt(String(asset.quantity ?? '0')) > 0n
@@ -59,12 +95,22 @@ try {
   }));
   manifest.completedAt = new Date().toISOString();
   manifest.tip = tipResult.data[0];
-  manifest.addressUtxoCount = rows.length;
-  manifest.usdmCandidateCount = candidates.length;
-  manifest.usdmCandidates = normalized;
-  manifest.responseSha256 = createHash('sha256').update(utxoResult.raw, 'utf8').digest('hex');
-  manifest.rawResponseFile = 'address-utxos-response.json';
-  await writeFile(`${OUT}/address-utxos-response.json`, utxoResult.raw + '\n');
+  manifest.pinnedAddressUtxoCount = rows.length;
+  manifest.pinnedAddressUsdmCandidateCount = candidates.length;
+  manifest.pinnedAddressUsdmCandidates = normalized;
+  manifest.factoryMarker = { policy: FACTORY_POLICY, assetNameHex: FACTORY_NAME };
+  manifest.poolNftPolicy = POOL_NFT_POLICY;
+  manifest.factoryPoolUtxoCount = factoryPools.length;
+  manifest.distinctFactoryPoolAddressCount = distinctPoolAddresses.length;
+  manifest.distinctFactoryPoolAddresses = distinctPoolAddresses;
+  manifest.factoryPoolUsdmCandidateCount = factoryUsdmPools.length;
+  manifest.factoryPoolUsdmCandidates = factoryUsdmPools;
+  manifest.invalidFactoryMarkerCount = invalidMarkerRows.length;
+  manifest.missingPoolNftCount = missingNftRows.length;
+  manifest.addressResponseSha256 = createHash('sha256').update(addressUtxoResult.raw, 'utf8').digest('hex');
+  manifest.factoryAssetUtxosResponseSha256 = createHash('sha256').update(factoryUtxoResult.raw, 'utf8').digest('hex');
+  await writeFile(`${OUT}/pinned-address-utxos-response.json`, addressUtxoResult.raw + '\n');
+  await writeFile(`${OUT}/factory-marker-asset-utxos-response.json`, factoryUtxoResult.raw + '\n');
   await writeFile(`${OUT}/observation.json`, JSON.stringify(manifest, null, 2) + '\n');
   const lines = [
     'MuesliSwap Mainnet USDM UTxO observation',
@@ -72,15 +118,23 @@ try {
     `completedAt=${manifest.completedAt}`,
     `tipSlot=${manifest.tip.abs_slot ?? manifest.tip.absolute_slot ?? 'unknown'}`,
     `tipBlock=${manifest.tip.block_no ?? manifest.tip.block_height ?? 'unknown'}`,
-    `addressUtxoCount=${rows.length}`,
-    `usdmCandidateCount=${candidates.length}`,
-    `responseSha256=${manifest.responseSha256}`,
+    `pinnedAddressUtxoCount=${rows.length}`,
+    `pinnedAddressUsdmCandidateCount=${candidates.length}`,
+    `factoryPoolUtxoCount=${factoryPools.length}`,
+    `distinctFactoryPoolAddressCount=${distinctPoolAddresses.length}`,
+    `factoryPoolUsdmCandidateCount=${factoryUsdmPools.length}`,
+    `factoryPoolAddresses=${distinctPoolAddresses.join(',')}`,
+    `invalidFactoryMarkerCount=${invalidMarkerRows.length}`,
+    `missingPoolNftCount=${missingNftRows.length}`,
+    `addressResponseSha256=${manifest.addressResponseSha256}`,
+    `factoryAssetUtxosResponseSha256=${manifest.factoryAssetUtxosResponseSha256}`,
     'readOnly=true',
     'poolDatumDecoded=false',
+    'scope=all-current-utxos-holding-exact-MuesliSwap-factory-marker',
   ];
   await writeFile(`${OUT}/summary.txt`, lines.join('\n') + '\n');
   console.log(lines.join('\n'));
-  if (candidates.length === 0) console.log('RESULT=NO_CURRENT_USDM_UTXO_AT_TARGET_ADDRESS');
+  if (factoryUsdmPools.length === 0) console.log('RESULT=NO_CURRENT_USDM_UTXO_IN_FACTORY_MARKER_CENSUS');
 } catch (error) {
   manifest.completedAt = new Date().toISOString();
   manifest.error = String(error?.stack ?? error);
