@@ -196,3 +196,17 @@ These are identity/issuer descriptions, not an independent audit of current rese
 A third-party Cardano stablecoin tracker (last updated 2026-10-30) lists USDA/USDCx and USDM/USDA Danogo CLMM markets, and states that its stablecoin USD estimates are derived from ADA-paired pool rates plus CoinGecko ADA/USD; its stable-to-stable pool list is separate. This is useful market discovery, but it is not a direct USDA/USD oracle and is not independent of the underlying Cardano pools: https://danonight.com/cardano/stablecoins
 
 In this pass, no direct USDA/USD oracle feed was qualified. Pyth's documented Cardano feed example is ADA/USD feed ID 16, not USDA/USD: https://developers.cardano.org/docs/developers/curriculum/dapps/oracles/pyth/. The Muesli USDM/USDA pool therefore adds a second venue observation of the relative pair, not a USD anchor.
+
+
+## 9. Repeatability snapshot after datum-artifact correction
+
+A second full factory census was run after correcting the raw datum JSON artifact serialization:
+
+- Workflow [41297549569](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297549569): **SUCCESS**, source SHA `7370c3c487cde5adf6833e166259e71cdd9fec79`.
+- Artifact [13079452509](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297549569/artifacts/13079452509), ZIP SHA-256 `b3b2816ea176a9cc8f1317ff8f6ef6698fabd422afaf0ec99219cdb3868a3131`.
+- Tip: slot `201962540`, block `14143690`.
+- Same 71 factory-marker UTxOs, 2 address variants, 1 payment credential, 2 stake addresses and 2 USDM pool candidates.
+- Both candidate datums decoded; both datum pairs matched exact USDM identity; both reserve/Value reconciliations and USDM reserve checks passed; no datum endpoint error.
+- The downloaded artifact's `candidate-datum-info-response.json` and `observation.json` were independently parsed as valid JSON. The two pool UTxO refs, datum hashes, pair identities and reserves matched the preceding snapshot.
+
+This repeat run confirms the census is reproducible across adjacent tips and the preserved raw datum artifact is valid JSON. It does not add a third pool or change the qualification boundary.
