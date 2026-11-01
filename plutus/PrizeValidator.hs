@@ -727,10 +727,9 @@ validateReveal table datum playerSecret ctx =
 
 -- ============================================================
 -- Expire
--- Canonical semantics: consume the Pending PrizeDatum at/after expiry.
--- No continuing PrizeDatum is produced. The ticket NFT is independent and
--- remains transferable; EXPIRE only closes the economic promise and releases
--- its unresolved reserve from the PrizePool.
+-- Consume the ticket PrizeDatum at/after expiry. Pending releases its
+-- unresolved reserve; Revealed releases only any unclaimed crystallized
+-- liability. No continuing PrizeDatum is produced; the NFT remains independent.
 -- ============================================================
 
 {-# INLINABLE validateExpire #-}
@@ -751,11 +750,26 @@ validateExpire datum ctx =
         Just poolOut ->
           let
             poolIn = readPoolInput info prizePoolBs
-            expectedReserve =
-              ppUnresolvedReserve poolIn
-                - pdPriceUsdm datum
-            expectedCount =
-              ppUnresolvedTicketCount poolIn - 1
+            pendingExpiry =
+                 pdStatus datum == Pending
+              && ppUnresolvedReserve poolIn >= pdPriceUsdm datum
+              && ppUnresolvedTicketCount poolIn > 0
+              && ppPendingLiabilities poolOut == ppPendingLiabilities poolIn
+              && ppUnresolvedReserve poolOut
+                   == ppUnresolvedReserve poolIn - pdPriceUsdm datum
+              && ppUnresolvedTicketCount poolOut
+                   == ppUnresolvedTicketCount poolIn - 1
+            revealedExpiry =
+                 pdStatus datum == Revealed
+              && pdBeaconStatus datum == BeaconReady
+              && pdPrizeAmount datum >= 0
+              && ppPendingLiabilities poolIn >= pdPrizeAmount datum
+              && ppPendingLiabilities poolOut
+                   == ppPendingLiabilities poolIn - pdPrizeAmount datum
+              && ppUnresolvedReserve poolOut
+                   == ppUnresolvedReserve poolIn
+              && ppUnresolvedTicketCount poolOut
+                   == ppUnresolvedTicketCount poolIn
           in
                traceIfFalse "15"
                  (ppPrizeHash poolOut == ownPrizeHash)
@@ -766,13 +780,7 @@ validateExpire datum ctx =
             && traceIfFalse "35"
                  (ppTotalLiquidity poolOut == ppTotalLiquidity poolIn)
             && traceIfFalse "36"
-                 (ppPendingLiabilities poolOut == ppPendingLiabilities poolIn)
-            && traceIfFalse "37"
-                 (ppUnresolvedReserve poolOut == expectedReserve)
-            && traceIfFalse "38"
-                 (expectedReserve >= 0)
-            && traceIfFalse "39"
-                 (ppUnresolvedTicketCount poolOut == expectedCount)
+                 (pendingExpiry || revealedExpiry)
             && traceIfFalse "40"
                  (ppLockedJackpot poolOut == ppLockedJackpot poolIn)
             && traceIfFalse "41"
@@ -786,12 +794,18 @@ validateExpire datum ctx =
        traceIfFalse "11" (countOwnScriptInputs ctx == 1)
     && traceIfFalse "44"
          (countOwnScriptOutputs ctx == 0)
-    && traceIfFalse "45" (pdStatus datum == Pending)
+    && traceIfFalse "45"
+         (pdStatus datum == Pending || pdStatus datum == Revealed)
     && traceIfFalse "46"
-         (pdBeaconStatus datum == BeaconPending
-            || pdBeaconStatus datum == BeaconReady)
+         (if pdStatus datum == Pending
+            then pdBeaconStatus datum == BeaconPending
+              || pdBeaconStatus datum == BeaconReady
+            else pdBeaconStatus datum == BeaconReady)
     && traceIfFalse "47" (pdPriceUsdm datum > 0)
-    && traceIfFalse "48" (pdPrizeAmount datum == 0)
+    && traceIfFalse "48"
+         (if pdStatus datum == Pending
+            then pdPrizeAmount datum == 0
+            else pdPrizeAmount datum >= 0)
     && traceIfFalse "49"
          (expireAtOrAfter (pdExpiresAt datum) info)
     && traceIfFalse "50" (countPoolInputs info prizePoolBs == 1)
