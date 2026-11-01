@@ -251,3 +251,36 @@ However this is **not yet a qualified production USD/USDM source**. Missing:
 4. explicit governance adoption before this two-leg redemption route can feed P-02 / PriceReference / Issue admission.
 
 No (USDCx/USD=1) shortcut, haircut, fee, freshness threshold, oracle quorum or price is invented here. The two §13 pool observations remain research evidence only. Option B remains OPEN/NOT QUALIFIED; P-01 BLOCKED; P-16 NOT ISSUED. No OracleQuote, PriceReference, Kernel, EEV or Issue-admission implementation change; no approval, wallet signature, on-chain transaction or deployment. V3/Reveal semantics remain untouched.
+
+
+## 15. Redemption enforceability and non-guarantees — source-level limits (2026-11-01)
+
+The route in §14 has three different legal/operational layers. Do not collapse them into a single “1:1 oracle”:
+
+### USDCx bridge layer
+
+The IOG Portal Terms (25 February 2026) say USDCx can be converted to native USDC 1:1 under the supported xReserve workflow, but USDCx cannot be redeemed directly for USD. Normal conversion is estimated at 2–4 hours. The process requires Cardano burn finality, IOG and Midgard Labs attestations, Circle's xReserve release, and the required minting step. Circle may delay or deny release for compliance, security or operational reasons; IOG/Midgard/Circle may pause bridge operations.
+
+The Terms additionally state:
+- gas and service/relay/burn/mint charges may apply and may change;
+- USDCx/USDC conversion is not insured;
+- the portal is supplied “as is” and “as available”, with no representation or warranty about USDCx value, stability, convertibility, accuracy, timeliness or third-party availability;
+- unauthorized automated systems may not access or scrape the IOG Portal.
+
+Source: [IOG USDCx Portal Terms, last updated 25 February 2026](https://usdcx.iog.io/docs/USDCx_portal_terms_of_use.pdf).
+
+### USD redemption layer and document-version caveat
+
+Circle's [USDC MiCA White Paper](https://www.circle.com/legal/mica-usdc-whitepaper) is amended 10 July 2026. It states that EEA-issued USDC is fully reserved in USD or equivalent USD-denominated assets and that EEA holders have redemption rights at par through Circle's EEA issuer.
+
+The separately published [MiCA Redemption Policy](https://www.circle.com/legal/mica-redemption-policy) describes a retail path with registration, eligibility review, KYC/KYT and an EEA IBAN able to receive USD; payment normally occurs within five business days after eligibility/checks complete, and bank/third-party charges can apply. The policy page still displays an older “Last Updated: July 2, 2024” metadata string despite referring to Circle's 2026 CASP licence. Keep that version mismatch visible and confirm the currently applicable operational process with Circle before relying on a retail redemption path. The MiCA policy is a right to redeem subject to eligibility and compliance, not a public quote or instant cash-out promise.
+
+### Consequence for valuation
+
+The route is neither a free real-time oracle nor an unconditional atomic redemption. A future versioned PriceReference profile must separately establish (and obtain governance approval for):
+- the correct Cardano xReserve remote-domain/token mapping and domain-specific reserve evidence;
+- current bridge liveness, attestation/pause state, conversion completion and fees;
+- holder eligibility and the applicable Circle USD redemption path;
+- how pre-fee AMM marginal spot differs from size-dependent execution, bridge latency, fees and redemption timing.
+
+Until those exact conditions are resolved, the chain of documents proves a *candidate conversion route*, not a currently executable USD/USDM price. Option B remains OPEN/NOT QUALIFIED, P-01 BLOCKED and P-16 NOT ISSUED. No parity/peg assumption, fee, haircut, threshold or quorum is added; no production integration or economic semantic change is made.
