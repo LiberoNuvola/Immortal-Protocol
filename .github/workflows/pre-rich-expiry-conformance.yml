@@ -28,9 +28,14 @@ on:
       - "PRE-RICH/src/PreRichExpiryEvidence.ts"
       - "PRE-RICH/src/PreRichExpiryPolicy.ts"
       - "PRE-RICH/src/PreRichExpireRefinement.ts"
+      - "PRE-RICH/src/PreRichExpireAccounting.ts"
       - "src/__tests__/preRichExpiryEvidence.test.ts"
       - "src/__tests__/preRichExpiryPolicy.test.ts"
       - "src/__tests__/preRichExpireRefinement.test.ts"
+      - "src/__tests__/preRichExpireAccounting.test.ts"
+      - "src/gameFlow.ts"
+      - "plutus/PrizeValidator.hs"
+      - "plutus/B1PrizePool.hs"
       - ".github/workflows/pre-rich-expiry-conformance.yml"
 
 jobs:
