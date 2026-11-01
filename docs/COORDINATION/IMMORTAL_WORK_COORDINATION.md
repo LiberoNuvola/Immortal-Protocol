@@ -4198,3 +4198,32 @@ The Cardano Integration Lab is configured to generate fresh Haskell validators a
 - No V3, Reveal, Issue/EEV, Agent C/Materios, or economic policy changes.
 
 **STATUS: E2/E3 IMPLEMENTATION PRESENT; 34 UNIT/ACCOUNTING TESTS PASS; TYPESCRIPT/FRONTEND AND SELECTED CI GATES GREEN; HASKELL COMPILE + THREE-CASE YACI LEDGER EVIDENCE PENDING. DO NOT MARK EXPIRY FULLY CLOSED.**
+
+## 45.51 AGENT B — EXPIRE YACI SIZE BLOCKER AND REFERENCE-SCRIPT REMEDIATION (2026-11-01)
+
+### Failed ledger attempt — exact evidence
+
+- Integration Lab run #41272640643 at source snapshot `1f7fd281de2b9e4b226e43213e2f77997713e271`: [run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41272640643).
+- Aiken V3 economic Reveal and Aiken V3 economic Expire both completed successfully.
+- Haskell V2 Pending EXPIRE failed during Lucid transaction construction: `Max transaction size of 16384 exceeded. Found: 16540`.
+- Haskell V2 Revealed Loss and Revealed Win steps were skipped because the sequential workflow stopped at the Pending step.
+- This was a builder size-limit failure before submission. It is not a Plutus validator rejection, a Yaci ledger failure, or evidence that E2/E3 accounting predicates are invalid.
+
+### Root cause and bounded correction
+
+The expiry trace had already published the Prize and B1PrizePool validators as reference scripts and included their UTxOs in `readFrom`, but then also called `.attach.SpendingValidator(...)` for both validators. This reattached full scripts as transaction witnesses and defeated the reference-script path.
+
+- Commit `19a29705e7ccf1c437cc74a0eaa2bb23611204fb`: [fix(cardano): spend EXPIRE through reference scripts](https://github.com/LiberoNuvola/Immortal-Protocol/commit/19a29705e7ccf1c437cc74a0eaa2bb23611204fb).
+- Changed only `audit/cardano-integration/expire-ledger-trace.ts`: removed both inline SpendingValidator attachments and documented that the `readFrom` reference inputs provide the spending scripts.
+- This matches the reference-script construction already used in `audit/cardano-integration/claim-ledger-trace.ts`.
+- No validator logic, datum/redeemer ABI, economic accounting, V3, Reveal semantics, EEV, or Materios changes.
+
+### Verification after correction
+
+- New Integration Lab run #41273799510 at exact source commit `19a29705e7ccf1c437cc74a0eaa2bb23611204fb`: [run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41273799510).
+- At checkpoint update time, dependencies and cache restore had passed and `Setup canonical Plutus CI` was in progress.
+- Aiken V3 Expire and all three Haskell V2 EXPIRE traces had not yet been reached. No post-fix size or ledger PASS is claimed.
+- Separate Haskell Semantic Conformance run #41272640621 remained in progress at `Beacon commitment cross-language conformance`; it is not expiry ledger evidence.
+
+**STATUS: REFERENCE-SCRIPT BUILDER CORRECTED; POST-FIX YACI VALIDATION PENDING. E2/E3 MUST REMAIN OPEN UNTIL THE EXACT HASKELL V2 PENDING, REVEALED LOSS AND REVEALED WIN STEPS COMPLETE.**
+
