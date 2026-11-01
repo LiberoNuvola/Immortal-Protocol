@@ -476,3 +476,56 @@ References:
 - USD/USDM source Option B remains **NOT QUALIFIED**; P-01 **BLOCKED**; P-16 **NOT ISSUED**.
 
 No API key, private wallet data, signature, transaction, approval, deployment or state-changing request was used. No economic rule or threshold introduced. V3/Reveal and Materios untouched.
+
+
+## 19. IOG correlation and Ethereum USDC release verification for the two 450,000 USDCx burns (2026-11-01)
+
+### Automated read-only probe
+
+A dedicated probe was added and executed by GitHub Actions on the existing branch:
+
+- Script: [probeUsdcx450kIogWithdrawalsReadOnly.mjs](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/scripts/probeUsdcx450kIogWithdrawalsReadOnly.mjs)
+- Tests: [probeUsdcx450kIogWithdrawalsReadOnly.test.mjs](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/scripts/probeUsdcx450kIogWithdrawalsReadOnly.test.mjs)
+- Workflow: [USDCx 450k Burn to IOG Withdrawal History](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/usdcx-450k-iog-withdrawal-probe.yml)
+- Run #41295389847: **SUCCESS**, all deterministic tests and the live read-only probe steps completed successfully.
+- Evidence artifact: `usdcx-450k-iog-withdrawal-probe-41295389847`, SHA-256 of artifact ZIP: `3cf8064d991939f203d787109ebc83568380966175cafe0caf5c5cea9e838972`.
+- Preserved parsed result: [usdcx-450k-iog-withdrawal-probe-2026-11-01.json](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/scripts/fixtures/usdcx-450k-iog-withdrawal-probe-2026-11-01.json).
+
+The probe used Koios `POST /account_addresses` with the exact stake address and explicit `_first_only:false`, `_empty:true`, obtained two payment addresses, and queried IOG serially for each. It selected rows by exact Cardano burn hash, not by amount or latest-row heuristics.
+
+### Exact IOG results
+
+Both exact 450,000 USDCx burn hashes were found under payment address:
+
+`addr1qy2yxcf4kvjxkwuyt9u3fjjqrug7etz3pmj3s4fwn52zpv8enrjkfwz47x8c5dkvma3eplspd6plmvm204rqn9wuxnlsm8hqps`
+
+| Cardano burn | IOG status | IOG amount | Ethereum release hash |
+|---|---|---:|---|
+| 30 Oct `45f0cb262133e8e1de17845ba15a431af74b8fb7d7cc9c2fbafc39255150ba99` | `awaiting_finality` | 450,000 USDCx | none |
+| 29 Oct `4e02f10062efee431f20bece5faaa53e6f96e02c74b8cdb5d0878ec0c7c4ef9d` | `finalized` | 450,000 USDCx | `0x79f158dbdc0b2d81ef6fa0f202d91d8b208e8dd058f9249d574a31f433319d07` |
+
+The 30 October row reported 320 confirmations but remained `awaiting_finality` and named no Ethereum transaction. The 29 October row reported 1,621 confirmations and `finalized`.
+
+### Independent Ethereum explorer check for the 29 October release
+
+The exact Ethereum hash named by the IOG row was opened on Ethereum Mainnet:
+[ Etherscan transaction 0x79f158db...3319d07 ](https://etherscan.io/tx/0x79f158dbdc0b2d81ef6fa0f202d91d8b208e8dd058f9249d574a31f433319d07).
+
+The explorer reports:
+- transaction status **Success**, block **26,302,915**, timestamp **2026-10-30 03:35:35 UTC**;
+- method `gatewayMint(bytes attestationPayload,bytes signature)` at the xReserve gateway;
+- canonical Ethereum USDC contract `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`;
+- USDC mint/Transfer event from the zero address to recipient `0x9390e7d8d72a5f5D280d63ad35aFF943Cc98b01a`;
+- exact credited amount **449,998.000000 USDC**.
+
+This establishes an on-chain USDC mint/credit in the exact Ethereum transaction referenced by the IOG finalized row. The observed Cardano burn is 450,000 USDCx and the Ethereum mint is 449,998 USDC: a 2 USDC difference in this particular event. It is not generalized into a fixed fee schedule or a universal conversion rule. The recipient is the destination recorded in the Ethereum event; no separate user-intent/beneficiary assertion is made.
+
+### Updated disposition
+
+- 29 October 450k burn → IOG finalized row → Ethereum transaction → native USDC mint: **CROSS-CHAIN LINK CORROBORATED**.
+- 30 October 450k burn → IOG row: **FOUND, STILL AWAITING_FINALITY**, no Ethereum release hash at probe time.
+- Both full payment addresses resolved from the stake credential via Koios.
+- Circle expected-balance vs Koios net supply remains **OPEN**; this two-event sample is not a global liability/backing reconciliation.
+- USD/USDM Option B remains **NOT QUALIFIED**; P-01 **BLOCKED**; P-16 **NOT ISSUED**.
+
+No IOG POST, Portal UI scraping, wallet access, signature, transaction submission, approval, deployment, economic rule change or production integration. V3/Reveal and Materios untouched.
