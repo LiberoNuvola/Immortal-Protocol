@@ -1,0 +1,90 @@
+{
+  "schema": "immortal-usdcx-burn-iog-history-probe-readonly-v1",
+  "classification": "READ_ONLY_PROVIDER_CORRELATION_NOT_RESERVE_OR_REDEMPTION_PROOF",
+  "network": "cardano-mainnet",
+  "stakeAddress": "stake1u8ue3etyhp2lrru2xmxd7cuslcqkaqlakd4863sfjhwrflcx9y5xp",
+  "targetBurnHashes": [
+    "45f0cb262133e8e1de17845ba15a431af74b8fb7d7cc9c2fbafc39255150ba99",
+    "4e02f10062efee431f20bece5faaa53e6f96e02c74b8cdb5d0878ec0c7c4ef9d"
+  ],
+  "source": {
+    "koiosEndpoint": "https://api.koios.rest/api/v1/account_addresses",
+    "iogEndpointTemplate": "https://production-docker.usdcx.aws.iohkdev.io/withdrawal-history/{paymentAddress}",
+    "koiosResponseSha256": "0ff5cb80d37dd88dbb115cf86845914eff453d4d044810fd193af9f583c46808"
+  },
+  "startedAt": "2026-11-01T09:58:30.178Z",
+  "completedAt": "2026-11-01T09:58:32.084Z",
+  "paymentAddressCount": 2,
+  "addressesQueried": [
+    {
+      "address": "addr1qy2yxcf4kvjxkwuyt9u3fjjqrug7etz3pmj3s4fwn52zpv8enrjkfwz47x8c5dkvma3eplspd6plmvm204rqn9wuxnlsm8hqps",
+      "responseSha256": "783ed3c2dd0ab28c0e0db88c5fbe95fc9ed9bf546bb1955fee1cf5bc1799e6ed",
+      "rowsReturned": 21,
+      "matches": [
+        {
+          "burnTxHash": "45f0cb262133e8e1de17845ba15a431af74b8fb7d7cc9c2fbafc39255150ba99",
+          "amountRaw": "450000000000",
+          "status": "awaiting_finality",
+          "ethereumTxHash": null,
+          "confirmations": 320,
+          "createdAt": "2026-10-30T16:54:46.387038Z",
+          "lastError": null
+        },
+        {
+          "burnTxHash": "4e02f10062efee431f20bece5faaa53e6f96e02c74b8cdb5d0878ec0c7c4ef9d",
+          "amountRaw": "450000000000",
+          "status": "finalized",
+          "ethereumTxHash": "0x79f158dbdc0b2d81ef6fa0f202d91d8b208e8dd058f9249d574a31f433319d07",
+          "confirmations": 1621,
+          "createdAt": "2026-10-29T18:15:58.988836Z",
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "address": "addr1z8p79rpkcdz8x9d6tft0x0dx5mwuzac2sa4gm8cvkw5hcn8enrjkfwz47x8c5dkvma3eplspd6plmvm204rqn9wuxnlsczyul5",
+      "responseSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "rowsReturned": 0,
+      "matches": []
+    }
+  ],
+  "exactBurnMatches": [
+    {
+      "burnTxHash": "45f0cb262133e8e1de17845ba15a431af74b8fb7d7cc9c2fbafc39255150ba99",
+      "amountRaw": "450000000000",
+      "status": "awaiting_finality",
+      "ethereumTxHash": null,
+      "confirmations": 320,
+      "createdAt": "2026-10-30T16:54:46.387038Z",
+      "lastError": null,
+      "paymentAddress": "addr1qy2yxcf4kvjxkwuyt9u3fjjqrug7etz3pmj3s4fwn52zpv8enrjkfwz47x8c5dkvma3eplspd6plmvm204rqn9wuxnlsm8hqps"
+    },
+    {
+      "burnTxHash": "4e02f10062efee431f20bece5faaa53e6f96e02c74b8cdb5d0878ec0c7c4ef9d",
+      "amountRaw": "450000000000",
+      "status": "finalized",
+      "ethereumTxHash": "0x79f158dbdc0b2d81ef6fa0f202d91d8b208e8dd058f9249d574a31f433319d07",
+      "confirmations": 1621,
+      "createdAt": "2026-10-29T18:15:58.988836Z",
+      "lastError": null,
+      "paymentAddress": "addr1qy2yxcf4kvjxkwuyt9u3fjjqrug7etz3pmj3s4fwn52zpv8enrjkfwz47x8c5dkvma3eplspd6plmvm204rqn9wuxnlsm8hqps"
+    }
+  ],
+  "targetDisposition": [
+    {
+      "burnTxHash": "45f0cb262133e8e1de17845ba15a431af74b8fb7d7cc9c2fbafc39255150ba99",
+      "status": "IOG_ROW_FOUND_REQUIRES_INDEPENDENT_ETHEREUM_CREDIT_CHECK"
+    },
+    {
+      "burnTxHash": "4e02f10062efee431f20bece5faaa53e6f96e02c74b8cdb5d0878ec0c7c4ef9d",
+      "status": "IOG_ROW_FOUND_REQUIRES_INDEPENDENT_ETHEREUM_CREDIT_CHECK"
+    }
+  ],
+  "limitations": [
+    "Koios account_addresses is a public indexer view and may not enumerate every historical payment address in all circumstances.",
+    "IOG withdrawal-history is an observed Portal backend route, not a published/versioned third-party API contract.",
+    "An IOG status or Ethereum hash is an operator claim; independently verify exact native USDC recipient credit on canonical Ethereum before treating a release as complete.",
+    "No match does not prove no withdrawal; no balance, backing ratio, redemption, or under-collateralization conclusion is made.",
+    "The probe is read-only: no wallet, signature, transaction, IOG POST, or state-changing request."
+  ]
+}
