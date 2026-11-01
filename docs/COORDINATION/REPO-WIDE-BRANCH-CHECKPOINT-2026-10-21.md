@@ -7151,3 +7151,15 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - MuesliSwap remains a confirmed observed liquidity venue for USDM/USDA and ADA/USDM only; it does not add an independent USD anchor. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV or Issue-admission integration; no economic rule changes, transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
 - Canonical details: [MuesliSwap audit §8](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md) and [USDM Multi-Venue Source Matrix §22](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/USDM_MULTI_VENUE_SOURCE_MATRIX.md).
 
+
+
+## 10.87 Agent A — MuesliSwap factory census repeatability confirmed (2026-11-01)
+
+- After correcting the observer's raw datum JSON artifact serialization, a second factory-wide read-only Mainnet census completed [run 41297549569](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297549569) with **SUCCESS** on source SHA `7370c3c487cde5adf6833e166259e71cdd9fec79`.
+- Artifact [13079452509](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297549569/artifacts/13079452509), ZIP SHA-256 `b3b2816ea176a9cc8f1317ff8f6ef6698fabd422afaf0ec99219cdb3868a3131`.
+- Tip slot `201962540`, block `14143690`. Same 71 factory-marker UTxOs, 2 address variants, 1 payment credential, 2 stake addresses, and 2 USDM pool candidates.
+- Both datums decoded; pair identity, reserves/Value and exact USDM reserve matched. No datum endpoint error. The downloaded datum-info and observation JSON artifacts parsed successfully.
+- The repeated snapshot confirms the two pool outputs remained live with the same pair/reserve state across adjacent tips. It does not add a third pool or change the liquidity-venue-only disposition.
+- Canonical report: [MuesliSwap audit §9](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md); matrix §23.
+- P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote/PriceReference/Kernel/EEV integration or economic rule changes. No transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
+
