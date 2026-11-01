@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-01  
 **Owner:** Agent B — Cardano / transaction conformance  
-**Status:** DESIGN RECONSTRUCTION — NO RUNTIME CHANGE  
+**Status:** IMPLEMENTED IN WORKING BRANCH — LEDGER/DEPLOYMENT CONFORMANCE PENDING  
 **Inspected branch HEAD:** `3f8ceecf3da856248bf3a740fd3a8dcb300b157d`
 
 ## 1. Executive result
@@ -165,4 +165,30 @@ Reference-model tests are not validator proof. Each positive/negative case must 
 - Keep V3, Reveal, Issue/EEV, and Agent C/Materios untouched.
 - Do not implement E4 until historical-mode enablement and the persistent history representation are explicitly confirmed.
 
-**STATUS: E2/E3 ACCOUNTING RECONSTRUCTED FROM EXISTING FIELDS; CURRENT PENDING-ONLY VALIDATORS/BUILDER AND POOL PHYSICAL-VALUE GUARD REMAIN IMPLEMENTATION GAPS. NO RUNTIME CHANGE.**
+**STATUS AT DESIGN SNAPSHOT:** E2/E3 accounting was reconstructed from existing fields; subsequent implementation is recorded below.
+
+## 11. Implementation follow-through — 2026-11-01
+
+The state-aware E2/E3 path has now been implemented on `work/immortal-green-closure`, without changing the datum schema, redeemer constructor indices, V3, Reveal semantics, or economic policy.
+
+### Runtime implementation
+
+- `PRE-RICH/src/PreRichExpireAccounting.ts`: deterministic off-chain accounting helper for Pending, Revealed Loss and Revealed Win.
+- `src/gameFlow.ts::expirePrize`: selects the lifecycle from PrizeDatum, checks beacon consistency, then builds the matching pool continuation using the shared helper.
+- `plutus/PrizeValidator.hs::validateExpire`: preserves Pending accounting; permits Revealed Loss with no pool accounting delta; permits Revealed Win only when the pool liability can be reduced by exactly the consumed datum's payout.
+- `plutus/B1PrizePool.hs::TicketExpired`: independently enforces the same three cases, removes the global unresolved-count precondition for Revealed cases, and requires exact physical Pool UTxO value preservation.
+- `plutus/Types.hs`: comments updated; redeemer constructors and indices unchanged.
+- `audit/cardano-integration/expire-ledger-trace.ts`: parameterized for Pending, Revealed Loss and Revealed Win; the two Revealed cases use synthetic post-Reveal datums and explicitly do not claim an end-to-end Reveal proof.
+- `.github/workflows/immortal-cardano-lab.yml`: keeps the Aiken V3 trace separate and adds three Haskell V2 traces for Pending, Revealed Loss and Revealed Win.
+
+### Tests and CI evidence at the latest inspected HEAD
+
+- Dedicated expiry conformance run #41272261739: **4 test files / 34 tests passed** (includes the new accounting helper tests).
+- Cardano Adapter Sale run #41272640593: success; both frontend-build and economic-conformance jobs passed.
+- Protocol Declaration #41272640587: success.
+- C13 Cardano Semantic #41272640663: success.
+- PRE-RICH Action Refinement #41272230368 on the earlier builder-corrected source: success.
+- Flux Point, PRE-RICH Emulator Reveal, Haskell Semantic Conformance and Cardano Integration Lab were still in progress when this note was written. The Cardano Integration Lab is the required ledger-level check for the new three-case fixtures; no result is claimed before it completes.
+
+**E2/E3 implementation status:** code present; unit/accounting tests and TypeScript checks pass; Haskell compilation and Yaci ledger traces remain pending.  
+**E4:** still excluded because historical-only Reveal remains conditional and its profile activation/history representation is unconfirmed.
