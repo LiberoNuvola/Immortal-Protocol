@@ -152,3 +152,44 @@ This establishes structural on-chain/API consistency for the five Sundae V3 pool
 
 
 Official MuesliSwap API documentation lists `/liquidity/pools`, `/price`, `/trades` and `/orderbook`; its terms state private use only and require contacting MuesliSwap for commercial use. Therefore the direct public-chain observer is the preferred no-license-dependency route until the API terms are clarified.
+
+
+## 13. Danogo USDM/USDCx — exact on-chain stable-pair marginal spot candidate (2026-11-01)
+
+### Source evidence
+
+Read-only multi-source run [41241048258](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41241048258) captured the exact Moneta USDM UTxO set and discovered 12 Danogo CLMM pool NFTs. Its artifact [13057745621](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41241048258/artifacts/13057745621) reports 12/12 structural MATCH: current UTxO cardinality, NFT quantity, official pool payment credential, exact datum pair, and active reserves reconciled against SuperCardano. Two pools are exact Moneta USDM / Circle USDCx pairs; both use only stable tokens, so the unresolved ADA staking-reward path does not apply.
+
+USDCx exact Cardano Mainnet identity (Cardanoscan/CIP-14 resolution):
+- Policy ID: `1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e34`
+- Asset name hex: `5553444378` (USDCx)
+- Full unit: `1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e345553444378`
+- Decimals: 6
+- CIP-14 fingerprint: `asset1e7eewpjw8ua3f2gpfx7y34ww9vjl63hayn80kl`
+- References: [Circle launch announcement](https://www.circle.com/blog/usdcx-on-cardano-now-available-via-circle-xreserve), [Cardano Foundation launch notice](https://cardano.org/news/2026-02-27-usdcx-goes-live-on-mainnet/), [Cardanoscan token record](https://cardanoscan.io/token/1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e345553444378).
+
+### Pinned SDK marginal calculation
+
+A separate read-only derivation script was added. It uses the official Danogo CLMM integer `calcLiquidity` and virtual-reserve calculation, pinned to SDK commit [0416dc1f3531ce77eec7664ea3947f192a3aca40](https://github.com/dano-finance/clmm-sdk/blob/0416dc1f3531ce77eec7664ea3947f192a3aca40/src/utils.ts). It does **not** use the raw reserve ratio. Both assets have six decimals and the observed datum order is USDM (X) → USDCx (Y); marginal output/input is therefore virtualY / virtualX.
+
+| Pool UTxO | Block time (UTC) | Active reserves | LP fee | Marginal USDCx / USDM |
+|---|---|---|---:|---:|
+| `c8ca882352dc5267b24de82abbaed09bbe19d6c6fcf993b1fc5150333d1d091b#2` | 2026-10-31 15:39:04 | 119,092.520614 USDM / 52,293.107305 USDCx | 5 bps | **0.99499497** |
+| `e28aae486e31175b935382d9b657f44b4680a0d95fe936dd85a2d37dd0ef8588#1` | 2026-10-31 20:16:11 | 122,506.229924 USDM / 55,288.255462 USDCx | 10 bps | **0.99425159** |
+
+The first pool datum hash is `9ad95c01aa567ccf079fe413b72e8fa5c0cb98067ac29cbb8ae68c7ba0f9e121`; the second is `678b94f28ef40983f81ffc069d17cb48d9e5c38c660898e79d1b4f26502b42c4`. Both reserve pairs match the same-run Koios/SuperCardano active-reserve observations exactly. Source freshness classification was `UNDER_24H` for both at capture.
+
+### Reproducibility status
+
+- Added `scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.mjs`.
+- Preserved two real pool records and inline datum CBOR in `scripts/fixtures/danogo-usdm-usdcx-mainnet-2026-10-31.json`; original artifact ZIP SHA-256: `77c3c0c338f28deb70ff2a18186df334cacc0605d4b371e7f6ca5bff9f78795c`; full source JSON SHA-256: `deba3391f24d6bc30cc79a294d75ea23a05fe0458ad4df7ece8b5f00a9e8dc68`.
+- Added `scripts/deriveDanogoUsdmUsdcxCrossReferenceReadOnly.test.mjs`: local Node test run **5/5 PASS**, including identity, script-credential, pool-pair and unresolved-reward fail-closed cases.
+- Added dedicated workflow `.github/workflows/danogo-usdm-usdcx-cross-reference.yml`; source commit: `12db30be0af0ae52a8951f0633125bebe2dce1e8`. At the time of this matrix update, GitHub combined commit status had not yet returned a check result; do not claim hosted CI passed until separately observed.
+
+### USD leg and qualification boundary
+
+Circle states that USDCx on Cardano is issued by a Cardano protocol and backed by USDC held in Circle xReserve, with xReserve attestations and burn/mint interoperability; Circle describes 1:1 transfers between USDC and xReserve-backed stablecoins across supported chains. This is a promising, separately governed USDCx→USDC leg, **not an independently observed redemption**. The exact xReserve/partner deployment, live reserve/attestation state, conversion route and operational fees must still be inspected before treating USDCx as USD.
+
+Therefore the two Danogo pools provide a stronger exact on-chain USDM/USDCx market observation, but **do not yet qualify USD/USDM**. No 1:1 USDCx/USD parity is inserted by the script; no rate is forwarded into OracleQuote, PriceReference, Kernel, EEV or Issue admission. The marginal spot is pre-LP-fee and not an executable quote; pool observations are asynchronous; no pool weighting, averaging, freshness threshold or peg rule is introduced.
+
+**Disposition:** Option B remains OPEN/NOT QUALIFIED; P-01 remains BLOCKED and P-16 NOT ISSUED. This is additional evidence and a read-only research path only. No contract, economic, V3 or Reveal changes; no wallet signature, transaction, approval or deployment.
