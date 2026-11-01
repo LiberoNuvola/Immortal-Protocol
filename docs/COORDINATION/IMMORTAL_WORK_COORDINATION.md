@@ -4278,3 +4278,30 @@ The previous two attempts both failed in Lucid transaction construction at 16,54
 
 **STATUS: Aiken V3 EXPIRE PASS; HASKELL V2 PENDING STILL BLOCKED BY 16,540-BYTE BUILDER SIZE. EXACT HASKELL HASH-INTERCEPTION DIAGNOSTIC COMMITTED; RE-RUN PENDING. KEEP E1/E2/E3 ON-CHAIN CONFORMANCE OPEN.**
 
+## 45.54 AGENT B — LUCID SCRIPT REGISTRY AND REFERENCE WITNESS SEPARATION (2026-11-01)
+
+### Refined API distinction
+
+The EXPIRE integration harness must keep two separate Lucid responsibilities:
+1. `attach.SpendingValidator(script)` registers the script by hash in Lucid's `config.scripts` map, allowing `collectFrom` to resolve the validator for a script-address input.
+2. The CML witness representation controls whether the validator body is serialized inline or represented as a reference witness.
+
+The bounded CML wrapper converts the two expected `PlutusScriptWitness.new_script(script)` calls into `PlutusScriptWitness.new_ref(hash)`. Thus restoring the two attach calls is required for Lucid script lookup; with the CML conversion in place, the intention is not to add the full validator body to the spending witness set.
+
+This corrects the earlier over-broad removal of `.attach.SpendingValidator(...)`. That call's script-registry role must not be confused with the serialized witness form.
+
+### Code change
+
+- Commit `7049da9ccb11d07688d5493e07b3733514e99a6a`: [fix(cardano): register EXPIRE scripts before reference spends](https://github.com/LiberoNuvola/Immortal-Protocol/commit/7049da9ccb11d07688d5493e07b3733514e99a6a).
+- In `audit/cardano-integration/expire-ledger-trace.ts`, both spending validators are registered after `readFrom` and before `collectFrom`.
+- The CML hash-targeted `new_ref` wrapper and immediate per-hash diagnostic remain active.
+- No production validator, ABI, economic logic, or V3/Reveal/EEV/Materios code changed.
+
+### Run disposition
+
+- The diagnostic Lab #41281081359 at commit `2c2c23360dd77614399cf3b9208b27261dc2e8ce` was cancelled by a subsequent push before it reached the EXPIRE steps. It produced no Haskell reference-witness interception result.
+- New Lab #41281283622 is running at the exact code commit `7049da9ccb11d07688d5493e07b3733514e99a6a`: [run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41281283622).
+- At checkpoint update time, it had completed checkout and Setup Node and was installing project dependencies. The EXPIRE steps had not started.
+
+**STATUS: LUCID SCRIPT REGISTRY RESTORED; CML REFERENCE WITNESS PROBE RETAINED. NO POST-FIX SIZE OR HASKELL YACI RESULT YET. KEEP E1/E2/E3 ON-CHAIN CONFORMANCE OPEN.**
+
