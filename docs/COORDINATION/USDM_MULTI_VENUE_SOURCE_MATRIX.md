@@ -553,3 +553,42 @@ At the captured Koios tip (slot `201961734`, block `14143654`, hash `5cd82000c7b
 This is a time-bounded negative observation for the exact pinned AMM address, not proof that no other MuesliSwap address or historical USDM pool exists. The observer preserves the raw response and is read-only; pool datum decoding was not performed. No price, quote, reserve-derived depth or TVL is inferred.
 
 **MuesliSwap: DISCOVERY ONLY — NO CURRENT USDM UTxO AT THE PINNED AMM ADDRESS.** Exclude from the qualified USDM venue/source set for this evidence snapshot. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV, Issue-admission or economic rule changes. No transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
+
+
+## 21. MuesliSwap factory-wide Mainnet USDM pool census and datum reconciliation (2026-11-01)
+
+### Scope and live evidence
+
+The prior §20 query was limited to one address/stake-credential variant. A factory-marker census was run using the exact official MuesliSwap factory asset:
+
+- Factory policy/name: `de9b756719341e79785aa13c164e7fe68c189ed04d61c9876b2fe53f.4d7565736c69537761705f414d4d`.
+- Koios `POST /asset_utxos` returned **71** current UTxOs, all with marker quantity 1 and exactly one pool NFT under the official NFT policy.
+- They span two address variants but one payment credential (`7045237d1eb0199c84dffe58fe6df7dc5d255eb4d418e4146d5721f8`) and two stake addresses.
+- **Two** current factory-marker UTxOs contain exact USDM.
+- Run [41297529519](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297529519): **SUCCESS**, source SHA `97cc6095e7b98dc70bc796e18508b1ccb7f3cf13`.
+- Artifact [13079986452](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41297529519/artifacts/13079986452), ZIP SHA-256 `85cf6d7a84d92a7ccd3f8f98b1cd3a1196bca1a277f240c79eb14020fc2fbb14`.
+- Tip: slot `201962516`, block `14143688`, hash `81d5ef1b517662c37a85f792ce45b6e2db58ce123e7713de9421a744bc9bc8ef`.
+
+### Decoded pool candidates
+
+| UTxO | Pair from PoolDatum | Reserves from Value | Datum fields |
+|---|---|---|---|
+| `b580187dfc01a1b4e09a12ecc585712bcc11468cec127247d2040c92447bbebf#1` | USDM / USDA | 14,517,925 USDM units; 14,517,925 USDA units | totalLiquidity 14,517,925; swapFee 30 |
+| `04f0130e2e907a48d1f8752e7a5e90ebeda91183808ab0ed3a7d50a53ed625c1#3` | ADA / USDM | 1,605,647,750 lovelace; 304,217,365 USDM units | totalLiquidity 685,640,428; swapFee 30 |
+
+Both candidates have a unique pool NFT quantity 1, factory marker quantity 1, and datum hashes resolved through Koios `POST /datum_info`. The four-field `PoolDatum` decoder reconciled the datum asset pair with the exact asset quantities in each UTxO Value, including exact USDM quantity. Both datum hashes were independently recomputed from returned CBOR bytes using BLAKE2b-256.
+
+Raw-response SHA-256:
+- factory `asset_utxos`: `49ba3b44e0a251f219082a0f30a0447cf94e93021e162fcfbc31b6dfce6b6ed4`;
+- datum info: `5ee348a3321df36c3437729ad0531127091eaabdd05fb6dd8a8edc49ed6c18e2`;
+- pinned address `address_utxos`: `ecd624088d808cd6884b560b5dfca0014523ab128afeb2c493b2773bca990ee0`.
+
+The official validator implements a fee-aware constant-product invariant; the helper's exact-in formula uses `inA * (10000 - swapFee)` over `reserveA * 10000 + inAWithFee`. Both pool datums specify `swapFee=30`, i.e. 30/10,000 (0.30%) under that contract. No executable quote has been produced.
+
+### Qualification boundary
+
+**MuesliSwap is now a confirmed observed liquidity venue for two current USDM pairs: USDM/USDA and ADA/USDM.** This does not qualify it as an independent USD oracle or a USD/USDM conversion source. Equal reserve quantities in the USDM/USDA pool are a pool snapshot, not proof of peg or redemption parity. No TVL valuation, executable quote, slippage/depth curve, or production integration is inferred.
+
+P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV, Issue-admission or economic rule change. No transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
+
+Detailed report: [MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md).
