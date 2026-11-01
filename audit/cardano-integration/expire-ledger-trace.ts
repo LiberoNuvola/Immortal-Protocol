@@ -33,7 +33,7 @@ import {
   assertCanonicalTransitionBinding,
   type CanonicalTransitionEvidence,
 } from '../../Adapter/CARDANO/observation/CanonicalTransitionEvidence'
-import { defaultPrizeTable } from '../../src/gameRules'
+import { defaultPrizeTable, rowPayoutTotal } from '../../src/gameRules'
 
 const API = 'http://127.0.0.1:8080/api/v1'
 const SEED =
@@ -41,7 +41,24 @@ const SEED =
 
 const PRICE_USDM = 100n
 const TOTAL_LIQUIDITY_USDM = 100_000n
-const TICKET_NAME_HEX = '52462d5245414c2d455850495245'
+const EXPIRE_CASE = process.env.IMMORTAL_EXPIRE_CASE ?? 'pending'
+if (!['pending', 'revealed-loss', 'revealed-win'].includes(EXPIRE_CASE)) {
+  throw new Error('Unsupported IMMORTAL_EXPIRE_CASE: ' + EXPIRE_CASE)
+}
+const EXPIRE_BACKEND = process.env.IMMORTAL_EXPIRE_AIKEN_V3 === '1'
+  ? 'aiken-v3'
+  : 'haskell-v2'
+const TICKET_NAME_HEX = Array.from(
+  new TextEncoder().encode(`RF-${EXPIRE_BACKEND}-${EXPIRE_CASE}`),
+).map((byte) => byte.toString(16).padStart(2, '0')).join('')
+const EXPIRE_ROW1_TIER = EXPIRE_CASE === 'revealed-win' ? 1 : 0
+const EXPIRE_ROW2_TIER = 0
+const EXPIRE_PAYOUT_USDM = EXPIRE_CASE === 'revealed-win'
+  ? BigInt(rowPayoutTotal(defaultPrizeTable, EXPIRE_ROW1_TIER, EXPIRE_ROW2_TIER, Number(PRICE_USDM)))
+  : 0n
+const EXPIRE_PRE_RESERVE = EXPIRE_CASE === 'pending' ? PRICE_USDM : 0n
+const EXPIRE_PRE_COUNT = EXPIRE_CASE === 'pending' ? 1n : 0n
+const EXPIRE_PRE_LIABILITIES = EXPIRE_PAYOUT_USDM
 // This trace exercises EXPIRE only. Bind the validator to the same explicit
 // synthetic Oracle State singleton identity used by the other Yaci fixtures;
 // this is not evidence of a live or authoritative Oracle.
@@ -134,6 +151,8 @@ function prizeDatum(
   issuedAt: bigint,
   expiresAt: bigint,
 ): any {
+  const revealed = EXPIRE_CASE !== 'pending'
+  const summaryTier = Math.max(EXPIRE_ROW1_TIER, EXPIRE_ROW2_TIER)
   return c(0, [
     ticketPolicyId,
     TICKET_NAME_HEX,
@@ -142,22 +161,22 @@ function prizeDatum(
     '33'.repeat(32),
     '5641',
     1n,
-    0n,
+    EXPIRE_PAYOUT_USDM,
     '',
     '',
-    c(0),
-    '',
-    0n,
+    c(revealed ? 1 : 0),
+    revealed ? '66'.repeat(32) : '',
+    BigInt(summaryTier),
     c(0, [0n, 0n, '00'.repeat(32), '5641']),
-    c(0),
-    '',
+    c(revealed ? 1 : 0),
+    revealed ? '77'.repeat(32) : '',
     '44'.repeat(32),
     '55'.repeat(32),
     prizePoolHash,
     issuedAt,
     expiresAt,
-    0n,
-    0n,
+    BigInt(EXPIRE_ROW1_TIER),
+    BigInt(EXPIRE_ROW2_TIER),
   ])
 }
 
@@ -476,9 +495,9 @@ const prePrizeDatum = prizeDatum(
 const prePoolDatum = poolDatum(
   scripts.prizeHash,
   TOTAL_LIQUIDITY_USDM,
-  PRICE_USDM,
-  1n,
-  0n,
+  EXPIRE_PRE_RESERVE,
+  EXPIRE_PRE_COUNT,
+  EXPIRE_PRE_LIABILITIES,
 )
 
 const postPoolDatum = poolDatum(
@@ -618,6 +637,9 @@ const preStateFingerprint = hashJson({
 
 console.log(JSON.stringify({
   expireBuild: 'begin',
+  expireCase: EXPIRE_CASE,
+  expireBackend: EXPIRE_BACKEND,
+  crystallizedPayoutUsdm: EXPIRE_PAYOUT_USDM.toString(),
   prizeInput: ref(prizeUtxo),
   poolInput: ref(poolUtxo),
   expiresAt: expiresAt.toString(),
@@ -709,6 +731,8 @@ const postStateFingerprint = hashJson({
 
 const actionFingerprint = hashJson({
   actionClass: 'EXPIRE',
+  expireCase: EXPIRE_CASE,
+  crystallizedPayoutUsdm: EXPIRE_PAYOUT_USDM,
   ticketInput: ref(prizeUtxo),
   poolInput: ref(poolUtxo),
   ticketPolicyId: testPolicyId,
@@ -719,13 +743,13 @@ const actionFingerprint = hashJson({
 
 const evidence = {
   evidenceId: hashJson({
-    fixtureId: 'C3-YACI-EXPIRE-001',
+    fixtureId: `C3-YACI-EXPIRE-${EXPIRE_BACKEND.toUpperCase()}-${EXPIRE_CASE.toUpperCase()}`,
     actionFingerprint,
     preStateFingerprint,
     postStateFingerprint,
     transactionRef: txHash,
   }),
-  fixtureId: 'C3-YACI-EXPIRE-001',
+  fixtureId: `C3-YACI-EXPIRE-${EXPIRE_BACKEND.toUpperCase()}-${EXPIRE_CASE.toUpperCase()}`,
   actionClass: 'EXPIRE',
   protocolVersion: 'IMMORTAL-V3',
   profileVersion: 'PRE-RICH',
@@ -759,14 +783,18 @@ if (!replayRejected) {
 }
 
 writeFileSync(
-  'audit/yaci-evidence/expire-transition.json',
+  `audit/yaci-evidence/expire-transition-${EXPIRE_BACKEND}-${EXPIRE_CASE}.json`,
   JSON.stringify({
     purpose: 'real-local-cardano-economic-expire',
+    expireCase: EXPIRE_CASE,
+    expireBackend: EXPIRE_BACKEND,
     bootstrapHash,
     transactionRef: txHash,
     txCbor,
     action: {
       actionClass: 'EXPIRE',
+      expireCase: EXPIRE_CASE,
+      crystallizedPayoutUsdm: EXPIRE_PAYOUT_USDM.toString(),
       priceUsdm: PRICE_USDM.toString(),
       expiresAt: expiresAt.toString(),
     },
@@ -810,6 +838,9 @@ writeFileSync(
 
 console.log(JSON.stringify({
   transactionRef: txHash,
+  expireCase: EXPIRE_CASE,
+  expireBackend: EXPIRE_BACKEND,
+  crystallizedPayoutUsdm: EXPIRE_PAYOUT_USDM.toString(),
   bootstrapHash,
   consumedUtxos: [ref(prizeUtxo), ref(poolUtxo)],
   producedUtxos: [ref(postPool)],
