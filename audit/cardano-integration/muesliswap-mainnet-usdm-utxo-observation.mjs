@@ -9,12 +9,12 @@ const POOL_NFT_POLICY = '909133088303c49f3a30f1cc8ed553a73857a29779f6c6561cd8093
 const BASE = 'https://api.koios.rest/api/v1';
 const OUT = 'audit/muesliswap-evidence';
 
-async function post(path, body) {
+async function post(path, body, timeoutMs = 45000) {
   const response = await fetch(BASE + path, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(45000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const raw = await response.text();
   if (!response.ok) throw new Error(`KOIOS_${path.slice(1)}_HTTP_${response.status}:${raw.slice(0, 500)}`);
@@ -77,9 +77,21 @@ try {
   const candidateDatumHashes = [...new Set(factoryUsdmPools.map(pool =>
     factoryRows.find(row => row.tx_hash === pool.txHash && Number(row.tx_index) === pool.outputIndex)?.datum_hash
   ).filter(Boolean))];
-  const datumResult = candidateDatumHashes.length
-    ? await post('/datum_info', { _datum_hashes: candidateDatumHashes })
-    : { raw: '[]', data: [] };
+  let datumResult = { raw: '[]', data: [] };
+  if (candidateDatumHashes.length) {
+    let lastDatumError;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        datumResult = await post('/datum_info', { _datum_hashes: candidateDatumHashes }, 90000);
+        lastDatumError = null;
+        break;
+      } catch (error) {
+        lastDatumError = error;
+        console.warn(`KOIOS_DATUM_INFO_ATTEMPT_${attempt}_FAILED:${String(error)}`);
+      }
+    }
+    if (lastDatumError) throw lastDatumError;
+  }
   if (!Array.isArray(datumResult.data)) throw new Error('KOIOS_DATUM_INFO_SHAPE_INVALID');
   const datumByHash = new Map(datumResult.data.map(datum => [datum.datum_hash ?? datum.hash, datum]));
   function decodeAssetClass(value) {
