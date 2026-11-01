@@ -79,3 +79,7 @@ Therefore E1 is implemented at the inspected source level, with separate evidenc
 6. Do not mark D-09 closed at the implementation/evidence layer until the relevant deployed ledger evidence exists.
 
 **No runtime or normative change is contained in this matrix.**
+
+## Source verification caveat
+
+The Notion connector metadata returned `verification.state = unverified` for both **09 — Definitive Decision Register** and **T2 — Transition Conformance Specification v0.1** at retrieval time. Their page contents were readable, but their Notion verification state was not confirmed. Accordingly, this document is a traceable engineering test-design mapping of the retrieved text, not a claim that those pages are formally Notion-verified or that this matrix itself has normative approval. A maintainer/governance confirmation of the applicable canonical source and historical-mode setting remains required before implementing E2/E3/E4.
