@@ -3920,3 +3920,45 @@ A regression in `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` mu
 This closes only the spending-input mutation window between classification and signing. It does not bind outputs, datums, redeemers, mint/burn, fees or validity fields to a reviewed transition intent, nor does it freeze the transaction object. V08/V09 and R1/`K_c` remain open. No fingerprint formula, economic rule, V3 carrier, Reveal semantics, Agent A Oracle/EEV producer, wallet signature, deployment or ledger submission was changed. No branch was created.
 
 **STATUS: INPUT-SET RECHECK BEFORE SIGNING TESTED; FULL COMPLETED-BODY BINDING REMAINS OPEN.**
+
+
+
+## 45.44 AGENT B — EXACT-HEAD COMPLETED-BODY INTEGRITY RECONCILIATION (2026-11-01)
+
+### Exact source snapshot
+
+Read the live branch ref before this audit:
+- Branch: `work/immortal-green-closure`
+- HEAD: `54483646cacad2d5705eb1389ca59683dfe78bb3`
+
+The exact-HEAD source audit refines the narrower wording in sections 45.42–45.43 and SDK proposal §11.9:
+
+- `submitEconomic` captures the exact completed CML transaction serialization and exact transaction-body serialization before the asynchronous connected-wallet UTxO classification.
+- After that await, it re-reads actual spending-input references and the exact full transaction serialization immediately before calling the signing port. Any difference rejects before signing/submission.
+- After signing, it reads the signed transaction body serialization and requires byte-for-byte equality with the pre-sign body snapshot before submission.
+- Additional spending inputs are classified against the selected wallet's UTxO listing; caller-declared protocol inputs must exist in the actual body.
+
+Therefore the current runtime has a stronger **completed-body mutation/integrity guard** than the input-reference-only description in §45.43 / SDK proposal §11.9. Those historical notes should not be read as saying that only the input list is rechecked at the current HEAD.
+
+### What this does not close
+
+This is still not semantic transaction-to-intent conformance:
+
+- The adapter does not decode and classify every input/reference-input by approved transition role.
+- It does not prove that the completed outputs, addresses, values, datums, redeemers, mint/burn, fee or validity fields are the exact semantic realization of the admitted Issue/Reveal/Claim/Expire transition.
+- `CanonicalTransitionEvidence` remains a settlement/evidence record requiring a non-empty `transactionRef`; it is not a pre-sign intent record.
+- `assertEconomicAdmissionMatchesCanonicalEvidence` remains a helper/test boundary and is not called by production `submitEconomic`.
+- The production Issue builder submits through `submitEconomic` with authoritative Issue admission, but the inspected production path does not invoke `assertIssueAdmissionMatchesCanonicalEvidence`.
+- Issue retains its Haskell decision fingerprint producer; Reveal/Claim/Expire still have no approved production pre-sign fingerprint producer. Do not promote local-Yaci `hashJson` trace values.
+
+### Cross-source reconciliation
+
+The Notion T2 specification continues to require ledger-verifiable, fail-closed economic transitions and explicitly separates specification from evidence of closure. The current Notion operational bridge page (last fetched 2026-10-31) remains OPEN for operational DApp→Adapter conformance. The Decision Register page fetched for this audit is a historical 2026-10-07 snapshot; it is not evidence that current adapter/runtime gates are closed.
+
+A Notion connected-workspace search for corroborating GitHub/Slack decisions was unavailable because that connector requires a Business plan. The Notion page search/fetch and exact-branch GitHub inspection were still completed; no missing connected-source result is inferred.
+
+### Safe disposition
+
+No runtime/API change is authorized by this audit. Keep the exact-body integrity guard intact. The next implementation gate remains maintainer approval of (1) canonical producer/canonicalization provenance per action, (2) versioned semantic body predicates per transition, and (3) the phase-separated pre-sign intent versus post-submit/observed-ledger evidence contract. Then add positive/negative twins proving every semantic mismatch stops before signing. Do not change V3, Reveal semantics, economic policy, Agent A EEV/Issue authority or Agent C Materios work.
+
+**STATUS: EXACT-BODY INTEGRITY VERIFIED AT LIVE HEAD; SEMANTIC TRANSITION-TO-BODY BINDING, V08/V09 AND R1/K_c REMAIN OPEN. NO RUNTIME CHANGE.**
