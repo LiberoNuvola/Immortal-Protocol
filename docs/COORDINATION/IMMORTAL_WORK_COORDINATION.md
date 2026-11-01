@@ -4008,3 +4008,40 @@ The current builder and validators are mutually aligned for the Pending-only pat
 - The SDK proposal §11.4 currently describes Expire as Pending-only. Mark that row as a current implementation snapshot, not proof of full D-09 coverage.
 
 **STATUS: PENDING-ONLY EXPIRE PATH VERIFIED; D-09 REVEALED-LOSS / UNCLAIMED-WIN EXPIRY CONFORMANCE NOT IMPLEMENTED IN THE INSPECTED PATH. NO RUNTIME CHANGE.**
+
+## 45.46 AGENT B — EXPIRY TEST-WIRING / LEDGER-TRACE SCOPE AUDIT
+
+**Exact source HEAD:** `bd85c7a43a9e207116a5e8b70fe921a4b78b6c14`.
+
+### Dedicated expiry workflow coverage
+
+`.github/workflows/pre-rich-expiry-conformance.yml` currently runs only:
+
+- `src/__tests__/preRichExpiryEvidence.test.ts`
+- `src/__tests__/preRichExpiryPolicy.test.ts`
+
+Its push path filter also watches only the Evidence/Policy modules and tests. It does **not** include:
+
+- `PRE-RICH/src/PreRichExpireRefinement.ts`
+- `src/__tests__/preRichExpireRefinement.test.ts`
+
+Therefore the dedicated expiry workflow does not independently execute the ticket→aggregate Expire refinement test. The test may be exercised by broader workflows, but that is not established by this workflow definition. The workflow also has no `workflow_dispatch` trigger in the inspected source.
+
+### Ledger trace scope
+
+`audit/cardano-integration/expire-ledger-trace.ts` explicitly describes a Yaci/Cardano trace for an expired **Pending** PrizeDatum. Its fixture uses a test seed, synthetic Oracle State identity, and local Yaci API; the source itself disclaims live/authoritative Oracle evidence. It is not evidence for Revealed Loss or unclaimed Revealed Win expiry.
+
+The Aiken parity proof `poc/aiken-reveal-parity/lib/immortal/expire_transaction.ak` also mirrors the existing Pending-only EXPIRE predicate and exact unresolved reserve/count release. It is not a second implementation of the broader D-09 expiry matrix.
+
+### Exact on-chain predicate confirmation
+
+At this HEAD, `plutus/PrizeValidator.hs` lines 731–799 document and enforce Pending-only expiry: consume one Prize input, produce no continuing Prize output, require Pending status, BeaconPending/BeaconReady, zero prize amount, expiry reached, and exact PrizePool reserve/count accounting. `plutus/B1PrizePool.hs` independently enforces the matching Pending-only TicketExpired transition.
+
+### Result / boundary
+
+- Pending EXPIRE: source-aligned across PrizeValidator, B1PrizePool, DApp builder, Aiken parity and existing ticket-level refinement.
+- Dedicated expiry workflow: does not currently include the ExpireRefinement test.
+- Revealed Loss / unclaimed Revealed Win expiry: no implementation or ledger-trace evidence found in these paths.
+- No runtime, validator, V3, Reveal, or economic-policy changes made.
+
+This entry is operational evidence only. It does not amend the canonical expiry semantics or decide how D-09's broader cases should be implemented. Any implementation proposal must preserve the current Pending transition and be reviewed as an atomic PrizeValidator/B1PrizePool/DApp/test change.
