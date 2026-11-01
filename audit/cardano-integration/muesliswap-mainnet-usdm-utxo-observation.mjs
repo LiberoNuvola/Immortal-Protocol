@@ -81,7 +81,7 @@ try {
     ? await post('/datum_info', { _datum_hashes: candidateDatumHashes })
     : { raw: '[]', data: [] };
   if (!Array.isArray(datumResult.data)) throw new Error('KOIOS_DATUM_INFO_SHAPE_INVALID');
-  const datumByHash = new Map(datumResult.data.map(datum => [datum.hash, datum]));
+  const datumByHash = new Map(datumResult.data.map(datum => [datum.datum_hash ?? datum.hash, datum]));
   function decodeAssetClass(value) {
     if (!value || value.constructor !== 0 || !Array.isArray(value.fields) || value.fields.length !== 2
       || typeof value.fields[0]?.bytes !== 'string' || typeof value.fields[1]?.bytes !== 'string') return null;
@@ -119,9 +119,14 @@ try {
       decodedPoolDatum: decoded,
       reserveA: reserveA?.toString() ?? null,
       reserveB: reserveB?.toString() ?? null,
-      reserveValueMatchesDatum: Boolean(decoded && reserveA > 0n && reserveB > 0n),
+      reserveValueMatchesDatum: Boolean(decoded && reserveA > 0n && reserveB > 0n
+        && pool.markerQuantity === '1' && pool.poolNftAssets.length === 1
+        && pool.poolNftAssets[0].quantity === '1' && [decoded.coinA, decoded.coinB].some(coin => coin.policy + coin.name === USDM_UNIT)),
       datumPairContainsUsdm,
       usdmQuantityInValue: pool.usdmQuantity,
+      usdmQuantityMatchesDatumReserve: Boolean(decoded && [decoded.coinA, decoded.coinB].some((coin, index) =>
+        coin.policy + coin.name === USDM_UNIT && reserveFor(coin).toString() === pool.usdmQuantity
+      )),
       poolNftAssets: pool.poolNftAssets,
       markerQuantity: pool.markerQuantity,
     };
