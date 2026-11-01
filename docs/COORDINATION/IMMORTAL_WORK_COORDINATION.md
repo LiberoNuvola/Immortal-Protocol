@@ -4088,3 +4088,15 @@ At the inspected implementation:
 At HEAD `4aade8a88be8b5deab1846762f3be49ebdbf45dd`, Documentation Link Check and Algorithmic Governability Adversarial Lab were success; Cardano Adapter Sale, Protocol Declaration, IMMORTAL Portability and Flux Point DoD Pilot were still queued/in progress at the time of this checkpoint update. Do not transfer these outcomes to a subsequent checkpoint-only commit.
 
 **STATUS: EXISTING EXPIRY REFINEMENT TEST NOW RUNS IN ITS DEDICATED WORKFLOW; D-09 MATRIX DOCUMENTED; BROADER ON-CHAIN EXPIRY CONFORMANCE REMAINS OPEN. NO RUNTIME CHANGE.**
+
+## 45.48 AGENT B — NOTION SOURCE VERIFICATION METADATA QUALIFICATION
+
+The Notion connector returned `verification.state = unverified` for both:
+- `09 — Definitive Decision Register`
+- `T2 — Transition Conformance Specification v0.1`
+
+The retrieved page contents were readable and supplied the D-09 / G3 / G4 text mapped in §45.47 and in `PRE-RICH-D09-EXPIRY-CONFORMANCE-MATRIX-2026-11-01.md`. However, the pages were not marked verified by Notion metadata at retrieval time. Their content must not be described as formally Notion-verified. The test matrix is engineering analysis, not normative approval.
+
+Before implementation of E2/E3/E4, obtain maintainer/governance confirmation of the canonical applicable expiry source and whether historical-only Reveal is enabled. This does not reopen expiry semantics or authorize changing the protocol rules; it establishes the authority and profile configuration for conformance work.
+
+**STATUS: SOURCE TEXT RETRIEVED; NOTION VERIFICATION STATE UNVERIFIED; IMPLEMENTATION AUTHORIZATION NOT INFERRED.**
