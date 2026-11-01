@@ -1,0 +1,40 @@
+name: USDCx 450k Burn to IOG Withdrawal History (Read-only)
+
+on:
+  push:
+    branches: [work/immortal-green-closure]
+    paths:
+      - 'scripts/probeUsdcx450kIogWithdrawalsReadOnly.mjs'
+      - 'scripts/probeUsdcx450kIogWithdrawalsReadOnly.test.mjs'
+      - '.github/workflows/usdcx-450k-iog-withdrawal-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: usdcx-450k-iog-withdrawal-probe
+  cancel-in-progress: false
+
+jobs:
+  read-only-address-and-history-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run deterministic regressions
+        run: node --test scripts/probeUsdcx450kIogWithdrawalsReadOnly.test.mjs
+      - name: Resolve payment addresses and query exact IOG burn hashes
+        run: node scripts/probeUsdcx450kIogWithdrawalsReadOnly.mjs --out audit/oracles/usdcx-450k-iog-withdrawal-probe.json
+      - name: Upload read-only evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: usdcx-450k-iog-withdrawal-probe-${{ github.run_id }}
+          path: audit/oracles/usdcx-450k-iog-withdrawal-probe.json
+          if-no-files-found: error
+          retention-days: 90
