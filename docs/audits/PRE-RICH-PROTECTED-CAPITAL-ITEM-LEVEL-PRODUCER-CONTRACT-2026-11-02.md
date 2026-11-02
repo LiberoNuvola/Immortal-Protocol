@@ -557,6 +557,10 @@ The Koios reader pages PrizeValidator and B1 Pool UTxOs with explicit limit/offs
 
 **Unit handling:** exact USDM sub-units are retained for each item. Fractional values such as 250 sub-units (2.5 USDM) are never rounded/truncated; a non-integral aggregate-to-reference-unit conversion is a blocking finding.
 
-**Tests:** 15 Vitest item-ledger cases and 9 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
+**Tests:** 15 Vitest item-ledger cases and 13 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
 
 Accordingly this implementation advances the engineering path but does not certify source completeness, L2, SafetyCapital, ReserveProtection, MandatoryFutureCosts, full ProtectedCapital, or PA1–PA7.
+
+The item-ledger lifecycle classification follows the existing R7 mapping: a positive unpaid Reveal remains L1; a losing Reveal moves L3 → L5 (the PrizeDatum may remain live until technical expiry); Claim moves the accepted payout L1 → L4; technical Expire consumes the PrizeDatum and requires transaction-history replay to prove the resulting historical L5 transition.
+
+The source census identifies a ticket by (pdTicketPolicy, pdTicketName) inside PrizeDatum. It does not expect the Ticket NFT in the PrizeValidator UTxO: the atomic Issue flow sends that NFT separately to the buyer.
