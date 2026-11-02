@@ -1,9 +1,25 @@
+
+test('rejects a non-Preprod or non-HTTPS Koios endpoint', () => {
+  assert.equal(
+    assertPreprodKoiosEndpoint('https://preprod.koios.rest/api/v1/'),
+    'https://preprod.koios.rest/api/v1',
+  )
+  assert.throws(
+    () => assertPreprodKoiosEndpoint('https://api.koios.rest/api/v1'),
+    /KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1/,
+  )
+  assert.throws(
+    () => assertPreprodKoiosEndpoint('http://preprod.koios.rest/api/v1'),
+    /KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1/,
+  )
+})
 const test = require('node:test')
 const assert = require('node:assert/strict')
 
 const {
   createKoiosProtectedCapitalSource,
   parseContentRange,
+  assertPreprodKoiosEndpoint,
 } = require('./koiosProtectedCapitalSourceCensus')
 
 const TIP = {
