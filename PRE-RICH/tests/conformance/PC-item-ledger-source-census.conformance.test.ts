@@ -98,8 +98,10 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     expect(ledger.totals.l3TicketCount).toBe(3n)
     expect(ledger.totals.l3WorstCaseExposureReferenceUnits).toBe(3_000n)
 
-    expect(ledger.totals.l4ResolvedItemCount).toBe(2n)
-    expect(ledger.totals.liveUtxoCensusContainsNoL5ExpiryRows).toBe(true)
+    expect(ledger.totals.l4SettledItemCount).toBe(1n)
+    expect(ledger.totals.l5ExtinguishedLiveItemCount).toBe(1n)
+    expect(ledger.totals.consumedExpiryHistoryRequiresTransactionReplay).toBe(true)
+    expect(ledger.items[4].r7Cell).toBe('L5')
     expect(ledger.totals.l6UnclassifiedItemCount).toBe(0n)
 
     expect(ledger.reconciliation).toEqual({
@@ -245,6 +247,17 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     expect(() => buildPreRichProtectedCapitalItemLedger(census)).toThrow(
       'duplicate PrizeDatum UTxO reference in source census',
     )
+  })
+
+  it('maps a losing Reveal from L3 to L5 while its PrizeDatum remains live', () => {
+    const census = baseCensus()
+    const ledger = buildPreRichProtectedCapitalItemLedger(census)
+
+    expect(ledger.items[4].prizeStatus).toBe('Revealed')
+    expect(ledger.items[4].prizeAmountUsdmSubunits).toBe(0n)
+    expect(ledger.items[4].r7Cell).toBe('L5')
+    expect(ledger.items[4].ticketNftCustody).toBe('OUTSIDE_PRIZE_VALIDATOR_UTXO')
+    expect(ledger.totals.l5ExtinguishedLiveItemCount).toBe(1n)
   })
 
   it('classifies a Revealed datum with a non-ready Beacon as L6', () => {
