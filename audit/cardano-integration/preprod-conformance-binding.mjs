@@ -75,13 +75,14 @@ const packet = {
     'This packet binds one exact source snapshot to one live Demeter/Ogmios Preprod observation and executable boundary-conformance run. It does not claim a ledger evaluator result for a submitted Preprod Reveal transaction.',
 }
 
+const bindingBody = JSON.stringify(packet, null, 2) + '\n'
 await writeFile(
   evidenceDir + '/preprod-conformance-binding.json',
-  JSON.stringify(packet, null, 2) + '\n',
+  bindingBody,
 )
 
 const digest = createHash('sha256')
-  .update(JSON.stringify(packet))
+  .update(bindingBody)
   .digest('hex')
 
 await writeFile(
