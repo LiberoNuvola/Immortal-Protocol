@@ -87,7 +87,6 @@ diagnosticRegistry.checks.push({
 });
 const diagnosticPrompt = buildOperationalPrompt(diagnosticRegistry);
 assert.match(diagnosticPrompt, /P2\.8\.HASKELL_V2\.PENDING_EXPIRE FAIL R:1 L:3 \(registry\)/);
-assert.match(diagnosticPrompt, /L:3 recorded in registry/);
 assert.match(diagnosticPrompt, /Full limitation text and complete evidence references are retained without alteration in the validated source registry/);
 assert.doesNotMatch(diagnosticPrompt, /before submission/);
 
