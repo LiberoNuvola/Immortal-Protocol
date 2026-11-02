@@ -430,3 +430,82 @@ PR [#19](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19) is currently
 The working Pages workflow reads `VITE_ISSUE_AUTHORITY_ENDPOINT` and `VITE_V3_CARRIER_FACTORY_URL` from repository variables. It validates an Issue endpoint when supplied, but deliberately allows it to be absent and then leaves ticket issuance disabled. The actual variable values are not exposed by the inspected read-only repository evidence; no production signed Issue envelope has been observed. The latest successful Pages deployment found on `main` remains run [38182109071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38182109071), source SHA `876bc54f8ee8f6e1dede226db8c367cca3ae620c`, dated 2026-10-11.
 
 **Deployment consequence:** the first-ticket path has two separate release gates: (1) publish and verify the reviewed DApp/Pages consumer with the approved public endpoint and exact V3 factory identity; (2) independently qualify the server-side external signed-authority source, its Ed25519 public-key custodian and the corresponding production signer. Do not infer either gate from a green frontend build or from PR #19 metadata. No Pages deployment, merge, authority configuration change or Preprod transaction was performed by this audit.
+
+
+## 2026-11-02 — Live EEV requalification and ProtectedCapital census result
+
+A read-only qualification run completed today:
+
+- [PRE-RICH Preprod EEV — Source Qualification Only, run 41431290207](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41431290207)
+- Source commit: `cb720bf72d4f42de0c28da92f600f5ce1f48c66a`
+- Artifact ID: `13135020137`
+- Artifact SHA-256: `0c78e5a8321d50918ea24634ecdebd19e51e18d4ba6b84bbb340bd2f56454146`
+- The workflow completed all steps, including exact Oracle State observation, read-only PrizeValidator/B1 Pool census, direct-USDM source-set observation, EV1–EV7 qualification, and evidence-integrity verification.
+
+### Direct-USDM EEV result
+
+The source-set was observed at Cardano Preprod tip slot `137933127`, block `5364510`, tip hash `89812e57ac214edcf946950e885a4a4a8c0edf6eb2d347c7ec5a11908a699529`, around `2026-11-02T10:45:27Z`.
+
+- Exact B1 Pool singleton: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`
+- Physical direct tUSDM: `1,000,000,000` atomic units
+- Direct-USDM derivation: `floor(atomicQuantity × 100 / 1,000,000)`
+- Derived EEV: `100,000` IMMORTAL USDM subunits = `1,000 USDM`
+- Profile: `PRE-RICH-EEV-USDM-DIRECT-V1`
+- Qualification: `qualified`, properties EV1–EV7
+- Deployment approval: `null`; governance state remains `PENDING`
+- Source-set state: `OBSERVED_NOT_QUALIFIED`; it is not an approval.
+
+This is fresh source evidence for the exact candidate at that observation boundary, not a standing approval. The profile itself requires the exact out-reference to be revalidated as live immediately before admission and consumed by the Issue transaction. No deployment approval was materialized by run 41431290207.
+
+### ProtectedCapital live census
+
+The same run completed the read-only Koios census at the same reported tip:
+
+- Derived PrizeValidator address: `addr_test1wzf7ctkjwysu3v94f0ccqjef63kdwy2gc4qj368x3a70lvsq6uygp`
+- PrizeValidator scan: zero UTxOs, one page, exact `Content-Range: */0`
+- B1 PrizePool scan: one UTxO, exact singleton reference above
+- Pagination totals reconciled; tip remained stable during the scan; the inline B1 datum hash comparison matched.
+
+Observed B1 aggregates at this snapshot:
+- `ppPendingLiabilities = 0`
+- `ppUnresolvedReserve = 0`
+- `ppUnresolvedTicketCount = 0`
+- `ppLockedJackpot = 0`
+- item-ledger L1/L3 totals are zero and internally match those B1 aggregates; L2 is reported `ZERO_AT_THIS_SNAPSHOT`.
+
+**Qualification boundary:** the census reports `ticketLedgerInternallyReconciled=true`, but it explicitly reports `sourceCompletenessAuthorityVerified=false`, `providerAttestationVerified=false`, `providerSnapshotPinned=false`, `sameBackendSnapshotVerified=false`, `fullProtectedCapitalQualified=false`, `r7L6EmptinessProven=false`, and `l2LifecycleProven=false`. The deployment manifests are hash-consistent but not signature-authenticated. A zero-row PrizeValidator scan is therefore an observed zero at this Koios snapshot, not proof that L6 is empty or that PA1–PA7 are certified.
+
+### Oracle State and settlement blocker
+
+The exact configured Oracle State singleton was observed live at:
+
+`fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`
+
+Its datum still contains only the legacy ADA quote:
+- quote timestamp: `1791481130142` ms;
+- configured maximum age: `3,600,000` ms;
+- age at the Cardano chain tip: `2,135,196,858` ms;
+- result: `STALE`;
+- external price source verified: `false`;
+- publisher trust independently eliminated: `false`;
+- multi-asset settlement authorized by this observation: `false`.
+
+The datum is not refreshed or substituted by the observer. The current Issue builder requires one exact, fresh, publisher-matched Oracle quote for every asset in the Treasury settlement output, including ADA for its min-UTxO component. Its ADA-only fallback rejects the stale ADA quote; its multi-asset basket rejects tUSDM because the current legacy Oracle datum contains no tUSDM quote. Consequently there is currently **no qualified Treasury settlement basket** demonstrated for the owner's first purchase. Do not mint a new Oracle State or update this singleton without an independently qualified publisher/source and the existing authorized transition.
+
+### Capacity / Kc / viability
+
+The 2026-11-02 C1 reconciliation records the semantic mapping `C = EEV - ProtectedCapital` and the frozen `KA=8/KC=4/KD=4` baseline, but leaves SafetyCapital source, ReserveProtection source/disjointness, MandatoryFutureCosts bounds, PA1–PA7 certification, same-observation producer binding, and independent Hysteresis replay at Issue OPEN or UNPROVEN.
+
+The available V3 viability audit records no concrete non-vacuity/QNE witness and no concrete `K_c` certificate. No new certificate or independently replayable viability packet was produced by the EEV run above. A boolean `allOmegaSuccessorsCertified` or an opaque `viabilityCertificate` object supplied by an external provider is not a substitute for that evidence.
+
+### Resulting first-ticket gate
+
+The new observation improves the evidence baseline but does not close first Issue:
+
+1. EV1–EV7 direct-USDM qualification is green for the observed candidate; deployment approval remains pending and live UTxO revalidation is required immediately before admission.
+2. The item census has zero rows and internally reconciles the Pool aggregates, but provider/source completeness, PA1–PA7, L6 emptiness and L2 lifecycle remain unproven.
+3. The Oracle singleton is stale and supplies no tUSDM quote; no valid Treasury settlement basket is available.
+4. The concrete ProtectedCapital producer and replayable `K_c`/Omega viability evidence remain unqualified.
+5. The external signed Issue authority source and production Ed25519 signer/custodian remain to be qualified.
+
+No code, approval, key, Oracle datum, wallet configuration or on-chain state was changed by run 41431290207. It did not build, sign or submit an Issue transaction.
