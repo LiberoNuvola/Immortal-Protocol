@@ -411,3 +411,22 @@ This is implementation and CI evidence, not a live settlement: it does not prove
 - No inspected GitHub Actions workflow invokes `npm run deploy:v3-carrier`. The existing `preprod-v3-carrier-observation` job only observes a carrier after it already exists. The V3 Fast workflow is Yaci-only; the build-qualification workflow is non-deploying.
 
 **Decision:** do not create or run the V3 Preprod deployment transaction yet. First qualify the production Issue Authority public key/custodian and external signed-decision source, re-observe the exact live Counter/Pool/Oracle/B2/V3 candidate identities and evidence bindings, and verify the deployment wallet/seed UTxO/token-name inputs without exposing secrets. Only then can a dedicated, separately reviewed GitHub deployment workflow be considered. No mnemonic or private key was read in this audit; no Cardano Preprod transaction, signing operation, mint or singleton creation was performed. V3 validator/policy semantics, Reveal semantics and economic rules were not changed.
+
+
+## 2026-11-02 — Public Pages and production Issue consumer are still on different source snapshots
+
+A direct comparison of the default branch with the current work branch confirms that the Issue consumer is not in the currently published source baseline:
+
+| Path | `main` blob | `work/immortal-green-closure` blob | Difference |
+|---|---|---|---|
+| `.github/workflows/immortal-preprod-pages.yml` | `88ee733b7f05d1eb4eb88844ca4056923225e82b` | `ccd5642e91083d7779d2d434f9547c24be7de1b5` | main has no Issue/V3 public runtime-variable injection; work reads and validates the relevant repository variables |
+| `src/config.ts` | `4e4dcf268c5ff01677922e2972a7e662ff87a760` | `37c75e237e4c47ab2ea3f04f43f76ad57bf71636` | main has no `VITE_ISSUE_AUTHORITY_ENDPOINT` or `VITE_V3_CARRIER_FACTORY_URL` |
+| `src/main.ts` | `d55ba61dab9377b338989eb56b23b8825c9f6335` | `7841e9f75ac1bc136032e32770d41c310a25de73` | work constructs the remote authoritative Issue provider and calls `mintSerialNFTWithAuthoritativeAdmission()`; main does not |
+
+The latest successful `IMMORTAL Public Pages` run found on `main` is [run 38182109071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38182109071), from 2026-10-11, source SHA `876bc54f8ee8f6e1dede226db8c367cca3ae620c`. No later successful Pages deployment appears in the inspected Actions history.
+
+PR [#19](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19) is currently open, not merged and reported non-mergeable; its body explicitly says the site is not part of the PR. Therefore neither the working-branch Issue consumer nor its Pages variable checks can be assumed to be live in the public DApp. Merging PR #19 alone would not publish the site integration.
+
+The working Pages workflow reads `VITE_ISSUE_AUTHORITY_ENDPOINT` and `VITE_V3_CARRIER_FACTORY_URL` from repository variables. It validates an Issue endpoint when supplied, but deliberately allows it to be absent and then leaves ticket issuance disabled. The actual variable values are not exposed by the inspected read-only repository evidence; no production signed Issue envelope has been observed.
+
+**Deployment consequence:** the first-ticket path has two separate release gates: (1) publish and verify the reviewed DApp/Pages consumer with the approved public endpoint and exact V3 factory identity; (2) independently qualify the server-side external signed-authority source, its Ed25519 public-key custodian and the corresponding production signer. Do not infer either gate from a green frontend build or from PR #19 metadata. No Pages deployment, merge, authority configuration change or Preprod transaction was performed by this audit.
