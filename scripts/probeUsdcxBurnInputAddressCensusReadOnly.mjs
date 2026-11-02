@@ -21,6 +21,8 @@ export const TX_HASHES_PER_BATCH = 20
 export const MAX_BURN_EVENTS = 2_000
 export const MAX_RESPONSE_BYTES = 12_000_000
 const REQUEST_TIMEOUT_MS = 30_000
+export const TX_INFO_BATCH_SPACING_MS = 5_200
+export const MAX_TX_INFO_RATE_LIMIT_RETRIES = 3
 
 const sha256 = (value) => createHash('sha256').update(value, 'utf8').digest('hex')
 
@@ -53,15 +55,37 @@ async function getJson(url, label, fetchFn) {
   return readJson(response, label)
 }
 
+export function retryDelayMs(retryAfter, attempt, nowMs = Date.now()) {
+  if (!Number.isSafeInteger(attempt) || attempt < 0) throw new Error('RETRY_ATTEMPT_INVALID')
+  if (typeof retryAfter === 'string' && retryAfter.trim()) {
+    const value = retryAfter.trim()
+    if (/^\d+(?:\.\d+)?$/.test(value)) {
+      return Math.max(0, Math.ceil(Number(value) * 1_000))
+    }
+    const dateMs = Date.parse(value)
+    if (Number.isFinite(dateMs)) return Math.max(0, dateMs - nowMs)
+  }
+  return Math.min(120_000, 30_000 * (2 ** attempt))
+}
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
 async function postJson(url, payload, label, fetchFn) {
-  const response = await fetchFn(url, {
-    method: 'POST',
-    headers: { accept: 'application/json', 'content-type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    redirect: 'error',
-  })
-  return readJson(response, label)
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetchFn(url, {
+      method: 'POST',
+      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      redirect: 'error',
+    })
+    const retryable = response.status === 429 || [500, 502, 503, 504].includes(response.status)
+    if (!retryable || attempt >= MAX_TX_INFO_RATE_LIMIT_RETRIES) {
+      return readJson(response, label)
+    }
+    const delayMs = retryDelayMs(response.headers?.get?.('retry-after') ?? null, attempt)
+    await sleep(delayMs)
+  }
 }
 
 export function decodeTip(payload) {
@@ -312,6 +336,7 @@ export async function runCensus({ fetchFn = fetch, now = () => new Date(), batch
         : 'BATCH_HAS_UNMAPPED_BURNS',
       responseMeta: response.meta,
     })
+    if (offset + batchSize < burns.length) await sleep(TX_INFO_BATCH_SPACING_MS)
   }
 
   const tipAfter = await getJson(KOIOS + '/tip', 'KOIOS_TIP_AFTER', fetchFn)
@@ -338,6 +363,8 @@ export async function runCensus({ fetchFn = fetch, now = () => new Date(), batch
     source: {
       koiosAssetHistory: history.meta,
       koiosTxInfoBatches: batches,
+      txInfoBatchSpacingMs: TX_INFO_BATCH_SPACING_MS,
+      txInfoRateLimitRetries: MAX_TX_INFO_RATE_LIMIT_RETRIES,
       historyCompleteness: 'RETURNED_INDEXER_HISTORY_ONLY_NOT_INDEPENDENTLY_CERTIFIED',
       txInfoAddresses: 'PAYMENT_ADDRESSES_OF_INPUT_UTXOS_THAT_CONTAINED_EXACT_USDCX',
     },
