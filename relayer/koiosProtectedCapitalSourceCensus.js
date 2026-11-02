@@ -90,6 +90,12 @@ function validateKoiosUtxoRow(row) {
       row.value === undefined || row.value === null) {
     throw new Error('KOIOS_ADDRESS_UTXO_ROW_MALFORMED')
   }
+  // /address_utxos is defined as an unspent UTxO-set query. With _extended=true
+  // the explicit is_spent=false field is retained as a fail-closed guard:
+  // never let a spent output enter the current L1/L3 live-state population.
+  if (row.is_spent !== false) {
+    throw new Error('KOIOS_ADDRESS_UTXO_NOT_CONFIRMED_UNSPENT')
+  }
   if (row.asset_list !== undefined && !Array.isArray(row.asset_list)) {
     throw new Error('KOIOS_ADDRESS_UTXO_ASSET_LIST_MALFORMED')
   }
