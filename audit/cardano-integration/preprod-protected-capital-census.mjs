@@ -121,12 +121,23 @@ function assetQuantity(row, unit) {
   return total
 }
 
+function assertDatumContentUsable(row, label) {
+  if (!row.datum_bytes) throw new Error(label + '_DATUM_BYTES_MISSING')
+  if (row.datum_hash) {
+    if (row.datum_hash_content_verified !== true) {
+      throw new Error(label + '_CARDANO_DATUM_HASH_NOT_VERIFIED')
+    }
+    return
+  }
+  if (row.datum_source !== 'INLINE' ||
+      row.datum_hash_verification !== 'INLINE_DATUM_HASH_NOT_APPLICABLE') {
+    throw new Error(label + '_DATUM_HASH_MISSING_WITHOUT_INLINE_DATUM')
+  }
+}
+
 function parsePrizeDatum(row) {
   const reference = exactUtxoReference(row)
-  if (!row.datum_bytes) throw new Error('PRIZEDATUM_BYTES_MISSING')
-  if (row.datum_hash_content_verified !== true) {
-    throw new Error('PRIZEDATUM_CARDANO_DATUM_HASH_NOT_VERIFIED')
-  }
+  assertDatumContentUsable(row, 'PRIZEDATUM')
   const raw = Data.from(row.datum_bytes)
   const fields = dataFields(raw, 'PRIZEDATUM', 23)
 
@@ -163,10 +174,7 @@ function parsePrizeDatum(row) {
 }
 
 function parsePoolDatum(row, expectedPrizeHash, snapshotReference) {
-  if (!row.datum_bytes) throw new Error('B1_POOL_DATUM_BYTES_MISSING')
-  if (row.datum_hash_content_verified !== true) {
-    throw new Error('B1_POOL_CARDANO_DATUM_HASH_NOT_VERIFIED')
-  }
+  assertDatumContentUsable(row, 'B1_POOL')
   const fields = dataFields(Data.from(row.datum_bytes), 'B1_POOL_DATUM', 8)
   const embeddedPrizeHash = hexBytes(fields[7], 'ppPrizeHash')
   if (embeddedPrizeHash !== expectedPrizeHash.toLowerCase()) {
@@ -334,7 +342,11 @@ async function main() {
       ticketLedgerInternallyReconciled: ledger.qualification.ticketLedgerInternallyReconciled,
       sourceCompletenessAuthorityVerified: false,
       providerAttestationVerified: false,
-      datumHashContentVerified: scan.manifest.datumHashContentVerified,
+      datumBytesAvailableForAll: scan.manifest.datumBytesAvailableForAll,
+      datumHashComparisonsVerified: scan.manifest.datumHashComparisonsVerified,
+      datumHashComparisonRequiredCount: scan.manifest.datumHashComparisonRequiredCount,
+      datumHashMismatchCount: scan.manifest.datumHashMismatchCount,
+      inlineDatumWithoutHashCount: scan.manifest.inlineDatumWithoutHashCount,
       providerSnapshotPinned: false,
       sameBackendSnapshotVerified: false,
       fullProtectedCapitalQualified: false,
@@ -373,7 +385,11 @@ async function main() {
     l3TicketCountMatch: ledger.reconciliation.l3CountMatchesB1UnresolvedTicketCount,
     sourceCompletenessAuthorityVerified: false,
     providerAttestationVerified: false,
-    datumHashContentVerified: scan.manifest.datumHashContentVerified,
+    datumBytesAvailableForAll: scan.manifest.datumBytesAvailableForAll,
+      datumHashComparisonsVerified: scan.manifest.datumHashComparisonsVerified,
+      datumHashComparisonRequiredCount: scan.manifest.datumHashComparisonRequiredCount,
+      datumHashMismatchCount: scan.manifest.datumHashMismatchCount,
+      inlineDatumWithoutHashCount: scan.manifest.inlineDatumWithoutHashCount,
     transactionSubmissionAttempted: false,
   }, null, 2))
 
