@@ -188,3 +188,8 @@ test('uses bounded exponential fallback when Retry-After is missing', () => {
 test('spaces sequential transaction-info batches', () => {
   assert.equal(TX_INFO_BATCH_SPACING_MS, 5_200)
 })
+
+
+test('keeps bounded retry handling available for source acquisition requests', () => {
+  assert.equal(MAX_TX_INFO_RATE_LIMIT_RETRIES, 3)
+})
