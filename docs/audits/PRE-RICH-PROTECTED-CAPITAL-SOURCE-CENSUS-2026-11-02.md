@@ -482,7 +482,7 @@ The CLI now supports a preferred deployment-identity mode based on the two exist
 - `preprod-direct-usdm-deployment.json`;
 - `preprod-oracle-state-deployment.json`.
 
-The new loader [`preprod-protected-capital-deployment-identity.mjs`](../cardano-integration/preprod-protected-capital-deployment-identity.mjs):
+The new loader [`preprod-protected-capital-deployment-identity.mjs`](../../audit/cardano-integration/preprod-protected-capital-deployment-identity.mjs):
 - verifies each artifact's self-contained SHA-256 evidence digest;
 - checks exact schema, Preprod network, and deployment/materialization status;
 - checks the Oracle State policy/name/unit/publisher/address/out-reference across both artifacts;
