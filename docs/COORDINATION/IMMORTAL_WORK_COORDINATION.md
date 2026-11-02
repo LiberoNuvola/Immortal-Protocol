@@ -4919,3 +4919,19 @@ No approval workflow, B2 deployment, Oracle refresh, private-key generation, ser
 3. Complete authenticated ProtectedCapital source completeness, lifecycle replay and R7/L6 evidence.
 4. Execute the separately authorized B2 Preprod deployment only through the current manual workflow when its deployment identity/approval inputs are verified.
 5. Locate/qualify the external Issue observation/refinement authority and key custodian. Do not turn the test-only signing helper into a production signer.
+
+
+## 45.67 AGENT A — ADA QUOTE AS A MANDATORY ISSUE SETTLEMENT PREREQUISITE (2026-11-02)
+
+A source-level trace corrects an ambiguity in the previous Oracle disposition:
+
+- The direct-USDM EEV profile is genuinely physical: `preprod-direct-usdm-deployment.json` states `sourceKind=CARDANO_LIVE_UTXO` and explicitly notes that direct-USDM EEV itself does not perform Oracle valuation.
+- However, the current work-branch DApp settlement path does require a fresh ADA quote even if a user intends to contribute another quoted token. In `src/main.ts`, `refreshSettlementOptions()` calls `validateIssueSettlementQuote(oracleDatum, 'lovelace', ORACLE_PUBLISHER_PKH, BigInt(Date.now()))` before accepting/building any basket. Its inline comment explains that every Treasury payment contains ADA for min-UTxO; without a fresh ADA quote, no token basket is executable under the existing on-chain valuation path.
+- The same function then validates every asset quote and builds the basket through `buildIssueSettlementAssets`; the BUY flow refuses to continue without an exact valid basket.
+- The canonical freshness bound in `src/issueSettlement.ts` is `CANONICAL_ORACLE_MAX_AGE_MS = 3_600_000` (one hour); this is code-bound, not a newly invented threshold.
+
+Therefore the run #44 result `STALE` is a **current DApp settlement blocker**, independently of the fact that the direct-USDM EEV qualification passed. The configured Oracle datum is a legacy-single-quote ADA compatibility quote, last timestamped 2026-10-08 and aged 2,135,196,858 ms at the 2026-11-02 Preprod tip. It is not usable for the current basket preflight. Do not refresh only its timestamp or fabricate a price; obtain a source-authorized publication and then repeat the read-only liveness and settlement preflight.
+
+This pass also searched public Slack messages for the exact authority endpoint, `issue-admission`, signed Issue authority and PRE-RICH producer terms; no public-channel results were found. Private channels/DMs were not searched because that connector path requires separate user consent.
+
+No code behavior, Oracle datum, EEV artifact, deployment, approval, wallet, transaction or ledger state was changed by this clarification.
