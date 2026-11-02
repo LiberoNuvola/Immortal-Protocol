@@ -173,6 +173,18 @@ export function decodeKoiosHistory(payload) {
       txHash:latest.hash, kind:latest.quantity < 0n ? 'BURN' : 'MINT',
       blockTime:latest.blockTime, quantityAtomic:latest.quantity.toString(),
     } : null,
+    // Preserve the entire signed burn event set so independent follow-up can
+    // correlate exact burn hashes to the partner's withdrawal/release records.
+    // This is an evidence aid, not a completeness certification.
+    burnEventsForCorrelation: burnEvents
+      .filter(x => x.blockTime !== null)
+      .sort((a,b) => b.blockTime - a.blockTime)
+      .map(x => ({
+        txHash:x.hash,
+        blockTime:x.blockTime,
+        quantityAtomic:x.quantity.toString(),
+        amountUsdcx:decimalDisplay(-x.quantity),
+      })),
     completeness: 'RETURNED_KOIOS_HISTORY_ONLY_NOT_INDEPENDENTLY_CERTIFIED',
   }
 }
