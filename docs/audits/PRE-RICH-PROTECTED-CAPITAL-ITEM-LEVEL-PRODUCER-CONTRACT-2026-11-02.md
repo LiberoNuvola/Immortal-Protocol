@@ -557,10 +557,21 @@ The Koios reader pages PrizeValidator and B1 Pool UTxOs with explicit limit/offs
 
 **Unit handling:** exact USDM sub-units are retained for each item. Fractional values such as 250 sub-units (2.5 USDM) are never rounded/truncated; a non-integral aggregate-to-reference-unit conversion is a blocking finding.
 
-**Tests:** 15 Vitest item-ledger cases and 17 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
+**Tests:** 15 Vitest item-ledger cases and 18 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
 
 Accordingly this implementation advances the engineering path but does not certify source completeness, L2, SafetyCapital, ReserveProtection, MandatoryFutureCosts, full ProtectedCapital, or PA1–PA7.
 
 The item-ledger lifecycle classification follows the existing R7 mapping: a positive unpaid Reveal remains L1; a losing Reveal moves L3 → L5 (the PrizeDatum may remain live until technical expiry); Claim moves the accepted payout L1 → L4; technical Expire consumes the PrizeDatum and requires transaction-history replay to prove the resulting historical L5 transition.
 
 The source census identifies a ticket by (pdTicketPolicy, pdTicketName) inside PrizeDatum. It does not expect the Ticket NFT in the PrizeValidator UTxO: the atomic Issue flow sends that NFT separately to the buyer.
+
+## 17. CIP-32 inline datum and Koios datum_info handling
+
+The census reader distinguishes a hash-reference datum from an inline datum:
+- for a datum hash reference, Koios /datum_info returns the hash field and CBOR bytes; the reader recomputes Cardano Plutus datum hash with BLAKE2b-256 and requires an exact match;
+- for a CIP-32 inline datum, inline CBOR bytes are present in the UTxO output itself and a separate datum_hash is not required. The reader computes a local digest for evidence, marks the hash comparison as INLINE_DATUM_HASH_NOT_APPLICABLE, and the CLI accepts it only when the source row is explicitly inline and has bytes;
+- if neither a verified hash-reference datum nor an inline datum is available, the row remains missing/unclassified and the CLI stops.
+
+The manifest digest binds datumBytesAvailableForAll, datumHashComparisonsVerified, datumHashComparisonRequiredCount, datumHashMismatchCount, and inlineDatumWithoutHashCount. Provider attestation, query snapshot pinning, and same-backend verification remain false.
+
+Sources: CIP-32 and the Koios datum_info response type (hash, bytes). This prevents a false failure on the protocol's own inline PrizeDatum/Pool outputs without presenting inline bytes as a hash-reference proof.
