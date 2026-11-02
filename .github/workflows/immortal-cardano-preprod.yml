@@ -102,7 +102,7 @@ jobs:
           test -s audit/preprod-evidence/preprod-prize-validator-utxo.sha256
           test -s audit/preprod-evidence/preprod-prize-validator-summary.txt
           (cd audit/preprod-evidence && sha256sum -c preprod-prize-validator-utxo.sha256)
-          node -e "const p=require('./audit/preprod-evidence/preprod-prize-validator-utxo.json'); if(p.schema!=='IMMORTAL-PREPROD-PRIZE-VALIDATOR-UTXO-v0.1'||p.tipStable!==true||p.source.addressProvenance!=='HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED'||p.utxoCount!==p.utxos.length) process.exit(1)"
+          node -e "const p=require('./audit/preprod-evidence/preprod-prize-validator-utxo.json'); if(p.schema!=='IMMORTAL-PREPROD-PRIZE-VALIDATOR-UTXO-v0.1'||p.tipStable!==true||p.source.addressProvenance!=='HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED'||p.utxoCount!==p.utxos.length||p.identifiedUtxoCount!==p.utxoCount) process.exit(1)"
           cat audit/preprod-evidence/preprod-prize-validator-summary.txt
 
       - name: Run IMMORTAL to PRE-RICH Reveal boundary conformance
