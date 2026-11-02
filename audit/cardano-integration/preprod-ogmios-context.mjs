@@ -5,6 +5,7 @@ import WebSocket from 'ws'
 const endpoint = process.env.DEMETER_OGMIOS_URL?.trim()
 const evidenceDir = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
 const walletAddress = process.env.PREPROD_WALLET_ADDRESS?.trim()
+const poolAddress = process.env.PREPROD_B1_POOL_ADDRESS?.trim()
 const explicitAuthenticatedEndpoint = process.env.DEMETER_OGMIOS_AUTHENTICATED_URL?.trim()
 const credentials = [
   ['DEMETER_API_KEY_PRIMARY', process.env.DEMETER_API_KEY_PRIMARY?.trim()],
@@ -14,6 +15,7 @@ const credentials = [
 
 if (!endpoint) throw new Error('DEMETER_OGMIOS_URL is required')
 if (!walletAddress) throw new Error('PREPROD_WALLET_ADDRESS is required')
+if (!poolAddress) throw new Error('PREPROD_B1_POOL_ADDRESS is required')
 if (!credentials.length) throw new Error('No Demeter credential is configured')
 await mkdir(evidenceDir, { recursive: true })
 
@@ -203,6 +205,72 @@ try {
   ].join('\n') + '\n'
   await writeFile(`${evidenceDir}/preprod-wallet-summary.txt`, walletSummary)
   console.log(walletSummary)
+
+  // Read-only B1 Pool observation in the same authenticated Ogmios session.
+  // The configured address is the historical deployment candidate; the
+  // resulting UTxOs and datum are recorded, not assumed to remain unchanged.
+  const poolTipBefore = await rpc('queryNetwork/tip')
+  const poolRaw = await rpc('queryLedgerState/utxo', { addresses: [poolAddress] })
+  const poolTipAfter = await rpc('queryNetwork/tip')
+  const poolUtxos = Array.isArray(poolRaw) ? poolRaw.map(entry => {
+    const transaction = entry.outputReference?.transaction ?? entry.transaction ?? {}
+    const index = entry.outputReference?.index ?? entry.index
+    const value = entry.value ?? entry.amount ?? {}
+    return {
+      txHash: transaction.id ?? entry.txHash ?? null,
+      index,
+      address: entry.address ?? poolAddress,
+      value,
+      datum: entry.datum ?? null,
+      datumHash: entry.datumHash ?? entry.datumhash ?? null,
+      script: entry.script ?? entry.referenceScript ?? null,
+    }
+  }) : []
+  const poolTipStable =
+    poolTipBefore?.id === poolTipAfter?.id &&
+    poolTipBefore?.slot === poolTipAfter?.slot
+  const poolObservations = {
+    schema: 'IMMORTAL-PREPROD-B1-POOL-UTXO-v0.1',
+    source: {
+      provider: 'Demeter',
+      network: 'cardano-preprod',
+      interface: 'Ogmios v7 JSON-RPC',
+      endpoint,
+      authentication: 'GitHub Actions secret',
+      query: 'queryLedgerState/utxo by B1 Pool address',
+      session: 'same-websocket-as-preprod-context',
+    },
+    observedAt: new Date().toISOString(),
+    pool: { address: poolAddress },
+    tipBefore: poolTipBefore,
+    tipAfter: poolTipAfter,
+    tipStable: poolTipStable,
+    utxoCount: poolUtxos.length,
+    utxos: poolUtxos,
+    rawOgmiosUtxoResult: poolRaw,
+  }
+  const poolBody = JSON.stringify(poolObservations, null, 2) + '\\n'
+  await writeFile(`${evidenceDir}/preprod-b1-pool-utxo.json`, poolBody)
+  const poolDigest = createHash('sha256').update(poolBody).digest('hex')
+  await writeFile(
+    `${evidenceDir}/preprod-b1-pool-utxo.sha256`,
+    `${poolDigest}  preprod-b1-pool-utxo.json\\n`,
+  )
+  const poolSummary = [
+    `status=${poolTipStable ? 'TIP_STABLE' : 'TIP_CHANGED'}`,
+    'provider=Demeter',
+    'network=cardano-preprod',
+    'interface=Ogmios-v7',
+    `pool_address=${poolAddress}`,
+    `utxo_count=${poolUtxos.length}`,
+    `tip_before=${JSON.stringify(poolTipBefore)}`,
+    `tip_after=${JSON.stringify(poolTipAfter)}`,
+    `utxo_packet_sha256=${poolDigest}`,
+    'session=same-websocket-as-preprod-context',
+  ].join('\\n') + '\\n'
+  await writeFile(`${evidenceDir}/preprod-b1-pool-summary.txt`, poolSummary)
+  console.log(poolSummary)
+
   const digest = createHash('sha256').update(body).digest('hex')
   await writeFile(`${evidenceDir}/ogmios-preprod-context.sha256`, `${digest}  ogmios-preprod-context.json\n`)
   const summary = [
