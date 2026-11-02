@@ -166,7 +166,7 @@ export async function fetchAddressUtxos({
 }
 
 function requireConstr(value, index, field, fieldCount) {
-  if (!(value instanceof Constr) || value.index !== index || !Array.isArray(value.fields)) {
+  if (!(value instanceof Constr) || (index !== undefined && value.index !== index) || !Array.isArray(value.fields)) {
     throw new Error(field + '_CONSTRUCTOR_INVALID')
   }
   if (fieldCount !== undefined && value.fields.length !== fieldCount) {
