@@ -4647,3 +4647,51 @@ The artifact's JSON evidence digest is `6d05da2524ac799f98728ff4f5832370cf7259b9
 4. The next safe action is to populate/verify the five exact `DEMETER` environment values from the approved deployment record, then rerun this same read-only workflow. Do not bootstrap, sign, submit, refresh the on-chain datum, or deploy as part of that observation.
 
 Safety disposition: both jobs were read-only; bootstrap observation reports `signed=false`, `submitted=false`, `stateChanged=false`. The configured-runtime job stopped before querying Blockfrost. No Oracle update, Issue transaction, deployment approval, B2 deployment, wallet signature or on-chain state transition occurred. V3/Reveal semantics remain untouched.
+
+
+## 45.62 AGENT A — PUBLIC PAGES / ORACLE RUNTIME CONFIGURATION RECONCILIATION (2026-11-02)
+
+### Purpose
+
+Reconcile the exact source used for the public DApp with the read-only Oracle State observation. This is a source/configuration provenance check only; it does not change Oracle semantics, public deployment, or Issue authority.
+
+### Verified implementation facts
+
+**Public Pages currently deploys from `main`:**
+
+- [`.github/workflows/immortal-preprod-pages.yml` on main](https://github.com/LiberoNuvola/Immortal-Protocol/blob/main/.github/workflows/immortal-preprod-pages.yml) is triggered by pushes to `main` and builds `dapp.html` / the Vite application.
+- The current `main` build job does not define the `VITE_ORACLE_*` environment bindings and does not validate Oracle configuration presence before `npm run build`.
+- [`src/config.ts` on main](https://github.com/LiberoNuvola/Immortal-Protocol/blob/main/src/config.ts) reads publisher, policy ID and token-name environment values, but does not export/read `ORACLE_STATE_ADDRESS`.
+- [`.env.example` on main](https://github.com/LiberoNuvola/Immortal-Protocol/blob/main/.env.example) does not contain `VITE_ORACLE_STATE_ADDRESS`.
+
+**The working branch contains a newer, but not yet deployed, configuration:**
+
+- [`immortal-preprod-pages.yml` on work/immortal-green-closure](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/immortal-preprod-pages.yml) injects public runtime variables including Oracle publisher, singleton policy/name/address and Blockfrost Preprod configuration.
+- [`src/config.ts` on work/immortal-green-closure](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/src/config.ts) now reads `VITE_ORACLE_STATE_ADDRESS`.
+- That workflow still declares `push.branches: [main]`; a change made only on `work/immortal-green-closure` does not publish the working-branch build.
+- Its public-runtime validation is conditional on `VITE_ISSUE_AUTHORITY_ENDPOINT` being present. If that endpoint is absent, Pages can build without validating the full Issue/Oracle runtime configuration.
+
+### Relation to the read-only Oracle observation
+
+The separate [Oracle Quote-Set Read-Only Observation workflow](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/oracle-quote-set-observation.yml) reads the five required values from the `DEMETER` environment (Blockfrost project ID via secret or variable; Oracle address, policy ID, token-name hex and publisher PKH via variables). Run [41422819880](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41422819880) failed its configuration preflight for all five inputs before querying the configured singleton; the separate historical bootstrap-wallet Koios observation succeeded but is not the public DApp runtime identity.
+
+### Governance/source qualification boundary
+
+Notion gates remain unchanged:
+
+- [Oracle Evidence Acquisition & Provider Qualification Matrix §23](https://app.notion.com/p/3e0c4454d6d581718785f29e4ab51dc3): B1 publisher path is an operational candidate; source qualification requires reproducible evidence.
+- [Oracle Candidate Discovery & Evidence Collection §24](https://app.notion.com/p/3e0c4454d6d5814eb368fc67fd74e8ab): B1 authorized publisher is not publisher-independent; current PRE→USDM Oracle is not qualified.
+- [PriceReference Canonical Source Qualification & Deployment Contract §30](https://app.notion.com/p/3e0c4454d6d581bd8987ca079abef1ea): PRE→USDM canonical source remains open.
+
+### Disposition
+
+- **PUBLIC PAGES ORACLE IDENTITY: NOT PROVEN.** The currently deployed source branch does not carry the runtime Oracle address binding and does not inject the corresponding runtime variables.
+- **DEMETER exact-singleton observation: BLOCKED at configuration preflight.**
+- **Historical bootstrap singleton: OBSERVED, STALE, NOT A SUBSTITUTE FOR PUBLIC RUNTIME IDENTITY.**
+- No secret values were copied into source or chat. Repository/environment settings were not changed.
+- No Oracle update/bootstrap, signing, transaction submission, Issue, deployment approval or on-chain state change occurred.
+- No V3 or Reveal semantics were changed.
+
+### Next safe action
+
+An administrator must select the canonical Pages source and reconcile it with the already prepared working-branch configuration, then populate the approved public runtime variables and the separate `DEMETER` observation bindings from the same deployment record. Only after the exact published bundle and exact configured Preprod singleton agree should the read-only observation be rerun. This finding alone does not close source qualification, R1/Kc/Ω, B2, EEV deployment approval, ProtectedCapital provenance, or the first-ticket gate.
