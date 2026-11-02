@@ -112,13 +112,14 @@ export function decodeBurnEvents(payload) {
   return burns
 }
 
-function decodeAssetRows(rows, label) {
+function decodeAssetRows(rows, label, { signed = false } = {}) {
   if (!Array.isArray(rows)) throw new Error(label + '_ASSET_LIST_MISSING')
   return rows.filter(x =>
     String(x?.policy_id ?? '').toLowerCase() === USDCX_POLICY &&
     String(x?.asset_name ?? '').toLowerCase() === USDCX_NAME
   ).map(x => {
-    if (typeof x.quantity !== 'string' || !/^\d+$/.test(x.quantity)) {
+    const pattern = signed ? /^-?\d+$/ : /^\d+$/
+    if (typeof x.quantity !== 'string' || !pattern.test(x.quantity)) {
       throw new Error(label + '_USDCX_QUANTITY_INVALID')
     }
     return BigInt(x.quantity)
@@ -166,7 +167,7 @@ export function decodeBurnTxInfoBatch(requestedBurns, payload) {
       continue
     }
 
-    const minted = decodeAssetRows(row.assets_minted, 'TX_INFO_MINTED')
+    const minted = decodeAssetRows(row.assets_minted, 'TX_INFO_MINTED', { signed: true })
     if (minted.length !== 1 || minted[0] !== -BigInt(burn.burnedAtomic)) {
       records.push({
         txHash: burn.txHash,
