@@ -115,6 +115,9 @@ test('enumerates every page using explicit limit/offset and exact Content-Range 
   assert.equal(scan.manifest.paginationTotalsExactlyReconciled, true)
   assert.equal(scan.manifest.tipUnchangedAcrossScan, true)
   assert.equal(scan.manifest.providerAttestationVerified, false)
+  assert.equal(scan.manifest.providerSnapshotPinned, false)
+  assert.equal(scan.manifest.sameBackendSnapshotVerified, false)
+  assert.equal(scan.manifest.consistencyAssessment, 'TIP_STABLE_BUT_NOT_QUERY_PINNED')
 
   const pageCalls = mock.calls.filter((call) => call.url.includes('/address_utxos'))
   assert.deepEqual(pageCalls.map((call) => {
@@ -145,7 +148,7 @@ test('scans PrizeValidator and Pool addresses under one unchanged Preprod tip', 
 
   assert.equal(scan.addressScans.prizeValidator.returnedCount, 1)
   assert.equal(scan.addressScans.b1PrizePool.returnedCount, 1)
-  assert.match(scan.snapshotReference, /^koios-preprod:1000:/)
+  assert.match(scan.snapshotReference, /^koios-preprod-observation:1000:/)
 })
 
 test('fails closed when exact Content-Range is missing', async () => {
