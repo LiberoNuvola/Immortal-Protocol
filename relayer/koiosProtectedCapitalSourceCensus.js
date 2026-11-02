@@ -4,6 +4,20 @@ const DEFAULT_PAGE_SIZE = 500
 const MAX_KOIOS_PAGE_SIZE = 1000
 const DATUM_HASH_BATCH_SIZE = 8
 
+let blake2bModulePromise
+
+async function cardanoDatumHashHex(datumBytesHex) {
+  if (typeof datumBytesHex !== 'string' ||
+      !/^(?:[0-9a-fA-F]{2})+$/.test(datumBytesHex)) {
+    throw new Error('CARDANO_DATUM_CBOR_HEX_INVALID')
+  }
+  blake2bModulePromise ??= import('@noble/hashes/blake2b.js')
+  const { blake2b } = await blake2bModulePromise
+  return Buffer.from(
+    blake2b(Buffer.from(datumBytesHex, 'hex'), { dkLen: 32 }),
+  ).toString('hex')
+}
+
 function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -267,6 +281,7 @@ function createKoiosProtectedCapitalSource({
         'KOIOS_DATUM_INFO',
       )
       if (!Array.isArray(response.json)) throw new Error('KOIOS_DATUM_INFO_RESPONSE_NOT_ARRAY')
+      const requestedHashes = new Set(batch)
       for (const datum of response.json) {
         const hash = String(datum?.datum_hash ?? '').toLowerCase()
         const bytes = datum?.bytes
@@ -274,17 +289,23 @@ function createKoiosProtectedCapitalSource({
             !/^(?:[0-9a-fA-F]{2})+$/.test(bytes)) {
           throw new Error('KOIOS_DATUM_INFO_ROW_MALFORMED')
         }
+        if (!requestedHashes.has(hash)) throw new Error('KOIOS_DATUM_INFO_UNREQUESTED_HASH:' + hash)
         if (resolved.has(hash)) throw new Error('KOIOS_DATUM_INFO_DUPLICATE_HASH:' + hash)
         resolved.set(hash, bytes.toLowerCase())
       }
       if (offset + DATUM_HASH_BATCH_SIZE < uniqueHashes.length) await sleep(120)
     }
-    return rows.map((row) => {
+    return Promise.all(rows.map(async (row) => {
       const inlineBytes = row.inline_datum?.bytes
       const datumHash = row.datum_hash ? String(row.datum_hash).toLowerCase() : null
       const datumBytes = typeof inlineBytes === 'string'
         ? inlineBytes.toLowerCase()
         : datumHash ? resolved.get(datumHash) ?? null : null
+      const calculatedDatumHash = datumBytes && datumHash
+        ? await cardanoDatumHashHex(datumBytes)
+        : null
+      const datumHashContentVerified =
+        calculatedDatumHash !== null && calculatedDatumHash === datumHash
       return {
         ...row,
         datum_hash: datumHash,
@@ -292,8 +313,17 @@ function createKoiosProtectedCapitalSource({
         datum_source: typeof inlineBytes === 'string'
           ? 'INLINE'
           : datumBytes ? 'DATUM_INFO' : 'MISSING',
+        calculated_datum_hash: calculatedDatumHash,
+        datum_hash_content_verified: datumHashContentVerified,
+        datum_hash_verification: !datumBytes
+          ? 'DATUM_BYTES_MISSING'
+          : !datumHash
+            ? 'DATUM_HASH_MISSING'
+            : datumHashContentVerified
+              ? 'BLAKE2B_256_MATCH'
+              : 'BLAKE2B_256_MISMATCH',
       }
-    })
+    }))
   }
 
   async function scanSnapshot(addresses) {
@@ -355,6 +385,9 @@ function createKoiosProtectedCapitalSource({
             utxoReference: row.utxo_reference,
             datumHash: row.datum_hash ?? null,
             datumSource: row.datum_source,
+            calculatedDatumHash: row.calculated_datum_hash,
+            datumHashVerification: row.datum_hash_verification,
+            datumHashContentVerified: row.datum_hash_content_verified,
             datumBytesSha256: row.datum_bytes
               ? sha256Hex(Buffer.from(row.datum_bytes, 'hex'))
               : null,
@@ -368,7 +401,12 @@ function createKoiosProtectedCapitalSource({
       ...manifestBase,
       sourceManifestDigest,
       providerAttestationVerified: false,
-      datumHashContentVerified: false,
+      datumHashContentVerified: Object.values(addressScans)
+        .flatMap((scan) => scan.rows)
+        .length > 0 &&
+        Object.values(addressScans)
+          .flatMap((scan) => scan.rows)
+          .every((row) => row.datum_hash_content_verified === true),
       providerSnapshotPinned: false,
       sameBackendSnapshotVerified: false,
       consistencyAssessment: 'TIP_STABLE_BUT_NOT_QUERY_PINNED',
