@@ -249,7 +249,7 @@ test('resolves datum-hash outputs through Koios datum_info and retains provenanc
   })]
   const mock = mockKoios({
     pagesByAddress: { [address]: rows },
-    datumRows: [{ datum_hash: datumHash, bytes: 'd87980' }],
+    datumRows: [{ hash: datumHash, bytes: 'd87980' }],
   })
   const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
 
@@ -393,7 +393,7 @@ test('fails closed when datum_info CBOR does not match a hash-reference output',
         datum_hash: expectedHash,
       })],
     },
-    datumRows: [{ datum_hash: expectedHash, bytes: 'd87980' }],
+    datumRows: [{ hash: expectedHash, bytes: 'd87980' }],
   })
   const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
 
@@ -413,7 +413,7 @@ test('rejects unrequested datum_info rows rather than attaching them to another 
     pagesByAddress: {
       [address]: [makeUtxo(0, address, { inline_datum: null, datum_hash: requestedHash })],
     },
-    datumRows: [{ datum_hash: unexpectedHash, bytes: 'd87980' }],
+    datumRows: [{ hash: unexpectedHash, bytes: 'd87980' }],
   })
   const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
 
