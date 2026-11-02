@@ -4804,3 +4804,33 @@ The private signing key is not a Vite/browser variable. No private key, public k
 ### Next safe action
 
 Locate the already-authorized external authority producer and its accountable key custodian, or obtain an explicit deployment/governance decision defining that authority. Then verify its public key against the deployment-pinned V3 authority binding, its signed payload against exact Preprod state and qualification evidence, and its health/availability before wiring the public endpoint. Do not turn the test-only helper into a production signer or let the observation server assert its own economic authority.
+
+
+## 45.65 AGENT A — B2 MATERIALIZATION / EEV DEPLOYMENT APPROVAL GATE (2026-11-02)
+
+### Current-run evidence
+
+- [IMMORTAL Cardano Preprod Context #835](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420797741), SHA `35bc1fab224863901df7056888f1eee9c9f375f3`, completed SUCCESS for the context job. Its `real-preprod-reveal`, `direct-usdm-preprod-bootstrap`, `preprod-v3-carrier-observation` and `preprod-deploy` jobs were all SKIPPED. This is not an Issue transaction or B2 deployment.
+- [PRE-RICH B2 Control Carrier Conformance #609](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420797721), same SHA, completed SUCCESS. It is a conformance workflow; its green result is not an on-chain singleton deployment.
+- The dedicated [B2 Control Carrier — Preprod workflow](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/pre-rich-b2-control-preprod.yml) is separate and manual (`workflow_dispatch`). No run of that named deployment workflow appeared in the latest 100 work-branch Actions runs inspected in this pass. Do not claim the B2 singleton exists on-chain based on conformance CI.
+- [PRE-RICH Direct-USDM Conformance #128](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420457655) and the Issue Admission Boundary CI run #71 are GREEN on their exact SHAs, but they do not create an EEV deployment approval or a Preprod Issue transaction.
+
+### EEV qualification is not deployment approval
+
+The source-only workflow `preprod-eev-qualification.yml` explicitly re-observes the live Pool and qualifies EV1–EV7 while requiring `deploymentApproval === null` and source-set status `OBSERVED_NOT_QUALIFIED`.
+
+A separate manual workflow, [PRE-RICH B1 EEV Deployment Approval](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/pre-rich-b1-eev-approval.yml), requires:
+
+- explicit manual input `approve_eev=true` (default is false);
+- the `PREPROD-EEV-APPROVAL` GitHub environment;
+- `PREPROD_REVEAL_SEED` and `PREPROD_EEV_APPROVAL_TOKEN` secrets;
+- Oracle State materialization/reuse, exact direct-USDM deployment/source-set re-observation, EV1–EV7 requalification, and creation/validation of a separate `DEPLOYMENT_APPROVED` artifact.
+
+No matching approval workflow run surfaced in the latest 100 work-branch Actions runs inspected. This pass did not dispatch it, read its secrets, invoke Oracle bootstrap, produce a deployment-approval artifact, or make a ledger change. That workflow must not be triggered as a substitute for locating the approved external authority producer/key custodian or completing the governance evidence.
+
+### Disposition
+
+- **B2 CONTROL:** conformance CI green; live Preprod singleton deployment remains NOT EVIDENCED by the inspected deployment workflow runs.
+- **EEV EV1–EV7:** qualification is a separate evidence status; `DEPLOYMENT_APPROVED` is a distinct manually gated artifact and is not inferred from qualification or conformance CI.
+- **FIRST ISSUE:** still blocked independently by the external signed-authority producer/public endpoint, exact Oracle runtime identity and freshness, B2 live state, EEV deployment approval, and R1/Kc/Ω plus ProtectedCapital evidence.
+- No manual approval workflow, B2 deployment workflow, wallet signature, transaction submission, Oracle bootstrap or deployment was executed. V3/Reveal and economic parameters remain untouched.
