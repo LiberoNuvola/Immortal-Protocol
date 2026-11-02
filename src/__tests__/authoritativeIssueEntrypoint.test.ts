@@ -13,16 +13,15 @@ function sourceFiles(directory: string): string[] {
       if (entry.name === '__tests__' || entry.name === 'node_modules') return []
       return sourceFiles(path)
     }
-    return /\\.(?:ts|tsx|js|jsx)$/.test(entry.name) && !/\\.(?:test|spec)\\./.test(entry.name)
-      ? [path]
-      : []
+    const isSource = ['.ts', '.tsx', '.js', '.jsx'].some((extension) => path.endsWith(extension))
+    return isSource && !path.includes('.test.') && !path.includes('.spec.') ? [path] : []
   })
 }
 
 describe('Authoritative PRE-RICH Issue entrypoint', () => {
   it('does not expose a generic Issue mint that accepts a caller-built economic witness', () => {
     expect(mintSource).toContain('async function mintSerialNFTInternal(')
-    expect(mintSource).not.toMatch(/export\\s+async\\s+function\\s+mintSerialNFT\\s*\\(/)
+    expect(mintSource.includes('export async function mintSerialNFT(')).toBe(false)
     expect(mintSource).not.toContain('economicAdmission?: EconomicAdmissionWitness')
     expect(mintSource).not.toContain('opts.economicAdmission')
     expect(mintSource).not.toContain('mintSerialNFT,')
@@ -39,7 +38,7 @@ describe('Authoritative PRE-RICH Issue entrypoint', () => {
   it('routes the ticket-sale helper only through the authoritative Issue wrapper', () => {
     expect(ticketsSource).toContain('mintSerialNFTWithAuthoritativeAdmission')
     expect(ticketsSource).toContain('await mintSerialNFTWithAuthoritativeAdmission(mintOptions)')
-    expect(ticketsSource).not.toMatch(/\\bmintSerialNFT\\s*\\(/)
+    expect(ticketsSource).not.toContain('mintSerialNFT(')
   })
 
   it('has no alternate application callsite for the removed generic mint API', () => {
@@ -48,7 +47,7 @@ describe('Authoritative PRE-RICH Issue entrypoint', () => {
       path !== join(root, 'src/tickets.ts'),
     )
     const bypasses = files.filter((path) =>
-      /\\bmintSerialNFT\\s*\\(/.test(readFileSync(path, 'utf8')),
+      readFileSync(path, 'utf8').includes('mintSerialNFT('),
     )
     expect(bypasses).toEqual([])
   })
