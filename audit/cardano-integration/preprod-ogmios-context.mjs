@@ -190,6 +190,7 @@ try {
     rawOgmiosUtxoResult: walletRaw,
   }
   const walletBody = JSON.stringify(walletObservations, null, 2) + '\n'
+  await writeFile(`${evidenceDir}/preprod-wallet-utxo.json`, walletBody)
   const walletDigest = createHash('sha256').update(walletBody).digest('hex')
   await writeFile(`${evidenceDir}/preprod-wallet-utxo.sha256`, `${walletDigest}  preprod-wallet-utxo.json\n`)
   const walletSummary = [
@@ -272,6 +273,7 @@ try {
     rawOgmiosUtxoResult: prizeRaw,
   }
   const prizeBody = JSON.stringify(prizeObservations, null, 2) + '\n'
+  await writeFile(`${evidenceDir}/preprod-prize-validator-utxo.json`, prizeBody)
   const prizeDigest = createHash('sha256').update(prizeBody).digest('hex')
   await writeFile(
     `${evidenceDir}/preprod-prize-validator-utxo.sha256`,
@@ -351,6 +353,7 @@ try {
     rawOgmiosUtxoResult: poolRaw,
   }
   const poolBody = JSON.stringify(poolObservations, null, 2) + '\n'
+  await writeFile(`${evidenceDir}/preprod-b1-pool-utxo.json`, poolBody)
   const poolDigest = createHash('sha256').update(poolBody).digest('hex')
   await writeFile(
     `${evidenceDir}/preprod-b1-pool-utxo.sha256`,
