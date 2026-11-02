@@ -17,7 +17,7 @@ export const KOIOS = 'https://api.koios.rest/api/v1'
 export const USDCX_POLICY = '1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e34'
 export const USDCX_NAME = '5553444378'
 export const USDCX_UNIT = USDCX_POLICY + USDCX_NAME
-export const TX_HASHES_PER_BATCH = 100
+export const TX_HASHES_PER_BATCH = 20
 export const MAX_BURN_EVENTS = 2_000
 export const MAX_RESPONSE_BYTES = 12_000_000
 const REQUEST_TIMEOUT_MS = 30_000
@@ -274,7 +274,7 @@ export function summarizeBurnAddressCensus(records) {
 }
 
 export async function runCensus({ fetchFn = fetch, now = () => new Date(), batchSize = TX_HASHES_PER_BATCH } = {}) {
-  if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 100) {
+  if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 20) {
     throw new Error('TX_INFO_BATCH_SIZE_OUT_OF_RANGE')
   }
   const startedAt = now().toISOString()
