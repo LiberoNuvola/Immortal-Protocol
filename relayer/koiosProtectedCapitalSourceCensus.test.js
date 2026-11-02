@@ -275,3 +275,54 @@ test('accepts the documented Koios tip block_no field', async () => {
   const scan = await source.scanSnapshot([{ name: 'prize', address }])
   assert.equal(scan.manifest.snapshot.blockHeight, 900)
 })
+
+
+test('fails closed when an address_utxos row belongs to another address', async () => {
+  const address = 'addr_test_prize'
+  const mock = mockKoios({
+    pagesByAddress: {
+      [address]: [makeUtxo(0, address, { address: 'addr_test_other' })],
+    },
+  })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  await assert.rejects(
+    () => source.scanSnapshot([{ name: 'prize', address }]),
+    /KOIOS_ADDRESS_UTXOS_ADDRESS_MISMATCH/,
+  )
+})
+
+test('rejects negative and duplicate asset quantities before any Pool token selection', async () => {
+  const address = 'addr_test_pool'
+  const negative = makeUtxo(0, address, {
+    asset_list: [{ policy_id: 'a'.repeat(56), asset_name: '', quantity: '-1' }],
+  })
+  const mock = mockKoios({ pagesByAddress: { [address]: [negative] } })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  await assert.rejects(
+    () => source.scanSnapshot([{ name: 'pool', address }]),
+    /KOIOS_ADDRESS_UTXO_NEGATIVE_ASSET_QUANTITY/,
+  )
+})
+
+test('rejects repeated asset units in one Koios UTxO row', async () => {
+  const address = 'addr_test_pool'
+  const policy = 'b'.repeat(56)
+  const mock = mockKoios({
+    pagesByAddress: {
+      [address]: [makeUtxo(0, address, {
+        asset_list: [
+          { policy_id: policy, asset_name: '504f4f4c', quantity: '1' },
+          { policy_id: policy, asset_name: '504f4f4c', quantity: '1' },
+        ],
+      })],
+    },
+  })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  await assert.rejects(
+    () => source.scanSnapshot([{ name: 'pool', address }]),
+    /KOIOS_ADDRESS_UTXO_DUPLICATE_ASSET_UNIT/,
+  )
+})
