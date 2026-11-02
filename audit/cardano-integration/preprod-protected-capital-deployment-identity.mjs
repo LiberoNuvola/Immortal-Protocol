@@ -113,6 +113,7 @@ export async function loadProtectedCapitalDeploymentIdentity({
     oracle.address !== oracleAddress ||
     oracle.unit?.toLowerCase() !== oracleUnit ||
     oracle.utxo !== oracleUtxo ||
+    oracle.authorityKind !== oracleManifest.authorityKind ||
     deployment.walletAddress !== oracleAddress
   ) {
     throw new Error('DIRECT_USDM_AND_ORACLE_STATE_MANIFEST_IDENTITY_MISMATCH')
