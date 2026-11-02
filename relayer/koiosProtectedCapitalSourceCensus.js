@@ -62,6 +62,19 @@ function validateKoiosUtxoRow(row) {
   if (row.asset_list !== undefined && !Array.isArray(row.asset_list)) {
     throw new Error('KOIOS_ADDRESS_UTXO_ASSET_LIST_MALFORMED')
   }
+  const seenUnits = new Set()
+  for (const asset of row.asset_list ?? []) {
+    const policyId = String(asset?.policy_id ?? '').toLowerCase()
+    const assetName = String(asset?.asset_name ?? '').toLowerCase()
+    if (!/^[0-9a-f]{56}$/.test(policyId) || !/^(?:[0-9a-f]{2}){0,32}$/.test(assetName)) {
+      throw new Error('KOIOS_ADDRESS_UTXO_ASSET_IDENTITY_INVALID')
+    }
+    const quantity = BigInt(String(asset?.quantity ?? ''))
+    if (quantity < 0n) throw new Error('KOIOS_ADDRESS_UTXO_NEGATIVE_ASSET_QUANTITY')
+    const unit = policyId + assetName
+    if (seenUnits.has(unit)) throw new Error('KOIOS_ADDRESS_UTXO_DUPLICATE_ASSET_UNIT:' + unit)
+    seenUnits.add(unit)
+  }
   const lovelace = BigInt(String(row.value))
   if (lovelace < 0n) throw new Error('KOIOS_ADDRESS_UTXO_NEGATIVE_LOVELACE')
   return {
@@ -189,6 +202,9 @@ function createKoiosProtectedCapitalSource({
         throw new Error('KOIOS_ADDRESS_UTXOS_TOTAL_CHANGED_DURING_PAGINATION')
       }
       for (const row of page.rows) {
+        if (row.address !== address) {
+          throw new Error('KOIOS_ADDRESS_UTXOS_ADDRESS_MISMATCH:' + row.utxo_reference)
+        }
         if (seen.has(row.utxo_reference)) {
           throw new Error('KOIOS_ADDRESS_UTXOS_DUPLICATE_REFERENCE:' + row.utxo_reference)
         }
