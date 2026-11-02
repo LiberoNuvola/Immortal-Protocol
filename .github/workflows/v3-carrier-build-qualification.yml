@@ -1,0 +1,203 @@
+name: V3 Carrier Build Qualification (Non-Deploying)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/onchain/V3EconomicStateCarrier.hs"
+      - "PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs"
+      - "PRE-RICH/src/PreRichPreprodDeploymentProfile.ts"
+      - "src/preprodV3InitialDatum.ts"
+      - "scripts/printV3InitialDatum.ts"
+      - "scripts/deployV3Carrier.mts"
+      - "plutus/**"
+      - "cabal.project"
+      - ".github/actions/setup-plutus/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/v3-carrier-build-qualification.yml"
+
+concurrency:
+  group: v3-carrier-build-qualification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  v3-carrier-build-qualification:
+    name: Fresh Plutus build and provenance packet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pinned repository dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Setup canonical Plutus toolchain
+        uses: ./.github/actions/setup-plutus
+        with:
+          update-hackage: "true"
+
+      - name: Remove any pre-existing V3 artifacts
+        run: rm -rf plutus/out
+
+      - name: Build Plutus scripts from this exact checkout
+        id: plutus-build
+        run: |
+          set +e
+          cabal --config-file="$CABAL_CONFIG" run exe:export-scripts -j1 > plutus/v3-artifact-build.log 2>&1
+          rc=$?
+          set -e
+          echo "Cabal V3 artifact generation exit code: $rc"
+          echo "V3-specific compiler diagnostics:"
+          grep -E 'V3EconomicStateCarrier(MintPolicy)?\\.hs' plutus/v3-artifact-build.log | tail -200 || true
+          if [ "$rc" -ne 0 ]; then
+            echo "Last 160 build-log lines:"
+            tail -160 plutus/v3-artifact-build.log || true
+            exit "$rc"
+          fi
+          echo "Fresh V3 Plutus build completed."
+
+      - name: Verify compiled artifacts and generate build provenance
+        run: |
+          set -euo pipefail
+          mkdir -p audit/v3-carrier-build
+
+          test -s plutus/out/v3EconomicStateCarrier.plutus.json
+          test -s plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+
+          ./node_modules/.bin/tsx scripts/printV3InitialDatum.ts > audit/v3-carrier-build/v3-initial-datum.cbor.hex
+
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto'
+          import { execFileSync } from 'node:child_process'
+          import { readFile, writeFile } from 'node:fs/promises'
+          import { basename, resolve } from 'node:path'
+
+          const root = process.cwd()
+          const sourcePaths = [
+            'PRE-RICH/onchain/V3EconomicStateCarrier.hs',
+            'PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs',
+            'PRE-RICH/src/PreRichPreprodDeploymentProfile.ts',
+            'src/preprodV3InitialDatum.ts',
+            'scripts/printV3InitialDatum.ts',
+            'scripts/deployV3Carrier.mts',
+            'plutus/pre-rich-plutus.cabal',
+            'cabal.project',
+            '.github/actions/setup-plutus/action.yml',
+            'package-lock.json',
+          ]
+
+          const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex')
+          const sourceBlobShas = {}
+          for (const path of sourcePaths) {
+            sourceBlobShas[path] = execFileSync('git', ['rev-parse', `HEAD:${path}'], {
+              encoding: 'utf8',
+            }).trim()
+          }
+
+          const artifactPaths = [
+            'plutus/out/v3EconomicStateCarrier.plutus.json',
+            'plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json',
+          ]
+          const artifacts = {}
+          for (const path of artifactPaths) {
+            const bytes = await readFile(resolve(root, path))
+            const envelope = JSON.parse(bytes.toString('utf8'))
+            if (envelope.type !== 'PlutusScriptV2') {
+              throw new Error(`${path}: expected PlutusScriptV2, got ${envelope.type}`)
+            }
+            if (typeof envelope.cborHex !== 'string' ||
+                envelope.cborHex.length === 0 ||
+                envelope.cborHex.length % 2 !== 0 ||
+                !/^[0-9a-f]+$/i.test(envelope.cborHex)) {
+              throw new Error(`${path}: invalid CBOR hex payload`)
+            }
+            const cborBytes = Buffer.from(envelope.cborHex, 'hex')
+            artifacts[basename(path)] = {
+              path,
+              type: envelope.type,
+              fileBytes: bytes.length,
+              fileSha256: sha256(bytes),
+              cborBytes: cborBytes.length,
+              cborHexSha256: sha256(cborBytes),
+            }
+          }
+
+          const datumPath = 'audit/v3-carrier-build/v3-initial-datum.cbor.hex'
+          const datumText = (await readFile(resolve(root, datumPath), 'utf8')).trim()
+          if (!/^(?:[0-9a-f]{2})+$/i.test(datumText)) {
+            throw new Error('Canonical initial V3 datum is not even-length hex')
+          }
+          const datumBytes = Buffer.from(datumText, 'hex')
+          if (datumBytes.length !== 116) {
+            throw new Error(`Canonical initial V3 datum must be 116 bytes, got ${datumBytes.length}`)
+          }
+
+          const manifest = {
+            schema: 'IMMORTAL-PRE-RICH-V3-CARRIER-BUILD-QUALIFICATION-v1',
+            classification: 'FRESH_BUILD_ONLY_NOT_DEPLOYMENT',
+            sourceCommit: process.env.GITHUB_SHA,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            workflowRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
+            network: 'none',
+            sourceBlobShas,
+            artifacts,
+            initialDatum: {
+              path: datumPath,
+              bytes: datumBytes.length,
+              sha256: sha256(datumBytes),
+            },
+            deployment: {
+              attempted: false,
+              transactionSubmitted: false,
+              carrierSingletonCreated: false,
+              issueAuthorityPublicKeyApplied: false,
+            },
+            limitations: [
+              'The artifacts are unparameterized factories; this packet does not establish a deployed validator address or parameterized script hash.',
+              'No deployment seed UTxO, wallet signing key, or Issue Authority public key is consumed by this workflow.',
+              'A successful build is not proof of Preprod deployment, live singleton state, economic admission, or Issue authorization.',
+            ],
+          }
+
+          await writeFile(
+            resolve(root, 'audit/v3-carrier-build/qualification.json'),
+            JSON.stringify(manifest, null, 2) + '\\n',
+          )
+          console.log(JSON.stringify({
+            status: 'FRESH_V3_BUILD_QUALIFIED',
+            sourceCommit: manifest.sourceCommit,
+            artifacts,
+            initialDatumBytes: datumBytes.length,
+            initialDatumSha256: sha256(datumBytes),
+            deploymentAttempted: false,
+            transactionSubmitted: false,
+          }, null, 2))
+          NODE
+
+      - name: Upload source-bound V3 build qualification packet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-carrier-build-qualification-${{ github.sha }}
+          path: |
+            plutus/out/v3EconomicStateCarrier.plutus.json
+            plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+            plutus/v3-artifact-build.log
+            audit/v3-carrier-build/
+          if-no-files-found: warn
+          retention-days: 90
