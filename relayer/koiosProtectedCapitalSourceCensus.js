@@ -27,11 +27,11 @@ function assertPreprodKoiosEndpoint(baseUrl) {
   }
   if (parsed.protocol !== 'https:' ||
       !parsed.hostname.toLowerCase().includes('preprod') ||
-      parsed.pathname.replace(/\\/$/, '') !== '/api/v1' ||
+      parsed.pathname.replace(/\/$/, '') !== '/api/v1' ||
       parsed.search || parsed.hash) {
     throw new Error('KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1')
   }
-  return parsed.toString().replace(/\\/$/, '')
+  return parsed.toString().replace(/\/$/, '')
 }
 
 function exactTip(raw) {
@@ -332,7 +332,7 @@ function createKoiosProtectedCapitalSource({
       schema: 'IMMORTAL-KOIOS-ADDRESS-UTXO-CENSUS-V1',
       provider: {
         name: 'Koios',
-        baseUrl: baseUrl.replace(/\/$/, ''),
+        baseUrl: normalizedBaseUrl,
         endpoint: 'POST /address_utxos',
         pagination: 'PostgREST limit/offset with Prefer: count=exact and Content-Range verification',
       },
