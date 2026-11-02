@@ -169,7 +169,7 @@ test('fails closed when the provider reports a different total on a later page',
   const address = 'addr_test_prize'
   const mock = mockKoios({
     pagesByAddress: { [address]: Array.from({ length: 3 }, (_, i) => makeUtxo(i, address)) },
-    totalOverride: (_address, offset, total) => offset === 0 ? total : total + 1,
+    totalOverride: (_address, offset, total) => offset === 0 ? total + 1 : total,
   })
   const source = createKoiosProtectedCapitalSource({
     fetchImpl: mock.fetchImpl,
