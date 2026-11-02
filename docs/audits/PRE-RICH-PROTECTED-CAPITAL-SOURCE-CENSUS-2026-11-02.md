@@ -236,7 +236,7 @@ Adversarial tests were added:
 
 [`PC-item-ledger-source-census.conformance.test.ts`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts)
 
-The 15 Vitest cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum policy mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, invalid Beacon lifecycle status, losing Reveal → L5, and exact fractional-payout handling. The 13 Node tests cover provider page totals, missing/changed Content-Range, changed tip, address mismatch, invalid/duplicate asset rows, duplicate UTxO references, DatumHash resolution, and missing datums.
+The 15 Vitest cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum policy mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, invalid Beacon lifecycle status, losing Reveal → L5, and exact fractional-payout handling. The 18 Node tests cover Preprod endpoint selection, provider page totals, missing/changed Content-Range, changed tip, address mismatch, invalid/duplicate asset rows, duplicate UTxO references, DatumHash resolution, and missing datums.
 
 **Execution status at this audit baseline:** the pure builder tests were authored but not yet run. The provider-specific reader and dedicated test workflow were added later; see §8. No live Preprod source census has been performed.
 
@@ -258,7 +258,7 @@ The item-ledger builder therefore preserves every payout amount exactly in USDM 
 
 This reveals an existing interface boundary, not a new economic rule: a non-integral-USD L1 aggregate cannot currently be projected into the V3 reference-unit integer without an explicit, governed unit treatment. The builder preserves the source amount and blocks the lossy bridge. No change was made to the existing projection or V3 kernel.
 
-The test suite at this point included both fractional-payout cases. The current item-ledger suite totals **15 Vitest tests authored** and the provider reader totals **13 Node tests authored**; neither suite is declared passing until an exact-head Actions run is verified.
+The test suite at this point included both fractional-payout cases. The current item-ledger suite totals **15 Vitest tests authored** and the provider reader totals **18 Node tests authored**; neither suite is declared passing until an exact-head Actions run is verified.
 
 
 ## 8. Follow-on implementation — shared Koios Preprod source census
@@ -332,12 +332,13 @@ Koios's official API documentation states that it is a decentralized/elastic RES
 
 **Important confidence boundary:** the manifest explicitly records:
 - providerAttestationVerified = false;
-- datumHashContentVerified = true only when every scanned UTxO has datum bytes and the locally recomputed Plutus-data hash matches the provider datum_hash; false otherwise;
+- datumBytesAvailableForAll = true only when every scanned output includes datum bytes;
+- datumHashComparisonsVerified = true only when all datum bytes are available and every output that has a datum_hash matches the locally recomputed BLAKE2b-256 hash; inline datum outputs without an on-chain datum_hash are recorded separately as not applicable;
 - providerSnapshotPinned = false;
 - sameBackendSnapshotVerified = false;
 - consistencyAssessment = TIP_STABLE_BUT_NOT_QUERY_PINNED.
 
-The before/after tip check only proves the reported tip did not move during the scan. Exact PostgREST page counts and local hashes do not cryptographically prove that every request was served from one pinned backend snapshot or that a distributed provider did not omit an output. The manifest digest is a local integrity digest, not a provider signature or independent completeness certificate. The reader now recomputes the Cardano Plutus datum hash as BLAKE2b-256 over the returned CBOR bytes and compares it with datum_hash. The integrated CLI fails closed if a PrizeDatum or Pool datum does not pass this comparison. This verifies the content/hash relation supplied by the provider; it still does not authenticate the provider's address enumeration or pin all requests to one backend snapshot.
+The before/after tip check only proves the reported tip did not move during the scan. Exact PostgREST page counts and local hashes do not cryptographically prove that every request was served from one pinned backend snapshot or that a distributed provider did not omit an output. The manifest digest is a local integrity digest, not a provider signature or independent completeness certificate. The reader recomputes the Cardano Plutus datum hash as BLAKE2b-256 over returned CBOR bytes wherever the UTxO carries a datum_hash. The Koios /datum_info response uses the response field hash and bytes; the reader accepts that documented shape and compares the CBOR hash with the requested UTxO datum_hash. For CIP-32 inline datums the output carries the datum itself instead of a datum-hash reference, so the CLI accepts the inline bytes as inline content and records INLINE_DATUM_HASH_NOT_APPLICABLE rather than demanding a missing datum_hash. For hash-reference datums, the CLI fails closed unless BLAKE2b-256 matches. These checks verify the content/hash relation where an on-chain datum hash exists; they do not authenticate the provider's address enumeration or pin all requests to one backend snapshot.
 
 ### 9.4 Execution boundary and status
 
@@ -397,3 +398,26 @@ Therefore B2 control address, policy ID, singleton unit, state out-reference, an
 - Full PA1–PA7, L2 lifecycle evidence, global R7 L6 emptiness, and full ProtectedCapital qualification remain **open**.
 
 No V3, Reveal, validator, kernel, consumer, economic parameter, Materios/B3, or on-chain state was changed in this follow-up.
+
+
+## 11. CIP-32 inline datum and Koios datum_info schema correction
+
+The PrizeValidator and B1 Pool contract outputs are created with inline datums. Under CIP-32, a transaction output's datum field is either a hash reference or the actual inline Plutus Data; an inline datum is not required to carry a separate datum_hash. Therefore a source reader that demands a datum_hash for every inline output would reject valid contract UTxOs.
+
+The Koios source reader and CLI now distinguish:
+- hash-reference output: datum_hash is present; datum_info resolves the CBOR bytes; BLAKE2b-256 is recomputed and must match;
+- inline-data output: inline_datum.bytes is present; the CBOR bytes are locally hashed for the evidence record, but the comparison with a separate on-chain datum_hash is explicitly not applicable;
+- missing/unknown data: retained as MISSING or unclassified and rejected by the integrated parser when it concerns a required PrizeDatum or B1 Pool.
+
+The Koios datum_info response's documented datum hash field is `hash`, alongside `bytes`; the reader now parses that field (retaining datum_hash as a compatibility fallback). The test mock now uses the documented `hash` key.
+
+The source manifest digest includes the following derived metrics:
+- `datumBytesAvailableForAll`;
+- `datumHashComparisonsVerified`;
+- `datumHashComparisonRequiredCount`;
+- `datumHashMismatchCount`;
+- `inlineDatumWithoutHashCount`.
+
+The integrated CLI requires bytes for every parsed PrizeDatum/Pool datum. If a datum_hash exists, its BLAKE2b-256 comparison must pass. If datum_hash is absent, the source must identify the row as a true inline datum with status `INLINE_DATUM_HASH_NOT_APPLICABLE`.
+
+Sources: [CIP-32](https://cips.cardano.org/cip/CIP-0032) and [Koios datum_info response schema](https://pkg.go.dev/github.com/cardano-community/koios-go-client/v3#DatumInfo).
