@@ -1,0 +1,40 @@
+name: USDCx Burn Input Address Census (Read-only)
+
+on:
+  push:
+    branches: [work/immortal-green-closure]
+    paths:
+      - 'scripts/probeUsdcxBurnInputAddressCensusReadOnly.mjs'
+      - 'scripts/probeUsdcxBurnInputAddressCensusReadOnly.test.mjs'
+      - '.github/workflows/usdcx-burn-input-address-census.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: usdcx-burn-input-address-census
+  cancel-in-progress: false
+
+jobs:
+  burn-input-address-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run deterministic regressions
+        run: node --test scripts/probeUsdcxBurnInputAddressCensusReadOnly.test.mjs
+      - name: Resolve all USDCx burn input payment addresses (read-only)
+        run: node scripts/probeUsdcxBurnInputAddressCensusReadOnly.mjs --out audit/oracles/usdcx-burn-input-address-census-readonly.json
+      - name: Upload read-only evidence packet
+        uses: actions/upload-artifact@v4
+        with:
+          name: usdcx-burn-input-address-census-${{ github.run_id }}
+          path: audit/oracles/usdcx-burn-input-address-census-readonly.json
+          if-no-files-found: error
+          retention-days: 90
