@@ -40,7 +40,8 @@ function assertPreprodKoiosEndpoint(baseUrl) {
     throw new Error('KOIOS_PREPROD_BASE_URL_INVALID')
   }
   if (parsed.protocol !== 'https:' ||
-      !parsed.hostname.toLowerCase().includes('preprod') ||
+      parsed.hostname.toLowerCase() !== 'preprod.koios.rest' ||
+      parsed.username || parsed.password ||
       parsed.pathname.replace(/\/$/, '') !== '/api/v1' ||
       parsed.search || parsed.hash) {
     throw new Error('KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1')
@@ -150,8 +151,8 @@ function createKoiosProtectedCapitalSource({
 
   async function requestJson(url, body, label) {
     const response = await fetchImpl(url, body === undefined
-      ? { method: 'GET', headers }
-      : { method: 'POST', headers, body: JSON.stringify(body) })
+      ? { method: 'GET', headers, redirect: 'error' }
+      : { method: 'POST', headers, body: JSON.stringify(body), redirect: 'error' })
     const text = await response.text()
     if (!response.ok) {
       throw new Error(label + '_HTTP_' + response.status + ':' + text.slice(0, 500))
