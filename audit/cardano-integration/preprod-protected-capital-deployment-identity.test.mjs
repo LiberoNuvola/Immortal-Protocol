@@ -84,7 +84,9 @@ describe('Preprod ProtectedCapital deployment identity manifest boundary', () =>
     const { deployment, oracleState } = baseManifests()
     const identity = await loadFrom(deployment, oracleState)
 
-    assert.equal(identity.sourceMode, 'VERIFIED_DEPLOYMENT_MANIFESTS')
+    assert.equal(identity.sourceMode, 'DEPLOYMENT_MANIFESTS_HASH_CHECKED')
+    assert.equal(identity.manifestIntegrity, 'SELF_HASH_MATCH_NOT_SIGNATURE_AUTHENTICATION')
+    assert.equal(identity.manifestAuthorityCryptographicallyVerified, false)
     assert.equal(identity.oraclePublisherPkh, 'b'.repeat(56))
     assert.equal(identity.oracleStatePolicyId, 'a'.repeat(56))
     assert.equal(identity.poolTokenUnit, 'd'.repeat(56) + '504f4f4c')
