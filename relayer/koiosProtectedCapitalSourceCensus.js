@@ -315,6 +315,14 @@ function createKoiosProtectedCapitalSource({
           pageCount: scan.pages.length,
           pages: scan.pages,
           utxoReferences: scan.rows.map((row) => row.utxo_reference),
+          datumRecords: scan.rows.map((row) => ({
+            utxoReference: row.utxo_reference,
+            datumHash: row.datum_hash ?? null,
+            datumSource: row.datum_source,
+            datumBytesSha256: row.datum_bytes
+              ? sha256Hex(Buffer.from(row.datum_bytes, 'hex'))
+              : null,
+          })),
           missingDatumCount: scan.rows.filter((row) => !row.datum_bytes).length,
         },
       ])),
