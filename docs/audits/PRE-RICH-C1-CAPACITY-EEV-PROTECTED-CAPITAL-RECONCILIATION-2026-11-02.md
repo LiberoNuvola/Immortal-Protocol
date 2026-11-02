@@ -288,25 +288,33 @@ The evidence packet must allow an independent verifier to reproduce:
 | ReserveProtection source and disjointness | OPEN / UNPROVEN |
 | LockedJackpot evidence and accounting treatment | PARTIAL / profile conformance required |
 | MandatoryFutureCosts source, safety bounds, and cross-boundary mapping to Fs/Fr/Fc | OPEN / numerical calibration and no-double-count evidence required |
-| PA1–PA7 ProtectedCapital partition for PRE-RICH | OPEN / NOT CERTIFIED |
+| PA1–PA7 ProtectedCapital partition for PRE-RICH | Candidate map committed; certification OPEN (PA1 partial, PA2 open, PA3 unproven, PA4 partial, PA5 open, PA6 partial, PA7 partial/open) |
 | ProtectedCapital.MandatoryFutureCosts vs X(P) Fs/Fr/Fc overlap mapping | OPEN / NOT PROVEN |
 | Producer binds all inputs to one observation and exact V3/B2 state | OPEN |
 | Hysteresis result independently replayable at Issue | OPEN |
 
-## 9. Next implementation slice — after evidence qualification
+## 9. PA1–PA7 profile mapping
+
+The follow-on audit [PRE-RICH-PA1-PA7-PROTECTED-CAPITAL-PROFILE-MAPPING-2026-11-02.md](PRE-RICH-PA1-PA7-PROTECTED-CAPITAL-PROFILE-MAPPING-2026-11-02.md) now instantiates the candidate PRE-RICH R7 asset/commitment cells and records evidence status for every PA artifact.
+
+Current verdict: PA1 candidate map PARTIAL; PA2 OPEN; PA3 UNPROVEN; PA4 PARTIAL; PA5 OPEN/PARTIAL; PA6 PARTIAL/not discharged; PA7 PARTIAL/OPEN. The document also corrects an old audit finding: the current branch rejects unknown/noncanonical classes, but class validation does not prove that the complete economic obligation population was observed.
+
+A further operational finding is material to C1: the B1 `TicketIssued` branch increments unresolved reserve/count while keeping `ppTotalLiquidity` unchanged. Do not assume a new ticket purchase increases B1 Pool EEV; trace and prove the actual settlement/funding destination separately.
+
+## 10. Next implementation slice — after evidence qualification
 
 Do not change the Hysteresis formula or economic constants. The first implementation should be the **evidence producer and conformance tests**, not a new controller:
 
-1. define/instantiate the PRE-RICH PA1–PA7 component map and prove disjointness/completeness;
-2. provide authenticated sources for the currently caller-supplied PC components;
-3. revalidate the current direct-USDM Preprod source and bind it to the exact candidate state;
+1. use the committed PA1–PA7 candidate map to prove disjointness/completeness and source authority;
+2. provide authenticated sources for the currently caller-supplied PC components and an exhaustive inventory of ticket/Jackpot/CAR/treasury obligations;
+3. revalidate the current direct-USDM Preprod source and bind it to the exact candidate state; trace TicketIssued settlement separately because B1 keeps ppTotalLiquidity unchanged on that action;
 4. build the exact-integer C and X(P) derivation with same-snapshot/unit checks and an explicit PC.MandatoryFutureCosts ↔ Fs/Fr/Fc cohort/horizon reconciliation;
 5. add positive/negative evidence-replay tests, including missing, stale, overlapping, omitted, duplicate, negative, and unit-mismatch cases;
 6. only then bind the replayed result to B2 transition and Issue admission.
 
 No implementation, test, workflow, branch, or on-chain state was changed by this reconciliation.
 
-## 10. Sources
+## 11. Sources
 
 ### GitHub — current work-branch sources
 
