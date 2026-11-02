@@ -6,7 +6,11 @@
  * Run from the repository root:
  *   node --import=tsx audit/cardano-integration/preprod-protected-capital-census.mjs
  *
- * Required environment:
+ * Preferred deployment identity inputs (read-only, no signing secret):
+ *   PC_CENSUS_DEPLOYMENT_MANIFEST
+ *   PC_CENSUS_ORACLE_STATE_MANIFEST
+ *
+ * Legacy fallback (when both manifests are not supplied):
  *   VITE_ORACLE_PUBLISHER_PKH
  *   VITE_ORACLE_STATE_POLICY_ID
  *   VITE_ORACLE_STATE_TOKEN_NAME_HEX
@@ -14,8 +18,8 @@
  *   VITE_B1_POOL_TOKEN_NAME_HEX
  *
  * Optional:
- *   VITE_TICKET_POLICY_ID        (cross-check against the derived MintPolicy ID)
- *   KOIOS_PREPROD_URL            (defaults to the public Koios Preprod endpoint)
+ *   VITE_TICKET_POLICY_ID        (cross-check against derived MintPolicy ID)
+ *   KOIOS_PREPROD_URL            (defaults to the official Koios Preprod endpoint)
  *   KOIOS_API_TOKEN              (optional Koios bearer token)
  *   PC_CENSUS_OUTPUT             (output JSON path)
  *
@@ -40,6 +44,7 @@ import { buildScriptsFromLucid } from '../../src/loadValidator'
 import { defaultPrizeTable } from '../../src/gameRules'
 import { buildPreRichProtectedCapitalItemLedger } from '../../PRE-RICH/src/PreRichProtectedCapitalItemLedger'
 import { createKoiosProtectedCapitalSource } from '../../relayer/koiosProtectedCapitalSourceCensus.js'
+import { loadProtectedCapitalDeploymentIdentity } from './preprod-protected-capital-deployment-identity.mjs'
 
 const KOIOS_BASE_URL =
   process.env.KOIOS_PREPROD_URL?.trim() ||
@@ -206,40 +211,92 @@ function makeLucidScriptUtils() {
 }
 
 async function main() {
-  const oraclePublisherPkh = requiredEnv('VITE_ORACLE_PUBLISHER_PKH')
-  const oracleStatePolicyId = requiredEnv('VITE_ORACLE_STATE_POLICY_ID')
-  const oracleStateTokenNameHex = requiredEnv('VITE_ORACLE_STATE_TOKEN_NAME_HEX')
-  const poolTokenPolicyId = requiredEnv('VITE_B1_POOL_TOKEN_POLICY_ID')
-  const poolTokenNameHex = requiredEnv('VITE_B1_POOL_TOKEN_NAME_HEX')
+  const deploymentManifestPath = process.env.PC_CENSUS_DEPLOYMENT_MANIFEST?.trim()
+  const oracleStateManifestPath = process.env.PC_CENSUS_ORACLE_STATE_MANIFEST?.trim()
+  const manifestMode = Boolean(deploymentManifestPath || oracleStateManifestPath)
 
-  if (!/^[0-9a-fA-F]{56}$/.test(oraclePublisherPkh)) {
-    throw new Error('VITE_ORACLE_PUBLISHER_PKH_MUST_BE_28_BYTE_HEX')
-  }
-  if (!/^[0-9a-fA-F]{56}$/.test(oracleStatePolicyId)) {
-    throw new Error('VITE_ORACLE_STATE_POLICY_ID_MUST_BE_28_BYTE_HEX')
-  }
-  if (!/^(?:[0-9a-fA-F]{2}){1,32}$/.test(oracleStateTokenNameHex)) {
-    throw new Error('VITE_ORACLE_STATE_TOKEN_NAME_HEX_INVALID')
-  }
-  if (!/^[0-9a-fA-F]{56}$/.test(poolTokenPolicyId)) {
-    throw new Error('VITE_B1_POOL_TOKEN_POLICY_ID_MUST_BE_28_BYTE_HEX')
-  }
-  if (!/^(?:[0-9a-fA-F]{2}){1,32}$/.test(poolTokenNameHex)) {
-    throw new Error('VITE_B1_POOL_TOKEN_NAME_HEX_INVALID')
+  let identity
+  if (manifestMode) {
+    if (!deploymentManifestPath || !oracleStateManifestPath) {
+      throw new Error('BOTH_PREPROD_DEPLOYMENT_AND_ORACLE_STATE_MANIFESTS_ARE_REQUIRED')
+    }
+    identity = await loadProtectedCapitalDeploymentIdentity({
+      deploymentManifestPath,
+      oracleStateManifestPath,
+    })
+  } else {
+    const oraclePublisherPkh = requiredEnv('VITE_ORACLE_PUBLISHER_PKH')
+    const oracleStatePolicyId = requiredEnv('VITE_ORACLE_STATE_POLICY_ID')
+    const oracleStateTokenNameHex = requiredEnv('VITE_ORACLE_STATE_TOKEN_NAME_HEX')
+    const poolTokenPolicyId = requiredEnv('VITE_B1_POOL_TOKEN_POLICY_ID')
+    const poolTokenNameHex = requiredEnv('VITE_B1_POOL_TOKEN_NAME_HEX')
+
+    if (!/^[0-9a-fA-F]{56}$/.test(oraclePublisherPkh)) {
+      throw new Error('VITE_ORACLE_PUBLISHER_PKH_MUST_BE_28_BYTE_HEX')
+    }
+    if (!/^[0-9a-fA-F]{56}$/.test(oracleStatePolicyId)) {
+      throw new Error('VITE_ORACLE_STATE_POLICY_ID_MUST_BE_28_BYTE_HEX')
+    }
+    if (!/^(?:[0-9a-fA-F]{2}){1,32}$/.test(oracleStateTokenNameHex)) {
+      throw new Error('VITE_ORACLE_STATE_TOKEN_NAME_HEX_INVALID')
+    }
+    if (!/^[0-9a-fA-F]{56}$/.test(poolTokenPolicyId)) {
+      throw new Error('VITE_B1_POOL_TOKEN_POLICY_ID_MUST_BE_28_BYTE_HEX')
+    }
+    if (!/^(?:[0-9a-fA-F]{2}){1,32}$/.test(poolTokenNameHex)) {
+      throw new Error('VITE_B1_POOL_TOKEN_NAME_HEX_INVALID')
+    }
+
+    identity = {
+      sourceMode: 'EXPLICIT_ENVIRONMENT_CONFIGURATION',
+      deploymentManifestPath: null,
+      deploymentManifestEvidenceHash: null,
+      oracleStateManifestPath: null,
+      oracleStateManifestEvidenceHash: null,
+      network: 'Preprod',
+      oraclePublisherPkh,
+      oracleStatePolicyId,
+      oracleStateTokenNameHex,
+      poolTokenPolicyId,
+      poolTokenNameHex,
+      poolTokenUnit: poolTokenPolicyId.toLowerCase() + poolTokenNameHex.toLowerCase(),
+      directUsdmUnit: null,
+      topology: null,
+    }
   }
 
   const topology = buildScriptsFromLucid(
     { utils: makeLucidScriptUtils() },
     defaultPrizeTable,
-    oraclePublisherPkh,
-    oracleStatePolicyId,
-    oracleStateTokenNameHex,
-    poolTokenPolicyId,
-    poolTokenNameHex,
+    identity.oraclePublisherPkh,
+    identity.oracleStatePolicyId,
+    identity.oracleStateTokenNameHex,
+    identity.poolTokenPolicyId,
+    identity.poolTokenNameHex,
   )
 
   if (!topology.prizeAddress || !topology.b1PrizePoolAddress) {
     throw new Error('PREPROD_SCRIPT_ADDRESS_DERIVATION_FAILED')
+  }
+
+  if (identity.topology) {
+    const identityFields = [
+      'counterHash',
+      'registryHash',
+      'treasuryHash',
+      'prizeHash',
+      'b1PrizePoolHash',
+      'ticketPolicyId',
+      'prizeAddress',
+      'b1PrizePoolAddress',
+    ]
+    for (const field of identityFields) {
+      const expected = String(identity.topology[field]).toLowerCase()
+      const derived = String(topology[field] ?? '').toLowerCase()
+      if (!expected || derived !== expected) {
+        throw new Error('DEPLOYED_SCRIPT_TOPOLOGY_DOES_NOT_MATCH_MANIFEST:' + field)
+      }
+    }
   }
 
   const configuredTicketPolicyId = process.env.VITE_TICKET_POLICY_ID?.trim()
@@ -248,7 +305,7 @@ async function main() {
     throw new Error('CONFIGURED_TICKET_POLICY_DOES_NOT_MATCH_DERIVED_MINT_POLICY')
   }
 
-  const poolUnit = poolTokenPolicyId.toLowerCase() + poolTokenNameHex.toLowerCase()
+  const poolUnit = identity.poolTokenUnit.toLowerCase()
   const source = createKoiosProtectedCapitalSource({
     baseUrl: KOIOS_BASE_URL,
     apiToken: process.env.KOIOS_API_TOKEN?.trim() || '',
@@ -323,6 +380,16 @@ async function main() {
     providerReadOnly: true,
     transactionSubmissionAttempted: false,
     network: 'Preprod',
+    deploymentIdentity: {
+      sourceMode: identity.sourceMode,
+      deploymentManifestPath: identity.deploymentManifestPath,
+      deploymentManifestEvidenceHash: identity.deploymentManifestEvidenceHash,
+      oracleStateManifestPath: identity.oracleStateManifestPath,
+      oracleStateManifestEvidenceHash: identity.oracleStateManifestEvidenceHash,
+      oracleStateAddress: identity.oracleStateAddress ?? null,
+      oracleStateUtxo: identity.oracleStateUtxo ?? null,
+      directUsdmUnit: identity.directUsdmUnit,
+    },
     topology: {
       prizeValidatorAddress: topology.prizeAddress,
       prizeValidatorHash: topology.prizeHash,
