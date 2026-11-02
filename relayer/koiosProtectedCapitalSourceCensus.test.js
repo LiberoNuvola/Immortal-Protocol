@@ -132,7 +132,9 @@ test('enumerates every page using explicit limit/offset and exact Content-Range 
   assert.equal(scan.manifest.paginationTotalsExactlyReconciled, true)
   assert.equal(scan.manifest.tipUnchangedAcrossScan, true)
   assert.equal(scan.manifest.providerAttestationVerified, false)
-  assert.equal(scan.manifest.datumHashContentVerified, false)
+  assert.equal(scan.manifest.datumBytesAvailableForAll, true)
+  assert.equal(scan.manifest.datumHashComparisonsVerified, true)
+  assert.equal(scan.manifest.inlineDatumWithoutHashCount, 5)
   assert.equal(scan.manifest.providerSnapshotPinned, false)
   assert.equal(scan.manifest.sameBackendSnapshotVerified, false)
   assert.equal(scan.manifest.consistencyAssessment, 'TIP_STABLE_BUT_NOT_QUERY_PINNED')
@@ -257,7 +259,9 @@ test('resolves datum-hash outputs through Koios datum_info and retains provenanc
   assert.equal(row.calculated_datum_hash, datumHash)
   assert.equal(row.datum_hash_content_verified, true)
   assert.equal(row.datum_hash_verification, 'BLAKE2B_256_MATCH')
-  assert.equal(scan.manifest.datumHashContentVerified, true)
+  assert.equal(scan.manifest.datumHashComparisonsVerified, true)
+  assert.equal(scan.manifest.datumHashComparisonRequiredCount, 1)
+  assert.equal(scan.manifest.inlineDatumWithoutHashCount, 0)
   assert.ok(mock.calls.some((call) => call.url.includes('/datum_info')))
 })
 
@@ -279,6 +283,8 @@ test('keeps unresolved or missing datums visible for caller-side fail-closed cla
     'MISSING',
   ])
   assert.equal(scan.manifest.addresses.prize.missingDatumCount, 2)
+  assert.equal(scan.manifest.datumBytesAvailableForAll, false)
+  assert.equal(scan.manifest.datumHashComparisonsVerified, false)
 })
 
 test('accepts the documented Koios tip block_no field', async () => {
@@ -364,7 +370,7 @@ test('verifies an inline Plutus datum CBOR against its Cardano BLAKE2b-256 hash'
 
   assert.equal(row.calculated_datum_hash, expectedHash)
   assert.equal(row.datum_hash_content_verified, true)
-  assert.equal(scan.manifest.datumHashContentVerified, true)
+  assert.equal(scan.manifest.datumHashComparisonsVerified, true)
 })
 
 test('retains but fails closed on inline CBOR whose computed datum hash differs', async () => {
@@ -381,7 +387,7 @@ test('retains but fails closed on inline CBOR whose computed datum hash differs'
 
   assert.equal(row.datum_hash_content_verified, false)
   assert.equal(row.datum_hash_verification, 'BLAKE2B_256_MISMATCH')
-  assert.equal(scan.manifest.datumHashContentVerified, false)
+  assert.equal(scan.manifest.datumHashComparisonsVerified, false)
 })
 
 test('rejects unrequested datum_info rows rather than attaching them to another UTxO', async () => {
@@ -400,4 +406,27 @@ test('rejects unrequested datum_info rows rather than attaching them to another 
     () => source.scanSnapshot([{ name: 'prize', address }]),
     /KOIOS_DATUM_INFO_UNREQUESTED_HASH/,
   )
+})
+
+test('marks inline datum CBOR without ledger datum_hash as hash-not-applicable', async () => {
+  const address = 'addr_test_prize'
+  const mock = mockKoios({
+    pagesByAddress: {
+      [address]: [makeUtxo(0, address, { inline_datum: { bytes: 'd87980' }, datum_hash: null })],
+    },
+  })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  const scan = await source.scanSnapshot([{ name: 'prize', address }])
+  const row = scan.addressScans.prize.rows[0]
+
+  assert.equal(row.datum_source, 'INLINE')
+  assert.equal(row.datum_bytes, 'd87980')
+  assert.equal(row.datum_hash, null)
+  assert.equal(row.calculated_datum_hash, '923918e403bf43c34b4ef6b48eb2ee04babed17320d8d1b9ff9ad086e86f44ec')
+  assert.equal(row.datum_hash_content_verified, null)
+  assert.equal(row.datum_hash_verification, 'INLINE_DATUM_HASH_NOT_APPLICABLE')
+  assert.equal(scan.manifest.datumBytesAvailableForAll, true)
+  assert.equal(scan.manifest.datumHashComparisonsVerified, true)
+  assert.equal(scan.manifest.inlineDatumWithoutHashCount, 1)
 })
