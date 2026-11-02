@@ -95,6 +95,8 @@ jobs:
             'src/preprodV3InitialDatum.ts',
             'scripts/printV3InitialDatum.ts',
             'scripts/deployV3Carrier.mts',
+            'plutus/export/Export.hs',
+            'package.json',
             'plutus/pre-rich-plutus.cabal',
             'cabal.project',
             '.github/actions/setup-plutus/action.yml',
@@ -133,7 +135,7 @@ jobs:
               fileBytes: bytes.length,
               fileSha256: sha256(bytes),
               cborBytes: cborBytes.length,
-              cborHexSha256: sha256(cborBytes),
+              cborSha256: sha256(cborBytes),
             }
           }
 
