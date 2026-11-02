@@ -4748,3 +4748,59 @@ The current main src/main.ts is byte-identical to the deployed-source version (b
 ### Next safe action
 
 Build a curated, reviewable promotion of the first-user DApp path from the working branch to main: map its complete dependency closure, carry only the required runtime/provider/adapter/tests/configuration, and add Pages preflight that validates the same approved deployment record without allowing a missing endpoint to masquerade as an Issue-ready deployment. Keep it as a focused PR; do not merge it or deploy it until exact CI passes and the deployment-specific public variables plus the separate DEMETER Blockfrost/Oracle observation bindings are set and matched. Do not merge PR #19 wholesale.
+
+
+## 45.64 AGENT A — SIGNED ISSUE AUTHORITY PRODUCER / HOSTING GAP (2026-11-02)
+
+### Exact runtime boundary
+
+The current code separates the browser, the Preprod observation/orchestration service, and the external signed authority:
+
+1. The browser's `createRemoteAuthoritativeIssueAdmissionProvider` POSTs the request to the configured public `VITE_ISSUE_AUTHORITY_ENDPOINT`.
+2. `relayer/issueAuthorityServer.js` serves `POST /issue-admission`, reads Cardano Preprod state through Blockfrost, constructs `PreprodAuthoritativeIssueProvider`, and returns the resulting witness.
+3. `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` asks an external authority source for a signed envelope and verifies it against `ISSUE_AUTHORITY_PUBLIC_KEY`, while binding the response to exact live Counter, B1 Pool, B2 and V3 references and the direct-USDM observation.
+4. `relayer/signedIssueAuthority.js` is a verifier/client in this path: `fetchSignedIssueAuthority` GETs the configured external authority URL and verifies the signature. It does not create the authority decision or sign the returned envelope.
+
+### Signing code is not a production signer deployment
+
+- `relayer/preprodIssueAuthorityEnvelope.js` exports `signIssueAuthorityEnvelope`. It signs an already-computed witness, does not compute EEV/ProtectedCapital/viability, and self-verifies its output.
+- The observed call site is `relayer/preprodIssueAuthorityEnvelope.test.js`, which creates an ephemeral Ed25519 keypair with `generateKeyPairSync('ed25519')`. This is test evidence only; it does not establish a production key or signer.
+- `relayer/signedIssueAuthority.test.js` also constructs ephemeral keys and signs fixtures for verifier regression tests.
+- `relayer/authoritativeIssueRefinementEnvelope.js` is explicitly a shape/provenance transport validator, not a cryptographic signature verifier.
+- `issueAuthorityServer.js` does not import or call `signIssueAuthorityEnvelope`; it requires an external `ISSUE_AUTHORITY_SOURCE_URL` / `ISSUE_AUTHORITY_URL` and `ISSUE_AUTHORITY_PUBLIC_KEY`.
+
+### Hosting / deployment check
+
+- The checked-in root package exposes `npm run issue-authority-server` as a local process command; `relayer/package.json` is for the older reference relayer and does not deploy this Issue authority.
+- The working-branch `.github/workflows` directory contains the Pages, Issue boundary CI, B2, EEV and conformance workflows inspected in this pass, but no workflow that deploys `issueAuthorityServer.js` or a separate signed authority producer.
+- No root hosting descriptor such as Dockerfile, Railway, Render, Fly or Procfile was found in the root directory listing inspected.
+- The connected Railway workspace/project listing returned no accessible projects. This only establishes that no Railway project is visible to this connection; it does not rule out infrastructure in another provider, account, private repository or private workspace.
+- The 2026-10-30 Notion audit had already recorded a bounded negative search for the external certificate producer: no implementation, owner, repository, deployment or key custodian was found in the inspected 27 branch trees, repository ledger and accessible Notion sources. It explicitly excluded private infrastructure that was not visible. This 2026-11-02 pass found no newer repository/Notion evidence that supersedes that result.
+
+### Required server-side configuration (names only)
+
+The source requires, among other deployment identities:
+
+- External authority source URL: `ISSUE_AUTHORITY_SOURCE_URL` or `ISSUE_AUTHORITY_URL`.
+- Verification public key: `ISSUE_AUTHORITY_PUBLIC_KEY`.
+- Blockfrost Preprod project ID.
+- Exact Counter, B1 PrizePool, V3 carrier and B2 control addresses/token identities.
+- Direct-USDM unit.
+- Exact allowed browser origin: `ISSUE_AUTHORITY_CORS_ORIGIN`.
+- Haskell command/arguments for the authoritative Issue producer.
+
+The private signing key is not a Vite/browser variable. No private key, public key, endpoint URL, deployment owner or key custodian is inferred or fabricated here.
+
+### Disposition
+
+- **SIGNED ISSUE AUTHORITY PRODUCER: NOT DEPLOYMENT-VERIFIED.**
+- **ISSUE AUTHORITY SERVER: IMPLEMENTED AS AN ADAPTER/VERIFIER, BUT NO LIVE SERVICE HEALTH OR PUBLIC ENDPOINT IS VERIFIED.**
+- **SIGNING HELPER: TEST-ONLY USAGE OBSERVED; NOT EVIDENCE OF A PRODUCTION SIGNER.**
+- **FIRST PREPROD ISSUE: BLOCKED.** Enabling Pages or publishing the DApp cannot fix the missing external signed authority.
+- No private key was generated, copied or exposed; no authority URL or public key was invented; no GitHub environment or hosting setting was changed.
+- No service was deployed, no signature was created for production, no wallet was asked to sign, no Issue transaction or Oracle update was submitted, and no on-chain state changed.
+- V3/Reveal semantics, EEV formulas and protocol parameters were not changed.
+
+### Next safe action
+
+Locate the already-authorized external authority producer and its accountable key custodian, or obtain an explicit deployment/governance decision defining that authority. Then verify its public key against the deployment-pinned V3 authority binding, its signed payload against exact Preprod state and qualification evidence, and its health/availability before wiring the public endpoint. Do not turn the test-only helper into a production signer or let the observation server assert its own economic authority.
