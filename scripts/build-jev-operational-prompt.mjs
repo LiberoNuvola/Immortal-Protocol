@@ -38,7 +38,7 @@ export function buildOperationalPrompt(registry) {
       return subject.workflowRunUrl && uri === subject.workflowRunUrl ? "this run" : uri;
     }).join(", ") || "no evidence reference";
     return `- ${c.checkId} ${c.result} R:${refs} L:${c.limitations.length} recorded in registry`;
-  }).join("\\n");
+  }).join("\n");
   const run = subject.workflowRunUrl || subject.workflowRunId || "not supplied";
   const prompt = [
     "JEV OPERATIONAL PROMPT — generated from a validated verification registry",
