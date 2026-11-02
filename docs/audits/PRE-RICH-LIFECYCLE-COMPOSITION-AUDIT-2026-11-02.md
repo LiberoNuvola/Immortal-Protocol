@@ -44,7 +44,7 @@ Its outputs are `ACTIVATE`, `UPGRADE`, `RETAIN`, `CONTRACT` and `HALT`. It prese
 
 `PreRichHysteresisBinding.ts` provides `derivePreRichControl` and `assertPreRichControlMatches`. The latter recomputes the expected controller result and fails closed if the observed class-control state differs.
 
-**Input boundary still open:** the binding explicitly requires the caller to supply the canonical exact-integer capacity `C` and per-class `X(P)). The inspected controller does not derive either quantity. The current Economic Algorithm documents EffectivePool, ProtectedCapital, RawSurplus and the statistical unresolved reserve, but this audit did not find a frozen derivation binding those quantities to the exact `C) and `X(P)) consumed by hysteresis. Do not substitute EEV, RawSurplus or another quantity without locating an existing approved derivation.
+**Input boundary still open:** the binding explicitly requires the caller to supply the canonical exact-integer capacity `C` and per-class `X(P)`.  The inspected controller does not derive either quantity. The current Economic Algorithm documents EffectivePool, ProtectedCapital, RawSurplus and the statistical unresolved reserve, but this audit did not find a frozen derivation binding those quantities to the exact `C` and `X(P)` consumed by hysteresis. Do not substitute EEV, RawSurplus or another quantity without locating an existing approved derivation.
 
 ### 2.2 B2 authenticated class-control carrier
 
@@ -225,8 +225,8 @@ All state references, pre/post hashes, action identity and authority evidence mu
 | Issue class above current class | Rejected on-chain |
 | Maintenance threshold breached, no keeper called | Issue still rejected |
 | QUIESCENT regime | Issue rejected even if old numeric class remains in B2/V3 |
-| Recovery below `KA) | Rejected |
-| Recovery at/above approved `KA) predicate | Only the exact approved transition is accepted |
+| Recovery below `KA` | Rejected |
+| Recovery at/above approved `KA` predicate | Only the exact approved transition is accepted |
 | Concurrent Issue vs control/regime transition | Stale competing transaction rejected |
 | Existing ticket obligations | Remain fully represented through contraction and quiescence |
 
@@ -236,7 +236,7 @@ Existing tests are useful but do not jointly discharge this matrix. In particula
 
 This reconciliation closes no universal IMMORTAL theorem.
 
-PRE-RICH's controller and lifecycle are application policy. Even after their Issue enforcement is completed, C6 still needs a profile-specific `(S, A, Accept, Ω, T, Safe)`, complete/sound Ω, a real non-erosion witness, representation preservation and a certified non-empty `K_c).
+PRE-RICH's controller and lifecycle are application policy. Even after their Issue enforcement is completed, C6 still needs a profile-specific `(S, A, Accept, Ω, T, Safe)`, complete/sound Ω, a real non-erosion witness, representation preservation and a certified non-empty `K_c`.
 
 QUIESCENT preventing new issuance does not by itself prevent adverse EEV/asset events from eroding the buffer. The QNE proof must still quantify over every successor in the declared Ω.
 
