@@ -214,25 +214,39 @@ try {
   const prizeTipBefore = await rpc('queryNetwork/tip')
   const prizeRaw = await rpc('queryLedgerState/utxo', { addresses: [prizeValidatorAddress] })
   const prizeTipAfter = await rpc('queryNetwork/tip')
-  const prizeUtxos = Array.isArray(prizeRaw) ? prizeRaw.map(entry => {
+  if (!Array.isArray(prizeRaw)) {
+    throw new Error('OGMIOS_PRIZE_VALIDATOR_UTXO_RESPONSE_NOT_ARRAY')
+  }
+  const prizeUtxos = prizeRaw.map(entry => {
     const transaction = entry.outputReference?.transaction ?? entry.transaction ?? {}
     const index = entry.outputReference?.index ?? entry.index
+    const txHash = transaction.id ?? entry.txHash ?? null
+    const address = entry.address ?? prizeValidatorAddress
+    if (typeof txHash !== 'string' || !/^[0-9a-fA-F]{64}$/.test(txHash) ||
+        !Number.isSafeInteger(index) || index < 0) {
+      throw new Error('OGMIOS_PRIZE_VALIDATOR_UTXO_REFERENCE_MALFORMED')
+    }
+    if (address !== prizeValidatorAddress) {
+      throw new Error('OGMIOS_PRIZE_VALIDATOR_UTXO_ADDRESS_MISMATCH')
+    }
     const value = entry.value ?? entry.amount ?? {}
     return {
-      txHash: transaction.id ?? entry.txHash ?? null,
+      txHash: txHash.toLowerCase(),
       index,
-      address: entry.address ?? prizeValidatorAddress,
+      address,
       value,
       datum: entry.datum ?? null,
       datumHash: entry.datumHash ?? entry.datumhash ?? null,
       script: entry.script ?? entry.referenceScript ?? null,
     }
-  }) : []
+  })
   const prizeTipStable =
     JSON.stringify(prizeTipBefore) === JSON.stringify(prizeTipAfter)
   const observedPrizeUtxoReferences = prizeUtxos
-    .filter(u => typeof u.txHash === 'string' && u.index !== null && u.index !== undefined)
-    .map(u => u.txHash.toLowerCase() + '#' + String(u.index))
+    .map(u => u.txHash + '#' + String(u.index))
+  const prizeDatumMissingCount = prizeUtxos.filter(
+    u => u.datum == null && u.datumHash == null,
+  ).length
   const prizeObservations = {
     schema: 'IMMORTAL-PREPROD-PRIZE-VALIDATOR-UTXO-v0.1',
     source: {
@@ -251,6 +265,8 @@ try {
     tipAfter: prizeTipAfter,
     tipStable: prizeTipStable,
     utxoCount: prizeUtxos.length,
+    identifiedUtxoCount: observedPrizeUtxoReferences.length,
+    prizeDatumMissingCount,
     observedPrizeUtxoReferences,
     utxos: prizeUtxos,
     rawOgmiosUtxoResult: prizeRaw,
@@ -269,6 +285,8 @@ try {
     'interface=Ogmios-v7',
     `prize_validator_address=${prizeValidatorAddress}`,
     `utxo_count=${prizeUtxos.length}`,
+    `identified_utxo_count=${observedPrizeUtxoReferences.length}`,
+    `datum_missing_count=${prizeDatumMissingCount}`,
     `tip_before=${JSON.stringify(prizeTipBefore)}`,
     `tip_after=${JSON.stringify(prizeTipAfter)}`,
     `utxo_packet_sha256=${prizeDigest}`,
