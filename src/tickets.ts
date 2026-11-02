@@ -1,6 +1,6 @@
 // src/tickets.ts
 import wallet from './wallet'
-import { mintSerialNFT, type MintSerialOptions } from './mint'
+import { mintSerialNFTWithAuthoritativeAdmission, type MintSerialOptions } from './mint'
 import { COUNTER_SCRIPT_ADDRESS } from './config'
 
 /**
@@ -45,7 +45,7 @@ export async function buyTickets(
   }> = []
 
   for (let i = 0; i < qty; i++) {
-    const r = await mintSerialNFT(mintOptions)
+    const r = await mintSerialNFTWithAuthoritativeAdmission(mintOptions)
     results.push(r)
   }
 
