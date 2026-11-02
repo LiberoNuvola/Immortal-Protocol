@@ -105,6 +105,32 @@ jobs:
           node -e "const p=require('./audit/preprod-evidence/preprod-prize-validator-utxo.json'); if(p.schema!=='IMMORTAL-PREPROD-PRIZE-VALIDATOR-UTXO-v0.1'||p.tipStable!==true||p.source.addressProvenance!=='HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED'||p.utxoCount!==p.utxos.length||p.identifiedUtxoCount!==p.utxoCount) process.exit(1)"
           cat audit/preprod-evidence/preprod-prize-validator-summary.txt
 
+      - name: Verify live B1 Pool candidate UTxO evidence
+        run: |
+          test -s audit/preprod-evidence/preprod-b1-pool-utxo.json
+          test -s audit/preprod-evidence/preprod-b1-pool-utxo.sha256
+          test -s audit/preprod-evidence/preprod-b1-pool-summary.txt
+          (cd audit/preprod-evidence && sha256sum -c preprod-b1-pool-utxo.sha256)
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises'
+          import { createHash } from 'node:crypto'
+
+          const root = 'audit/preprod-evidence/'
+          const bytes = await readFile(root + 'preprod-b1-pool-utxo.json')
+          const sidecar = (await readFile(root + 'preprod-b1-pool-utxo.sha256', 'utf8')).trim().split(/\s+/)
+          const digest = createHash('sha256').update(bytes).digest('hex')
+          if (sidecar[0] !== digest) throw new Error('B1 Pool packet SHA-256 does not match exact file bytes')
+          const packet = JSON.parse(bytes.toString('utf8'))
+          if (packet.schema !== 'IMMORTAL-PREPROD-B1-POOL-UTXO-v0.1') throw new Error('B1 Pool packet schema mismatch')
+          if (packet.tipStable !== true) throw new Error('B1 Pool observation crossed a network tip')
+          if (packet.source?.addressProvenance !== 'HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED') throw new Error('B1 Pool address provenance missing')
+          if (packet.historicalCandidateUtxoPresent !== true) throw new Error('Historical B1 Pool candidate UTxO is not present')
+          if (!Array.isArray(packet.utxos) || packet.utxoCount !== packet.utxos.length) throw new Error('B1 Pool UTxO count mismatch')
+          if (!Array.isArray(packet.observedPoolUtxoReferences) || packet.observedPoolUtxoReferences.length !== packet.utxoCount) throw new Error('B1 Pool reference count mismatch')
+          console.log(JSON.stringify({ status: 'VERIFIED_HISTORICAL_CANDIDATE', utxoCount: packet.utxoCount, tip: packet.tipAfter, packetSha256: digest }, null, 2))
+          NODE
+          cat audit/preprod-evidence/preprod-b1-pool-summary.txt
+
       - name: Run IMMORTAL to PRE-RICH Reveal boundary conformance
         run: |
           set -o pipefail
