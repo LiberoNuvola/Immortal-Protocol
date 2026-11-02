@@ -1,0 +1,36 @@
+name: PRE-RICH ProtectedCapital ticket census tests
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - audit/cardano-integration/preprod-protected-capital-ticket-census.mjs
+      - audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs
+      - PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts
+      - .github/workflows/pre-rich-protected-capital-ticket-census.yml
+  pull_request:
+    paths:
+      - audit/cardano-integration/preprod-protected-capital-ticket-census.mjs
+      - audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs
+      - PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts
+      - .github/workflows/pre-rich-protected-capital-ticket-census.yml
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-census-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run read-only census conformance tests
+        run: npx vitest run audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs
