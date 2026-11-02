@@ -283,7 +283,7 @@ function createKoiosProtectedCapitalSource({
       if (!Array.isArray(response.json)) throw new Error('KOIOS_DATUM_INFO_RESPONSE_NOT_ARRAY')
       const requestedHashes = new Set(batch)
       for (const datum of response.json) {
-        const hash = String(datum?.datum_hash ?? '').toLowerCase()
+        const hash = String(datum?.hash ?? datum?.datum_hash ?? '').toLowerCase()
         const bytes = datum?.bytes
         if (!/^[0-9a-f]{64}$/.test(hash) || typeof bytes !== 'string' ||
             !/^(?:[0-9a-fA-F]{2})+$/.test(bytes)) {
