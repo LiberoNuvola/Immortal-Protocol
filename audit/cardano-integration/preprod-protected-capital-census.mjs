@@ -321,6 +321,9 @@ async function main() {
     qualifications: {
       ticketLedgerInternallyReconciled: ledger.qualification.ticketLedgerInternallyReconciled,
       sourceCompletenessAuthorityVerified: false,
+      providerAttestationVerified: false,
+      providerSnapshotPinned: false,
+      sameBackendSnapshotVerified: false,
       fullProtectedCapitalQualified: false,
       r7L6EmptinessProven: false,
       l2LifecycleProven: false,
