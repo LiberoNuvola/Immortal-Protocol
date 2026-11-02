@@ -100,6 +100,7 @@ function legacyCmlTransaction(
     inputs,
     outputs,
     C.BigNum.from_str('170000'),
+    undefined,
   )
   return C.Transaction.new(body, C.TransactionWitnessSet.new(), undefined)
 }
