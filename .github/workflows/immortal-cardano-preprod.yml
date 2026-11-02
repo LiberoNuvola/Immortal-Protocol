@@ -49,6 +49,7 @@ jobs:
       DEMETER_OGMIOS_AUTHENTICATED_URL: ${{ secrets.DEMETER_OGMIOS_AUTHENTICATED_URL }}
       PREPROD_WALLET_ADDRESS: addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4
       PREPROD_B1_POOL_ADDRESS: addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e
+      PREPROD_PRIZE_VALIDATOR_ADDRESS: addr_test1wzf7ctkjwysu3v94f0ccqjef63kdwy2gc4qj368x3a70lvsq6uygp
       PREPROD_EVIDENCE_DIR: audit/preprod-evidence
 
     steps:
