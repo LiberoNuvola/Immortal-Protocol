@@ -25,9 +25,6 @@ function record(
     datumDigest: (index + 1).toString(16).padStart(64, '0'),
     ticketPolicyId: TICKET_POLICY_ID,
     ticketAssetNameHex: name,
-    nftPolicyId: TICKET_POLICY_ID,
-    nftAssetNameHex: name,
-    nftQuantity: 1n,
     prizePoolHash: B1_POOL_SCRIPT_HASH,
     priceUsdmSubunits,
     prizeAmountUsdmSubunits,
@@ -100,8 +97,8 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     expect(ledger.totals.l3TicketCount).toBe(3n)
     expect(ledger.totals.l3WorstCaseExposureReferenceUnits).toBe(3_000n)
 
-    expect(ledger.totals.l4SettledItemCount).toBe(1n)
-    expect(ledger.totals.l5ResolvedOrExpiredItemCount).toBe(1n)
+    expect(ledger.totals.l4ResolvedItemCount).toBe(2n)
+    expect(ledger.totals.liveUtxoCensusContainsNoL5ExpiryRows).toBe(true)
     expect(ledger.totals.l6UnclassifiedItemCount).toBe(0n)
 
     expect(ledger.reconciliation).toEqual({
@@ -180,11 +177,11 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     )
   })
 
-  it('fails closed when datum identity does not match the observed NFT', () => {
+  it('fails closed when PrizeDatum ticket policy does not match the derived mint policy', () => {
     const census = baseCensus()
     census.records[0] = {
       ...census.records[0],
-      nftAssetNameHex: 'ff',
+      ticketPolicyId: 'f'.repeat(56),
     }
 
     const ledger = buildPreRichProtectedCapitalItemLedger(census)
@@ -192,8 +189,7 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
     expect(ledger.items[0].r7Cell).toBe('L6')
     expect(ledger.qualification.blockers).toContain(
-      'DATUM_AND_NFT_IDENTITY_OR_QUANTITY_MISMATCH:' +
-        TICKET_POLICY_ID + '.01',
+      'TICKET_POLICY_ID_MISMATCH:' + 'f'.repeat(56) + '.01',
     )
   })
 
