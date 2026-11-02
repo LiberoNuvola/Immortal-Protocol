@@ -227,8 +227,14 @@ try {
     }
   }) : []
   const poolTipStable =
-    poolTipBefore?.id === poolTipAfter?.id &&
-    poolTipBefore?.slot === poolTipAfter?.slot
+    JSON.stringify(poolTipBefore) === JSON.stringify(poolTipAfter)
+  const historicalCandidateUtxoReference =
+    'b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0'
+  const observedPoolUtxoReferences = poolUtxos
+    .filter(u => typeof u.txHash === 'string' && u.index !== null && u.index !== undefined)
+    .map(u => u.txHash.toLowerCase() + '#' + String(u.index))
+  const historicalCandidateUtxoPresent =
+    observedPoolUtxoReferences.includes(historicalCandidateUtxoReference)
   const poolObservations = {
     schema: 'IMMORTAL-PREPROD-B1-POOL-UTXO-v0.1',
     source: {
@@ -245,6 +251,9 @@ try {
     tipBefore: poolTipBefore,
     tipAfter: poolTipAfter,
     tipStable: poolTipStable,
+    historicalCandidateUtxoReference,
+    observedPoolUtxoReferences,
+    historicalCandidateUtxoPresent,
     utxoCount: poolUtxos.length,
     utxos: poolUtxos,
     rawOgmiosUtxoResult: poolRaw,
@@ -258,6 +267,7 @@ try {
   )
   const poolSummary = [
     `status=${poolTipStable ? 'TIP_STABLE' : 'TIP_CHANGED'}`,
+    `historical_candidate_utxo_present=${historicalCandidateUtxoPresent}`,
     'provider=Demeter',
     'network=cardano-preprod',
     'interface=Ogmios-v7',
