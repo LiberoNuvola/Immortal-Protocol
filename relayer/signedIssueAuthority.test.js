@@ -14,11 +14,12 @@ function certificate() {
     governance: {
       approvalEvidenceHash: 'b'.repeat(64),
       approvalInputQualificationHash: 'd'.repeat(64),
+      approvalInputSourceSetHash: 'a'.repeat(64),
     },
     deploymentApproval: {
       status: 'DEPLOYMENT_APPROVED',
-      candidateId: 'pre-rich-eev-v1',
-      sourceSetId: 'source-set://preprod/1',
+      candidateId: 'PRE-RICH-EEV-USDM-DIRECT-V1:' + 'b'.repeat(64) + '#1',
+      sourceSetId: 'PRE-RICH-EEV-USDM-DIRECT-V1-SOURCE-SET-v0.1:' + 'a'.repeat(64),
       profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
       evidenceHash: 'b'.repeat(64),
       qualificationEvidenceHash: 'd'.repeat(64),
@@ -29,10 +30,18 @@ function certificate() {
       validFrom: '2026-10-07T00:00:00Z',
       validUntilOrRevalidationRule: 'revalidate-on-source-or-profile-change',
     },
-    sourceReference: 'source://eev/preprod',
+    sourceReference: 'cardano:preprod/utxo/' + 'b'.repeat(64) + '#1',
     verificationReference: 'verify://eev/preprod',
     derivationVersion: 'eev-v1',
     snapshotReference: 'snapshot://eev/123',
+    sourceSet: {
+      statusAtQualification: 'OBSERVED_NOT_QUALIFIED',
+      directUsdmUnit: 'e'.repeat(56) + '0014df10745553444d',
+      poolInputReference: 'b'.repeat(64) + '#1',
+      observedUsdmSubunits: '1000',
+      freshnessModel: 'LIVE_UTXO_REVALIDATION',
+      sourceEvidenceHash: 'a'.repeat(64),
+    },
     evidence: {
       EV1: { reference: 'evidence://EV1', digest: d(1) },
       EV2: { reference: 'evidence://EV2', digest: d(2) },
@@ -121,7 +130,7 @@ function makePayload(overrides = {}) {
     allOmegaSuccessorsCertified: true,
     observedAt: '1000',
     freshnessWindow: '300000',
-    sourceReference: 'source://eev/preprod',
+    sourceReference: 'cardano:preprod/utxo/' + 'b'.repeat(64) + '#1',
     verificationReference: 'verify://eev/preprod',
     derivationVersion: 'eev-v1',
     eevQualification: certificate(),
@@ -165,6 +174,7 @@ const expected = {
   classId: 0,
   price: 1,
   currentObservedAt: 1100,
+  directUsdmObservedValue: '1000',
 }
 
 const good = verifySignedIssueAuthorityEnvelope(
@@ -277,6 +287,74 @@ assert.throws(
     expected,
   ),
   /EEV observation is stale|observation is stale/,
+)
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({
+      eevQualification: {
+        ...certificate(),
+        deploymentApproval: {
+          ...certificate().deploymentApproval,
+          candidateId: 'PRE-RICH-EEV-USDM-DIRECT-V1:' + '9'.repeat(64) + '#0',
+        },
+      },
+    }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /candidateId does not bind to the live Pool UTxO/,
+)
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({
+      eevQualification: {
+        ...certificate(),
+        deploymentApproval: {
+          ...certificate().deploymentApproval,
+          sourceSetId: 'PRE-RICH-EEV-USDM-DIRECT-V1-SOURCE-SET-v0.1:' + 'f'.repeat(64),
+        },
+      },
+    }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /sourceSetId does not bind to the qualified source-set digest/,
+)
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({
+      eevQualification: {
+        ...certificate(),
+        sourceSet: {
+          ...certificate().sourceSet,
+          observedUsdmSubunits: '999',
+        },
+      },
+    }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /source-set USDM amount does not match the live physical Pool observation/,
+)
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({
+      eevQualification: {
+        ...certificate(),
+        governance: {
+          ...certificate().governance,
+          approvalInputSourceSetHash: 'f'.repeat(64),
+        },
+      },
+    }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /source-set digest does not match the approved qualification source-set/,
 )
 
 console.log('signedIssueAuthority: PASS')
