@@ -88,8 +88,8 @@ diagnosticRegistry.checks.push({
 const diagnosticPrompt = buildOperationalPrompt(diagnosticRegistry);
 assert.match(diagnosticPrompt, /P2\.8\.HASKELL_V2\.PENDING_EXPIRE FAIL/);
 assert.match(diagnosticPrompt, /L:3 recorded in registry/);\nassert.match(diagnosticPrompt, /Full limitation text and complete evidence references are retained without alteration in the validated source registry/);
-assert.match(diagnosticPrompt, /before submission/);
-assert.match(diagnosticPrompt, /Inspect the linked step log to identify the actual cause/);
+assert.doesNotMatch(diagnosticPrompt, /before submission/);
+assert.match(diagnosticPrompt, /P2\\.8\\.HASKELL_V2\\.PENDING_EXPIRE FAIL R:this run L:3 recorded in registry/);
 
 assert.throws(() => buildOperationalPrompt({}), /registry.subject is required/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [] }), /non-empty array/);
