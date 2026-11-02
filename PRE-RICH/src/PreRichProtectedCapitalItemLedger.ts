@@ -4,9 +4,11 @@
  * This module consumes a caller-supplied, fully enumerated PrizeValidator
  * source snapshot. It does not query a provider, sign, submit, or mutate.
  *
- * It can qualify the ticket-derived L1/L3 slice only. It never certifies the
- * full ProtectedCapital perimeter, SafetyCapital, ReserveProtection,
- * MandatoryFutureCosts, or global R7 L6 emptiness.
+ * It can reconcile the ticket-derived L1/L3 slice against the declared
+ * census metadata and B1 aggregates. The caller-supplied source-completeness
+ * assertions are not independently authenticated by this pure function.
+ * It never certifies the full ProtectedCapital perimeter, SafetyCapital,
+ * ReserveProtection, MandatoryFutureCosts, or global R7 L6 emptiness.
  */
 
 import {
@@ -92,7 +94,8 @@ export type PrizeDatumLedgerItem = {
 export type PreRichProtectedCapitalItemLedger = {
   schemaVersion: 'PRE-RICH-TICKET-ITEM-LEDGER-V1'
   qualification: {
-    ticketLedgerQualified: boolean
+    ticketLedgerInternallyReconciled: boolean
+    sourceCompletenessAuthorityVerified: false
     fullProtectedCapitalQualified: false
     blockers: string[]
     scope: 'PRIZE_VALIDATOR_TICKET_POPULATION_ONLY'
@@ -137,7 +140,7 @@ export type PreRichProtectedCapitalItemLedger = {
     l1MatchesB1PendingLiabilities: boolean
     l3FacePriceMatchesB1UnresolvedReserve: boolean
     l3CountMatchesB1UnresolvedTicketCount: boolean
-    allSourceOutputsAccountedFor: boolean
+    declaredSourceCountsReconcile: boolean
   }
 }
 
@@ -259,6 +262,17 @@ function classifyPrizeDatum(
   }
 
   if (record.prizeStatus === 'Revealed') {
+    if (record.beaconStatus !== 'BeaconReady') {
+      return {
+        ...common,
+        r7Cell: 'L6',
+        pcComponent: null,
+        classId: null,
+        priceReferenceUnits: null,
+        countedAmountReferenceUnits: 0n,
+        classificationReason: 'Revealed datum does not carry BeaconReady status',
+      }
+    }
     if (record.prizeAmountUsdmSubunits === 0n) {
       return {
         ...common,
@@ -286,6 +300,17 @@ function classifyPrizeDatum(
   }
 
   if (record.prizeStatus === 'Claimed') {
+    if (record.beaconStatus !== 'BeaconReady') {
+      return {
+        ...common,
+        r7Cell: 'L6',
+        pcComponent: null,
+        classId: null,
+        priceReferenceUnits: null,
+        countedAmountReferenceUnits: 0n,
+        classificationReason: 'Claimed datum does not carry BeaconReady status',
+      }
+    }
     if (record.prizeAmountUsdmSubunits === 0n) {
       return {
         ...common,
@@ -379,6 +404,7 @@ export function buildPreRichProtectedCapitalItemLedger(
   }
 
   const seenIdentities = new Set<string>()
+  const seenUtxoReferences = new Set<string>()
   let l1PayoutUsdmSubunits = 0n
   let l1ItemCount = 0n
   let l3FacePriceUsdmSubunits = 0n
@@ -390,6 +416,10 @@ export function buildPreRichProtectedCapitalItemLedger(
 
   const items = census.records.map((record) => {
     requireUtxoReference(record.utxoReference, 'PrizeDatum UTxO reference')
+    if (seenUtxoReferences.has(record.utxoReference.toLowerCase())) {
+      throw new Error('duplicate PrizeDatum UTxO reference in source census: ' + record.utxoReference)
+    }
+    seenUtxoReferences.add(record.utxoReference.toLowerCase())
     requireHex(record.datumDigest, 32, 'PrizeDatum digest')
     requireHex(record.ticketPolicyId, 28, 'PrizeDatum ticket policy')
     requireAssetNameHex(record.ticketAssetNameHex, 'PrizeDatum ticket asset name')
@@ -466,7 +496,7 @@ export function buildPreRichProtectedCapitalItemLedger(
     l3FacePriceUsdmSubunits === census.pool.unresolvedReserveUsdmSubunits
   const l3CountMatchesB1UnresolvedTicketCount =
     l3TicketCount === census.pool.unresolvedTicketCount
-  const allSourceOutputsAccountedFor =
+  const declaredSourceCountsReconcile =
     census.paginationComplete &&
     census.pageCount > 0n &&
     census.sourceUtxoCount === BigInt(census.records.length) &&
@@ -476,7 +506,7 @@ export function buildPreRichProtectedCapitalItemLedger(
   if (!l1MatchesB1PendingLiabilities) blockers.push('L1_ITEM_SUM_DOES_NOT_MATCH_B1_PENDING_LIABILITIES')
   if (!l3FacePriceMatchesB1UnresolvedReserve) blockers.push('L3_ITEM_PRICE_SUM_DOES_NOT_MATCH_B1_UNRESOLVED_RESERVE')
   if (!l3CountMatchesB1UnresolvedTicketCount) blockers.push('L3_ITEM_COUNT_DOES_NOT_MATCH_B1_UNRESOLVED_COUNT')
-  if (!allSourceOutputsAccountedFor) blockers.push('PRIZE_ADDRESS_SOURCE_POPULATION_NOT_FULLY_ACCOUNTED_FOR')
+  if (!declaredSourceCountsReconcile) blockers.push('PRIZE_ADDRESS_DECLARED_SOURCE_COUNTS_DO_NOT_RECONCILE')
 
   const l2Status =
     census.pool.lockedJackpotUsdmSubunits === 0n
@@ -487,12 +517,13 @@ export function buildPreRichProtectedCapitalItemLedger(
   }
 
   const uniqueBlockers = [...new Set(blockers)]
-  const ticketLedgerQualified = uniqueBlockers.length === 0
+  const ticketLedgerInternallyReconciled = uniqueBlockers.length === 0
 
   return {
     schemaVersion: 'PRE-RICH-TICKET-ITEM-LEDGER-V1',
     qualification: {
-      ticketLedgerQualified,
+      ticketLedgerInternallyReconciled,
+      sourceCompletenessAuthorityVerified: false,
       fullProtectedCapitalQualified: false,
       blockers: uniqueBlockers,
       scope: 'PRIZE_VALIDATOR_TICKET_POPULATION_ONLY',
@@ -540,7 +571,7 @@ export function buildPreRichProtectedCapitalItemLedger(
       l1MatchesB1PendingLiabilities,
       l3FacePriceMatchesB1UnresolvedReserve,
       l3CountMatchesB1UnresolvedTicketCount,
-      allSourceOutputsAccountedFor,
+      declaredSourceCountsReconcile,
     },
   }
 }
