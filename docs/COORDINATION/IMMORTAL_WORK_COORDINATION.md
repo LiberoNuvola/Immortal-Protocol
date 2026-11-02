@@ -4340,3 +4340,36 @@ No new branch; no economic parameter/formula changes; no V3/Reveal/validator/ker
 The detailed exit criteria and work breakdown are in [Agent A — First Preprod Ticket and Scientific Paper Priority](AGENT-A-PRIORITY-FIRST-PREPROD-TICKET-AND-SCIENTIFIC-PAPER-2026-11-02.md).
 
 **Priority rule:** work outside the existing Agent A mandate is not pulled in. Within that mandate, work not directly advancing the owner-purchased first Preprod ticket or a citable/reproducible paper component is deferred.
+
+
+## 45.56 AGENT A — PROTECTED CAPITAL PRIZE CENSUS AND OGMIOS CORROBORATION (2026-11-02)
+
+### Canonical implementation retained
+
+- The canonical item-ledger remains `PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`.
+- The canonical full address enumerator remains `relayer/koiosProtectedCapitalSourceCensus.js`; the integrated read-only CLI remains `audit/cardano-integration/preprod-protected-capital-census.mjs`.
+- Koios pagination uses explicit limit/offset, exact Content-Range totals, duplicate/reference/asset validation, DatumHash lookup and BLAKE2b-256 content comparison for hash-reference datums. CIP-32 inline data are recorded as `INLINE_DATUM_HASH_NOT_APPLICABLE`, not falsely rejected for lacking a datum_hash.
+- Provider attestation, same-backend snapshot pinning, and source completeness authority remain false. No live Koios census has been run in this session.
+
+### Independent Ogmios address observation
+
+- Existing authenticated Demeter/Ogmios v7 context observer has been extended to query the historical PrizeValidator address through `queryLedgerState/utxo` on the same WebSocket session as context/wallet/Pool observations.
+- It records raw UTxOs, normalized output references, datum/datumHash, tip-before/tip-after, SHA-256 sidecar and a summary. The address is explicitly marked `HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED`; it is not asserted as the current deployed address.
+- The existing `preprod-context` workflow job now verifies the PrizeValidator artifact and its sidecar digest; the probe fails on tip movement after retaining the diagnostic packet.
+- This is a same-session corroborating address observation, not a replacement for Koios pagination and not an authenticated source-completeness proof.
+- Changes are in `audit/cardano-integration/preprod-ogmios-context.mjs` and `.github/workflows/immortal-cardano-preprod.yml`.
+
+### CI evidence and run disposition
+
+- Dedicated census workflow run [41405446327](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41405446327) completed SUCCESS on source head `17e29b4c9f033322811e24ba0cfb9b9e73d51f95`. The Koios provider pagination/provenance Node tests and ProtectedCapital item-ledger Vitest tests both passed on that head.
+- The current branch is 19 commits ahead of that tested head. This is not an exact-current-head green result; subsequent Koios/CIP-32/Ogmios changes require a fresh Actions run.
+- No new PrizeValidator Ogmios artifact has been verified yet. The Preprod scan has not been executed against the current deployment manifest.
+
+### Current qualification boundary
+
+- L1/L3 ticket ledger builder and Koios source enumerator: implemented, but not live-qualified.
+- Ogmios PrizeValidator cross-check: implemented, run/artifact pending.
+- Provider authenticity, same-backend snapshot pinning, global source completeness, L2 Jackpot lifecycle, SafetyCapital, ReserveProtection, MandatoryFutureCosts, global L6 emptiness, and PA1–PA7: OPEN.
+- No transaction was built/signed/submitted; no V3, Reveal, validator, kernel, economic formula/parameter, or B2/Materios/B3 semantics were changed.
+
+**Next bounded action:** wait for and inspect the workflow-generated Ogmios evidence artifact on the current head; then compare the exact PrizeValidator and B1 Pool observations to the Koios packet under explicit snapshot/provenance limitations. Do not infer a current deployment from historical identifiers.
