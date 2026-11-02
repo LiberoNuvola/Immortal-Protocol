@@ -4685,7 +4685,7 @@ Notion gates remain unchanged:
 
 ### Disposition
 
-- **PUBLIC PAGES ORACLE IDENTITY: NOT PROVEN.** The currently deployed source branch does not carry the runtime Oracle address binding and does not inject the corresponding runtime variables.
+- **PUBLIC PAGES ORACLE IDENTITY: NOT PROVEN.** The checked-in Pages workflow is configured to publish from `main`, whose checked-in source does not carry the runtime Oracle address binding or inject the corresponding runtime variables. The latest deployed Pages artifact/site bundle was not inspected in this pass; an older deployed artifact could differ from the checked-in source.
 - **DEMETER exact-singleton observation: BLOCKED at configuration preflight.**
 - **Historical bootstrap singleton: OBSERVED, STALE, NOT A SUBSTITUTE FOR PUBLIC RUNTIME IDENTITY.**
 - No secret values were copied into source or chat. Repository/environment settings were not changed.
