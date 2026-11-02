@@ -4545,3 +4545,72 @@ This is a bounded RF8-A improvement: the direct caller-built Issue witness path 
 5. The live census and Ogmios packets verify the narrow current on-chain candidate state only; they do not attest the complete ProtectedCapital perimeter.
 
 Safety disposition: no Issue transaction was built, signed or submitted; no B2 deployment was dispatched; no deployment approval was created; no V3, Reveal, economic formula, coefficient, price ladder, payout rule or expiry semantics were changed.
+
+
+## 45.60 AGENT A — SIGNED EEV APPROVAL LIVE-CANDIDATE BINDING (2026-11-02)
+
+This bounded admission-integrity repair binds the signed EEV deployment approval to the exact live Preprod Pool candidate and direct-USDM source-set observation. It does not certify R1/Kc, deploy B2, refresh Oracle State, authorize Issue, or change V3/Reveal/economic semantics.
+
+### Finding
+
+The signed authority verifier already required:
+- EEV qualification status `qualified`;
+- EEV deployment approval status `DEPLOYMENT_APPROVED`;
+- direct-USDM profile version;
+- qualification/approval digest linkage through governance;
+- EV1–EV7 evidence;
+- a complete Preprod-bound viability certificate with VC1–VC6 and E1–E10;
+- ProtectedCapital and viability deployment bindings.
+
+However, before this repair, approval `candidateId` and `sourceSetId` were only checked as non-empty strings. They were not compared with the exact live Pool UTxO and source-set digest supplied to the current Issue verification. A correctly signed approval for another candidate could therefore be replayed inside a different otherwise-valid authority payload.
+
+### Implementation
+
+The verifier `relayer/signedIssueAuthority.js` now requires and cross-checks the qualification's source-set record against the current observation:
+- exact `sourceSet.poolInputReference` = live Issue Pool UTxO;
+- `sourceSet.directUsdmUnit` = observed direct-USDM asset identity;
+- source-set physical USDM amount = live direct-USDM Pool observation;
+- `statusAtQualification = OBSERVED_NOT_QUALIFIED`;
+- `freshnessModel = LIVE_UTXO_REVALIDATION`;
+- `candidateId = PRE-RICH-EEV-USDM-DIRECT-V1:<live Pool txHash#outputIndex>`;
+- `sourceSetId = PRE-RICH-EEV-USDM-DIRECT-V1-SOURCE-SET-v0.1:<sourceEvidenceHash>`;
+- qualification sourceReference binds the same live Pool reference;
+- `governance.approvalInputSourceSetHash` equals the approved source-set digest.
+
+The signed envelope self-verification now passes the exact physical Pool amount into the same validation path. The envelope fixture was aligned with the canonical source-set and approval identifiers.
+
+Four adversarial regressions reject:
+1. a candidateId replayed from another Pool UTxO;
+2. a sourceSetId replayed from another source-set digest;
+3. source-set amount disagreement with the live Pool observation;
+4. governance source-set digest disagreement.
+
+The Issue Admission CI typecheck also exposed an unrelated, pre-existing mismatch in the CML test fixture: `TransactionBody.new` was called with three arguments although the locked binding expects four. The test helper now supplies explicit `undefined` as the optional fourth argument; this is fixture-only and does not change transaction or protocol semantics.
+
+Commits on `work/immortal-green-closure`:
+- `d0894de1278dfcc579f6c4ad41543ec889a6a271` — bind EEV approval to live Pool candidate;
+- `1cb67df2ea4e8a1ee3c19e2b7f9ef4acc7cffa27` — adversarial replay regressions;
+- `853e56fd2ad9c13171868a95e6183c7f02e87446` — pass direct Pool amount to envelope self-check;
+- `c03f0fb4ced7ed157cfd04fdd10700879c99a815` — align envelope fixture with canonical source set;
+- `35bc1fab224863901df7056888f1eee9c9f375f3` — fix CML test-fixture constructor arity.
+
+### Verification on exact current head
+
+Current branch head: `35bc1fab224863901df7056888f1eee9c9f375f3`.
+
+- [Issue Admission Boundary CI #71](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420797655): SUCCESS, including runtime admission tests, caller-input rejection, signed authority/approval binding, signed envelope end-to-end, first-Issue readiness gate, syntax check and locked-Lucid typecheck.
+- [PRE-RICH Direct-USDM Conformance #128](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420457655): SUCCESS, including authority/admission conformance, EEV approval integrity, Oracle datum and freshness tests, provider typecheck and browser build. This run is on `c03f0fb4...`; the subsequent change only adjusts the unrelated CML test fixture.
+- [PRE-RICH B2 Control Carrier Conformance #609](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420797721): SUCCESS, including authenticated observation regressions and browser build. This is CI evidence, not evidence of B2 Preprod deployment.
+- [IMMORTAL Cardano Preprod Context #835](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420797741): SUCCESS. Read-only context steps validated the configured Preprod wallet, queried Demeter/Ogmios, and observed wallet, PrizeValidator and B1 Pool candidate UTxO evidence. The real Preprod Reveal, direct-USDM bootstrap, V3 carrier observation and Preprod deployment jobs were all SKIPPED. The context run does not certify Oracle freshness or B2 on-chain materialization.
+- [IMMORTAL Cardano Integration Lab #2434](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420797743): automatically started against isolated Yaci devnet; it is a local integration lab, not a Preprod deployment or Issue authorization.
+
+### Remaining first-Issue blockers — unchanged
+
+1. **R1/Kc and Ω/non-vacuity:** no concrete deployment-specific Kc has been instantiated and certified. R1 still requires actual VC1–VC6 and E1–E10 evidence bound to the selected PRE-RICH state/profile; the Ω/Env perimeter and non-vacuity/initial-state evidence remain open. Schema presence or synthetic fixture values are not certification.
+2. **Oracle State:** the current stale datum has not been refreshed. Bootstrap reuse preserves the old on-chain timestamp; liveness and quote-set observers are read-only. No authentic quote update was submitted.
+3. **B2 Preprod:** authenticated B2 conformance tests pass, but the singleton has not been deployed/materialized on Preprod. No deployment workflow was dispatched.
+4. **EEV deployment approval:** EV1–EV7 qualification and approval are distinct. The protected approval workflow was not dispatched and no `DEPLOYMENT_APPROVED` artefact was created during this work.
+5. **Authority service/DApp wiring:** the real signed Issue authority endpoint/public key and production DApp provider configuration remain external/runtime prerequisites.
+6. **ProtectedCapital:** the complete authoritative PA1–PA7 item-level producer and full provenance certification remain open.
+
+Safety disposition: no Issue was built, signed or submitted; no deployment approval was issued; no B2 deployment or Oracle update was attempted. No V3, Reveal, economic formula, coefficient, ladder, payout or expiry semantics were changed. CI performed only the automatically triggered conformance/context work described above.
