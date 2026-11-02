@@ -237,8 +237,7 @@ All state references, pre/post hashes, action identity and authority evidence mu
 | Cost surface `X(P)` | Uses the frozen `499P+Fs+Fr+Fc` formula and includes only mandatory costs; actual cost benchmark is reproducible |
 | Capacity numerator `C` | Exact current value is authenticated, versioned and tied to the approved economic observation/profile |
 | Hysteresis replay | Computes `CR(P)=C/X(P)` using frozen `KA=8, KC=4, KD=4` and matches the submitted controller result |
-| B2 validator | Recomputed controller result equals submitted control state, not merely a monotonic directional update |
-| B2 validator | Rejects arbitrary lower class, invalid activation and historical-maximum regression |
+| B2 validator | Recomputes the exact controller result; rejects arbitrary lower class, invalid activation and historical-maximum regression |
 | Issue without B2 reference | Rejected by the on-chain Issue enforcement path |
 | Missing/duplicate/malformed B2 singleton | Rejected |
 | B2/V3 control mismatch | Rejected on-chain |
