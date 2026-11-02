@@ -94,13 +94,16 @@ assert.doesNotMatch(diagnosticPrompt, /before submission/);
 assert.throws(() => buildOperationalPrompt({}), /registry.subject is required/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [] }), /non-empty array/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [{ checkId: "X", result: "UNKNOWN", evidenceRefs: [], limitations: [] }] }), /invalid checkId\/result/);
-assert.throws(
-  () => buildOperationalPrompt({
-    subject: registry.subject,
-    overallResult: "PASS",
-    checks: [{ checkId: "OVERSIZE.CHECK", result: "PASS", evidenceRefs: ["https://example.com/evidence"], limitations: ["x".repeat(8000)] }],
-  }),
-  /refusing to truncate safety boundaries/,
-);
+const oversizeRegistry = {
+  subject: registry.subject,
+  overallResult: "PASS",
+  checks: [{ checkId: "OVERSIZE.CHECK", result: "PASS", evidenceRefs: ["https://example.com/evidence"], limitations: ["x".repeat(8000)] }],
+};
+const oversizePrompt = buildOperationalPrompt(oversizeRegistry);
+assert.ok(oversizePrompt.length < 7001, "large canonical limitations should not overflow the operational prompt");
+assert.match(oversizePrompt, /Hard boundaries:/);
+assert.match(oversizePrompt, /Full limitation text and complete evidence references are retained without alteration in the validated source registry/);
+assert.doesNotMatch(oversizePrompt, /x{100}/);
+
 
 console.log("JEV operational prompt generator tests passed.");
