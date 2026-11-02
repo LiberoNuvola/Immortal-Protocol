@@ -124,6 +124,9 @@ function assetQuantity(row, unit) {
 function parsePrizeDatum(row) {
   const reference = exactUtxoReference(row)
   if (!row.datum_bytes) throw new Error('PRIZEDATUM_BYTES_MISSING')
+  if (row.datum_hash_content_verified !== true) {
+    throw new Error('PRIZEDATUM_CARDANO_DATUM_HASH_NOT_VERIFIED')
+  }
   const raw = Data.from(row.datum_bytes)
   const fields = dataFields(raw, 'PRIZEDATUM', 23)
 
@@ -161,6 +164,9 @@ function parsePrizeDatum(row) {
 
 function parsePoolDatum(row, expectedPrizeHash, snapshotReference) {
   if (!row.datum_bytes) throw new Error('B1_POOL_DATUM_BYTES_MISSING')
+  if (row.datum_hash_content_verified !== true) {
+    throw new Error('B1_POOL_CARDANO_DATUM_HASH_NOT_VERIFIED')
+  }
   const fields = dataFields(Data.from(row.datum_bytes), 'B1_POOL_DATUM', 8)
   const embeddedPrizeHash = hexBytes(fields[7], 'ppPrizeHash')
   if (embeddedPrizeHash !== expectedPrizeHash.toLowerCase()) {
@@ -328,7 +334,7 @@ async function main() {
       ticketLedgerInternallyReconciled: ledger.qualification.ticketLedgerInternallyReconciled,
       sourceCompletenessAuthorityVerified: false,
       providerAttestationVerified: false,
-      datumHashContentVerified: false,
+      datumHashContentVerified: scan.manifest.datumHashContentVerified,
       providerSnapshotPinned: false,
       sameBackendSnapshotVerified: false,
       fullProtectedCapitalQualified: false,
@@ -367,7 +373,7 @@ async function main() {
     l3TicketCountMatch: ledger.reconciliation.l3CountMatchesB1UnresolvedTicketCount,
     sourceCompletenessAuthorityVerified: false,
     providerAttestationVerified: false,
-    datumHashContentVerified: false,
+    datumHashContentVerified: scan.manifest.datumHashContentVerified,
     transactionSubmissionAttempted: false,
   }, null, 2))
 
