@@ -529,3 +529,47 @@ The consulted Notion decisions further constrain source selection:
 Those PRE market-source decisions are a separate question from the quote required to value tUSDM in the current Treasury basket; they do **not** authorize a tUSDM=1 USDM quote or any ADA/tUSDM conversion. They do, however, reinforce the existing non-assumption rule: a feed observation, a source's existence, or a plausible price is not sufficient to become the canonical publisher/reference.
 
 **Next safe Oracle gate:** use the already-existing read-only observer(s) to acquire exact feed/singleton evidence; qualify source identity, publisher authorization, asset/quote direction, timestamp, freshness, and any required independence/depth constraints under the already-adopted contract; only the authorized publisher/transition may update the singleton. No direct datum edit, key generation, quote invention, or fallback to a stale/unauthorized source is permitted by this readiness record.
+
+## 2026-11-02 follow-up — V3 build #6 complete; Oracle candidate-source review
+
+### Fresh V3 build qualification
+
+[V3 Carrier Build Qualification run #6](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41471194297) has now completed **SUCCESS** on exact source commit `4b2dea881745f923ae20b8d9e161dd4417c37c3e`.
+
+- Artifact ID: `13157837592`
+- Artifact ZIP SHA-256: `24df5e54cbe130e88b49d8295804a81f17d9cd2912f68407b24aa23d3cf40a2a`
+- Qualification classification: `FRESH_BUILD_ONLY_NOT_DEPLOYMENT`
+- Network: `none`
+- The manifest records `deployment.attempted=false`, `transactionSubmitted=false`, `carrierSingletonCreated=false`, and `issueAuthorityPublicKeyApplied=false`.
+- All 14 source blob SHAs in the manifest were independently compared with GitHub at the exact source commit: **14/14 matched**.
+- Validator artifact: 4,483 CBOR bytes, SHA-256 `2c3ebe6d7bf2b76c6348bf842526e910603dbb3d727d9ccb285e0497d58b0cc1`.
+- Mint-policy artifact: 1,124 CBOR bytes, SHA-256 `74423c8aac4f9e7daa090bece3dd900efea9325e1fd0993686cbcef6a7745a97`.
+- Initial datum: 116 bytes, SHA-256 `06f58b4bac3120cc7da2260542317172f9cb24484c611ecd05e2113ccf553da9`.
+
+The validator, mint-policy and initial-datum hashes match run #4. The new run therefore confirms a clean source-bound rebuild of the same on-chain artifacts after the deployment-helper preflight hardening; it does not create a parameterized deployment, V3 address, singleton UTxO, or Issue authority binding. The run's own limitations explicitly say that a build does not prove Preprod deployment or Issue authorization.
+
+### Additional conformance results on the readiness-doc revision
+
+The following runs on commit `dcc7e170d3234c532a20f8c17a646d56c573b139` have completed **SUCCESS**:
+
+- [Cardano Adapter Sale Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41475976709): economic/admission conformance suite and frontend build.
+- [Protocol Declaration Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41475976727): declaration tests and typecheck.
+- [Flux Point DoD Pilot](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41475976622): local DoD harness and Materios verifier tests.
+
+These are code and test results. None is a Preprod Issue transaction, V3 deployment, or Oracle State update.
+
+### Oracle feed candidates — code-level review, not live qualification
+
+A review of the existing read-only observers identifies concrete candidates, but does not close the current Oracle gate:
+
+- **Charli3:** the observer pins exact Preprod feed identities for `USDM/USD` and `ADA/USD`, with documented maximum ages of one hour and thirty minutes respectively. Its decoder reports pair identity, timestamp/expiry interpretation, precision, and available provider/signatory metadata. Its resulting feed records remain `OBSERVED_NOT_QUALIFIED`; the script does not independently prove external source truth or the trustworthiness of the signatory/publisher set. Timestamp magnitude normalization is explicitly reported rather than treated as an authoritative unit decision.
+- **Orcfax:** the observer resolves the FSP singleton and current FS script hash, then scans the exact script UTxOs for `CER/ADA-USD/` and `CER/ADA-USDM/`. It can derive an exact rational USDM-per-USD cross-rate without floating point, but the function returns `CANDIDATE_ONLY_NOT_QUALIFIED` and `authorizedForSettlement=false`. The observer's final status remains `OBSERVED_NOT_QUALIFIED`; blockers include an official-documentation conflict (Preprod marked Active in one table and N/A in the consumer table), archival package status TBA, missing independent external publisher/provenance verification, lack of exact binding to the IMMORTAL Moneta/tUSDM ledger asset identity, and no approved cross-rate/Issue-consumer contract.
+- **Configured Oracle State:** the existing observer only inspects the exact configured singleton and its quotes. It explicitly does not assert external market truth or promote a quote to source-qualified status; it has no signer, transaction builder, submit, or state-update path.
+
+The reviewed scripts are candidate-discovery and observation surfaces, not an authorized Oracle publisher. No newly qualified live feed artifact or authorized quote-set transition was produced by these checks. A cross-rate candidate cannot be substituted for the stale ADA quote, nor can a feed label be treated as proof that its token is the exact configured tUSDM asset.
+
+### Updated readiness decision
+
+V3 build qualification and the listed conformance runs are now green. The first purchase remains blocked by the independent gates already recorded above: fresh and source-qualified settlement quotes for every Treasury output asset; authorized publisher/transition for the configured Oracle singleton; full ProtectedCapital source coverage and PA1–PA7 evidence; replayable `K_c`/Omega viability and Hysteresis evidence; production Issue-authority source and signer qualification; and the reviewed DApp/Pages release path.
+
+No V3/Reveal semantics, economic constant, Oracle datum, key, wallet configuration, or on-chain state was changed by this follow-up. No deployment, signature, transaction, or merge was performed.
