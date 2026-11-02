@@ -509,3 +509,23 @@ The new observation improves the evidence baseline but does not close first Issu
 5. The external signed Issue authority source and production Ed25519 signer/custodian remain to be qualified.
 
 No code, approval, key, Oracle datum, wallet configuration or on-chain state was changed by run 41431290207. It did not build, sign or submit an Issue transaction.
+
+
+## 2026-11-02 follow-up — Existing Oracle observation paths are not an authorized publisher/update path
+
+The repository already contains separate read-only observation surfaces:
+
+- `.github/workflows/oracle-quote-set-observation.yml`: observes the exact configured Oracle State singleton using the configured deployment identity; a second job observes the previously identified bootstrap-wallet singleton via Koios. The workflow comment explicitly excludes seed, signing key, transaction builder, submission and deployment.
+- `.github/workflows/charli3-preprod-feed-observation.yml`: reads official Charli3 Preprod ADA/USD and USDM/USD feed NFT UTxOs and inline datums.
+- `.github/workflows/orcfax-preprod-feed-observation.yml`: resolves the official Orcfax FSP pointer and reads exact Preprod CER feed UTxOs.
+- `.github/workflows/multi-oracle-conformance.yml`: tests the structural/registry boundary; it is not a live feed attestation or an Oracle State publisher.
+
+No recent run/artifact for these observation workflows was found in the inspected working-branch Actions history. Their presence in the repository is not evidence that the corresponding providers have been qualified or that any quote has been written into the configured singleton. The existing source-code separation is intentional: observation and feed decoding do not sign or submit an Oracle State transition.
+
+The consulted Notion decisions further constrain source selection:
+- [Gate 22 — PRE Oracle Source Set](https://app.notion.com/p/3e0c4454d6d581fc8d72c15ddd4919a6) explicitly does not canonize a PRE→USDM provider; the concrete source/provider, numerical parameters, quorum/independence classes, dispersion and depth evidence remain deployment evidence gates.
+- [Gate 30 — PRE PriceReference Contract](https://app.notion.com/p/3e0c4454d6d581bd8987ca079abef1ea) records Snek as the current PRE-graduation market-source candidate, while the specific PRE pool identity and canonical PRE→USDM reference remain OPEN.
+
+Those PRE market-source decisions are a separate question from the quote required to value tUSDM in the current Treasury basket; they do **not** authorize a tUSDM=1 USDM quote or any ADA/tUSDM conversion. They do, however, reinforce the existing non-assumption rule: a feed observation, a source's existence, or a plausible price is not sufficient to become the canonical publisher/reference.
+
+**Next safe Oracle gate:** use the already-existing read-only observer(s) to acquire exact feed/singleton evidence; qualify source identity, publisher authorization, asset/quote direction, timestamp, freshness, and any required independence/depth constraints under the already-adopted contract; only the authorized publisher/transition may update the singleton. No direct datum edit, key generation, quote invention, or fallback to a stale/unauthorized source is permitted by this readiness record.
