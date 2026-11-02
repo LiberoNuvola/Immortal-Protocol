@@ -4373,3 +4373,58 @@ The detailed exit criteria and work breakdown are in [Agent A — First Preprod 
 - No transaction was built/signed/submitted; no V3, Reveal, validator, kernel, economic formula/parameter, or B2/Materios/B3 semantics were changed.
 
 **Next bounded action:** wait for and inspect the workflow-generated Ogmios evidence artifact on the current head; then compare the exact PrizeValidator and B1 Pool observations to the Koios packet under explicit snapshot/provenance limitations. Do not infer a current deployment from historical identifiers.
+
+
+## 45.57 AGENT A — LIVE PREPROD CENSUS, OGMIOS PACKET REPAIR, AND FIRST-ISSUE BLOCKERS (2026-11-02)
+
+This section supersedes the historical “no live census / Ogmios packet pending” disposition in §45.56. It records only results independently inspected in GitHub Actions artifacts during this session. It does not change the Agent A mandate or protocol semantics.
+
+### Exact source heads and verified runs
+
+- Current working branch head at this checkpoint: `b45d243a576fc378873720ecec2d257800e7aec4`.
+- PRE-RICH direct-USDM source qualification run [41410801435](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41410801435) completed SUCCESS at `41d0d2d6b4db7d94b378068282756dc8a5860899`: live PrizeValidator/B1 census executed, B1 re-observed, EV1–EV7 qualified, approval absence verified. This is **source qualification only**; `deploymentApproval` remains `null/PENDING`.
+- Dedicated ProtectedCapital source-census workflow [41410801247](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41410801247) completed SUCCESS at the same SHA: Koios pagination/provenance tests and item-ledger conformance tests pass.
+- The integrated Preprod context workflow [41414349567](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41414349567) completed SUCCESS at `b45d243a576fc378873720ecec2d257800e7aec4`, including wallet, PrizeValidator, B1 Pool packet checks, Reveal-boundary conformance and conformance binding.
+- Latest Ogmios context artifact: `immortal-cardano-preprod-context`, artifact ID `13126941925`, archive SHA-256 `3d1f860e6b876c8c57819a1a7fd0e065e8a1d92d8d1d83bd179fd0dde6075102`. All five included SHA-256 sidecars were independently checked against the archived JSON bytes and passed.
+
+### Live observations at the Ogmios packet tip
+
+All three address observations in the latest artifact report the same stable tip: slot `137925432`, block hash `db09b44597c0836a467142273b978a7d01f426193c8e541bcccee87e435dc098`.
+
+- Service wallet observation: 23 UTxOs, 6,294,787,391 lovelace. This is the configured service/deployment wallet observation, not evidence of the owner's connected buyer wallet.
+- Historical PrizeValidator candidate address: 0 UTxOs; tip stable; no malformed/missing-datum rows were observed.
+- Historical B1 Pool candidate address: exactly 1 UTxO; tip stable; the observed out-reference is `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`. It contains one B1 Pool singleton and `1,000,000,000` atomic units of direct tUSDM (1,000 USDM at the profile's 6-decimal scale).
+- The B1 address/out-reference match the current direct-USDM deployment manifest used by the EV1–EV7 qualification artifact. The Ogmios packet nevertheless keeps explicit `HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED` provenance; do not promote this observer alone to deployment authority or source-completeness certification.
+- The Preprod boundary binding identifies the exact source commit and live observation, but explicitly sets `ledger_aligned_evaluator_run=false` and `full_end_to_end_equivalence_claim=false`. No Reveal transaction was submitted by this workflow.
+
+### Observer and packet-persistence repair
+
+- Previous run [41410801526](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41410801526) exposed that the Ogmios observer wrote wallet/PrizeValidator/B1 SHA sidecars but omitted the corresponding JSON packet files. The workflow therefore failed its existence checks.
+- Commit `ff1001e0a5297009a76f55e2770ce8b0ae3f9203` added the three missing JSON writes.
+- A subsequent artifact showed the B1 Pool query could cross a tip while still being reported as a completed workflow. Commits `590cce5e6386c74692178828bc4bd5e346f96308` and `f0457e144ee3d1558215d2fe22646c7446b57150` now fail closed on a moving B1 tip and verify the packet, checksum, candidate presence, count, and references.
+- Commit `b45d243a576fc378873720ecec2d257800e7aec4` fixes the conformance-binding SHA-256 to hash the exact formatted bytes written to disk. The latest artifact confirms this sidecar now passes.
+
+### Direct-USDM and ProtectedCapital qualification boundary
+
+- Direct tUSDM source-set: `OBSERVED_NOT_QUALIFIED` as a standalone source observation; direct physical value was re-observed and EV1–EV7 qualified under `PRE-RICH-EEV-USDM-DIRECT-V1`.
+- Current qualification output still has no deployment approval. An older manual EEV approval run on 2026-10-21 was tied to an earlier source head and is not a substitute for approval bound to the current candidate/source-set/deployment/Oracle digests.
+- The live Koios ticket census at slot `137923680` found 0 PrizeValidator UTxOs and one B1 Pool singleton. L1/L3 internal reconciliations matched the B1 aggregates (currently zero). This is **INTERNAL_RECONCILIATION_ONLY**, not full ProtectedCapital qualification.
+- Provider attestation, provider-pinned/same-backend snapshot, independent source-completeness authority, global L5/L6 history, L2 Jackpot lifecycle, SafetyCapital, ReserveProtection, MandatoryFutureCosts, PA1–PA7 coverage, and pairwise allocation/disjointness remain OPEN or unproven. Zero live PrizeValidator outputs do not prove that every ProtectedCapital component is globally zero.
+
+### First owner-purchased Issue — blockers still open
+
+1. **B2 Control deployment:** no successful B2 Preprod deployment artifact is present on this current branch head. The last manual deployment attempt [37972119553](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/37972119553) compiled/exported and verified the Plutus artifacts, then stopped before seed selection because `BLOCKFROST_PROJECT_ID` was empty. It did not reach transaction construction/signing/submission. The B2 deployment workflow is manual and does sign/submit a singleton transaction; do not dispatch it without explicit owner authorization and confirmed provider credentials.
+2. **Oracle State:** the exact current datum remains stale relative to its configured one-hour max age (approximately 24.6 days old). The liveness observer is read-only. The bootstrap script reuses an existing singleton and preserves its old timestamp; rerunning it does not refresh the datum. The manifest also keeps `externalPriceSourceVerified=false`. Replacing the timestamp with wall-clock time would not prove price truth and is prohibited.
+3. **External Issue authority:** `PreprodAuthoritativeIssueProvider` requires an external signed authority URL and verification public key, plus signed EEV, ProtectedCapital provenance, viability and B2/control bindings. The in-repository client composes and verifies the response; it does not manufacture the authority evidence. No current live endpoint/key-backed authority packet has been demonstrated.
+4. **R1/Kc and Omega:** the concrete deployment-specific kernel certificate is not present. It requires a governed, non-vacuous `(S, A, Accept, Ω, T, Safe)` instance and VC1–VC6 / CK1–CK8 evidence. Do not narrow Ω artificially, create a synthetic Kc/QNE certificate, or label a fixture as deployment certification.
+5. **PA1–PA7 / full ProtectedCapital producer:** the current ticket item ledger and census cover a narrow L1/L3 ticket slice. The item-level producer contract remains documentary; component provenance, completeness, pairwise non-overlap, L2/L5 history and L6 emptiness are not fully established.
+
+### Next Agent A sequence
+
+1. Obtain the missing Blockfrost deployment-provider configuration and owner authorization before any B2 deployment transaction.
+2. Qualify the Oracle quote's actual external source and governed freshness policy; do not refresh a stale timestamp without a source-authenticated update path.
+3. Materialize and verify the B2 singleton and current Counter/V3/Pool identities with exact Preprod observation packets.
+4. Complete the PA1–PA7 item-level evidence producer and non-overlap/completeness witnesses, then instantiate R1/Kc/Omega with a non-vacuity proof under the existing normative scope.
+5. Bring up the external signed Issue authority and run the existing read-only `preprod-first-issue-readiness.mjs` gate. Only after it reports `READY_FOR_WALLET_REVIEW` may the owner review the actual DApp Sale path and prepare their own wallet purchase.
+
+**Safety disposition:** no transaction was built, signed or submitted by this session; no EEV deployment approval was issued; no B2 singleton was deployed; no ticket was purchased. V3, Reveal, validator semantics and economic formulas/parameters were not changed.
