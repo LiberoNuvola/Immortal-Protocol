@@ -1,26 +1,30 @@
-name: PRE-RICH ProtectedCapital ticket census tests
+name: PRE-RICH ProtectedCapital source census tests
 
 on:
   push:
     branches:
       - work/immortal-green-closure
     paths:
-      - audit/cardano-integration/preprod-protected-capital-ticket-census.mjs
-      - audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs
+      - audit/cardano-integration/preprod-protected-capital-census.mjs
+      - relayer/koiosProtectedCapitalSourceCensus.js
+      - relayer/koiosProtectedCapitalSourceCensus.test.js
       - PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts
+      - PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
       - .github/workflows/pre-rich-protected-capital-ticket-census.yml
   pull_request:
     paths:
-      - audit/cardano-integration/preprod-protected-capital-ticket-census.mjs
-      - audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs
+      - audit/cardano-integration/preprod-protected-capital-census.mjs
+      - relayer/koiosProtectedCapitalSourceCensus.js
+      - relayer/koiosProtectedCapitalSourceCensus.test.js
       - PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts
+      - PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
       - .github/workflows/pre-rich-protected-capital-ticket-census.yml
 
 permissions:
   contents: read
 
 jobs:
-  ticket-census-tests:
+  source-census-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,5 +36,7 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Run read-only census conformance tests
-        run: npx vitest run audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
+      - name: Run Koios provider pagination and provenance tests
+        run: node --test relayer/koiosProtectedCapitalSourceCensus.test.js
+      - name: Run ProtectedCapital item-ledger conformance tests
+        run: npx vitest run PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
