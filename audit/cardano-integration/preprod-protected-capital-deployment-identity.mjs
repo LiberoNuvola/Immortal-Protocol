@@ -164,7 +164,7 @@ export async function loadProtectedCapitalDeploymentIdentity({
     network: 'Preprod',
     oraclePublisherPkh,
     oracleStatePolicyId: oraclePolicyId,
-    oracleStateTokenNameHex,
+    oracleStateTokenNameHex: oracleTokenNameHex,
     oracleStateUnit,
     oracleStateAddress: oracleAddress,
     oracleStateUtxo,
