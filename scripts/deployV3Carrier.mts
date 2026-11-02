@@ -38,7 +38,11 @@ const required = (name: string): string => {
 
 function loadArtifact(path: string, label: string): ScriptEnvelope {
   const envelope = JSON.parse(readFileSync(path, 'utf8')) as ScriptEnvelope
-  if (envelope.type !== 'PlutusScriptV2' || !/^[0-9a-f]+$/i.test(envelope.cborHex)) {
+  if (envelope.type !== 'PlutusScriptV2' ||
+      typeof envelope.cborHex !== 'string' ||
+      envelope.cborHex.length === 0 ||
+      envelope.cborHex.length % 2 !== 0 ||
+      !/^[0-9a-f]+$/i.test(envelope.cborHex)) {
     throw new Error('invalid ' + label + ' artifact')
   }
   return envelope
@@ -81,15 +85,17 @@ async function main() {
   const tokenNameHex = required('V3_CARRIER_TOKEN_NAME_HEX').toLowerCase()
   const initialDatumCbor = required('V3_CARRIER_INITIAL_DATUM_CBOR')
   const issueAuthorityPublicKeyPem = required('ISSUE_AUTHORITY_PUBLIC_KEY')
-  const issueAuthorityJwk = createPublicKey(issueAuthorityPublicKeyPem).export({ format: 'jwk' }) as { x?: string }
-  if (!issueAuthorityJwk.x) throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must be an Ed25519 public key')
-  const authorityPublicKeyHex = Buffer.from(issueAuthorityJwk.x, 'base64url').toString('hex')
+  const issueAuthorityJwk = createPublicKey(issueAuthorityPublicKeyPem).export({ format: 'jwk' }) as { kty?: string; crv?: string; x?: string }
+  if (issueAuthorityJwk.kty !== 'OKP' || issueAuthorityJwk.crv !== 'Ed25519' || !issueAuthorityJwk.x) {
+    throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must be an Ed25519 (OKP) public key')
+  }
   if (authorityPublicKeyHex.length !== 64) {
     throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must encode a 32-byte Ed25519 public key')
   }
 
-  if (!/^[0-9a-f]+$/i.test(tokenNameHex)) {
-    throw new Error('V3_CARRIER_TOKEN_NAME_HEX must be hexadecimal')
+  if (!/^(?:[0-9a-f]{2}){1,32}$/i.test(tokenNameHex)) {
+    throw new Error('V3_CARRIER_TOKEN_NAME_HEX must be 1..32 bytes of even-length hexadecimal')
+  }
   }
   validateInitialV3Datum(initialDatumCbor)
 
@@ -98,14 +104,18 @@ async function main() {
   lucid.selectWallet.fromSeed(mnemonic)
 
   const signerAddress = await lucid.wallet().address()
-  const seedTxHash = process.env.V3_CARRIER_SEED_TX_HASH?.trim()
+  const seedTxHash = process.env.V3_CARRIER_SEED_TX_HASH?.trim().toLowerCase()
   const seedIndexRaw = process.env.V3_CARRIER_SEED_OUTPUT_INDEX?.trim()
-  const seedIndex = seedIndexRaw === undefined || seedIndexRaw === '' ? undefined : Number(seedIndexRaw)
-  if (seedIndex !== undefined && (!Number.isInteger(seedIndex) || seedIndex < 0)) {
-    throw new Error('V3_CARRIER_SEED_OUTPUT_INDEX must be a non-negative integer')
+  if (!seedTxHash || !/^[0-9a-f]{64}$/.test(seedTxHash)) {
+    throw new Error('V3_CARRIER_SEED_TX_HASH must be an explicit 32-byte transaction hash')
   }
-
-  const seed = selectedSeed(await lucid.wallet().getUtxos(), seedTxHash, seedIndex)
+  if (!seedIndexRaw || !/^(0|[1-9][0-9]*)$/.test(seedIndexRaw)) {
+    throw new Error('V3_CARRIER_SEED_OUTPUT_INDEX must be an explicit non-negative integer')
+  }
+  const seedIndex = Number(seedIndexRaw)
+  if (!Number.isSafeInteger(seedIndex) || seedIndex < 0) {
+    throw new Error('V3_CARRIER_SEED_OUTPUT_INDEX must be a safe non-negative integer')
+  }
 
   const policyFactory = loadArtifact(
     resolve(PLUTUS_OUT, 'v3EconomicStateCarrierMintPolicy.plutus.json'),
@@ -177,7 +187,7 @@ async function main() {
   mkdirSync('audit/preprod-issue', { recursive: true })
   writeFileSync(
     'audit/preprod-issue/v3-carrier-deployment.json',
-    JSON.stringify(evidence, null, 2) + '\\n',
+    JSON.stringify(evidence, null, 2) + '\n',
   )
   console.log(JSON.stringify(evidence, null, 2))
 }
