@@ -45,32 +45,23 @@ async function readJson(response, label) {
   }
 }
 
-async function getJson(url, label, fetchFn) {
-  const response = await fetchFn(url, {
-    method: 'GET',
-    headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    redirect: 'error',
-  })
-  return readJson(response, label)
-}
-
-export function retryDelayMs(retryAfter, attempt, nowMs = Date.now()) {
-  if (!Number.isSafeInteger(attempt) || attempt < 0) throw new Error('RETRY_ATTEMPT_INVALID')
-  if (typeof retryAfter === 'string' && retryAfter.trim()) {
-    const value = retryAfter.trim()
-    if (/^\d+(?:\.\d+)?$/.test(value)) {
-      return Math.max(0, Math.ceil(Number(value) * 1_000))
+export async function getJson(url, label, fetchFn = fetch) {
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetchFn(url, {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      redirect: 'error',
+    })
+    const retryable = response.status === 429 || [500, 502, 503, 504].includes(response.status)
+    if (!retryable || attempt >= MAX_TX_INFO_RATE_LIMIT_RETRIES) {
+      return readJson(response, label)
     }
-    const dateMs = Date.parse(value)
-    if (Number.isFinite(dateMs)) return Math.max(0, dateMs - nowMs)
+    await sleep(retryDelayMs(response.headers?.get?.('retry-after') ?? null, attempt))
   }
-  return Math.min(120_000, 30_000 * (2 ** attempt))
 }
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-async function postJson(url, payload, label, fetchFn) {
+export async function postJson(url, payload, label, fetchFn = fetch) {
   for (let attempt = 0; ; attempt++) {
     const response = await fetchFn(url, {
       method: 'POST',
@@ -83,11 +74,9 @@ async function postJson(url, payload, label, fetchFn) {
     if (!retryable || attempt >= MAX_TX_INFO_RATE_LIMIT_RETRIES) {
       return readJson(response, label)
     }
-    const delayMs = retryDelayMs(response.headers?.get?.('retry-after') ?? null, attempt)
-    await sleep(delayMs)
+    await sleep(retryDelayMs(response.headers?.get?.('retry-after') ?? null, attempt))
   }
 }
-
 export function decodeTip(payload) {
   const tip = Array.isArray(payload) ? payload[0] : payload
   if (!tip || typeof tip.hash !== 'string' || !/^[0-9a-f]{64}$/i.test(tip.hash) ||
@@ -305,11 +294,13 @@ export async function runCensus({ fetchFn = fetch, now = () => new Date(), batch
   const tipBefore = await getJson(KOIOS + '/tip', 'KOIOS_TIP_BEFORE', fetchFn)
   const tipBeforeDecoded = decodeTip(tipBefore.value)
 
+  await sleep(TX_INFO_BATCH_SPACING_MS)
   const history = await getJson(
     KOIOS + '/asset_history?_asset_policy=' + USDCX_POLICY + '&_asset_name=' + USDCX_NAME,
     'KOIOS_ASSET_HISTORY',
     fetchFn,
   )
+  await sleep(TX_INFO_BATCH_SPACING_MS)
   const burns = decodeBurnEvents(history.value)
 
   const batches = []
@@ -339,6 +330,7 @@ export async function runCensus({ fetchFn = fetch, now = () => new Date(), batch
     if (offset + batchSize < burns.length) await sleep(TX_INFO_BATCH_SPACING_MS)
   }
 
+  await sleep(TX_INFO_BATCH_SPACING_MS)
   const tipAfter = await getJson(KOIOS + '/tip', 'KOIOS_TIP_AFTER', fetchFn)
   const tipAfterDecoded = decodeTip(tipAfter.value)
   const summary = summarizeBurnAddressCensus(records)
