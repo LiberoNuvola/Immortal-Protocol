@@ -121,7 +121,7 @@ function assetQuantity(row, unit) {
   return total
 }
 
-function parsePrizeDatum(row, prizePoolHash) {
+function parsePrizeDatum(row) {
   const reference = exactUtxoReference(row)
   if (!row.datum_bytes) throw new Error('PRIZEDATUM_BYTES_MISSING')
   const raw = Data.from(row.datum_bytes)
@@ -264,7 +264,7 @@ async function main() {
   const unclassifiedOutputs = []
   for (const row of prizeScan.rows) {
     try {
-      records.push(parsePrizeDatum(row, topology.b1PrizePoolHash))
+      records.push(parsePrizeDatum(row))
     } catch (error) {
       unclassifiedOutputs.push({
         utxoReference: exactUtxoReference(row),
