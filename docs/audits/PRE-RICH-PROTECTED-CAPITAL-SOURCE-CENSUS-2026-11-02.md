@@ -332,12 +332,12 @@ Koios's official API documentation states that it is a decentralized/elastic RES
 
 **Important confidence boundary:** the manifest explicitly records:
 - providerAttestationVerified = false;
-- datumHashContentVerified = false;
+- datumHashContentVerified = true only when every scanned UTxO has datum bytes and the locally recomputed Plutus-data hash matches the provider datum_hash; false otherwise;
 - providerSnapshotPinned = false;
 - sameBackendSnapshotVerified = false;
 - consistencyAssessment = TIP_STABLE_BUT_NOT_QUERY_PINNED.
 
-The before/after tip check only proves the reported tip did not move during the scan. Exact PostgREST page counts and local hashes do not cryptographically prove that every request was served from one pinned backend snapshot or that a distributed provider did not omit an output. The manifest digest is a local integrity digest, not a provider signature or independent completeness certificate. The reader records the provider-returned datum hash and a local SHA-256 digest of the datum CBOR, but does not yet recompute Cardano's Plutus datum hash from the CBOR bytes; datumHashContentVerified therefore remains false.
+The before/after tip check only proves the reported tip did not move during the scan. Exact PostgREST page counts and local hashes do not cryptographically prove that every request was served from one pinned backend snapshot or that a distributed provider did not omit an output. The manifest digest is a local integrity digest, not a provider signature or independent completeness certificate. The reader now recomputes the Cardano Plutus datum hash as BLAKE2b-256 over the returned CBOR bytes and compares it with datum_hash. The integrated CLI fails closed if a PrizeDatum or Pool datum does not pass this comparison. This verifies the content/hash relation supplied by the provider; it still does not authenticate the provider's address enumeration or pin all requests to one backend snapshot.
 
 ### 9.4 Execution boundary and status
 
