@@ -4834,3 +4834,88 @@ No matching approval workflow run surfaced in the latest 100 work-branch Actions
 - **EEV EV1–EV7:** qualification is a separate evidence status; `DEPLOYMENT_APPROVED` is a distinct manually gated artifact and is not inferred from qualification or conformance CI.
 - **FIRST ISSUE:** still blocked independently by the external signed-authority producer/public endpoint, exact Oracle runtime identity and freshness, B2 live state, EEV deployment approval, and R1/Kc/Ω plus ProtectedCapital evidence.
 - No manual approval workflow, B2 deployment workflow, wallet signature, transaction submission, Oracle bootstrap or deployment was executed. V3/Reveal and economic parameters remain untouched.
+
+
+## 45.66 AGENT A — LIVE REVALIDATION OF EXISTING EEV APPROVAL (2026-11-02)
+
+### Correction: a separate EEV deployment approval already exists
+
+A targeted Actions-history search across `main` found [PRE-RICH B1 EEV Deployment Approval #4](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679), which was not in the earlier work-branch-only run window:
+
+- Run ID `39552468679`, branch `main`, workflow commit `97b09a38742098f17a61eb07734c401aeedccc06`.
+- Completed SUCCESS on 2026-10-21 at 05:57:31 UTC. Every step in the approval job completed successfully, including authenticated Oracle State materialization, live direct-USDM source-set observation, EV1–EV7 requalification, separate approval materialization, digest verification and artifact upload.
+- Artifact `immortal-preprod-eev-approved`, ID `12324421376`, ZIP SHA-256 `d219db29890d55e3a63dd9a7ff3b0f04ec53e710a7e77688c8a48610c06d094c`, retained until 2027-01-19.
+- Artifact records `status=qualified`, `deploymentApproval.status=DEPLOYMENT_APPROVED`, profile `PRE-RICH-EEV-USDM-DIRECT-V1`, properties EV1–EV7, `approvalActor=LiberoNuvola`, `validFrom=2026-10-21T05:57:26.889Z`, and `validUntilOrRevalidationRule=LIVE_UTXO_REVALIDATION`.
+- Approved candidate: `PRE-RICH-EEV-USDM-DIRECT-V1:b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- Approved source-set evidence hash `7645d64514b17f025d0ff5f3ba0780cbee88a4331e77a57e7d07cb0862e8da00`; the `sourceSetId` is bound to this digest. Approved direct-USDM unit is `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`; observed amount `1000000000` atomic units / `100000` IMMORTAL USDM subunits.
+
+The approval artifact explicitly says it does **not itself authorize Issue admission**. It requires live UTxO revalidation plus authenticated control state, ProtectedCapital provenance, viability/liquidity evidence and the authoritative Issue decision.
+
+### Current read-only revalidation — run #44
+
+Triggered the source-qualification-only workflow by a comment-only change to its workflow file; it has no signing, approval, transaction-submit or deployment step.
+
+[PRE-RICH Preprod EEV — Source Qualification Only #44](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41431290207):
+
+- Source SHA `cb720bf72d4f42de0c28da92f600f5ce1f48c66a`; workflow conclusion SUCCESS on 2026-11-02 at 10:45:40 UTC. All steps succeeded.
+- Artifact ID `13135020137`, ZIP SHA-256 `0c78e5a8321d50918ea24634ecdebd19e51e18d4ba6b84bbb340bd2f56454146`, retention 30 days.
+- Current Koios read found the **same exact B1 PrizePool UTxO** `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`, still live/unspent at the observation snapshot, with the **same** direct-USDM asset unit and quantity `1000000000`; derived amount remains `100000` IMMORTAL USDM subunits.
+- The new source observation has a new evidence hash `cc9395d4c2a2672377db68b664883e5dc87d143fd9dc3f3f38f993b3d16c3e39`. The new, source-only qualification has hash `bc2533bdbdac851ed851ea73191088d76ad3033dcfd64c6f2ce7cf9011ca9aa8`, EV1–EV7 qualified, but its deployment approval is deliberately `PENDING` / `NOT_CREATED`.
+- **Binding rule:** do not pair this newly emitted source-set digest with the 21-Oct approval artifact. `signedIssueAuthority.js` checks that `deploymentApproval.sourceSetId` and `governance.approvalInputSourceSetHash` bind the exact `sourceSet.sourceEvidenceHash`. The old approval/source-set pair remains separately identifiable; its `LIVE_UTXO_REVALIDATION` rule was exercised against the same live Pool ref and amount in this run. If a new source-set digest is to replace the approved one in an Issue payload, it requires its own properly bound approval; never splice the old approval onto the new digest.
+
+### Oracle State freshness — still a live blocker
+
+Run #44 also re-observed the exact configured Oracle State singleton through Koios:
+
+- Same configured unit, policy, token name, publisher PKH, address and UTxO `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`; uniqueness and exact out-reference checks passed.
+- Datum quote timestamp: `1791481130142` ms = 2026-10-08T17:38:50.142Z.
+- Chain-time age at the run #44 snapshot: `2135196858` ms (24 days, 17 hours, 6 minutes, 36.858 seconds).
+- Configured maximum age: `3600000` ms (1 hour). Result: `STALE`, `withinMaxAge=false`.
+- The observer expressly records stale status; it does not refresh or substitute the quote. Datum inspection alone still does not prove external price-source truth or publisher independence.
+
+Thus the physical direct-USDM EEV source was revalidated, but the configured Oracle State quote remains stale and its external market-source truth is not established. A stale Oracle datum cannot be called Issue-ready.
+
+### ProtectedCapital census — full qualification still open
+
+The same run #44 produced a read-only Koios ticket/PrizeValidator census at slot `137933127`, block `5364510`, snapshot hash `89812e57ac214edcf946950e885a4a4a8c0edf6eb2d347c7ec5a11908a699529`.
+
+- Provider read-only = true; transaction submission attempted = false.
+- Exact PrizeValidator address returned 0 UTxOs at that snapshot; B1 PrizePool address returned 1 UTxO, the same Pool reference.
+- The Pool datum hash was recomputed from inline datum bytes and matched Koios BLAKE2b-256.
+- Ticket-ledger internal reconciliation = true, but `sourceCompletenessAuthorityVerified=false`, `providerAttestationVerified=false`, `providerSnapshotPinned=false`, `sameBackendSnapshotVerified=false`, `fullProtectedCapitalQualified=false`, `r7L6EmptinessProven=false`, `l2LifecycleProven=false`, `liveL5RowsMayBePresent=true`, and consumed expiry history still requires transaction replay.
+- The census scope is `PRIZE_VALIDATOR_TICKET_POPULATION_ONLY`; it is not a complete certification of all ProtectedCapital obligations. Zero observed PrizeValidator UTxOs does not prove R7/L6 emptiness or absence of historical obligations.
+- The deployment manifest integrity is explicitly `SELF_HASH_MATCH_NOT_SIGNATURE_AUTHENTICATION`; its authority was not cryptographically verified by this census.
+
+### B2 deployment history
+
+- Historical [PRE-RICH B2 Control Carrier — Preprod AUTO #1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/37967057715) failed on 2026-10-09 before Plutus build, wallet selection or deployment because Ubuntu could not locate package `libblst-dev`. The B2 deploy step was skipped; no artifact was produced.
+- The current `work/immortal-green-closure` manual [B2 Control Carrier — Preprod workflow](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/pre-rich-b2-control-preprod.yml) uses the canonical `.github/actions/setup-plutus` path and has no observed deployment run in the accessible run history. [B2 Conformance #609](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41420797721) is green but is not a singleton deployment.
+- B2 live Preprod singleton deployment therefore remains NOT EVIDENCED.
+
+### Producer/source search correction
+
+- Scanned the current HEAD tree of all 27 visible `Immortal-Protocol` branches for authority/signer/deployment file paths. No production signer or independent Issue-authority deployment was found.
+- Organization-wide GitHub code search for `ISSUE_AUTHORITY_SOURCE_URL`, `signIssueAuthorityEnvelope`, `PRE-RICH-SIGNED-ISSUE-AUTHORITY-V1` and `createPreprodAuthoritativeIssueProvider` found no other matching repository. The only matching `issue-admission` results were components/docs in `Immortal-Protocol`.
+- `docs/research/ISSUE-AUTHORITY-PRODUCER-QUALIFICATION-2026-09-28.md` (also present on main) is explicitly RESEARCH/NON-NORMATIVE and says not to implement a concrete producer until authenticated control state, EEV perimeter/horizon, ProtectedCapital and executable-liquidity evidence are qualified.
+- `audit/pre-genesis-genesis/ISSUE-OBSERVATION-PRODUCER-GAP-v0.1.md` remains classified OPEN: the missing boundary is the concrete authenticated observation/refinement producer, not another economic formula or browser interface.
+- The historical `LiberoNuvola/PRE-RICH-scratch-and-win-game` repository could not be inspected through the current GitHub connection (repository content/metadata was not available). The accessible Cormia repository was still empty in this check; it does not supply an alternate producer.
+
+### Corrected disposition
+
+- **B1 EEV DEPLOYMENT APPROVAL:** EXISTS (run #4, artifact #12324421376), and its exact Pool UTxO/amount still passes live revalidation at run #44. Do not repeat approval merely because a new read-only source-set artifact has a different digest.
+- **CURRENT READ-ONLY DIRECT-USDM QUALIFICATION:** EV1–EV7 PASS; new source set remains OBSERVED_NOT_QUALIFIED and no new approval was created.
+- **ORACLE STATE:** exact singleton identity observed, quote STALE by ~24.7 days vs 1-hour max; external price-source truth not proven.
+- **PROTECTEDCAPITAL:** census internally reconciled within its narrow scope, but full ProtectedCapital/source completeness/R7-L6 proof NOT QUALIFIED.
+- **B2:** conformance CI green; live singleton deployment NOT EVIDENCED.
+- **SIGNED ISSUE AUTHORITY / OBSERVATION-REFINEMENT PRODUCER:** no production endpoint, owner or key custodian verified; production witness path remains unresolved.
+- **FIRST USER ISSUE:** still BLOCKED, despite the existing EEV approval.
+
+No approval workflow, B2 deployment, Oracle refresh, private-key generation, service deployment, wallet signature, Issue transaction or ledger mutation was performed. V3/Reveal and economic parameters remain unchanged.
+
+### Next safe actions
+
+1. Preserve and use the original EEV approved qualification + its exact approved source-set digest as a matched pair, while live-revalidating the same Pool input/asset amount at admission time. Do not splice it with the new source-set digest.
+2. Obtain an authorized fresh Oracle State publication and re-run only the read-only liveness observer; do not invent or write a quote.
+3. Complete authenticated ProtectedCapital source completeness, lifecycle replay and R7/L6 evidence.
+4. Execute the separately authorized B2 Preprod deployment only through the current manual workflow when its deployment identity/approval inputs are verified.
+5. Locate/qualify the external Issue observation/refinement authority and key custodian. Do not turn the test-only signing helper into a production signer.
