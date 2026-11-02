@@ -56,6 +56,23 @@ assert.ok(manyPrompt.length < 7001, "many checks with one shared run URL should 
 assert.match(manyPrompt, /R:this run/);
 assert.match(manyPrompt, /Hard boundaries:/);
 
+const diagnosticRegistry = structuredClone(registry);
+diagnosticRegistry.checks.push({
+  checkId: "P2.8.HASKELL_V2.PENDING_EXPIRE",
+  result: "FAIL",
+  evidenceRefs: [{ kind: "workflow-run", uri: registry.subject.workflowRunUrl }],
+  limitations: [
+    "This FAIL records the workflow step outcome only; it is not itself a typed Plutus ValidationFailure or a native ledger rejection.",
+    "A transaction-size or fee failure during construction, before submission, is a pre-submission build/resource block and must not be interpreted as validator semantic failure.",
+    "Inspect the linked step log to identify the actual cause; this check does not infer it from the exit code.",
+  ],
+});
+const diagnosticPrompt = buildOperationalPrompt(diagnosticRegistry);
+assert.match(diagnosticPrompt, /P2\.8\.HASKELL_V2\.PENDING_EXPIRE FAIL/);
+assert.match(diagnosticPrompt, /not itself a typed Plutus ValidationFailure or a native ledger rejection/);
+assert.match(diagnosticPrompt, /before submission/);
+assert.match(diagnosticPrompt, /Inspect the linked step log to identify the actual cause/);
+
 assert.throws(() => buildOperationalPrompt({}), /registry.subject is required/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [] }), /non-empty array/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [{ checkId: "X", result: "UNKNOWN", evidenceRefs: [], limitations: [] }] }), /invalid checkId\/result/);
