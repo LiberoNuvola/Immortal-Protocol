@@ -31,7 +31,7 @@ test('parses expected balance using exact token decimals',()=>{
  const x=decodeExpectedBalance({balances:[{token:'USDC',balance:'39925160.413646'}]})
  assert.equal(x.expectedBalanceAtomic,'39925160413646')
  assert.equal(x.expectedBalanceUsdc,'39925160.413646')
- assert.equal(decimalAtomic('1.25'),'1250000')
+ assert.equal(decimalAtomic('1.25'),1250000n)
  assert.equal(decimalDisplay(1250000n),'1.250000')
  assert.throws(()=>decimalAtomic('1.0000001'),/PRECISION/)
 })
