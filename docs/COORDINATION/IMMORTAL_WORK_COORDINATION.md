@@ -4657,7 +4657,7 @@ Reconcile the exact source used for the public DApp with the read-only Oracle St
 
 ### Verified implementation facts
 
-**Public Pages currently deploys from `main`:**
+**Public Pages workflow is configured to publish from `main`:**
 
 - [`.github/workflows/immortal-preprod-pages.yml` on main](https://github.com/LiberoNuvola/Immortal-Protocol/blob/main/.github/workflows/immortal-preprod-pages.yml) is triggered by pushes to `main` and builds `dapp.html` / the Vite application.
 - The current `main` build job does not define the `VITE_ORACLE_*` environment bindings and does not validate Oracle configuration presence before `npm run build`.
