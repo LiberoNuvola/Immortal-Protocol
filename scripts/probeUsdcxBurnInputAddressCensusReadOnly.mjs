@@ -26,6 +26,22 @@ export const MAX_TX_INFO_RATE_LIMIT_RETRIES = 3
 
 const sha256 = (value) => createHash('sha256').update(value, 'utf8').digest('hex')
 
+
+export function retryDelayMs(retryAfter, attempt, nowMs = Date.now()) {
+  if (!Number.isSafeInteger(attempt) || attempt < 0) throw new Error('RETRY_ATTEMPT_INVALID')
+  if (typeof retryAfter === 'string' && retryAfter.trim()) {
+    const value = retryAfter.trim()
+    if (/^\d+(?:\.\d+)?$/.test(value)) {
+      return Math.max(0, Math.ceil(Number(value) * 1_000))
+    }
+    const dateMs = Date.parse(value)
+    if (Number.isFinite(dateMs)) return Math.max(0, dateMs - nowMs)
+  }
+  return Math.min(120_000, 30_000 * (2 ** attempt))
+}
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
 async function readJson(response, label) {
   const body = await response.text()
   const bytes = Buffer.byteLength(body, 'utf8')
