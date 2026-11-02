@@ -89,13 +89,13 @@ async function main() {
   if (issueAuthorityJwk.kty !== 'OKP' || issueAuthorityJwk.crv !== 'Ed25519' || !issueAuthorityJwk.x) {
     throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must be an Ed25519 (OKP) public key')
   }
+  const authorityPublicKeyHex = Buffer.from(issueAuthorityJwk.x!, 'base64url').toString('hex')
   if (authorityPublicKeyHex.length !== 64) {
     throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must encode a 32-byte Ed25519 public key')
   }
 
   if (!/^(?:[0-9a-f]{2}){1,32}$/i.test(tokenNameHex)) {
     throw new Error('V3_CARRIER_TOKEN_NAME_HEX must be 1..32 bytes of even-length hexadecimal')
-  }
   }
   validateInitialV3Datum(initialDatumCbor)
 
@@ -116,6 +116,8 @@ async function main() {
   if (!Number.isSafeInteger(seedIndex) || seedIndex < 0) {
     throw new Error('V3_CARRIER_SEED_OUTPUT_INDEX must be a safe non-negative integer')
   }
+
+  const seed = selectedSeed(await lucid.wallet().getUtxos(), seedTxHash, seedIndex)
 
   const policyFactory = loadArtifact(
     resolve(PLUTUS_OUT, 'v3EconomicStateCarrierMintPolicy.plutus.json'),
