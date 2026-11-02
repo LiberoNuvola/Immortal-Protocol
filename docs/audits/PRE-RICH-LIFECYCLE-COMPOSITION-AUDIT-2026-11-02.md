@@ -62,7 +62,7 @@ The older candidate ranges `KA ∈ {6,7,8}` and `KC ∈ {4,5}` are historical re
 
 **Input/provenance boundary still open:** `PreRichHysteresisBinding` accepts `capacity: bigint` and exact per-class `capacityCost: bigint` from its caller; it does not derive them. The canonical meaning of the ratio and the formula for `X(P)` are available, but this audit has not identified an authoritative production derivation that binds the actual numerator `C` to the exact current economic observation, nor a complete production derivation/benchmark of the mandatory `Fs/Fr/Fc` values. The historical Genesis example `C=4,000` is an illustrative bare-case bound, not a general live-capacity oracle. Do not silently substitute EEV, EffectivePool, RawSurplus or another field for `C`; the profile must identify and authenticate the exact numerator under the approved economic model.
 
-Historical semantic sources: [09 — Definitive Decision Register](https://app.notion.com/p/3d9c4454d6d5811e8bec-e49c16cf2c9d), [ECONOMIC DOCUMENTATION — CLOSURE GATE / Hysteresis Reconciliation](https://app.notion.com/p/3dac4454d6d58125b677ee19930940f0), and [00 — ACTIVE SYSTEM WORKFLOW & CLOSURE GATE](https://app.notion.com/p/3dbc4454d6d58110875bcdabb1bfefbf).
+Historical semantic sources: [09 — Definitive Decision Register](https://app.notion.com/p/3d9c4454d6d5811e8bece49c16cf2c9d), [ECONOMIC DOCUMENTATION — CLOSURE GATE / Hysteresis Reconciliation](https://app.notion.com/p/3dac4454d6d58125b677ee19930940f0), and [00 — ACTIVE SYSTEM WORKFLOW & CLOSURE GATE](https://app.notion.com/p/3dbc4454d6d58110875bcdabb1bfefbf).
 
 ### 2.2 B2 authenticated class-control carrier
 
