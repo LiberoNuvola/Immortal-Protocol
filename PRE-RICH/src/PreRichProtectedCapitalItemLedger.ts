@@ -4,6 +4,10 @@
  * This module consumes a caller-supplied, fully enumerated PrizeValidator
  * source snapshot. It does not query a provider, sign, submit, or mutate.
  *
+ * A PrizeDatum UTxO does not hold the ticket NFT: the atomic Issue flow pays
+ * that NFT to the buyer and creates a separate datum-only PrizeValidator UTxO.
+ * The immutable ticket identity is taken from the PrizeDatum policy/name.
+ *
  * It can reconcile the ticket-derived L1/L3 slice against the declared
  * census metadata and B1 aggregates. The caller-supplied source-completeness
  * assertions are not independently authenticated by this pure function.
@@ -19,7 +23,7 @@ import {
 
 export type PrizeLedgerStatus = 'Pending' | 'Revealed' | 'Claimed'
 export type PrizeLedgerBeaconStatus = 'BeaconPending' | 'BeaconReady'
-export type PrizeLedgerR7Cell = 'L1' | 'L3' | 'L4' | 'L5' | 'L6'
+export type PrizeLedgerR7Cell = 'L1' | 'L3' | 'L4' | 'L6'
 export type PrizeLedgerPcComponent =
   | 'crystallizedLiabilities'
   | 'worstCaseExposure'
@@ -30,9 +34,6 @@ export type ObservedPrizeDatumForLedger = {
   datumDigest: string
   ticketPolicyId: string
   ticketAssetNameHex: string
-  nftPolicyId: string
-  nftAssetNameHex: string
-  nftQuantity: bigint
   prizePoolHash: string
   priceUsdmSubunits: bigint
   prizeAmountUsdmSubunits: bigint
@@ -81,6 +82,7 @@ export type PrizeDatumLedgerItem = {
   datumDigest: string
   prizeStatus: string
   beaconStatus: string
+  ticketNftCustody: 'OUTSIDE_PRIZE_VALIDATOR_UTXO'
   r7Cell: PrizeLedgerR7Cell
   pcComponent: PrizeLedgerPcComponent
   classId: bigint | null
@@ -129,9 +131,9 @@ export type PreRichProtectedCapitalItemLedger = {
     l3FacePriceReferenceUnits: bigint
     l3TicketCount: bigint
     l3WorstCaseExposureReferenceUnits: bigint
-    l4SettledItemCount: bigint
-    l5ResolvedOrExpiredItemCount: bigint
+    l4ResolvedItemCount: bigint
     l6UnclassifiedItemCount: bigint
+    liveUtxoCensusContainsNoL5ExpiryRows: true
     l2LockedJackpotUsdmSubunits: bigint
     l2LockedJackpotReferenceUnits: bigint | null
     l2Status: 'ZERO_AT_THIS_SNAPSHOT' | 'AGGREGATE_ONLY_LIFECYCLE_NOT_PROVEN'
@@ -276,12 +278,12 @@ function classifyPrizeDatum(
     if (record.prizeAmountUsdmSubunits === 0n) {
       return {
         ...common,
-        r7Cell: 'L5',
+        r7Cell: 'L4',
         pcComponent: null,
         classId: null,
         priceReferenceUnits: null,
         countedAmountReferenceUnits: 0n,
-        classificationReason: 'Revealed loss; no crystallized payout remains',
+        classificationReason: 'Revealed loss; resolved outcome with no crystallized payout obligation',
       }
     }
     const payoutReferenceUnits = referenceUnitsIfRepresentable(
@@ -409,8 +411,7 @@ export function buildPreRichProtectedCapitalItemLedger(
   let l3FacePriceUsdmSubunits = 0n
   let l3TicketCount = 0n
   let l3WorstCaseExposureReferenceUnits = 0n
-  let l4SettledItemCount = 0n
-  let l5ResolvedOrExpiredItemCount = 0n
+  let l4ResolvedItemCount = 0n
   let l6UnclassifiedItemCount = 0n
 
   const items = census.records.map((record) => {
@@ -422,10 +423,7 @@ export function buildPreRichProtectedCapitalItemLedger(
     requireHex(record.datumDigest, 32, 'PrizeDatum digest')
     requireHex(record.ticketPolicyId, 28, 'PrizeDatum ticket policy')
     requireAssetNameHex(record.ticketAssetNameHex, 'PrizeDatum ticket asset name')
-    requireHex(record.nftPolicyId, 28, 'observed NFT policy')
-    requireAssetNameHex(record.nftAssetNameHex, 'observed NFT asset name')
     requireHex(record.prizePoolHash, 28, 'PrizeDatum prizePoolHash')
-    requireNonNegative(record.nftQuantity, 'observed ticket NFT quantity')
 
     const identity =
       record.ticketPolicyId.toLowerCase() + '.' + record.ticketAssetNameHex.toLowerCase()
@@ -437,14 +435,6 @@ export function buildPreRichProtectedCapitalItemLedger(
     let identityValid = true
     if (record.ticketPolicyId.toLowerCase() !== census.ticketPolicyId.toLowerCase()) {
       blockers.push('TICKET_POLICY_ID_MISMATCH:' + identity)
-      identityValid = false
-    }
-    if (
-      record.nftPolicyId.toLowerCase() !== record.ticketPolicyId.toLowerCase() ||
-      record.nftAssetNameHex.toLowerCase() !== record.ticketAssetNameHex.toLowerCase() ||
-      record.nftQuantity !== 1n
-    ) {
-      blockers.push('DATUM_AND_NFT_IDENTITY_OR_QUANTITY_MISMATCH:' + identity)
       identityValid = false
     }
     if (record.prizePoolHash.toLowerCase() !== census.b1PrizePoolScriptHash.toLowerCase()) {
@@ -476,9 +466,7 @@ export function buildPreRichProtectedCapitalItemLedger(
       l3TicketCount += 1n
       l3WorstCaseExposureReferenceUnits += item.countedAmountReferenceUnits
     } else if (item.r7Cell === 'L4') {
-      l4SettledItemCount += 1n
-    } else if (item.r7Cell === 'L5') {
-      l5ResolvedOrExpiredItemCount += 1n
+      l4ResolvedItemCount += 1n
     } else {
       l6UnclassifiedItemCount += 1n
       blockers.push('UNCLASSIFIED_TICKET_ITEM:' + identity)
@@ -488,6 +476,7 @@ export function buildPreRichProtectedCapitalItemLedger(
       itemId: 'cardano-ticket:' + identity,
       utxoReference: record.utxoReference,
       datumDigest: record.datumDigest.toLowerCase(),
+      ticketNftCustody: 'OUTSIDE_PRIZE_VALIDATOR_UTXO',
       ...item,
     }
   })
@@ -570,9 +559,9 @@ export function buildPreRichProtectedCapitalItemLedger(
       l3FacePriceReferenceUnits: referenceUnitsFromSubunits(l3FacePriceUsdmSubunits, 'L3 face-price total'),
       l3TicketCount,
       l3WorstCaseExposureReferenceUnits,
-      l4SettledItemCount,
-      l5ResolvedOrExpiredItemCount,
+      l4ResolvedItemCount,
       l6UnclassifiedItemCount,
+      liveUtxoCensusContainsNoL5ExpiryRows: true,
       l2LockedJackpotUsdmSubunits: census.pool.lockedJackpotUsdmSubunits,
       l2LockedJackpotReferenceUnits,
       l2Status,
