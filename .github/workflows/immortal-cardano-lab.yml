@@ -410,6 +410,7 @@ jobs:
       # These are synthetic post-state fixtures for the EXPIRE transition only;
       # they do not claim an end-to-end Reveal transaction or production issuance.
       - name: Execute Haskell V2 Pending EXPIRE ledger trace
+        id: haskell_pending_expire
         env:
           IMMORTAL_EXPIRE_CASE: "pending"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
@@ -540,6 +541,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           V3_CARRIER_OUTCOME: ${{ steps.jev_v3_carrier.outcome || 'unknown' }}
           REVEAL_OUTCOME: ${{ steps.jev_reveal.outcome || 'unknown' }}
+          HASKELL_PENDING_EXPIRE_OUTCOME: ${{ steps.haskell_pending_expire.outcome || 'unknown' }}
           AIKEN_SETUP_OUTCOME: ${{ steps.aiken-setup.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-reveal-build.outcome || 'unknown' }}
           AIKEN_PUBLICATION_OUTCOME: ${{ steps.aiken_ref_publish.outcome || 'unknown' }}
@@ -602,6 +604,17 @@ jobs:
                 'The active Reveal path is the isolated Aiken Plutus V3 validator paired with the parameterized B1PrizePool Plutus V2 validator.',
                 'This local Yaci result is not Preprod/mainnet qualification and does not by itself establish full Haskell/Aiken semantic parity.',
                 'The existing V3 carrier and economic rules are unchanged; the Haskell Reveal trace is not the blocking integration path.',
+              ],
+            },
+            {
+              checkId: 'P2.8.HASKELL_V2.PENDING_EXPIRE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute Haskell V2 Pending EXPIRE ledger trace',
+              stepOutcome: outcome(process.env.HASKELL_PENDING_EXPIRE_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This FAIL records the workflow step outcome only; it is not itself a typed Plutus ValidationFailure or a native ledger rejection.',
+                'A transaction-size or fee failure during construction, before submission, is a pre-submission build/resource block and must not be interpreted as validator semantic failure.',
+                'Inspect the linked step log to identify the actual cause; this check does not infer it from the exit code.',
               ],
             },
             {
@@ -772,6 +785,10 @@ jobs:
         id: jev-prompt
         if: always() && hashFiles('audit/yaci-evidence/verification-registry.json') != ''
         run: node scripts/build-jev-operational-prompt.mjs audit/yaci-evidence/verification-registry.json audit/yaci-evidence/operational-prompt.md
+
+      - name: Test JEV verification registry generator
+        if: always()
+        run: node scripts/test-jev-verification-registry-generator.mjs
 
       - name: Test JEV operational prompt generator
         if: always()
