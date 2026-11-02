@@ -32,13 +32,9 @@ export function buildOperationalPrompt(registry) {
   // The validated registry remains the canonical store for full evidence refs
   // and limitation text. The operational prompt indexes each check and records
   // counts only, so large run-scoped registries cannot multiply verbose caveats.
-  const checksText = registry.checks.map((c) => {
-    const refs = c.evidenceRefs.map((e) => {
-      const uri = typeof e === "string" ? e : (e.uri || e.path || JSON.stringify(e));
-      return subject.workflowRunUrl && uri === subject.workflowRunUrl ? "this run" : uri;
-    }).join(", ") || "no evidence reference";
-    return `- ${c.checkId} ${c.result} R:${refs} L:${c.limitations.length} recorded in registry`;
-  }).join("\n");
+  const checksText = registry.checks.map((c) =>
+    `- ${c.checkId} ${c.result} R:${c.evidenceRefs.length} L:${c.limitations.length} (registry)`
+  ).join("\n");
   const run = subject.workflowRunUrl || subject.workflowRunId || "not supplied";
   const prompt = [
     "JEV OPERATIONAL PROMPT — generated from a validated verification registry",
