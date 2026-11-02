@@ -22,6 +22,18 @@ test('rejects a non-Preprod or non-HTTPS Koios endpoint', () => {
     () => assertPreprodKoiosEndpoint('http://preprod.koios.rest/api/v1'),
     /KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1/,
   )
+  assert.throws(
+    () => assertPreprodKoiosEndpoint('https://evil-preprod.koios.rest/api/v1'),
+    /KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1/,
+  )
+  assert.throws(
+    () => assertPreprodKoiosEndpoint('https://preprod.koios.rest.attacker.example/api/v1'),
+    /KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1/,
+  )
+  assert.throws(
+    () => assertPreprodKoiosEndpoint('https://user:secret@preprod.koios.rest/api/v1'),
+    /KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1/,
+  )
 })
 
 
@@ -62,7 +74,7 @@ function mockKoios({
 
   const fetchImpl = async (urlValue, init = {}) => {
     const url = new URL(urlValue)
-    calls.push({ url: url.toString(), method: init.method ?? 'GET', body: init.body })
+    calls.push({ url: url.toString(), method: init.method ?? 'GET', body: init.body, redirect: init.redirect })
 
     if (url.pathname.endsWith('/tip')) {
       const index = Math.min(tipCalls, tipSequence.length - 1)
@@ -147,6 +159,7 @@ test('enumerates every page using explicit limit/offset and exact Content-Range 
     return [url.searchParams.get('limit'), url.searchParams.get('offset')]
   }), [['2', '0'], ['2', '2'], ['2', '4']])
   assert.ok(pageCalls.every((call) => call.method === 'POST'))
+  assert.ok(mock.calls.every((call) => call.redirect === 'error'))
 })
 
 test('scans PrizeValidator and Pool addresses under one unchanged Preprod tip', async () => {
