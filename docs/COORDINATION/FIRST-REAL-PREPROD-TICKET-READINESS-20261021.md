@@ -624,3 +624,58 @@ Do not change the Oracle datum schema, `OracleQuote`, `Economic.totalUsdmValue`,
 **Disposition remains:** Preprod direct-USDM EEV asset identity accepted for its narrow physical-accounting purpose; EV1–EV7 observed qualified at the 2026-11-02 snapshot but current deployment approval not established; USD/USDM Option B source **NOT QUALIFIED**; full ProtectedCapital/PA1–PA7 and `K_c`/Omega evidence incomplete; R1/Kc certificate missing; first Issue **BLOCKED**.
 
 No source admission, quote publication, approval, key, wallet operation, signature, transaction, deployment or merge was performed by this documentation correction. V3/Reveal and economic semantics remain untouched.
+
+## 2026-11-02 live xReserve correction — Cardano-domain collateral now matched on-chain
+
+### New read-only workflow evidence
+
+[Circle Cardano USDCx Reserve Reconciliation run 41482604345](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41482604345) completed **SUCCESS** on `c33fb643795e1f62cfeb05d0648b2fc47c7ed235`.
+
+- Regression suite: **9/9 PASS**.
+- Artifact [13158914351](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41482604345/artifacts/13158914351), ZIP SHA-256 `8654ec3463e17bb0159ffefc863d09b372aefc78f3a6d89bc62e816f7d64205c`.
+- Evidence JSON SHA-256 `3b0b0293b101050be9e368850f1734e960ae0093145bb030fef9240042793efe`.
+- Cardano tip stayed fixed during acquisition: slot `202070915`, block `14149078`, hash `7be54e7ecfdb22df698b4a61fc32adf487334be228c0e59e58abf23da284f64e`.
+
+### Correct on-chain reserve view
+
+A previous prototype queried ERC-20 `balanceOf` at the xReserve proxy address and observed 8.666550 USDC. That was the wrong contract-level metric and **must not be read as Cardano collateral**. The new observer uses the actual xReserve domain-aware view.
+
+The official Circle xReserve source at commit [`12236a2b17ace9d1108af6f63dbe5d0ce5898017`](https://github.com/circlefin/evm-xreserve-contracts/tree/12236a2b17ace9d1108af6f63dbe5d0ce5898017) defines `balanceOfNativeCollateral(localToken, remoteDomain)` to delegate to `GatewayWallet.availableBalance(localToken, getRemoteDomainDepositor(remoteDomain))`.
+
+At Ethereum Mainnet block **26,328,316** (`0x191bcfc`):
+
+- Circle `GET /v1/info` reconfirmed remote domain **10004**, Cardano Mainnet, token **USDCx**, associated token **USDC**, and exact registered remote token identifier `0x9ea9794d33dbcef3f77718e903816e877ab2577f4d7ee653638f1f60fc671dd6`.
+- Circle `GET /v1/balances/10004` returned expected domain balance **39,032,540.052630 USDC**.
+- The xReserve proxy `0x8888888199b2df864bf678259607d6d5ebb4e3ce` returned the exact same remote token identifier through `getRemoteToken(10004, USDC)`.
+- The domain's RemoteDomainDepositor was `0x866e992217e0bfb8371f9ad32a53dcc47d1aa04e`.
+- Its GatewayWallet was `0x77777777dcc4d5a8b6e418fd04d8997ef11000ee`.
+- `balanceOfNativeCollateral(USDC, 10004)` returned **39,032,540.052630 USDC**, exactly matching Circle's expected-balance result: **0.000000 difference**.
+
+The GatewayWallet's total ERC-20 USDC balance at that block was **59,533,829.650331 USDC**; it is aggregate across domains and is **not** to be counted entirely as Cardano collateral. The domain-specific view is the relevant on-chain quantity for this check.
+
+### Corrected Koios supply comparison
+
+The same run corrected the Koios `asset_history` decoder. Koios represents both mints and burns in the single `minting_txs` array; burns are negative signed quantities. The exact USDCx history returned:
+
+- 4,317 total events;
+- 2,997 mint events, gross minted **92,063,778.562765 USDCx**;
+- 1,320 burn events, gross burned **53,939,829.236409 USDCx**;
+- net supply **38,123,949.326356 USDCx**.
+
+Comparing domain available collateral / Circle expected balance with this history-derived net supply leaves **908,590.726274 USDCx** of difference. The new run also reconfirmed:
+- 30 Oct burn **450,000 USDCx** remains `awaiting_finality`, 320 confirmations, no Ethereum release hash.
+- 29 Oct burn **450,000 USDCx** remains `finalized`; the exact Ethereum receipt contains a successful native USDC mint of **449,998 USDC**.
+
+These two burn records do not explain the complete 908,590.726274 difference. It is not valid to label the remainder pending, fee, undercollateralization or an accounting error without exact transaction-to-withdrawal correlation and history completeness. The observed IOG history route is an undocumented Portal backend GET endpoint, and the Koios event history is not independently completeness-certified.
+
+### Updated interpretation for PRE-RICH
+
+**Improved evidence:** Circle's Cardano expected balance and the on-chain xReserve domain-specific available collateral now match exactly at the same acquisition window. This removes the earlier ambiguity created by querying the xReserve proxy's own ERC-20 balance instead of its Cardano domain accounting.
+
+**Still open:** the 908,590.726274 supply/available-collateral difference; exact burn → IOG → Ethereum release reconciliation for all relevant events; independent source/history completeness; executable Moneta-USDM/USDCx depth/fees; redemption operating bounds; USD/USDM Option B PriceReference qualification.
+
+This does not make the Mainnet Moneta USDM price equal to USD, does not qualify USD/USDM Option B, and does not transfer Moneta Mainnet identity to PRE-RICH's separately accepted Preprod tUSDM. It also does not change the user's direct-USDM Preprod EEV profile.
+
+**First Issue disposition remains:** current EV1–EV7 deployment approval is not established; ProtectedCapital PA1–PA7 and complete source coverage remain open; `K_c`/Omega and Hysteresis replay evidence remain open; R1/Kc deployment-bound certificate is missing; current Treasury settlement/Oracle authority path remains unqualified; the first real Issue remains **BLOCKED**.
+
+The correction is documented in [USDM Multi-Venue Source Matrix §24](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/USDM_MULTI_VENUE_SOURCE_MATRIX.md). No Oracle State update, PriceReference or MintPolicy change, approval, key, wallet action, signature, burn, withdrawal, transaction, deployment, merge or economic-rule change was performed. V3/Reveal semantics remain untouched.
