@@ -266,4 +266,45 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     )
   })
 
+  it('preserves a 2.5 USDM single payout as 250 sub-units and blocks lossy reference conversion', () => {
+    const census = baseCensus()
+    census.records[3] = {
+      ...census.records[3],
+      prizeAmountUsdmSubunits: 250n,
+    }
+    census.pool.pendingLiabilitiesUsdmSubunits = 250n
+
+    const ledger = buildPreRichProtectedCapitalItemLedger(census)
+    const winningItem = ledger.items.find((item) => item.r7Cell === 'L1')
+
+    expect(ledger.totals.l1PayoutUsdmSubunits).toBe(250n)
+    expect(ledger.totals.l1PayoutReferenceUnits).toBeNull()
+    expect(winningItem?.countedAmountReferenceUnits).toBeNull()
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
+    expect(ledger.qualification.blockers).toContain(
+      'L1_PAYOUT_TOTAL_NOT_EXACTLY_REPRESENTABLE_IN_IMMORTAL_REFERENCE_UNITS',
+    )
+  })
+
+  it('reconciles two fractional payouts when their exact aggregate is a whole reference unit', () => {
+    const census = baseCensus()
+    census.records[3] = {
+      ...census.records[3],
+      prizeAmountUsdmSubunits: 250n,
+    }
+    census.records[4] = {
+      ...census.records[4],
+      prizeAmountUsdmSubunits: 250n,
+    }
+
+    const ledger = buildPreRichProtectedCapitalItemLedger(census)
+    const winners = ledger.items.filter((item) => item.r7Cell === 'L1')
+
+    expect(ledger.totals.l1PayoutUsdmSubunits).toBe(500n)
+    expect(ledger.totals.l1PayoutReferenceUnits).toBe(5n)
+    expect(ledger.totals.l1ItemCount).toBe(2n)
+    expect(winners.every((item) => item.countedAmountReferenceUnits === null)).toBe(true)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(true)
+  })
+
 })
