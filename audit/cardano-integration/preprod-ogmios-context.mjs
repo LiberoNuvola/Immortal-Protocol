@@ -190,7 +190,7 @@ try {
     rawOgmiosUtxoResult: walletRaw,
   }
   const walletBody = JSON.stringify(walletObservations, null, 2) + '\n'
-  await writeFile(`${evidenceDir}/preprod-wallet-utxo.json`, walletBody)
+  await writeFile(\`\${evidenceDir}/preprod-wallet-utxo.sha256\`, \`\${walletDigest}  preprod-wallet-utxo.json\n\`)
   const walletDigest = createHash('sha256').update(walletBody).digest('hex')
   await writeFile(`${evidenceDir}/preprod-wallet-utxo.sha256`, `${walletDigest}  preprod-wallet-utxo.json\n`)
   const walletSummary = [
@@ -257,7 +257,7 @@ try {
     rawOgmiosUtxoResult: prizeRaw,
   }
   const prizeBody = JSON.stringify(prizeObservations, null, 2) + '\n'
-  await writeFile(`${evidenceDir}/preprod-prize-validator-utxo.json`, prizeBody)
+    \`\${prizeDigest}  preprod-prize-validator-utxo.json\n\`,
   const prizeDigest = createHash('sha256').update(prizeBody).digest('hex')
   await writeFile(
     `${evidenceDir}/preprod-prize-validator-utxo.sha256`,
@@ -275,7 +275,7 @@ try {
     `tip_after=${JSON.stringify(prizeTipAfter)}`,
     `utxo_packet_sha256=${prizeDigest}`,
     'session=same-websocket-as-preprod-context',
-  ].join('\\n') + '\\n'
+  ].join('\n') + '\n'
   await writeFile(`${evidenceDir}/preprod-prize-validator-summary.txt`, prizeSummary)
   console.log(prizeSummary)
 
@@ -332,7 +332,7 @@ try {
     rawOgmiosUtxoResult: poolRaw,
   }
   const poolBody = JSON.stringify(poolObservations, null, 2) + '\n'
-  await writeFile(`${evidenceDir}/preprod-b1-pool-utxo.json`, poolBody)
+    \`\${poolDigest}  preprod-b1-pool-utxo.json\n\`,
   const poolDigest = createHash('sha256').update(poolBody).digest('hex')
   await writeFile(
     `${evidenceDir}/preprod-b1-pool-utxo.sha256`,
