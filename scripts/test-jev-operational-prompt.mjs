@@ -70,7 +70,7 @@ verboseRegistry.checks = verboseLimitations.map((limitation, index) => ({
 }));
 const verbosePrompt = buildOperationalPrompt(verboseRegistry);
 assert.ok(verbosePrompt.length < 7001, "verbose registry limitations should not overflow the operational prompt");
-assert.match(verbosePrompt, /VERBOSE\\.LIMIT\\.39 FAIL R:this run L:1 recorded in registry/);
+assert.match(verbosePrompt, /VERBOSE\.LIMIT\.39 FAIL R:this run L:1 recorded in registry/);
 assert.match(verbosePrompt, /Full limitation text and complete evidence references are retained without alteration in the validated source registry/);
 assert.doesNotMatch(verbosePrompt, /Unique limitation 0:/, "full limitation text must remain in the registry, not be duplicated into the prompt");
 
