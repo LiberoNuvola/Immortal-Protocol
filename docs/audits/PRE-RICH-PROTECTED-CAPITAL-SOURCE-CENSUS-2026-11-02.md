@@ -212,3 +212,30 @@ This reader must not write transactions, alter any datum, or submit any transact
 **PA1–PA7:** NOT CERTIFIED.
 
 No economic rule or parameter is changed by this report.
+
+
+## 7. Implementation increment — pure ticket ledger
+
+A pure, read-only builder has now been added:
+
+[`PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts)
+
+It consumes a caller-supplied PrizeValidator census and:
+- validates the declared network/snapshot, Pool/PrizeValidator bindings, hashes, exact UTxO references, ticket NFT identity/quantity, and duplicate ticket/UTxO identities;
+- classifies live Pending/BeaconReady ticket records as L3 using the existing profile price ladder and 500× maximum normal payout multiplier;
+- classifies live positive Revealed payouts as L1, even when the expiry timestamp has passed, until the exact on-chain Claim/Expire transition is represented;
+- preserves Claimed and resolved-loss records as terminal/history cells rather than adding them to live ProtectedCapital;
+- reconciles L1 sum and L3 face-price/count against the supplied B1 Pool aggregate;
+- treats positive `ppLockedJackpot` as aggregate-only, not certified L2, because lifecycle provenance is absent.
+
+The function explicitly returns `sourceCompletenessAuthorityVerified: false`. It can test internal arithmetic and the consistency of caller-declared page/count metadata; it cannot verify provider pagination, source completeness, cryptographic attestation, or whether a caller omitted an unseen UTxO. `fullProtectedCapitalQualified` and global L6 emptiness remain false by construction.
+
+Adversarial tests were added:
+
+[`PC-item-ledger-source-census.conformance.test.ts`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts)
+
+The 12 cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum/NFT identity mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, and invalid Beacon lifecycle status.
+
+**Execution status:** tests are authored but have not been run in GitHub Actions or a local checkout in this session. The current change does not alter any workflow to trigger them. A live Preprod provider census is still not possible from the tracked repository configuration because its deployment-specific PrizeValidator address/ticket policy and provider credentials are not populated in `.env.example`.
+
+**Next bounded task:** implement a separate provider-specific, read-only PrizeValidator address enumerator that proves pagination completion and supplies a verifiable source manifest to this pure builder. No Issue integration, V3/Reveal/validator change, or on-chain action is part of this increment.
