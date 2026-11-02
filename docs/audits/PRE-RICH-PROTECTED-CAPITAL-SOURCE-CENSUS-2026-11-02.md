@@ -4,7 +4,7 @@
 **Branch:** work/immortal-green-closure  
 **Baseline HEAD:** e008a0322a88ede235a1f02dd496e7c2f8ed1671  
 **Status:** STATIC REPOSITORY SOURCE CENSUS + FIXTURE PROTOTYPE — NOT A LIVE PREPROD CENSUS  
-**Change class:** Documentation and fixture artifact only. No runtime code, economic constants, V3, Reveal, validators, workflows, deployment configuration, or on-chain state changed.
+**Change class:** Read-only observation tooling, tests, workflow wiring, and documentation. No economic constants, V3, Reveal, validators/kernel semantics, deployment/bootstrap configuration, signing, or on-chain state changed. The existing EEV source-qualification workflow now invokes the read-only census after manifest validation.
 
 ---
 
