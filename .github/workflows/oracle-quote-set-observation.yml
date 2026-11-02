@@ -1,4 +1,5 @@
 name: Oracle Quote-Set Read-Only Observation
+# Observation remains read-only: no seed, signing key, transaction builder, submit, or deployment path.
 
 on:
   workflow_dispatch:
