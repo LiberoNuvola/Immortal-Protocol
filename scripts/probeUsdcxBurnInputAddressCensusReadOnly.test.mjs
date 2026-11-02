@@ -8,6 +8,8 @@ import {
   decodeBurnTxInfoBatch,
   summarizeBurnAddressCensus,
   TX_HASHES_PER_BATCH,
+  TX_INFO_BATCH_SPACING_MS,
+  retryDelayMs,
 } from './probeUsdcxBurnInputAddressCensusReadOnly.mjs'
 
 const unit = { policy_id: USDCX_POLICY, asset_name: USDCX_NAME }
@@ -169,4 +171,20 @@ test('decodes a valid mainnet tip and rejects a malformed tip', () => {
 
 test('keeps transaction-info request batches within the conservative public API bound', () => {
   assert.equal(TX_HASHES_PER_BATCH, 20)
+})
+
+
+test('honors Retry-After seconds and HTTP-date values', () => {
+  assert.equal(retryDelayMs('2', 0, 1_000), 2_000)
+  assert.equal(retryDelayMs('Thu, 01 Jan 1970 00:00:05 GMT', 0, 1_000), 4_000)
+})
+
+test('uses bounded exponential fallback when Retry-After is missing', () => {
+  assert.equal(retryDelayMs(null, 0, 0), 30_000)
+  assert.equal(retryDelayMs('not-a-date', 1, 0), 60_000)
+  assert.equal(retryDelayMs(null, 9, 0), 120_000)
+})
+
+test('spaces sequential transaction-info batches', () => {
+  assert.equal(TX_INFO_BATCH_SPACING_MS, 5_200)
 })
