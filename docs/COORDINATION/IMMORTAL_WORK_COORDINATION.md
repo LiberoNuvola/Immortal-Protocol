@@ -4695,3 +4695,56 @@ Notion gates remain unchanged:
 ### Next safe action
 
 An administrator must select the canonical Pages source and reconcile it with the already prepared working-branch configuration, then populate the approved public runtime variables and the separate `DEMETER` observation bindings from the same deployment record. Only after the exact published bundle and exact configured Preprod singleton agree should the read-only observation be rerun. This finding alone does not close source qualification, R1/Kc/Ω, B2, EEV deployment approval, ProtectedCapital provenance, or the first-ticket gate.
+
+## 45.63 PUBLIC PAGES DEPLOYMENT + FIRST-ISSUE ENTRYPOINT GAP (2026-11-02)
+
+### Exact last observed Pages deployment
+
+The latest Pages workflow run found among the repository's recent main runs is [IMMORTAL Public Pages #187](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38182109071):
+
+- Run ID: 38182109071; completed success on 2026-10-11 at 22:52:44 UTC.
+- Source: branch main, exact commit 876bc54f8ee8f6e1dede226db8c367cca3ae620c.
+- Both build and deploy jobs completed successfully.
+- The Deploy Pages log returned the public environment URL: [https://liberonuvola.github.io/Immortal-Protocol/](https://liberonuvola.github.io/Immortal-Protocol/).
+- Build log confirms the DApp page dapp.html and bundle assets/dapp-bIhN6Bfi.js were included in the artifact.
+- Pages artifact ID 11718432251; ZIP SHA-256 e7b3f35e30f7e6ab062da6d807c1abb23f03d30c2d361ed7a7265e80d2ce2536. The upload used a one-day retention period; the artifact is now expired (artifact query empty / download returned 404). Therefore the exact historical bundle bytes could not be re-read in this pass. Deployment source, job result, URL and build-log file inventory were verified.
+
+### Configuration at the exact deployed source SHA
+
+At 876bc54f8ee8f6e1dede226db8c367cca3ae620c:
+
+- .github/workflows/immortal-preprod-pages.yml has no job-level env injection for the deployment-specific VITE_ORACLE_* variables and no Oracle runtime preflight. The build performs npm install followed by npm run build.
+- src/config.ts reads VITE_ORACLE_PUBLISHER_PKH, VITE_ORACLE_STATE_POLICY_ID and VITE_ORACLE_STATE_TOKEN_NAME_HEX, but it does not define/read ORACLE_STATE_ADDRESS; the deployed .env.example also has no VITE_ORACLE_STATE_ADDRESS.
+- No Blockfrost project ID or Oracle singleton address was injected by that Pages workflow.
+- The relevant deployed-source src/config.ts blob is 4e4dcf268c5ff01677922e2972a7e662ff87a760; .env.example blob is 02f8c1561c1efbfc8e35d37c5346780208e3c35f.
+
+The current main src/main.ts is byte-identical to the deployed-source version (blob d55ba61dab9377b338989eb56b23b8825c9f6335). This is a direct source check, not a re-read of the expired bundle.
+
+### Critical first-user Issue path finding
+
+**The published DApp is intentionally unable to buy a ticket.**
+
+- In src/main.ts on the deployed SHA and current main, the UI renders BUY TICKET IS FAIL-CLOSED; the Buy button is disabled and the click handler returns "Purchase unavailable: authoritative Economic Gate admission is required."
+- src/mint.ts on main does contain mintSerialNFTWithAuthoritativeAdmission, but current src/main.ts does not import or invoke it. A helper's existence is not a wired DApp path.
+- On work/immortal-green-closure, src/main.ts imports the authoritative Issue mint function and createRemoteAuthoritativeIssueAdmissionProvider, requests the server-side witness, and uses V3 carrier/settlement observations. The corresponding working-branch src/mint.ts makes the B2 control binding explicit and required. Its Buy button remains disabled until deployment wiring and settlement observations are available; the code does not bypass the fail-closed gate.
+- The working branch's Pages workflow contains more recent public-runtime variable injection, including Oracle singleton address/policy/name/publisher, B2, V3 and Blockfrost configuration, but the workflow trigger still targets main. The working branch has not thereby been deployed.
+
+### Promotion / PR state
+
+- Existing [PR #19](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19) is open but currently mergeable=false, changes 593 files and its own body states that the site is not part of the PR. It is not a safe vehicle for wholesale promotion of the public DApp path.
+- Searches for open PRs concerning authoritative first Issue, DApp provider wiring and Pages Oracle runtime found no separate focused promotion PR.
+- The old release/issue-admission-boundary-squash branch is a four-file CI/adapter change from 2026-10-10; it does not contain the current DApp entrypoint or Pages runtime wiring.
+
+### Disposition
+
+- **LATEST OBSERVED PAGES DEPLOYMENT: SUCCESS, SOURCE SHA 876bc54... (2026-10-11).**
+- **PUBLISHED FIRST-ISSUE BUY PATH: FAIL-CLOSED / NOT WIRED.**
+- **PUBLISHED ORACLE STATE ADDRESS: NOT EXPOSED BY DEPLOYED SOURCE.**
+- **WORKING-BRANCH AUTHORITATIVE ISSUE PATH: IMPLEMENTED AT SOURCE LEVEL, NOT PROMOTED/DEPLOYED AND STILL CONFIGURATION-GATED.**
+- The earlier DEMETER configured-singleton run remains blocked before Blockfrost query; the historical bootstrap observation remains stale and is not a substitute.
+- No main update, merge, deployment, GitHub environment mutation, secret disclosure, wallet signature, Issue transaction, Oracle update or ledger state change was made.
+- V3/Reveal semantics and economic parameters were not changed.
+
+### Next safe action
+
+Build a curated, reviewable promotion of the first-user DApp path from the working branch to main: map its complete dependency closure, carry only the required runtime/provider/adapter/tests/configuration, and add Pages preflight that validates the same approved deployment record without allowing a missing endpoint to masquerade as an Issue-ready deployment. Keep it as a focused PR; do not merge it or deploy it until exact CI passes and the deployment-specific public variables plus the separate DEMETER Blockfrost/Oracle observation bindings are set and matched. Do not merge PR #19 wholesale.
