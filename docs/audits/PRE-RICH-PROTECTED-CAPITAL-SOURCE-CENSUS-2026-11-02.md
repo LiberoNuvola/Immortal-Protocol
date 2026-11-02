@@ -332,11 +332,12 @@ Koios's official API documentation states that it is a decentralized/elastic RES
 
 **Important confidence boundary:** the manifest explicitly records:
 - providerAttestationVerified = false;
+- datumHashContentVerified = false;
 - providerSnapshotPinned = false;
 - sameBackendSnapshotVerified = false;
 - consistencyAssessment = TIP_STABLE_BUT_NOT_QUERY_PINNED.
 
-The before/after tip check only proves the reported tip did not move during the scan. Exact PostgREST page counts and local hashes do not cryptographically prove that every request was served from one pinned backend snapshot or that a distributed provider did not omit an output. The manifest digest is a local integrity digest, not a provider signature or independent completeness certificate.
+The before/after tip check only proves the reported tip did not move during the scan. Exact PostgREST page counts and local hashes do not cryptographically prove that every request was served from one pinned backend snapshot or that a distributed provider did not omit an output. The manifest digest is a local integrity digest, not a provider signature or independent completeness certificate. The reader records the provider-returned datum hash and a local SHA-256 digest of the datum CBOR, but does not yet recompute Cardano's Plutus datum hash from the CBOR bytes; datumHashContentVerified therefore remains false.
 
 ### 9.4 Execution boundary and status
 
