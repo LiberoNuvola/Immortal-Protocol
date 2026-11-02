@@ -259,43 +259,34 @@ This reveals an existing interface boundary, not a new economic rule: a non-inte
 The test suite at this point included both cases. The earlier item-ledger/payout tests totaled **14 authored, not executed**; seven additional provider-enumerator tests are recorded in §8.
 
 
-## 8. Follow-on implementation — Koios Preprod provider enumerator
+## 8. Follow-on implementation — shared Koios Preprod source census
 
-A separate read-only provider adapter was added after the static source census:
+The canonical provider enumerator and PrizeValidator/Pool census are the shared implementation already present on this branch:
 
-- [`preprod-protected-capital-ticket-census.mjs`](../../audit/cardano-integration/preprod-protected-capital-ticket-census.mjs)
-- [Provider pagination / datum decoder tests](../../audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs)
-- [GitHub Actions test workflow](../../.github/workflows/pre-rich-protected-capital-ticket-census.yml)
+- [`relayer/koiosProtectedCapitalSourceCensus.js`](../../relayer/koiosProtectedCapitalSourceCensus.js)
+- [Provider pagination / snapshot / datum provenance tests](../../relayer/koiosProtectedCapitalSourceCensus.test.js)
+- [Integrated Preprod ProtectedCapital census](../../audit/cardano-integration/preprod-protected-capital-census.mjs)
+- [ProtectedCapital item-ledger builder](../../PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts)
+- [Dedicated test workflow](../../.github/workflows/pre-rich-protected-capital-ticket-census.yml)
 
-The adapter:
+The shared provider:
 
-1. Enumerates the exact configured PrizeValidator address through Koios `POST /address_utxos` using explicit `limit/offset` pagination and `_extended=true`.
-2. Requires a short/empty terminal page or an exhausted reported total; detects duplicate out-references, offset/range inconsistencies, and the configured scan bound.
-3. Reads the exact configured B1 PrizePool out-reference through `POST /utxo_info`, verifies the Pool singleton, and decodes the eight-field B1 datum.
-4. Decodes the 23-field PrizeDatum, binds the ticket NFT policy/name/quantity to the datum, and checks PrizeValidator / B1 script-hash relationships.
-5. Captures the chain tip before and after the multi-page observation. A changed tip produces `UNSTABLE_SNAPSHOT`; no same-snapshot ledger is emitted.
-6. Feeds the decoded records into the existing pure item-ledger builder and preserves raw source rows, manifest digest, and ledger output.
+1. Enumerates the PrizeValidator and B1 Pool addresses within one Preprod tip snapshot.
+2. Requires exact numeric Content-Range totals, reconciles every page/offset, detects changed totals and duplicate UTxO references, and fails closed on incomplete pagination.
+3. Resolves datum hashes through Koios datum_info while retaining datum-source and digest provenance.
+4. Reads the tip before and after the scan and rejects a changed snapshot.
+5. Emits a canonical source manifest and digest.
 
-**Non-certification is deliberate:** the manifest sets `providerSignatureVerified=false` and `sourceCompletenessAuthorityVerified=false`. Exhausted pagination plus an unchanged tip is useful provider evidence, but it is not an independent proof that Koios returned every ledger UTxO. The builder also keeps `fullProtectedCapitalQualified=false` and `r7L6EmptinessProven=false`. No EEV, SafetyCapital, ReserveProtection, MandatoryFutureCosts, C, X(P), viability, B2, or Issue certificate is produced.
+The integrated census derives the PrizeValidator and Pool topology from the current deployment scripts/configuration, checks the Pool singleton, decodes the 23-field PrizeDatum and eight-field Pool datum, and feeds the exact records into the existing pure item-ledger builder. It retains unclassified outputs and raw source rows.
 
-Seven provider-specific tests cover short final pages, exact-full-page exhaustion, duplicate out-references, offset mismatch, PrizeDatum decoding, malformed PrizeDatum shape, and B1 datum decoding. The dedicated workflow runs these tests together with the existing pure item-ledger conformance tests.
+**Non-certification remains deliberate:** the manifest sets provider attestation/authority to unverified. A stable tip and exact pagination totals are provider evidence, not independent proof that the provider returned every ledger UTxO. The output explicitly keeps full ProtectedCapital qualification, PA1–PA7, L2 lifecycle, and global R7 L6 emptiness unproven.
 
-**GitHub implementation commits:**
-- Reader: `d0d3607b6a196ea9e747f8ad1860227f508ddc6c`
-- Constructor decoder correction: `f863b69b9edc19b6ac33d9817aa1d242cd721f65`
-- Provider tests: `b52b40c78e397e8bea5a6321c7053035e43de732`
-- Test workflow: `8e00c759bb0bb710901dbbe9f9c277297320c447`
-- Workflow includes the existing item-ledger suite: `cb210ceec6d5631dd1dcf6710e7d317ec83e17ff`
+The dedicated workflow runs:
+- Node's native test runner for the shared Koios provider tests;
+- Vitest for the item-ledger source-census conformance suite.
 
-**Execution status:** GitHub combined-status lookup for the workflow commit returned no status checks at the time of inspection; test execution is therefore **NOT VERIFIED**. No local-PC execution was requested or performed.
+**Execution status:** the workflow definition is committed, but no successful Actions result has yet been verified for the latest workflow revision. Do not claim the tests passed until an exact-head run completes.
 
-**Runtime configuration still required:** the live observer fails closed unless all five deployment identifiers are supplied explicitly:
-- `PREPROD_PRIZE_VALIDATOR_ADDRESS`
-- `PREPROD_TICKET_POLICY_ID`
-- `PREPROD_B1_POOL_ADDRESS`
-- `PREPROD_B1_POOL_OUTREF`
-- `PREPROD_B1_POOL_SINGLETON_UNIT`
+**Live source census:** not performed in this documentation update. The current observer expects deployment environment values (oracle publisher/state identity and B1 Pool singleton identity) and uses the deployment topology it derives. No identifiers or live authority were inferred from fixtures. The recovered historical EEV deployment artifact is a separate, dated observation and must be revalidated before Issue admission.
 
-The Koios public Preprod endpoint does not require an API credential. These identifiers are deployment-specific and were not guessed or recovered from test fixtures. Until supplied and a live census is executed, the live source census remains **NOT PERFORMED** and PA1–PA7 remain **NOT CERTIFIED**.
-
-No V3, Reveal, validator, Kernel, economic parameter, B2, Issue-admission, workflow deployment, or on-chain state was changed by this increment.
+No V3, Reveal, validator, Kernel, economic parameter, B2, Issue-admission, deployment, or on-chain state was changed by this documentation correction.
