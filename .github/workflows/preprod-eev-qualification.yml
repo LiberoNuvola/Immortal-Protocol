@@ -7,6 +7,13 @@ on:
     paths:
       - ".github/workflows/preprod-eev-qualification.yml"
       - "audit/cardano-integration/preprod-direct-usdm-source-set.mjs"
+      - "audit/cardano-integration/preprod-protected-capital-census.mjs"
+      - "audit/cardano-integration/preprod-protected-capital-deployment-identity.mjs"
+      - "audit/cardano-integration/preprod-protected-capital-deployment-identity.test.mjs"
+      - "relayer/koiosProtectedCapitalSourceCensus.js"
+      - "relayer/koiosProtectedCapitalSourceCensus.test.js"
+      - "PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts"
+      - "PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts"
       - "audit/cardano-integration/preprod-direct-usdm-qualification.mjs"
       - "audit/cardano-integration/preprod-oracle-state-liveness.mjs"
       - "audit/cardano-integration/preprod-oracle-state-datum.mjs"
@@ -69,6 +76,9 @@ jobs:
       - name: Test Oracle State datum decoder
         run: node --test audit/cardano-integration/preprod-oracle-state-datum.test.mjs
 
+      - name: Test read-only ProtectedCapital deployment identity binding
+        run: node --test audit/cardano-integration/preprod-protected-capital-deployment-identity.test.mjs
+
       - name: Observe exact live Oracle State singleton and datum timestamp
         run: |
           node --check audit/cardano-integration/preprod-oracle-state-liveness.mjs
@@ -83,6 +93,14 @@ jobs:
 
       - name: Re-observe exact live B1 PrizePool UTxO
         run: node audit/cardano-integration/preprod-direct-usdm-source-set.mjs
+
+      - name: Run live read-only PrizeValidator and B1 Pool item census
+        env:
+          PC_CENSUS_DEPLOYMENT_MANIFEST: audit/preprod-evidence/preprod-direct-usdm-deployment.json
+          PC_CENSUS_ORACLE_STATE_MANIFEST: audit/preprod-evidence/preprod-oracle-state-deployment.json
+          PC_CENSUS_OUTPUT: audit/preprod-evidence/preprod-protected-capital-census.json
+          KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+        run: node --import=tsx audit/cardano-integration/preprod-protected-capital-census.mjs
 
       - name: Re-qualify EV1-EV7 at this exact commit
         run: node audit/cardano-integration/preprod-direct-usdm-qualification.mjs
