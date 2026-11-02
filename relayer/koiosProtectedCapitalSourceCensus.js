@@ -301,27 +301,32 @@ function createKoiosProtectedCapitalSource({
       const datumBytes = typeof inlineBytes === 'string'
         ? inlineBytes.toLowerCase()
         : datumHash ? resolved.get(datumHash) ?? null : null
-      const calculatedDatumHash = datumBytes && datumHash
+      const datumSource = typeof inlineBytes === 'string'
+        ? 'INLINE'
+        : datumBytes ? 'DATUM_INFO' : 'MISSING'
+      const calculatedDatumHash = datumBytes
         ? await cardanoDatumHashHex(datumBytes)
         : null
-      const datumHashContentVerified =
-        calculatedDatumHash !== null && calculatedDatumHash === datumHash
+      const datumHashContentVerified = datumHash
+        ? calculatedDatumHash !== null && calculatedDatumHash === datumHash
+        : null
+      const datumHashVerification = !datumBytes
+        ? 'DATUM_BYTES_MISSING'
+        : !datumHash
+          ? datumSource === 'INLINE'
+            ? 'INLINE_DATUM_HASH_NOT_APPLICABLE'
+            : 'DATUM_HASH_MISSING'
+          : datumHashContentVerified
+            ? 'BLAKE2B_256_MATCH'
+            : 'BLAKE2B_256_MISMATCH'
       return {
         ...row,
         datum_hash: datumHash,
         datum_bytes: datumBytes,
-        datum_source: typeof inlineBytes === 'string'
-          ? 'INLINE'
-          : datumBytes ? 'DATUM_INFO' : 'MISSING',
+        datum_source: datumSource,
         calculated_datum_hash: calculatedDatumHash,
         datum_hash_content_verified: datumHashContentVerified,
-        datum_hash_verification: !datumBytes
-          ? 'DATUM_BYTES_MISSING'
-          : !datumHash
-            ? 'DATUM_HASH_MISSING'
-            : datumHashContentVerified
-              ? 'BLAKE2B_256_MATCH'
-              : 'BLAKE2B_256_MISMATCH',
+        datum_hash_verification: datumHashVerification,
       }
     }))
   }
@@ -397,16 +402,29 @@ function createKoiosProtectedCapitalSource({
       ])),
     }
     const sourceManifestDigest = sha256Hex(canonicalJson(manifestBase))
+    const allRows = Object.values(addressScans).flatMap((scan) => scan.rows)
+    const datumBytesAvailableForAll =
+      allRows.length > 0 && allRows.every((row) => typeof row.datum_bytes === 'string')
+    const datumHashComparisonsVerified =
+      datumBytesAvailableForAll &&
+      allRows.every((row) =>
+        row.datum_hash
+          ? row.datum_hash_content_verified === true
+          : row.datum_source === 'INLINE',
+      )
     const manifest = {
       ...manifestBase,
       sourceManifestDigest,
       providerAttestationVerified: false,
-      datumHashContentVerified: Object.values(addressScans)
-        .flatMap((scan) => scan.rows)
-        .length > 0 &&
-        Object.values(addressScans)
-          .flatMap((scan) => scan.rows)
-          .every((row) => row.datum_hash_content_verified === true),
+      datumBytesAvailableForAll,
+      datumHashComparisonsVerified,
+      datumHashComparisonRequiredCount: allRows.filter((row) => row.datum_hash).length,
+      datumHashMismatchCount: allRows.filter(
+        (row) => row.datum_hash && row.datum_hash_content_verified === false,
+      ).length,
+      inlineDatumWithoutHashCount: allRows.filter(
+        (row) => row.datum_source === 'INLINE' && !row.datum_hash,
+      ).length,
       providerSnapshotPinned: false,
       sameBackendSnapshotVerified: false,
       consistencyAssessment: 'TIP_STABLE_BUT_NOT_QUERY_PINNED',
