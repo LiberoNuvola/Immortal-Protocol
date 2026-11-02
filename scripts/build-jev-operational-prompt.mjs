@@ -29,31 +29,16 @@ export function buildOperationalPrompt(registry) {
   }
 
   const failures = registry.checks.filter((c) => c.result !== "PASS");
-  // Keep each check's complete limitation set while storing repeated text once.
-  // This avoids a large run-scoped registry multiplying identical caveats.
-  const limitationIds = new Map();
-  const uniqueLimitations = [];
+  // The validated registry remains the canonical store for full evidence refs
+  // and limitation text. The operational prompt indexes each check and records
+  // counts only, so large run-scoped registries cannot multiply verbose caveats.
   const checksText = registry.checks.map((c) => {
-    // This workflow usually attaches every scoped check to the same run URL.
-    // Show that URL in the header once and abbreviate only exact repeats here;
-    // distinct artifact/log URLs stay visible.
     const refs = c.evidenceRefs.map((e) => {
       const uri = typeof e === "string" ? e : (e.uri || e.path || JSON.stringify(e));
       return subject.workflowRunUrl && uri === subject.workflowRunUrl ? "this run" : uri;
     }).join(", ") || "no evidence reference";
-    const limits = c.limitations.map((limitation) => {
-      if (!limitationIds.has(limitation)) {
-        const id = "L" + (uniqueLimitations.length + 1);
-        limitationIds.set(limitation, id);
-        uniqueLimitations.push({ id, text: limitation });
-      }
-      return limitationIds.get(limitation);
-    });
-    return `- ${c.checkId} ${c.result} R:${refs} L:${limits.length ? limits.join(",") : "none recorded"}`;
-  }).join("\n");
-  const limitationsText = uniqueLimitations.length
-    ? ["Recorded limitations (deduplicated; full text retained):", ...uniqueLimitations.map(({ id, text }) => `- ${id}: ${text}`)].join("\n")
-    : "Recorded limitations: none.";
+    return `- ${c.checkId} ${c.result} R:${refs} L:${c.limitations.length} recorded in registry`;
+  }).join("\\n");
   const run = subject.workflowRunUrl || subject.workflowRunId || "not supplied";
   const prompt = [
     "JEV OPERATIONAL PROMPT — generated from a validated verification registry",
@@ -66,7 +51,7 @@ export function buildOperationalPrompt(registry) {
     "Observed checks:",
     checksText,
     "",
-    limitationsText,
+    "Full limitation text and complete evidence references are retained without alteration in the validated source registry; resolve them by checkId before acting.",
     "",
     "Freshness guard: this prompt is a run-scoped observation, not an instruction to trust stale state. Before acting, compare its commit/ref/run against the current branch HEAD and the newest relevant GitHub Actions runs.",
     "Notion page insertion order is not execution recency: use GitHub run timestamps and commit ancestry. If this prompt is stale, record the mismatch, inspect the newest matching registry/log/artifact, and act from that current evidence.",
