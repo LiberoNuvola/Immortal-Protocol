@@ -372,3 +372,42 @@ The isolated Pyth project now has a mathematical candidate for converting the au
 [Run 39604543598](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604543598) passed on commit `c05267ca202bae85332870ef4c98b8972175d283`; the current probe/carrier source blobs are the same. Reported output: 15 tests in the conversion/source module + 12 carrier tests = 27; 27 checks, 0 errors and 0 warnings; Plutus V3 build passed.
 
 This narrows the conversion work from an unstated floating-point/scale guess to an explicit rational input, but it does not settle or authenticate that input. No current normative source establishes the live on-chain value of USD per USDM, and the helper is not connected to the existing Plutus V2 MintPolicy. No Issue, Oracle State update or deployment is authorized by this code-level result.
+
+
+## 2026-11-02 — V3 build qualification and first-Issue blocker reconciliation
+
+This entry supersedes only the historical build/settlement observations below where newer source and CI evidence is now available. It does not authorize a Preprod transaction.
+
+### V3 artifact qualification
+
+- [V3 Carrier Build Qualification run #4](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41465620005) completed **SUCCESS** on source commit `2f3f93b796598759aaf1e99d230227c62f9d4a42`.
+- The workflow performed a fresh Plutus build, then validated both `PlutusScriptV2` envelopes, their CBOR hex and the 116-byte canonical initial datum. The verifier emitted a source-bound manifest explicitly classified `FRESH_BUILD_ONLY_NOT_DEPLOYMENT`.
+- Artifact ID: `13154608156`; uploaded ZIP SHA-256: `6660bf2096c076369727816bcac6f667b2c5749ff79f4ebd757324fddba0ed17`.
+- Validator CBOR: 4,483 bytes, SHA-256 `2c3ebe6d7bf2b76c6348bf842526e910603dbb3d727d9ccb285e0497d58b0cc1`.
+- Mint-policy CBOR: 1,124 bytes, SHA-256 `74423c8aac4f9e7daa090bece3dd900efea9325e1fd0993686cbcef6a7745a97`.
+- Initial datum: 116 bytes, SHA-256 `06f58b4bac3120cc7da2260542317172f9cb24484c611ecd05e2113ccf553da9`.
+- All 14 source blob SHAs recorded by the run-#4 manifest were independently compared with GitHub at its source commit and matched.
+
+The subsequent deployment-helper preflight hardening is on `work/immortal-green-closure`, commit `4b2dea881745f923ae20b8d9e161dd4417c37c3e`: it requires an Ed25519 OKP public key, explicit seed transaction hash plus output index, a 1–32-byte token name, and even-length non-empty CBOR envelopes. The existing evidence writer uses a valid single-newline JSON suffix. [Run #6](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41471194297) is rebuilding from this updated commit; at the time of this entry its Plutus build step is still in progress, so a fresh current-helper manifest is not yet claimed.
+
+### Yaci proof is not Preprod deployment
+
+[IMMORTAL V3 Carrier Fast Ledger Gate run #261](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41471194512) completed **SUCCESS** on commit `4b2dea881745f923ae20b8d9e161dd4417c37c3e`. It restored and verified a cached V3 artifact, started isolated Yaci DevKit, completed a native-ledger smoke transaction and executed the V3 carrier ledger probe. Its cache key is derived from the V3 Haskell sources, Plutus Cabal package, setup action and package lock. The fresh run-#4 build above independently compiled the same V3 source blobs. This is a Yaci/devnet ledger result only: it does not establish a Cardano Preprod address, policy ID, singleton UTxO, transaction reference or deployed Issue Authority key.
+
+### Reconciliation of the historical Treasury-settlement blocker
+
+The earlier A4 note describing a fixed 1,000,000-lovelace Treasury payment as incompatible with the on-chain valuation is historical for an older builder snapshot. On the current working branch, `src/mint.ts` no longer uses `TICKET_PAYMENT_LOVELACE` for the Issue Treasury output. It obtains the authenticated Oracle State singleton, constructs a settlement basket using `src/issueSettlement.ts`, and checks the completed transaction body for exact Treasury settlement, finite validity upper bound and output-specific minimum ADA before submission. The on-chain MintPolicy still requires `Economic.totalUsdmValue` to equal `pdPriceUsdm`; the valuation-excluded ADA floor remains 1,600,000 lovelace.
+
+[Cardano Adapter Sale Conformance run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41471194368) completed **SUCCESS** on the current helper-hardening commit and ran `issueSettlementConformance.test.ts`, `authoritativeIssueEntrypoint.test.ts`, the signed-authority tests and the related admission-boundary suite. This supersedes the old source-level claim that the current builder still hardcodes the 1,000,000-lovelace Treasury payment.
+
+This is implementation and CI evidence, not a live settlement: it does not prove that the currently observed Preprod Oracle State is fresh, source-qualified, publisher-authorized or sufficient for a real user's Issue transaction. The live Oracle/EEV source and completed Preprod Issue remain separate gates.
+
+### Remaining authority and deployment blockers
+
+- `scripts/deployV3Carrier.mts` applies `ISSUE_AUTHORITY_PUBLIC_KEY` as a parameter of the validator. The on-chain carrier checks a 32-byte Ed25519 public key against a 64-byte signature over the canonical carrier-binding message. The production public key therefore cannot be selected merely because it parses as Ed25519; its custodian and corresponding production signer must be identified and verified before deployment.
+- `relayer/issueAuthorityServer.js` is a downstream `POST /issue-admission` relay. It requires `ISSUE_AUTHORITY_SOURCE_URL` (or `ISSUE_AUTHORITY_URL`) and `ISSUE_AUTHORITY_PUBLIC_KEY`, fetches a signed envelope from that external source, and invokes the Haskell producer. It does not itself originate or sign the upstream economic decision.
+- `relayer/preprodIssueAuthorityEnvelope.js` can sign an already-computed witness, but the inspected production call path does not invoke it; the checked uses are tests with ephemeral Ed25519 keys. That is not evidence of a production signer, key custodian or qualified external decision source.
+- The Pages workflow reads `VITE_ISSUE_AUTHORITY_ENDPOINT` and `VITE_V3_CARRIER_FACTORY_URL` from repository variables and validates the public endpoint format. It explicitly allows the endpoint to be absent, in which case the build may succeed while ticket issuance remains disabled. The actual configured variable values and a production signed response have not been independently verified here.
+- No inspected GitHub Actions workflow invokes `npm run deploy:v3-carrier`. The existing `preprod-v3-carrier-observation` job only observes a carrier after it already exists. The V3 Fast workflow is Yaci-only; the build-qualification workflow is non-deploying.
+
+**Decision:** do not create or run the V3 Preprod deployment transaction yet. First qualify the production Issue Authority public key/custodian and external signed-decision source, re-observe the exact live Counter/Pool/Oracle/B2/V3 candidate identities and evidence bindings, and verify the deployment wallet/seed UTxO/token-name inputs without exposing secrets. Only then can a dedicated, separately reviewed GitHub deployment workflow be considered. No mnemonic or private key was read in this audit; no Cardano Preprod transaction, signing operation, mint or singleton creation was performed. V3 validator/policy semantics, Reveal semantics and economic rules were not changed.
