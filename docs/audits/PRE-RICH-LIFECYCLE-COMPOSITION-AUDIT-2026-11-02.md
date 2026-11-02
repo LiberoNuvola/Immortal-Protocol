@@ -42,9 +42,27 @@ The controller implements the already-closed application thresholds:
 
 Its outputs are `ACTIVATE`, `UPGRADE`, `RETAIN`, `CONTRACT` and `HALT`. It preserves `HighestClassEverActivated` monotonically and contracts directly to the highest lower class that remains maintainable.
 
-`PreRichHysteresisBinding.ts` provides `derivePreRichControl` and `assertPreRichControlMatches`. The latter recomputes the expected controller result and fails closed if the observed class-control state differs.
+`PreRichHysteresisBinding.ts` provides `derivePreRichControl` and `assertPreRichControlMatches`. The latter recomputes the expected controller result and fails closed if the observed class-control state differs. Its conformance test exercises exact integer examples: with `C=320` and a class cost of `40`, activation occurs at the exact `8×X(P)` boundary; with `C=80`, a class costing `40` is contracted and a class costing `20` is retained at the exact `4×X(P)` maintenance boundary. These are synthetic controller fixtures, not authenticated Preprod capacity observations.
 
-**Input boundary still open:** the binding explicitly requires the caller to supply the canonical exact-integer capacity `C` and per-class `X(P)`.  The inspected controller does not derive either quantity. The current Economic Algorithm documents EffectivePool, ProtectedCapital, RawSurplus and the statistical unresolved reserve, but this audit did not find a frozen derivation binding those quantities to the exact `C` and `X(P)` consumed by hysteresis. Do not substitute EEV, RawSurplus or another quantity without locating an existing approved derivation.
+**The normative hysteresis formula was already recovered; it must not be reinvented.** The Notion Economic Decision Register and the 14 September Hysteresis Reconciliation record the following closed semantic contract:
+
+```text
+X(P) = 499P + Fs(P) + Fr(P) + Fc(P)
+CR(P) = C / X(P)
+
+Activation: CR(P) >= KA = 8
+Maintenance: CR(Pcurrent) >= KC = 4
+Hysteresis buffer: B(P) = (KA - KC) × X(P) = 4 × X(P)
+Distribution floor: KD = 4
+```
+
+`Fs`, `Fr` and `Fc` enter `X(P)` only when they are genuinely mandatory future protocol costs: settlement/issue, reveal when protocol-paid, and claim when protocol-paid. Future mandatory OPEX is included only when it is an actual protocol commitment. The semantic formula and inclusion rule are CLOSED; reproducible implementation benchmarks for the actual `Fs/Fr/Fc` and mandatory OPEX remain open. The bare-case values `Activation=3992P` and `Maintenance=1996P` apply only when the additional cost terms are zero/absent.
+
+The older candidate ranges `KA ∈ {6,7,8}` and `KC ∈ {4,5}` are historical research results and were superseded by the Definitive Decision Register: `KA=8, KC=4, KD=4` is the frozen normative baseline. They must not be reopened absent new evidence of incompatibility.
+
+**Input/provenance boundary still open:** `PreRichHysteresisBinding` accepts `capacity: bigint` and exact per-class `capacityCost: bigint` from its caller; it does not derive them. The canonical meaning of the ratio and the formula for `X(P)` are available, but this audit has not identified an authoritative production derivation that binds the actual numerator `C` to the exact current economic observation, nor a complete production derivation/benchmark of the mandatory `Fs/Fr/Fc` values. The historical Genesis example `C=4,000` is an illustrative bare-case bound, not a general live-capacity oracle. Do not silently substitute EEV, EffectivePool, RawSurplus or another field for `C`; the profile must identify and authenticate the exact numerator under the approved economic model.
+
+Historical semantic sources: [09 — Definitive Decision Register](https://app.notion.com/p/3d9c4454d6d5811e8bec-e49c16cf2c9d), [ECONOMIC DOCUMENTATION — CLOSURE GATE / Hysteresis Reconciliation](https://app.notion.com/p/3dac4454d6d58125b677ee19930940f0), and [00 — ACTIVE SYSTEM WORKFLOW & CLOSURE GATE](https://app.notion.com/p/3dbc4454d6d58110875bcdabb1bfefbf).
 
 ### 2.2 B2 authenticated class-control carrier
 
@@ -156,9 +174,9 @@ This contract uses existing PRE-RICH meanings and parameters. It introduces no n
 
 ### C1 — authoritative hysteresis inputs
 
-For every class, the application must derive the exact canonical `C` and `X(P)` from authenticated, version-bound economic observations. The derivation must be deterministic, integer-exact and independently reproducible.
+For every class, the application must use the already-closed cost-surface semantics `X(P)=499P+Fs(P)+Fr(P)+Fc(P)`, including only genuinely mandatory future protocol costs, and the already-closed ratio `CR(P)=C/X(P)`. Activation is `CR(P)≥8`; maintenance is `CR(Pcurrent)≥4`; the normative buffer is `4×X(P)`. The values `KA=8, KC=4, KD=4` are frozen decisions, not new candidates.
 
-If the canonical source/derivation for either value cannot be established, control transition and Issue must fail closed. No caller-selected cost, synthetic capacity or stale observation may be substituted.
+The remaining evidence requirement is to bind the exact integer numerator `C` to an authoritative, current, versioned economic observation, and to benchmark the actual mandatory `Fs/Fr/Fc`/OPEX values for the deployed implementation. The controller must not accept caller-selected costs, synthetic capacity or stale observations as production evidence. If the source and derivation of `C` cannot be established for a concrete deployment profile, control transition and Issue must fail closed.
 
 ### C2 — deterministic control result
 
@@ -216,7 +234,7 @@ All state references, pre/post hashes, action identity and authority evidence mu
 
 | Test/evidence | Required result |
 |---|---|
-| Canonical `C`/`X(P)` derivation | Exact, authoritative, versioned, deterministic and independently reproducible |
+| Cost surface `X(P)` | Uses the frozen `499P+Fs+Fr+Fc` formula and includes only mandatory costs; actual cost benchmark is reproducible |\n| Capacity numerator `C` | Exact current value is authenticated, versioned and tied to the approved economic observation/profile |\n| Hysteresis replay | Computes `CR(P)=C/X(P)` using frozen `KA=8, KC=4, KD=4` and matches the submitted controller result |
 | Hysteresis replay | Recomputed controller result equals submitted control state |
 | B2 validator | Rejects arbitrary lower class, invalid activation and historical-maximum regression |
 | Issue without B2 reference | Rejected by the on-chain Issue enforcement path |
