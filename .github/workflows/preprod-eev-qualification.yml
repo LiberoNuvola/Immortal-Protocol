@@ -102,7 +102,7 @@ jobs:
           PC_CENSUS_ORACLE_STATE_MANIFEST: audit/preprod-evidence/preprod-oracle-state-deployment.json
           PC_CENSUS_OUTPUT: audit/preprod-evidence/preprod-protected-capital-census.json
           KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
-        run: node --import=tsx audit/cardano-integration/preprod-protected-capital-census.mjs
+        run: node --import=tsx/esm audit/cardano-integration/preprod-protected-capital-census.mjs
 
       - name: Re-observe exact live B1 PrizePool UTxO
         run: node audit/cardano-integration/preprod-direct-usdm-source-set.mjs
