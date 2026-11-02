@@ -134,6 +134,8 @@ Source: [relayer/preprodIssueObservationReader.js](https://github.com/LiberoNuvo
 
 This distinction is important: the current provider's signed state/carrier binding can authenticate the exact observed aggregate state and decision references, but it does not itself establish the per-ticket membership that generated those aggregates.
 
+The atomic Issue transaction proves that the Ticket NFT is sent to the buyer separately from the PrizeDatum output deposited at the PrizeValidator address. The census therefore keys the liability item by the immutable (pdTicketPolicy, pdTicketName) datum identity and the exact PrizeDatum UTxO reference. It does not expect an NFT in that script UTxO. Source: [src/mint.ts, atomic ticket delivery and PrizeDatum output](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/src/mint.ts#L1525-L1635).
+
 ### 2.6 No deployment identity supplied by tracked configuration
 
 The tracked .env.example leaves the Preprod Blockfrost project ID, ticket policy ID, B1 Pool singleton identity, B2 address/identity, PrizeValidator reference address, authority endpoint, and direct-USDM unit empty. This is appropriate for secrets and deployment-specific values, but means the repository snapshot alone does not identify the exact deployed Preprod ticket and Pool sources.
@@ -174,7 +176,7 @@ Before the producer can issue a live item ledger, the read-only source reader mu
 1. Exact network, network magic, observed slot/time, provider identity, and source freshness.
 2. Exact PrizeValidator address derived from the deployed script parameters, ticket policy ID, and B1 Pool singleton policy/name.
 3. Complete pagination/cursor exhaustion for all UTxOs at the PrizeValidator address, not just known ticket IDs or wallet UTxOs.
-4. Exact UTxO reference, raw datum digest, decoded 23-field PrizeDatum, and exact ticket NFT identity/value for every record.
+4. Exact PrizeDatum UTxO reference, raw datum digest, decoded 23-field PrizeDatum, and the immutable ticket identity carried in datum fields pdTicketPolicy/pdTicketName. The Ticket NFT is a separate buyer-held output in the atomic Issue transaction; it is not expected inside the PrizeValidator UTxO.
 5. Explicit treatment of undecodable datums, missing inline datum/reference datum, non-ticket UTxOs, stale/equivocating provider responses, and duplicate identities; none may silently disappear from the census.
 6. Full matching to the exact B1 Pool datum and V3 carrier snapshot; the ticket list, B1 aggregates, and V3 classes must all refer to the same observation boundary.
 7. L1 reconciliation: sum of every live Revealed, positive, unpaid payout item equals ppPendingLiabilities, taking exact Claim and Expire transitions into account.
@@ -221,10 +223,10 @@ A pure, read-only builder has now been added:
 [`PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts)
 
 It consumes a caller-supplied PrizeValidator census and:
-- validates the declared network/snapshot, Pool/PrizeValidator bindings, hashes, exact UTxO references, ticket NFT identity/quantity, and duplicate ticket/UTxO identities;
+- validates the declared network/snapshot, Pool/PrizeValidator bindings, hashes, exact UTxO references, datum-embedded ticket policy/name identity, and duplicate ticket/UTxO identities;
 - classifies live Pending/BeaconReady ticket records as L3 using the existing profile price ladder and 500× maximum normal payout multiplier;
 - classifies live positive Revealed payouts as L1, even when the expiry timestamp has passed, until the exact on-chain Claim/Expire transition is represented;
-- preserves Claimed and resolved-loss records as terminal/history cells rather than adding them to live ProtectedCapital;
+- maps positive Revealed payouts to L1, losing Reveal (zero payout) to L5 per the item-level lifecycle contract, and Claimed payouts to L4; the losing PrizeDatum may remain live until technical expiry, while Expire consumes its PrizeDatum UTxO;
 - reconciles L1 sum and L3 face-price/count against the supplied B1 Pool aggregate;
 - treats positive `ppLockedJackpot` as aggregate-only, not certified L2, because lifecycle provenance is absent.
 
@@ -234,7 +236,7 @@ Adversarial tests were added:
 
 [`PC-item-ledger-source-census.conformance.test.ts`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts)
 
-The 12 cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum/NFT identity mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, and invalid Beacon lifecycle status.
+The 15 Vitest cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum policy mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, invalid Beacon lifecycle status, losing Reveal → L5, and exact fractional-payout handling. The 9 Node tests cover provider page totals, missing/changed Content-Range, changed tip, duplicate references, DatumHash resolution, and missing datums.
 
 **Execution status at this audit baseline:** the pure builder tests were authored but not yet run. The provider-specific reader and dedicated test workflow were added later; see §8. No live Preprod source census has been performed.
 
@@ -290,3 +292,60 @@ The dedicated workflow runs:
 **Live source census:** not performed in this documentation update. The current observer expects deployment environment values (oracle publisher/state identity and B1 Pool singleton identity) and uses the deployment topology it derives. No identifiers or live authority were inferred from fixtures. The recovered historical EEV deployment artifact is a separate, dated observation and must be revalidated before Issue admission.
 
 No V3, Reveal, validator, Kernel, economic parameter, B2, Issue-admission, deployment, or on-chain state was changed by this documentation correction.
+
+
+## 9. R7 lifecycle correction and provider observation boundary
+
+### 9.1 PrizeDatum versus Ticket NFT custody
+
+The canonical mint flow creates two separate outputs in one atomic sale:
+- a datum-only PrizeValidator output containing the PrizeDatum;
+- a Ticket NFT output delivered to the buyer.
+
+Consequently, the PrizeValidator census uses (pdTicketPolicy, pdTicketName) as the stable logical identity from the PrizeDatum, alongside the exact datum UTxO reference and digest. It does not search for or require the NFT in that UTxO. The pure ledger labels this custody boundary OUTSIDE_PRIZE_VALIDATOR_UTXO.
+
+Source: [src/mint.ts](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/src/mint.ts#L1525-L1635).
+
+### 9.2 R7 transition mapping retained by the item ledger
+
+The source-derived item mapping is:
+- Pending / BeaconReady: L3, valued using the existing 500× exposure rule.
+- Revealed with positive payout: L1 until exact Claim or valid Expire is observed. Reaching pdExpiresAt by wall-clock alone does not release the liability.
+- Revealed with zero payout: L3 → L5 (losing Reveal extinguishes the economic right). The PrizeDatum can still be present in the live PrizeValidator UTxO set until technical expiry; this is not an L1 liability and is not mislabeled as a Claim/L4 settlement.
+- Claimed with positive frozen payout: L1 → L4.
+- Expire: consumes the PrizeDatum UTxO. The resulting L5 historical event cannot be reconstructed from a live PrizeValidator-address scan; it requires transaction-history/replay evidence.
+
+The builder and its test suite now preserve this distinction. A live scan can include a losing Reveal datum classified to L5, while a ticket removed by Expire is absent from the live source population. The census therefore cannot claim global L5 history completeness.
+
+### 9.3 Koios API implementation and limitations
+
+The shared reader uses the official Preprod Koios endpoint (https://preprod.koios.rest/api/v1) and PostgREST pagination:
+- POST /address_utxos with explicit limit and offset;
+- Prefer: count=exact;
+- numeric Content-Range checks on every page;
+- stable ordering and duplicate-reference checks;
+- bounded datum_info batches for DatumHash-only outputs;
+- response-page and datum-content digests in the local source manifest;
+- tip hash/slot/block-number check before and after both address scans.
+
+Koios's official API documentation states that it is a decentralized/elastic REST query layer and documents offset/limit pagination, a maximum page size of 1,000 rows, and Content-Range behavior. See [Koios API documentation](https://www.koios.rest/api.html) and [Cardano Developer Portal — Koios Preprod endpoint](https://developers.cardano.org/docs/get-started/koios/).
+
+**Important confidence boundary:** the manifest explicitly records:
+- providerAttestationVerified = false;
+- providerSnapshotPinned = false;
+- sameBackendSnapshotVerified = false;
+- consistencyAssessment = TIP_STABLE_BUT_NOT_QUERY_PINNED.
+
+The before/after tip check only proves the reported tip did not move during the scan. Exact PostgREST page counts and local hashes do not cryptographically prove that every request was served from one pinned backend snapshot or that a distributed provider did not omit an output. The manifest digest is a local integrity digest, not a provider signature or independent completeness certificate.
+
+### 9.4 Execution boundary and status
+
+The integrated runner is:
+
+[audit/cardano-integration/preprod-protected-capital-census.mjs](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/cardano-integration/preprod-protected-capital-census.mjs)
+
+It derives the script topology from deployment configuration, scans the PrizeValidator and B1 Pool addresses, parses the singleton Pool datum and individual PrizeDatums, retains unclassified outputs, feeds the pure builder, and writes a local evidence packet. It is read-only and contains no transaction construction/signing/submission path.
+
+Required deployment-specific values remain external environment configuration. This pass did not run the CLI against Preprod, did not obtain a real live census, and did not produce a provider signature. The test workflows are committed, but an exact-head successful Actions result has not been verified in this session.
+
+**Current status:** provider-specific enumeration and runner IMPLEMENTED; test suites AUTHORED and wired to CI; live Preprod scan NOT EXECUTED; provider completeness/authenticity NOT PROVEN; L2 lifecycle OPEN; full ProtectedCapital and PA1–PA7 NOT CERTIFIED.
