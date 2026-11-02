@@ -85,9 +85,10 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
   it('classifies and reconciles L1/L3 while retaining terminal L4/L5 rows', () => {
     const ledger = buildPreRichProtectedCapitalItemLedger(baseCensus())
 
-    expect(ledger.qualification.ticketLedgerQualified).toBe(true)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(true)
     expect(ledger.qualification.fullProtectedCapitalQualified).toBe(false)
     expect(ledger.qualification.r7L6EmptinessProven).toBe(false)
+    expect(ledger.qualification.sourceCompletenessAuthorityVerified).toBe(false)
     expect(ledger.qualification.scope).toBe('PRIZE_VALIDATOR_TICKET_POPULATION_ONLY')
 
     expect(ledger.totals.l1PayoutUsdmSubunits).toBe(500n)
@@ -107,7 +108,7 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
       l1MatchesB1PendingLiabilities: true,
       l3FacePriceMatchesB1UnresolvedReserve: true,
       l3CountMatchesB1UnresolvedTicketCount: true,
-      allSourceOutputsAccountedFor: true,
+      declaredSourceCountsReconcile: true,
     })
   })
 
@@ -128,11 +129,11 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
 
     const ledger = buildPreRichProtectedCapitalItemLedger(census)
 
-    expect(ledger.qualification.ticketLedgerQualified).toBe(false)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
     expect(ledger.qualification.blockers).toContain(
       'PRIZE_ADDRESS_PAGINATION_NOT_COMPLETE',
     )
-    expect(ledger.reconciliation.allSourceOutputsAccountedFor).toBe(false)
+    expect(ledger.reconciliation.declaredSourceCountsReconcile).toBe(false)
   })
 
   it('fails closed when source outputs are not all decoded or classified', () => {
@@ -142,12 +143,12 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
 
     const ledger = buildPreRichProtectedCapitalItemLedger(census)
 
-    expect(ledger.qualification.ticketLedgerQualified).toBe(false)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
     expect(ledger.qualification.blockers).toContain(
       'UNCLASSIFIED_PRIZE_ADDRESS_UTXOS_PRESENT',
     )
     expect(ledger.qualification.blockers).toContain(
-      'PRIZE_ADDRESS_SOURCE_POPULATION_NOT_FULLY_ACCOUNTED_FOR',
+      'PRIZE_ADDRESS_DECLARED_SOURCE_COUNTS_DO_NOT_RECONCILE',
     )
   })
 
@@ -158,7 +159,7 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     const ledger = buildPreRichProtectedCapitalItemLedger(census)
 
     expect(ledger.reconciliation.l1MatchesB1PendingLiabilities).toBe(false)
-    expect(ledger.qualification.ticketLedgerQualified).toBe(false)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
     expect(ledger.qualification.blockers).toContain(
       'L1_ITEM_SUM_DOES_NOT_MATCH_B1_PENDING_LIABILITIES',
     )
@@ -188,7 +189,7 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
 
     const ledger = buildPreRichProtectedCapitalItemLedger(census)
 
-    expect(ledger.qualification.ticketLedgerQualified).toBe(false)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
     expect(ledger.items[0].r7Cell).toBe('L6')
     expect(ledger.qualification.blockers).toContain(
       'DATUM_AND_NFT_IDENTITY_OR_QUANTITY_MISMATCH:' +
@@ -204,7 +205,7 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
 
     expect(ledger.totals.l2LockedJackpotReferenceUnits).toBe(1n)
     expect(ledger.totals.l2Status).toBe('AGGREGATE_ONLY_LIFECYCLE_NOT_PROVEN')
-    expect(ledger.qualification.ticketLedgerQualified).toBe(false)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
     expect(ledger.qualification.blockers).toContain(
       'L2_JACKPOT_FUNDING_LOCK_TRANSITION_NOT_PROVEN',
     )
@@ -229,10 +230,40 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
 
     const ledger = buildPreRichProtectedCapitalItemLedger(census)
 
-    expect(ledger.qualification.ticketLedgerQualified).toBe(false)
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
     expect(ledger.items[0].r7Cell).toBe('L6')
     expect(ledger.qualification.blockers).toContain(
       'UNCLASSIFIED_TICKET_ITEM:' + TICKET_POLICY_ID + '.01',
     )
   })
+  it('rejects a duplicate source UTxO even when the ticket identity differs', () => {
+    const census = baseCensus()
+    census.records[1] = {
+      ...census.records[1],
+      utxoReference: census.records[0].utxoReference,
+      ticketAssetNameHex: 'aa',
+      nftAssetNameHex: 'aa',
+    }
+
+    expect(() => buildPreRichProtectedCapitalItemLedger(census)).toThrow(
+      'duplicate PrizeDatum UTxO reference in source census',
+    )
+  })
+
+  it('classifies a Revealed datum with a non-ready Beacon as L6', () => {
+    const census = baseCensus()
+    census.records[3] = {
+      ...census.records[3],
+      beaconStatus: 'BeaconPending',
+    }
+
+    const ledger = buildPreRichProtectedCapitalItemLedger(census)
+
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
+    expect(ledger.items[3].r7Cell).toBe('L6')
+    expect(ledger.qualification.blockers).toContain(
+      'UNCLASSIFIED_TICKET_ITEM:' + TICKET_POLICY_ID + '.04',
+    )
+  })
+
 })
