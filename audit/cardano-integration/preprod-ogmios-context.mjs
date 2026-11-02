@@ -276,6 +276,9 @@ try {
   ].join('\n') + '\n'
   await writeFile(`${evidenceDir}/preprod-prize-validator-summary.txt`, prizeSummary)
   console.log(prizeSummary)
+  if (!prizeTipStable) {
+    throw new Error('PRIZE_VALIDATOR_TIP_CHANGED_DURING_OBSERVATION')
+  }
 
   // Read-only B1 Pool observation in the same authenticated Ogmios session.
   // The configured address is the historical deployment candidate; the
