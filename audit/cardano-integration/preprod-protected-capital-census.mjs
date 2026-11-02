@@ -41,7 +41,6 @@ import {
 } from '@lucid-evolution/lucid'
 
 import { createServer as createViteServer } from 'vite'
-import { buildPreRichProtectedCapitalItemLedger } from '../../PRE-RICH/src/PreRichProtectedCapitalItemLedger'
 import { createKoiosProtectedCapitalSource } from '../../relayer/koiosProtectedCapitalSourceCensus.js'
 import { loadProtectedCapitalDeploymentIdentity } from './preprod-protected-capital-deployment-identity.mjs'
 
@@ -201,7 +200,7 @@ function jsonBigIntReplacer(_key, value) {
   return typeof value === 'bigint' ? value.toString() : value
 }
 
-async function loadScriptTopologyModules() {
+async function loadCensusModules() {
   const vite = await createViteServer({
     configFile: false,
     root: process.cwd(),
@@ -210,17 +209,20 @@ async function loadScriptTopologyModules() {
     server: { middlewareMode: true },
   })
   try {
-    const [runtime, gameRules] = await Promise.all([
+    const [runtime, gameRules, itemLedger] = await Promise.all([
       vite.ssrLoadModule('/src/loadValidator.ts'),
       vite.ssrLoadModule('/src/gameRules.ts'),
+      vite.ssrLoadModule('/PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts'),
     ])
     if (typeof runtime.buildScriptsFromLucid !== 'function' ||
-        !gameRules.defaultPrizeTable) {
-      throw new Error('PREPROD_SCRIPT_TOPOLOGY_MODULES_INCOMPLETE')
+        !gameRules.defaultPrizeTable ||
+        typeof itemLedger.buildPreRichProtectedCapitalItemLedger !== 'function') {
+      throw new Error('PREPROD_CENSUS_MODULES_INCOMPLETE')
     }
     return {
       buildScriptsFromLucid: runtime.buildScriptsFromLucid,
       defaultPrizeTable: gameRules.defaultPrizeTable,
+      buildPreRichProtectedCapitalItemLedger: itemLedger.buildPreRichProtectedCapitalItemLedger,
     }
   } finally {
     await vite.close()
@@ -290,7 +292,11 @@ async function main() {
     }
   }
 
-  const { buildScriptsFromLucid, defaultPrizeTable } = await loadScriptTopologyModules()
+  const {
+    buildScriptsFromLucid,
+    defaultPrizeTable,
+    buildPreRichProtectedCapitalItemLedger,
+  } = await loadCensusModules()
   const topology = buildScriptsFromLucid(
     { utils: makeLucidScriptUtils() },
     defaultPrizeTable,
