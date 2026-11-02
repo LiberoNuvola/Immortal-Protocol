@@ -23,7 +23,7 @@ import {
 
 export type PrizeLedgerStatus = 'Pending' | 'Revealed' | 'Claimed'
 export type PrizeLedgerBeaconStatus = 'BeaconPending' | 'BeaconReady'
-export type PrizeLedgerR7Cell = 'L1' | 'L3' | 'L4' | 'L6'
+export type PrizeLedgerR7Cell = 'L1' | 'L3' | 'L4' | 'L5' | 'L6'
 export type PrizeLedgerPcComponent =
   | 'crystallizedLiabilities'
   | 'worstCaseExposure'
@@ -131,9 +131,10 @@ export type PreRichProtectedCapitalItemLedger = {
     l3FacePriceReferenceUnits: bigint
     l3TicketCount: bigint
     l3WorstCaseExposureReferenceUnits: bigint
-    l4ResolvedItemCount: bigint
+    l4SettledItemCount: bigint
+    l5ExtinguishedLiveItemCount: bigint
     l6UnclassifiedItemCount: bigint
-    liveUtxoCensusContainsNoL5ExpiryRows: true
+    consumedExpiryHistoryRequiresTransactionReplay: true
     l2LockedJackpotUsdmSubunits: bigint
     l2LockedJackpotReferenceUnits: bigint | null
     l2Status: 'ZERO_AT_THIS_SNAPSHOT' | 'AGGREGATE_ONLY_LIFECYCLE_NOT_PROVEN'
@@ -278,12 +279,12 @@ function classifyPrizeDatum(
     if (record.prizeAmountUsdmSubunits === 0n) {
       return {
         ...common,
-        r7Cell: 'L4',
+        r7Cell: 'L5',
         pcComponent: null,
         classId: null,
         priceReferenceUnits: null,
         countedAmountReferenceUnits: 0n,
-        classificationReason: 'Revealed loss; resolved outcome with no crystallized payout obligation',
+        classificationReason: 'Losing Reveal extinguishes the economic right (L3 to L5); datum may remain live until technical expiry',
       }
     }
     const payoutReferenceUnits = referenceUnitsIfRepresentable(
@@ -411,7 +412,8 @@ export function buildPreRichProtectedCapitalItemLedger(
   let l3FacePriceUsdmSubunits = 0n
   let l3TicketCount = 0n
   let l3WorstCaseExposureReferenceUnits = 0n
-  let l4ResolvedItemCount = 0n
+  let l4SettledItemCount = 0n
+  let l5ExtinguishedLiveItemCount = 0n
   let l6UnclassifiedItemCount = 0n
 
   const items = census.records.map((record) => {
@@ -466,7 +468,9 @@ export function buildPreRichProtectedCapitalItemLedger(
       l3TicketCount += 1n
       l3WorstCaseExposureReferenceUnits += item.countedAmountReferenceUnits
     } else if (item.r7Cell === 'L4') {
-      l4ResolvedItemCount += 1n
+      l4SettledItemCount += 1n
+    } else if (item.r7Cell === 'L5') {
+      l5ExtinguishedLiveItemCount += 1n
     } else {
       l6UnclassifiedItemCount += 1n
       blockers.push('UNCLASSIFIED_TICKET_ITEM:' + identity)
@@ -559,9 +563,10 @@ export function buildPreRichProtectedCapitalItemLedger(
       l3FacePriceReferenceUnits: referenceUnitsFromSubunits(l3FacePriceUsdmSubunits, 'L3 face-price total'),
       l3TicketCount,
       l3WorstCaseExposureReferenceUnits,
-      l4ResolvedItemCount,
+      l4SettledItemCount,
+      l5ExtinguishedLiveItemCount,
       l6UnclassifiedItemCount,
-      liveUtxoCensusContainsNoL5ExpiryRows: true,
+      consumedExpiryHistoryRequiresTransactionReplay: true,
       l2LockedJackpotUsdmSubunits: census.pool.lockedJackpotUsdmSubunits,
       l2LockedJackpotReferenceUnits,
       l2Status,
