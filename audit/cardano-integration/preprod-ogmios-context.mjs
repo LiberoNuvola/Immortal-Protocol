@@ -339,6 +339,7 @@ try {
       authentication: 'GitHub Actions secret',
       query: 'queryLedgerState/utxo by B1 Pool address',
       session: 'same-websocket-as-preprod-context',
+      addressProvenance: 'HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED',
     },
     observedAt: new Date().toISOString(),
     pool: { address: poolAddress },
@@ -374,6 +375,9 @@ try {
   ].join('\n') + '\n'
   await writeFile(`${evidenceDir}/preprod-b1-pool-summary.txt`, poolSummary)
   console.log(poolSummary)
+  if (!poolTipStable) {
+    throw new Error('B1_POOL_TIP_CHANGED_DURING_OBSERVATION')
+  }
 
   const digest = createHash('sha256').update(body).digest('hex')
   await writeFile(`${evidenceDir}/ogmios-preprod-context.sha256`, `${digest}  ogmios-preprod-context.json\n`)
