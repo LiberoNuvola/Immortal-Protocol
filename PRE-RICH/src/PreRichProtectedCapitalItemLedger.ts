@@ -177,6 +177,12 @@ function referenceUnitsFromSubunits(value: bigint, field: string): bigint {
   return value / USDM_SUBUNITS_PER_REFERENCE_UNIT
 }
 
+function referenceUnitsIfRepresentable(value: bigint, field: string): bigint | null {
+  requireNonNegative(value, field)
+  if (value % USDM_SUBUNITS_PER_REFERENCE_UNIT !== 0n) return null
+  return value / USDM_SUBUNITS_PER_REFERENCE_UNIT
+}
+
 function classifyPrizeDatum(
   record: ObservedPrizeDatumForLedger,
 ): Omit<PrizeDatumLedgerItem, 'itemId' | 'utxoReference' | 'datumDigest'> {
