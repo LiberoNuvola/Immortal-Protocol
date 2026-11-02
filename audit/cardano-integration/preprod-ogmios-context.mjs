@@ -190,7 +190,6 @@ try {
     rawOgmiosUtxoResult: walletRaw,
   }
   const walletBody = JSON.stringify(walletObservations, null, 2) + '\n'
-  await writeFile(\`\${evidenceDir}/preprod-wallet-utxo.sha256\`, \`\${walletDigest}  preprod-wallet-utxo.json\n\`)
   const walletDigest = createHash('sha256').update(walletBody).digest('hex')
   await writeFile(`${evidenceDir}/preprod-wallet-utxo.sha256`, `${walletDigest}  preprod-wallet-utxo.json\n`)
   const walletSummary = [
@@ -257,11 +256,10 @@ try {
     rawOgmiosUtxoResult: prizeRaw,
   }
   const prizeBody = JSON.stringify(prizeObservations, null, 2) + '\n'
-    \`\${prizeDigest}  preprod-prize-validator-utxo.json\n\`,
   const prizeDigest = createHash('sha256').update(prizeBody).digest('hex')
   await writeFile(
     `${evidenceDir}/preprod-prize-validator-utxo.sha256`,
-    `${prizeDigest}  preprod-prize-validator-utxo.json\\n`,
+    `${prizeDigest}  preprod-prize-validator-utxo.json\n`,
   )
   const prizeSummary = [
     `status=${prizeTipStable ? 'TIP_STABLE' : 'TIP_CHANGED'}`,
@@ -332,11 +330,10 @@ try {
     rawOgmiosUtxoResult: poolRaw,
   }
   const poolBody = JSON.stringify(poolObservations, null, 2) + '\n'
-    \`\${poolDigest}  preprod-b1-pool-utxo.json\n\`,
   const poolDigest = createHash('sha256').update(poolBody).digest('hex')
   await writeFile(
     `${evidenceDir}/preprod-b1-pool-utxo.sha256`,
-    `${poolDigest}  preprod-b1-pool-utxo.json\\n`,
+    `${poolDigest}  preprod-b1-pool-utxo.json\n`,
   )
   const poolSummary = [
     `status=${poolTipStable ? 'TIP_STABLE' : 'TIP_CHANGED'}`,
