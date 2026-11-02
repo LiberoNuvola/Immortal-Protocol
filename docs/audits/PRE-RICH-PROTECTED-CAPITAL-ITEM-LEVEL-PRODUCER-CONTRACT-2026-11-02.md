@@ -557,7 +557,7 @@ The Koios reader pages PrizeValidator and B1 Pool UTxOs with explicit limit/offs
 
 **Unit handling:** exact USDM sub-units are retained for each item. Fractional values such as 250 sub-units (2.5 USDM) are never rounded/truncated; a non-integral aggregate-to-reference-unit conversion is a blocking finding.
 
-**Tests:** 15 Vitest item-ledger cases and 18 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
+**Tests:** 15 Vitest item-ledger cases and 19 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
 
 Accordingly this implementation advances the engineering path but does not certify source completeness, L2, SafetyCapital, ReserveProtection, MandatoryFutureCosts, full ProtectedCapital, or PA1–PA7.
 
@@ -575,3 +575,8 @@ The census reader distinguishes a hash-reference datum from an inline datum:
 The manifest digest binds datumBytesAvailableForAll, datumHashComparisonsVerified, datumHashComparisonRequiredCount, datumHashMismatchCount, and inlineDatumWithoutHashCount. Provider attestation, query snapshot pinning, and same-backend verification remain false.
 
 Sources: CIP-32 and the Koios datum_info response type (hash, bytes). This prevents a false failure on the protocol's own inline PrizeDatum/Pool outputs without presenting inline bytes as a hash-reference proof.
+
+
+### Latest test-bearing CI run
+
+Run [41407914884](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41407914884) is queued on `fa096850801a4738648bb307673c2333bf0bbaa3` and contains the current 19 Node Koios-reader tests and 15 Vitest item-ledger tests. The current branch is five commits ahead of that queued head; the compare delta consists only of Ogmios observer/workflow and documentation changes. The Koios reader, item-ledger builder, CLI and their conformance test files are unchanged since the queued head. No success is claimed until run 41407914884 completes.
