@@ -1,3 +1,11 @@
+const test = require('node:test')
+const assert = require('node:assert/strict')
+
+const {
+  createKoiosProtectedCapitalSource,
+  parseContentRange,
+  assertPreprodKoiosEndpoint,
+} = require('./koiosProtectedCapitalSourceCensus')
 
 test('rejects a non-Preprod or non-HTTPS Koios endpoint', () => {
   assert.equal(
@@ -13,14 +21,7 @@ test('rejects a non-Preprod or non-HTTPS Koios endpoint', () => {
     /KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1/,
   )
 })
-const test = require('node:test')
-const assert = require('node:assert/strict')
 
-const {
-  createKoiosProtectedCapitalSource,
-  parseContentRange,
-  assertPreprodKoiosEndpoint,
-} = require('./koiosProtectedCapitalSourceCensus')
 
 const TIP = {
   hash: 'a'.repeat(64),
