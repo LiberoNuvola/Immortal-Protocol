@@ -7,6 +7,7 @@ import {
   decodeBurnEvents,
   decodeBurnTxInfoBatch,
   summarizeBurnAddressCensus,
+  TX_HASHES_PER_BATCH,
 } from './probeUsdcxBurnInputAddressCensusReadOnly.mjs'
 
 const unit = { policy_id: USDCX_POLICY, asset_name: USDCX_NAME }
@@ -163,4 +164,9 @@ test('decodes a valid mainnet tip and rejects a malformed tip', () => {
     hash: txA, absSlot: 123, blockNo: 456, blockTime: 789,
   })
   assert.throws(() => decodeTip([]), /TIP_SHAPE_INVALID/)
+})
+
+
+test('keeps transaction-info request batches within the conservative public API bound', () => {
+  assert.equal(TX_HASHES_PER_BATCH, 20)
 })
