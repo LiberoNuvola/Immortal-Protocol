@@ -4305,3 +4305,38 @@ This corrects the earlier over-broad removal of `.attach.SpendingValidator(...)`
 
 **STATUS: LUCID SCRIPT REGISTRY RESTORED; CML REFERENCE WITNESS PROBE RETAINED. NO POST-FIX SIZE OR HASKELL YACI RESULT YET. KEEP E1/E2/E3 ON-CHAIN CONFORMANCE OPEN.**
 
+
+
+## 45.55 AGENT A PRIORITY ORDER — FIRST OWNER-PURCHASED PREPROD TICKET + SCIENTIFIC PAPER (2026-11-02)
+
+The Agent A mandate and ownership are unchanged. This is a sequencing decision only; it does not reassign fronts, change other agents' work, or alter economic/technical semantics.
+
+**Primary execution outcome:** the first real PRE-RICH ticket on Cardano Preprod, purchased by the project owner through their own connected wallet after the existing authoritative admission gates are satisfied.
+
+**Parallel research outcome:** a defensible scientific paper on IMMORTAL/PRE-RICH, grounded in canonical semantics, reproducible implementation evidence, prior-art review, and the real Preprod case study only after it exists.
+
+### Agent A priority sequence
+
+1. Exact live Preprod deployment perimeter and identifiers; no fixture/stale identifier inference.
+2. Revalidate direct-USDM EEV against the exact current B1 Pool UTxO; separately trace TicketIssued settlement/funding.
+3. Complete PA1–PA7 and item-level ProtectedCapital source completeness, provenance, disjointness, and same-snapshot reconciliation.
+4. Bind EEV, ProtectedCapital, V3 carrier, B2 control, Counter, Pool, liquidity, viability, and Omega obligations into the existing fail-closed authoritative Issue witness.
+5. Verify the actual first-user Sale path and prepare the owner-controlled wallet purchase. The owner alone reviews/signs/submits; no agent custody, payment, or signing.
+6. Confirm the transaction, minted NFT, exact ticket UTxO/datum, and post-state; persist a reproducible, redacted evidence packet.
+
+### Scientific paper — parallel track
+
+- Define research question and contribution only after prior-art comparison.
+- Freeze canonical notation and semantics; do not change formulas or parameters to improve the paper.
+- Map every claim to source, exact commit, test, workflow/artifact digest, and live transaction where applicable.
+- Separate proofs, executable conformance, simulations, provider observations, and live-ledger results.
+- Draft related work, formal model/threat model, architecture, provenance/admission, implementation, evaluation, limitations, and reproducibility appendix.
+- Do not present pending, fixture-only, simulated, or unverified results as experimental validation.
+
+### Stop conditions
+
+No new branch; no economic parameter/formula changes; no V3/Reveal/validator/kernel/consumer changes under this priority decision; no Materios/B3 takeover; no changes to Agent B/C assignments; no fabricated deployment IDs, source authority, completeness, or protected-component zeros. Missing authority remains a blocker.
+
+The detailed exit criteria and work breakdown are in [Agent A — First Preprod Ticket and Scientific Paper Priority](AGENT-A-PRIORITY-FIRST-PREPROD-TICKET-AND-SCIENTIFIC-PAPER-2026-11-02.md).
+
+**Priority rule:** work outside the existing Agent A mandate is not pulled in. Within that mandate, work not directly advancing the owner-purchased first Preprod ticket or a citable/reproducible paper component is deferred.
