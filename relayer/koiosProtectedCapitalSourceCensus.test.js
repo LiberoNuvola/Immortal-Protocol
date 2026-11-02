@@ -86,7 +86,7 @@ function mockKoios({
 
     if (url.pathname.endsWith('/datum_info')) {
       const body = JSON.parse(init.body)
-      const rows = datumRows.filter((row) => body._datum_hashes.includes(row.datum_hash))
+      const rows = datumRows.filter((row) => body._datum_hashes.includes(row.hash ?? row.datum_hash))
       return response(rows)
     }
 
