@@ -238,7 +238,7 @@ test('fails closed on duplicate UTxO references across paginated rows', async ()
 
 test('resolves datum-hash outputs through Koios datum_info and retains provenance', async () => {
   const address = 'addr_test_prize'
-  const datumHash = 'c'.repeat(64)
+  const datumHash = '923918e403bf43c34b4ef6b48eb2ee04babed17320d8d1b9ff9ad086e86f44ec'
   const rows = [makeUtxo(0, address, {
     inline_datum: null,
     datum_hash: datumHash,
@@ -254,6 +254,10 @@ test('resolves datum-hash outputs through Koios datum_info and retains provenanc
 
   assert.equal(row.datum_bytes, 'd87980')
   assert.equal(row.datum_source, 'DATUM_INFO')
+  assert.equal(row.calculated_datum_hash, datumHash)
+  assert.equal(row.datum_hash_content_verified, true)
+  assert.equal(row.datum_hash_verification, 'BLAKE2B_256_MATCH')
+  assert.equal(scan.manifest.datumHashContentVerified, true)
   assert.ok(mock.calls.some((call) => call.url.includes('/datum_info')))
 })
 
@@ -342,5 +346,58 @@ test('rejects repeated asset units in one Koios UTxO row', async () => {
   await assert.rejects(
     () => source.scanSnapshot([{ name: 'pool', address }]),
     /KOIOS_ADDRESS_UTXO_DUPLICATE_ASSET_UNIT/,
+  )
+})
+
+test('verifies an inline Plutus datum CBOR against its Cardano BLAKE2b-256 hash', async () => {
+  const address = 'addr_test_prize'
+  const expectedHash = '923918e403bf43c34b4ef6b48eb2ee04babed17320d8d1b9ff9ad086e86f44ec'
+  const mock = mockKoios({
+    pagesByAddress: {
+      [address]: [makeUtxo(0, address, { datum_hash: expectedHash })],
+    },
+  })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  const scan = await source.scanSnapshot([{ name: 'prize', address }])
+  const row = scan.addressScans.prize.rows[0]
+
+  assert.equal(row.calculated_datum_hash, expectedHash)
+  assert.equal(row.datum_hash_content_verified, true)
+  assert.equal(scan.manifest.datumHashContentVerified, true)
+})
+
+test('retains but fails closed on inline CBOR whose computed datum hash differs', async () => {
+  const address = 'addr_test_prize'
+  const mock = mockKoios({
+    pagesByAddress: {
+      [address]: [makeUtxo(0, address, { datum_hash: 'f'.repeat(64) })],
+    },
+  })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  const scan = await source.scanSnapshot([{ name: 'prize', address }])
+  const row = scan.addressScans.prize.rows[0]
+
+  assert.equal(row.datum_hash_content_verified, false)
+  assert.equal(row.datum_hash_verification, 'BLAKE2B_256_MISMATCH')
+  assert.equal(scan.manifest.datumHashContentVerified, false)
+})
+
+test('rejects unrequested datum_info rows rather than attaching them to another UTxO', async () => {
+  const address = 'addr_test_prize'
+  const requestedHash = 'c'.repeat(64)
+  const unexpectedHash = 'e'.repeat(64)
+  const mock = mockKoios({
+    pagesByAddress: {
+      [address]: [makeUtxo(0, address, { inline_datum: null, datum_hash: requestedHash })],
+    },
+    datumRows: [{ datum_hash: unexpectedHash, bytes: 'd87980' }],
+  })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  await assert.rejects(
+    () => source.scanSnapshot([{ name: 'prize', address }]),
+    /KOIOS_DATUM_INFO_UNREQUESTED_HASH/,
   )
 })
