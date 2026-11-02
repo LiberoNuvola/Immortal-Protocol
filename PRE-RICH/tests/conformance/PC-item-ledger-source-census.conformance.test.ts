@@ -79,7 +79,7 @@ function baseCensus(): PrizeDatumSourceCensus {
 }
 
 describe('PRE-RICH ProtectedCapital item ledger — read-only source census', () => {
-  it('classifies and reconciles L1/L3 while retaining terminal L4/L5 rows', () => {
+  it('classifies L1/L3 and keeps L5 expiry history outside the live UTxO census', () => {
     const ledger = buildPreRichProtectedCapitalItemLedger(baseCensus())
 
     expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(true)
@@ -87,6 +87,7 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     expect(ledger.qualification.r7L6EmptinessProven).toBe(false)
     expect(ledger.qualification.sourceCompletenessAuthorityVerified).toBe(false)
     expect(ledger.qualification.scope).toBe('PRIZE_VALIDATOR_TICKET_POPULATION_ONLY')
+    expect(ledger.items[0].ticketNftCustody).toBe('OUTSIDE_PRIZE_VALIDATOR_UTXO')
 
     expect(ledger.totals.l1PayoutUsdmSubunits).toBe(500n)
     expect(ledger.totals.l1PayoutReferenceUnits).toBe(5n)
@@ -238,7 +239,7 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
       ...census.records[1],
       utxoReference: census.records[0].utxoReference,
       ticketAssetNameHex: 'aa',
-      nftAssetNameHex: 'aa',
+      ticketAssetNameHex: 'aa',
     }
 
     expect(() => buildPreRichProtectedCapitalItemLedger(census)).toThrow(
