@@ -100,7 +100,7 @@
     "l3ExposureMatches": true,
     "l1AtomicItemizationComplete": false,
     "l2LifecycleProvenanceEstablished": false,
-    "r7L6Empty": false,
+    "r7L6EmptinessProven": false,
     "overallQualification": "UNQUALIFIED_FIXTURE_ONLY"
   },
   "nonClaims": [
