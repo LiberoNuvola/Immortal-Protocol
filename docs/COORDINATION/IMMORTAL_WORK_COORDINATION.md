@@ -4381,7 +4381,7 @@ This section supersedes the historical “no live census / Ogmios packet pending
 
 ### Exact source heads and verified runs
 
-- Current working branch head at this checkpoint: `b45d243a576fc378873720ecec2d257800e7aec4`.
+- Runtime evidence source head for the latest Ogmios packet: `b45d243a576fc378873720ecec2d257800e7aec4`. The coordination and documentation-link follow-up commits were documentation-only.
 - PRE-RICH direct-USDM source qualification run [41410801435](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41410801435) completed SUCCESS at `41d0d2d6b4db7d94b378068282756dc8a5860899`: live PrizeValidator/B1 census executed, B1 re-observed, EV1–EV7 qualified, approval absence verified. This is **source qualification only**; `deploymentApproval` remains `null/PENDING`.
 - Dedicated ProtectedCapital source-census workflow [41410801247](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41410801247) completed SUCCESS at the same SHA: Koios pagination/provenance tests and item-ledger conformance tests pass.
 - The integrated Preprod context workflow [41414349567](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41414349567) completed SUCCESS at `b45d243a576fc378873720ecec2d257800e7aec4`, including wallet, PrizeValidator, B1 Pool packet checks, Reveal-boundary conformance and conformance binding.
