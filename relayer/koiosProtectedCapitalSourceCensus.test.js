@@ -68,6 +68,7 @@ function mockKoios({
   tipSequence = [TIP, TIP],
   omitContentRange = false,
   datumRows = [],
+  datumResponseRows,
   totalOverride,
 } = {}) {
   const calls = []
@@ -99,7 +100,7 @@ function mockKoios({
 
     if (url.pathname.endsWith('/datum_info')) {
       const body = JSON.parse(init.body)
-      const rows = datumRows.filter((row) => body._datum_hashes.includes(row.hash ?? row.datum_hash))
+      const rows = datumResponseRows ?? datumRows.filter((row) => body._datum_hashes.includes(row.hash ?? row.datum_hash))
       return response(rows)
     }
 
@@ -445,7 +446,7 @@ test('rejects unrequested datum_info rows rather than attaching them to another 
     pagesByAddress: {
       [address]: [makeUtxo(0, address, { inline_datum: null, datum_hash: requestedHash })],
     },
-    datumRows: [{ hash: unexpectedHash, bytes: 'd87980' }],
+    datumResponseRows: [{ hash: unexpectedHash, bytes: 'd87980' }],
   })
   const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
 
