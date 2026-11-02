@@ -529,10 +529,10 @@ Stop before stage 6 if source completeness, R7 mapping, valuation, or disjointne
 ## 15. Final status
 
 **Producer contract: DEFINED AT DOCUMENTATION LEVEL.**  
-**Item-level producer implementation: NOT STARTED.**  
+**Item-level producer implementation: PARTIAL — a pure ticket-ledger builder exists; the provider enumerator, completeness-attestation verification, L2 lifecycle source, and aggregate admission integration are NOT IMPLEMENTED.**  
 **SafetyCapital / ReserveProtection qualification: OPEN.**  
 **MandatoryFutureCosts itemization: OPEN.**  
 **PA1–PA7: NOT CERTIFIED.**  
 **Current Issue admission aggregate witness: useful integrity/binding evidence, NOT item-level economic provenance.**
 
-The next valid engineering deliverable is a read-only source census and atomic-ledger prototype for the already typed ticket/L1/L3/Jackpot populations. It must report unresolved sources and classification gaps rather than manufacture values for them.
+The pure ticket-ledger builder is now present at `PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`, with adversarial conformance tests at `PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts`. It reconciles a caller-supplied census against L1/L3 B1 aggregates and deliberately marks source completeness authority as unverified. The next valid engineering deliverable is the separate read-only PrizeValidator address enumerator with provider-specific pagination and signed source-manifest verification. It must report unresolved sources and classification gaps rather than manufacture values for them.
