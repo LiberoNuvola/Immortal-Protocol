@@ -87,7 +87,7 @@ export type PrizeDatumLedgerItem = {
   priceUsdmSubunits: bigint
   priceReferenceUnits: bigint | null
   prizeAmountUsdmSubunits: bigint
-  countedAmountReferenceUnits: bigint
+  countedAmountReferenceUnits: bigint | null
   classificationReason: string
 }
 
@@ -469,6 +469,9 @@ export function buildPreRichProtectedCapitalItemLedger(
       l1PayoutUsdmSubunits += item.prizeAmountUsdmSubunits
       l1ItemCount += 1n
     } else if (item.r7Cell === 'L3') {
+      if (item.countedAmountReferenceUnits === null) {
+        throw new Error('L3 worst-case exposure must be exactly representable in reference units')
+      }
       l3FacePriceUsdmSubunits += item.priceUsdmSubunits
       l3TicketCount += 1n
       l3WorstCaseExposureReferenceUnits += item.countedAmountReferenceUnits
