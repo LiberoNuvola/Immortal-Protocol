@@ -474,3 +474,38 @@ Adversarial provider tests now reject:
 The provider suite now contains **19 Node tests authored**. The test workflow run [41407914884](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41407914884) was queued on exact test-bearing commit `fa096850801a4738648bb307673c2333bf0bbaa3` when this report was updated; the job had not started, so no pass is claimed. The earlier run `41405446327` passed the pre-hardening provider and ledger suites only.
 
 **Live census:** still not executed. The endpoint hardening improves the integrity boundary of the read-only observer; it does not prove provider completeness, same-backend snapshot pinning, provider authenticity, L2 transition provenance, or PA1–PA7.
+
+
+## 13. Read-only deployment-manifest handoff and live-census workflow integration — 2026-11-02
+
+The CLI now supports a preferred deployment-identity mode based on the two existing Preprod artifacts:
+- `preprod-direct-usdm-deployment.json`;
+- `preprod-oracle-state-deployment.json`.
+
+The new loader [`preprod-protected-capital-deployment-identity.mjs`](../cardano-integration/preprod-protected-capital-deployment-identity.mjs):
+- verifies each artifact's self-contained SHA-256 evidence digest;
+- checks exact schema, Preprod network, and deployment/materialization status;
+- checks the Oracle State policy/name/unit/publisher/address/out-reference across both artifacts;
+- checks the B1 Pool singleton policy/name/unit;
+- extracts the current deployment's recorded validator hashes, addresses, ticket policy and direct-USDM unit.
+
+The census runner then re-derives the Plutus topology from those manifest identities using the repository's current scripts and refuses to query if any derived script hash, policy ID, or address differs from the recorded deployment topology. It then queries the current PrizeValidator and B1 Pool address UTxO sets under a fresh Koios before/after tip observation. The live Pool singleton must be present exactly once at the configured identity.
+
+**Integrity/authenticity boundary:** these manifest SHA-256 values are content-integrity digests, not digital signatures. The loader's status is deliberately named `DEPLOYMENT_MANIFESTS_HASH_CHECKED`, with `manifestAuthorityCryptographicallyVerified=false`. The old deployment artifact is used only to identify the scripts; the current UTxO population and Pool state are freshly queried. The deployment artifact's historical Pool out-reference is not substituted for the current live Pool UTxO. The independent provider-attestation and snapshot-pinning limitations in §8/§12 remain.
+
+The loader has six Node tests covering valid cross-manifest identity, content tampering, Oracle State identity disagreement, wrong deployment status, incorrect Pool unit and incorrect Oracle State unit.
+
+The existing read-only workflow [`preprod-eev-qualification.yml`](../../.github/workflows/preprod-eev-qualification.yml) now:
+1. restores only the two existing historical identity manifests from run `39552468679`;
+2. discards stale source-set and qualification outputs;
+3. validates the Oracle State singleton against the live Preprod address and refreshes the Oracle State observation manifest;
+4. runs identity-manifest, Koios-provider and item-ledger conformance tests;
+5. runs the read-only PrizeValidator + B1 Pool census using the two manifest paths, writing `audit/preprod-evidence/preprod-protected-capital-census.json`;
+6. continues the direct-USDM source-set and EV1–EV7 qualification without creating deployment approval;
+7. uploads all resulting evidence under the workflow artifact.
+
+No wallet seed is passed to the census step. The workflow does not call any bootstrap, deployment, signing, Issue, Reveal, or submission code in this job. The Oracle State liveness script is a read-only query; the historical manifests supply script identity, not a substitute for live datum/UTxO observation.
+
+**Exact-head workflow state:** run [41408819902](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41408819902), commit `5a74284c2984dc565913e5e850c50f11059e7bcd`, was created and its only job remained `queued` at the time this report was updated. No live census artifact or test success is claimed yet. The run must still demonstrate that the historical identity artifact is retrievable, the current live Oracle State/Pool/PrizeValidator topology matches, and the Koios item census completes. If any of those conditions fail, the run must remain blocked rather than falling back to environment guesses or fixture values.
+
+**Current status:** manifest-based census handoff IMPLEMENTED; read-only live-census workflow WIRED; exact-head workflow QUEUED; live ticket census/artifact NOT YET VERIFIED; provider authority and same-backend snapshot pinning UNPROVEN; full ProtectedCapital, L2 lifecycle, R7 L6 emptiness and PA1–PA7 NOT CERTIFIED.
