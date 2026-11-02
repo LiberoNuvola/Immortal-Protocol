@@ -4500,3 +4500,48 @@ The canonical producer implementation sequence already documented in the item-le
 This producer contract is documentation-level only and explicitly NOT IMPLEMENTED / NOT CERTIFIED. The live Koios/Ogmios evidence currently closes only the narrow ticket L1/L3 census plus Pool aggregate reconciliation; it is not an all-component PA1–PA7 certificate.
 
 **Agent A decision:** do not start with a hand-filled Kc JSON or a new workflow that fabricates certificate fields. The next implementation slice is the item-level authoritative source producer and its adversarial replay tests, while the concrete Env/Ω and non-eroding-witness semantics are governed against the current PRE-RICH deployment. No formula, parameter, V3, Reveal, validator or Issue semantics are to be changed under this evidence work.
+
+## 45.59 AGENT A — FIRST-ISSUE ENTRYPOINT HARDENING / RF8-A UPDATE (2026-11-02)
+
+This section records a fail-closed application-boundary repair. It does not close R1/R2/R7/RF8 as a whole and does not authorize an Issue transaction.
+
+### Direct witness bypass removed from the public Issue mint API
+
+Before this change, src/mint.ts::mintSerialNFT accepted an optional caller-built economicAdmission. When present, the function skipped obtainAuthoritativeIssueAdmission; the lower adapter checked the witness's structural completeness and bindings but did not itself verify the external Ed25519 signature. The dedicated mintSerialNFTWithAuthoritativeAdmission wrapper did invoke the provider path and forced B2/V3, but it was not the route used by src/tickets.ts.
+
+Commits:
+
+- f9546a11e51d684e2e4d53f91a9702e1d9ec4ec5: renamed the generic builder to private mintSerialNFTInternal, removed public direct economicAdmission injection from MintSerialOptions, made the authoritative provider required, removed caller-controlled optional B2/V3 flags, forced the B2 and V3 carrier checks on every Issue, and made mintSerialNFTWithAuthoritativeAdmission the only public Issue mint API.
+- dd1ca09134baef3b4b019e8ddc60e4b9b717a773: routed src/tickets.ts::buyTickets through the authoritative wrapper.
+- 11e713e5dc8d7889dfcd749b022249afb2fb5c43 / 5b900b6f0d36b1958fb8cee53d702a2e451f6316: added src/__tests__/authoritativeIssueEntrypoint.test.ts, a source-level regression invariant covering the absent generic export, mandatory provider resolution, mandatory B2/V3 bindings and absence of alternate mintSerialNFT( application callsites.
+- 341b2a880988d61c2fb54c97b1ba91cda001325e: added that regression test to .github/workflows/adapter-sale-conformance.yml.
+
+### Verification on exact current head
+
+Current branch head: 341b2a880988d61c2fb54c97b1ba91cda001325e.
+
+- [Cardano Adapter Sale Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41416756500): SUCCESS. This includes the new authoritative-entrypoint test, adapter/Issue admission tests, relayer/signedIssueAuthority.test.js Ed25519-envelope verification tests, Haskell Issue admission provider tests, and repository-wide RF8 production-boundary audit.
+- [Frontend build](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41416756500): SUCCESS.
+- [Protocol Declaration / typecheck](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41416756530): SUCCESS.
+- [Portability Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41416756420): SUCCESS.
+- [Algorithmic Governability](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41416756473): SUCCESS.
+- [Documentation Link Check](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41416756506): SUCCESS.
+
+This is a bounded RF8-A improvement: the direct caller-built Issue witness path was removed from the public mint API, and the remaining ticket helper now calls only the authoritative wrapper. It is not proof of whole-program refinement/no-side-door closure (RF8-B), and it is not the R1/Kc certificate.
+
+### Application wiring remains unmaterialized
+
+- The production createPreprodAuthoritativeIssueProvider factory already composes live B2/Counter/Pool/Carrier observation with fetchSignedIssueAuthority, which verifies the signed authority envelope and V3 carrier signature using the configured public key.
+- The public Issue wrapper accepts an AuthoritativeIssueAdmissionProvider callback and now invokes it unconditionally. It does not invent or calculate the witness.
+- There is still no current DApp callsite that constructs the production provider with a real authority URL/public key and deployment configuration. The only repository UI call found is src/legacyBindings.ts, whose legacy buyTickets(1) event supplies no MintSerialOptions; src/tickets.ts therefore deliberately fails closed with “Mint options required”. That UI is not a functioning first-ticket purchase path.
+- Do not replace the provider with a test fixture, local stub, fabricated signature, or static witness. The actual DApp wiring needs the real signed authority endpoint, public key, live deployment identity and verified expiry/settlement configuration.
+
+### Remaining first-Issue blockers unchanged
+
+1. B2 Control singleton has not been deployed on Preprod. Deployment workflow is manual and submits a singleton transaction; the last attempt stopped before seed selection because BLOCKFROST_PROJECT_ID was missing. No deployment was initiated here.
+2. Oracle State datum remains stale (about 24.6 days old versus the existing one-hour settlement horizon) and its external ADA price source is not verified. No timestamp was rewritten and no new oracle transaction was submitted.
+3. EEV EV1–EV7 source qualification is complete for the direct tUSDM Pool candidate, but current deployment approval remains pending/null and the external signed Issue authority service/key is not configured in a live DApp callsite.
+4. R1/Kc, Ω completeness, non-vacuity, R2 RF1–RF11 (especially RF8-B whole-program no-side-door proof) and full PA1–PA7 ProtectedCapital item provenance remain open.
+5. The live census and Ogmios packets verify the narrow current on-chain candidate state only; they do not attest the complete ProtectedCapital perimeter.
+
+Safety disposition: no Issue transaction was built, signed or submitted; no B2 deployment was dispatched; no deployment approval was created; no V3, Reveal, economic formula, coefficient, price ladder, payout rule or expiry semantics were changed.
