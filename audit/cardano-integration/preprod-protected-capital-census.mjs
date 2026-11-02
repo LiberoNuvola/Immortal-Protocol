@@ -40,7 +40,7 @@ import {
   validatorToScriptHash,
 } from '@lucid-evolution/lucid'
 
-import { buildScriptsFromLucid } from '../../src/loadValidator'
+import { createServer as createViteServer } from 'vite'
 import { defaultPrizeTable } from '../../src/gameRules'
 import { buildPreRichProtectedCapitalItemLedger } from '../../PRE-RICH/src/PreRichProtectedCapitalItemLedger'
 import { createKoiosProtectedCapitalSource } from '../../relayer/koiosProtectedCapitalSourceCensus.js'
@@ -202,6 +202,25 @@ function jsonBigIntReplacer(_key, value) {
   return typeof value === 'bigint' ? value.toString() : value
 }
 
+async function loadBuildScriptsFromLucid() {
+  const vite = await createViteServer({
+    configFile: false,
+    root: process.cwd(),
+    appType: 'custom',
+    logLevel: 'error',
+    server: { middlewareMode: true },
+  })
+  try {
+    const runtime = await vite.ssrLoadModule('/src/loadValidator.ts')
+    if (typeof runtime.buildScriptsFromLucid !== 'function') {
+      throw new Error('PREPROD_SCRIPT_TOPOLOGY_BUILDER_NOT_EXPORTED')
+    }
+    return runtime.buildScriptsFromLucid
+  } finally {
+    await vite.close()
+  }
+}
+
 function makeLucidScriptUtils() {
   return {
     validatorToScriptHash,
@@ -265,6 +284,7 @@ async function main() {
     }
   }
 
+  const buildScriptsFromLucid = await loadBuildScriptsFromLucid()
   const topology = buildScriptsFromLucid(
     { utils: makeLucidScriptUtils() },
     defaultPrizeTable,
