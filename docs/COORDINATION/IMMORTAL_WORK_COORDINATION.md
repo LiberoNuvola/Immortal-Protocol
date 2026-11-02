@@ -4362,7 +4362,7 @@ The detailed exit criteria and work breakdown are in [Agent A — First Preprod 
 ### CI evidence and run disposition
 
 - Dedicated census workflow run [41405446327](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41405446327) completed SUCCESS on source head `17e29b4c9f033322811e24ba0cfb9b9e73d51f95`. The Koios provider pagination/provenance Node tests and ProtectedCapital item-ledger Vitest tests both passed on that head.
-- The current branch is 19 commits ahead of that tested head. This is not an exact-current-head green result; subsequent Koios/CIP-32/Ogmios changes require a fresh Actions run.
+- A later test-bearing run [41407914884](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41407914884) is queued on `fa096850801a4738648bb307673c2333bf0bbaa3`, with the current 19 Node Koios-reader tests and 15 Vitest ledger tests. The branch is five commits ahead of that queued head; those commits touch only the Ogmios observer/workflow and docs, not the Koios reader, item-ledger builder, CLI or test files. The queued run is not complete, so no PASS is claimed.
 - No new PrizeValidator Ogmios artifact has been verified yet. The Preprod scan has not been executed against the current deployment manifest.
 
 ### Current qualification boundary
