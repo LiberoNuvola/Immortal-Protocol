@@ -10,6 +10,7 @@ import {
   TX_HASHES_PER_BATCH,
   TX_INFO_BATCH_SPACING_MS,
   retryDelayMs,
+  MAX_TX_INFO_RATE_LIMIT_RETRIES,
 } from './probeUsdcxBurnInputAddressCensusReadOnly.mjs'
 
 const unit = { policy_id: USDCX_POLICY, asset_name: USDCX_NAME }
