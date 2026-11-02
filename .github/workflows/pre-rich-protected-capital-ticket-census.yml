@@ -33,4 +33,4 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Run read-only census conformance tests
-        run: npx vitest run audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs
+        run: npx vitest run audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
