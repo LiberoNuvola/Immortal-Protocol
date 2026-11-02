@@ -363,6 +363,24 @@ function createKoiosProtectedCapitalSource({
       throw new Error('KOIOS_SNAPSHOT_CHANGED_DURING_CENSUS')
     }
 
+    const allRows = Object.values(addressScans).flatMap((scan) => scan.rows)
+    const datumBytesAvailableForAll =
+      allRows.length > 0 && allRows.every((row) => typeof row.datum_bytes === 'string')
+    const datumHashComparisonsVerified =
+      datumBytesAvailableForAll &&
+      allRows.every((row) =>
+        row.datum_hash
+          ? row.datum_hash_content_verified === true
+          : row.datum_source === 'INLINE',
+      )
+    const datumHashComparisonRequiredCount = allRows.filter((row) => row.datum_hash).length
+    const datumHashMismatchCount = allRows.filter(
+      (row) => row.datum_hash && row.datum_hash_content_verified === false,
+    ).length
+    const inlineDatumWithoutHashCount = allRows.filter(
+      (row) => row.datum_source === 'INLINE' && !row.datum_hash,
+    ).length
+
     const manifestBase = {
       schema: 'IMMORTAL-KOIOS-ADDRESS-UTXO-CENSUS-V1',
       provider: {
@@ -377,6 +395,11 @@ function createKoiosProtectedCapitalSource({
       snapshot: tipBefore,
       snapshotReference: 'koios-preprod-observation:' + tipBefore.slot + ':' + tipBefore.hash,
       pageSize,
+      datumBytesAvailableForAll,
+      datumHashComparisonsVerified,
+      datumHashComparisonRequiredCount,
+      datumHashMismatchCount,
+      inlineDatumWithoutHashCount,
       addresses: Object.fromEntries(Object.entries(addressScans).map(([name, scan]) => [
         name,
         {
@@ -402,29 +425,10 @@ function createKoiosProtectedCapitalSource({
       ])),
     }
     const sourceManifestDigest = sha256Hex(canonicalJson(manifestBase))
-    const allRows = Object.values(addressScans).flatMap((scan) => scan.rows)
-    const datumBytesAvailableForAll =
-      allRows.length > 0 && allRows.every((row) => typeof row.datum_bytes === 'string')
-    const datumHashComparisonsVerified =
-      datumBytesAvailableForAll &&
-      allRows.every((row) =>
-        row.datum_hash
-          ? row.datum_hash_content_verified === true
-          : row.datum_source === 'INLINE',
-      )
     const manifest = {
       ...manifestBase,
       sourceManifestDigest,
       providerAttestationVerified: false,
-      datumBytesAvailableForAll,
-      datumHashComparisonsVerified,
-      datumHashComparisonRequiredCount: allRows.filter((row) => row.datum_hash).length,
-      datumHashMismatchCount: allRows.filter(
-        (row) => row.datum_hash && row.datum_hash_content_verified === false,
-      ).length,
-      inlineDatumWithoutHashCount: allRows.filter(
-        (row) => row.datum_source === 'INLINE' && !row.datum_hash,
-      ).length,
       providerSnapshotPinned: false,
       sameBackendSnapshotVerified: false,
       consistencyAssessment: 'TIP_STABLE_BUT_NOT_QUERY_PINNED',
