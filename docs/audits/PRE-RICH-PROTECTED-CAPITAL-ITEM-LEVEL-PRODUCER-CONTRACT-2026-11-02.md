@@ -557,7 +557,7 @@ The Koios reader pages PrizeValidator and B1 Pool UTxOs with explicit limit/offs
 
 **Unit handling:** exact USDM sub-units are retained for each item. Fractional values such as 250 sub-units (2.5 USDM) are never rounded/truncated; a non-integral aggregate-to-reference-unit conversion is a blocking finding.
 
-**Tests:** 15 Vitest item-ledger cases and 13 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
+**Tests:** 15 Vitest item-ledger cases and 14 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
 
 Accordingly this implementation advances the engineering path but does not certify source completeness, L2, SafetyCapital, ReserveProtection, MandatoryFutureCosts, full ProtectedCapital, or PA1–PA7.
 
