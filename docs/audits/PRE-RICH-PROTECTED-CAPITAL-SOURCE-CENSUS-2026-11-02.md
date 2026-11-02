@@ -236,9 +236,9 @@ Adversarial tests were added:
 
 The 12 cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum/NFT identity mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, and invalid Beacon lifecycle status.
 
-**Execution status:** tests are authored but have not been run in GitHub Actions or a local checkout in this session. The current change does not alter any workflow to trigger them. A live Preprod provider census is still not possible from the tracked repository configuration because its deployment-specific PrizeValidator address/ticket policy and provider credentials are not populated in `.env.example`.
+**Execution status at this audit baseline:** the pure builder tests were authored but not yet run. The provider-specific reader and dedicated test workflow were added later; see §8. No live Preprod source census has been performed.
 
-**Next bounded task:** implement a separate provider-specific, read-only PrizeValidator address enumerator that proves pagination completion and supplies a verifiable source manifest to this pure builder. No Issue integration, V3/Reveal/validator change, or on-chain action is part of this increment.
+**Next bounded task at this audit baseline:** implement a separate provider-specific, read-only PrizeValidator address enumerator. This was advanced by the follow-on implementation in §8, but live source authority and certification remain open.
 
 
 ### 7.1 Exact sub-unit preservation at the L1 bridge
@@ -256,4 +256,46 @@ The item-ledger builder therefore preserves every payout amount exactly in USDM 
 
 This reveals an existing interface boundary, not a new economic rule: a non-integral-USD L1 aggregate cannot currently be projected into the V3 reference-unit integer without an explicit, governed unit treatment. The builder preserves the source amount and blocks the lossy bridge. No change was made to the existing projection or V3 kernel.
 
-The test suite now includes both cases. Total test cases: **14 authored, not executed**.
+The test suite at this point included both cases. The earlier item-ledger/payout tests totaled **14 authored, not executed**; seven additional provider-enumerator tests are recorded in §8.
+
+
+## 8. Follow-on implementation — Koios Preprod provider enumerator
+
+A separate read-only provider adapter was added after the static source census:
+
+- [`preprod-protected-capital-ticket-census.mjs`](../../audit/cardano-integration/preprod-protected-capital-ticket-census.mjs)
+- [Provider pagination / datum decoder tests](../../audit/cardano-integration/preprod-protected-capital-ticket-census.test.mjs)
+- [GitHub Actions test workflow](../../.github/workflows/pre-rich-protected-capital-ticket-census.yml)
+
+The adapter:
+
+1. Enumerates the exact configured PrizeValidator address through Koios `POST /address_utxos` using explicit `limit/offset` pagination and `_extended=true`.
+2. Requires a short/empty terminal page or an exhausted reported total; detects duplicate out-references, offset/range inconsistencies, and the configured scan bound.
+3. Reads the exact configured B1 PrizePool out-reference through `POST /utxo_info`, verifies the Pool singleton, and decodes the eight-field B1 datum.
+4. Decodes the 23-field PrizeDatum, binds the ticket NFT policy/name/quantity to the datum, and checks PrizeValidator / B1 script-hash relationships.
+5. Captures the chain tip before and after the multi-page observation. A changed tip produces `UNSTABLE_SNAPSHOT`; no same-snapshot ledger is emitted.
+6. Feeds the decoded records into the existing pure item-ledger builder and preserves raw source rows, manifest digest, and ledger output.
+
+**Non-certification is deliberate:** the manifest sets `providerSignatureVerified=false` and `sourceCompletenessAuthorityVerified=false`. Exhausted pagination plus an unchanged tip is useful provider evidence, but it is not an independent proof that Koios returned every ledger UTxO. The builder also keeps `fullProtectedCapitalQualified=false` and `r7L6EmptinessProven=false`. No EEV, SafetyCapital, ReserveProtection, MandatoryFutureCosts, C, X(P), viability, B2, or Issue certificate is produced.
+
+Seven provider-specific tests cover short final pages, exact-full-page exhaustion, duplicate out-references, offset mismatch, PrizeDatum decoding, malformed PrizeDatum shape, and B1 datum decoding. The dedicated workflow runs these tests together with the existing pure item-ledger conformance tests.
+
+**GitHub implementation commits:**
+- Reader: `d0d3607b6a196ea9e747f8ad1860227f508ddc6c`
+- Constructor decoder correction: `f863b69b9edc19b6ac33d9817aa1d242cd721f65`
+- Provider tests: `b52b40c78e397e8bea5a6321c7053035e43de732`
+- Test workflow: `8e00c759bb0bb710901dbbe9f9c277297320c447`
+- Workflow includes the existing item-ledger suite: `cb210ceec6d5631dd1dcf6710e7d317ec83e17ff`
+
+**Execution status:** GitHub combined-status lookup for the workflow commit returned no status checks at the time of inspection; test execution is therefore **NOT VERIFIED**. No local-PC execution was requested or performed.
+
+**Runtime configuration still required:** the live observer fails closed unless all five deployment identifiers are supplied explicitly:
+- `PREPROD_PRIZE_VALIDATOR_ADDRESS`
+- `PREPROD_TICKET_POLICY_ID`
+- `PREPROD_B1_POOL_ADDRESS`
+- `PREPROD_B1_POOL_OUTREF`
+- `PREPROD_B1_POOL_SINGLETON_UNIT`
+
+The Koios public Preprod endpoint does not require an API credential. These identifiers are deployment-specific and were not guessed or recovered from test fixtures. Until supplied and a live census is executed, the live source census remains **NOT PERFORMED** and PA1–PA7 remain **NOT CERTIFIED**.
+
+No V3, Reveal, validator, Kernel, economic parameter, B2, Issue-admission, workflow deployment, or on-chain state was changed by this increment.
