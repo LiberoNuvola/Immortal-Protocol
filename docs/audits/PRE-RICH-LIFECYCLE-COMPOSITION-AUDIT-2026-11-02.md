@@ -40,7 +40,7 @@ The controller implements the already-closed application thresholds:
 - `KC = 4` — maintenance;
 - `KD = 4` — post-distribution floor.
 
-Its outputs are `ACTIVATE`, `UPGRADE`, `RETAIN`, `CONTRACT` and `HALT`. It preserves `HighestClassEverActivated) monotonically and contracts directly to the highest lower class that remains maintainable.
+Its outputs are `ACTIVATE`, `UPGRADE`, `RETAIN`, `CONTRACT` and `HALT`. It preserves `HighestClassEverActivated` monotonically and contracts directly to the highest lower class that remains maintainable.
 
 `PreRichHysteresisBinding.ts` provides `derivePreRichControl` and `assertPreRichControlMatches`. The latter recomputes the expected controller result and fails closed if the observed class-control state differs.
 
@@ -57,7 +57,7 @@ Sources:
 
 The B2 datum stores:
 
-`CurrentActiveClass`, `HighestClassEverActivated`, `stateVersion`, `transitionNonce), and the configured singleton identity.
+`CurrentActiveClass`, `HighestClassEverActivated`, `stateVersion`, `transitionNonce`, and the configured singleton identity.
 
 The on-chain validator authenticates the singleton, requires the configured authority signature, preserves value and singleton, advances version/nonce, and checks monotonic direction:
 
@@ -138,7 +138,7 @@ The canonical Haskell Issue decision and economic admission input types do not c
 
 The hysteresis controller represents `HALT` with `currentActiveClass = null`. The B2 datum, B2 observer and V3 economic state require a numeric class in the range 0..7. No approved encoding mapping this null controller result to a canonical regime/control state was found.
 
-Do not encode HALT as class 0 or another arbitrary class. The application contract must explicitly decide how QUIESCENT supersedes the last numeric class while preserving `HighestClassEverActivated).
+Do not encode HALT as class 0 or another arbitrary class. The application contract must explicitly decide how QUIESCENT supersedes the last numeric class while preserving `HighestClassEverActivated`.
 
 ### No-keeper behaviour
 
