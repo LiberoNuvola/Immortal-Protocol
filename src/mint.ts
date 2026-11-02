@@ -45,7 +45,6 @@ import {
 
 import wallet from './wallet'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
-import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 import {
   obtainAuthoritativeIssueAdmission,
   type AuthoritativeIssueAdmissionProvider,
@@ -723,10 +722,8 @@ export type MintSerialResult = {
 }
 
 export type MintSerialOptions = {
-  /** Authoritative Economic Gate admission for the ticket-issuance transition. */
-  economicAdmission?: EconomicAdmissionWitness
-  /** Server/relayer-side producer for the authoritative Issue admission. */
-  authoritativeIssueAdmissionProvider?: AuthoritativeIssueAdmissionProvider
+  /** Server-side cryptographic authority producer for the authoritative Issue admission. */
+  authoritativeIssueAdmissionProvider: AuthoritativeIssueAdmissionProvider
   /**
    * Verified PRE-RICH class-saleability witness for this Issue transition.
    * The application path fails closed when it is absent or inconsistent;
@@ -764,22 +761,18 @@ export type MintSerialOptions = {
   expiryIssuanceState?: PreRichExpiryIssuanceState
   lucid?: any
   v3CarrierValidator?: Script
-  requireV3CarrierBinding?: boolean
-  /**
-   * When enabled, Issue must bind to the authenticated PRE-RICH B2
-   * control singleton as a reference input and its class-control state must
-   * match the V3 projection observed for the same live state.
-   */
-  requireB2ControlBinding?: boolean
 }
 
 // ============================================================
 // Mint
 // ============================================================
 
-export async function mintSerialNFT(
+async function mintSerialNFTInternal(
   opts: MintSerialOptions,
 ): Promise<MintSerialResult> {
+  if (typeof opts.authoritativeIssueAdmissionProvider !== 'function') {
+    throw new Error('Authoritative Issue admission provider is required')
+  }
   const lucid =
     opts.lucid ?? wallet.getLucid()
 
@@ -1189,7 +1182,8 @@ export async function mintSerialNFT(
   // B1PrizePool singleton
   // ----------------------------------------------------------
 
-  const requireCarrierBinding = opts.requireV3CarrierBinding === true
+  // Every Issue must use the authoritative V3 carrier transition.
+  const requireCarrierBinding = true
   let carrierObservation: Awaited<ReturnType<typeof observeEconomicStateCarrier>> | null = null
   let carrierUtxo: UTxO | null = null
 
@@ -1238,7 +1232,8 @@ export async function mintSerialNFT(
     }
   }
 
-  const requireB2ControlBinding = opts.requireB2ControlBinding === true
+  // Every Issue must bind the exact authenticated B2 singleton as a reference input.
+  const requireB2ControlBinding = true
   let b2ControlUtxo: UTxO | null = null
 
   if (requireB2ControlBinding) {
@@ -1342,32 +1337,22 @@ export async function mintSerialNFT(
     price: opts.issueClassEvidence.priceReferenceUnits,
   }
 
-  let economicAdmission = opts.economicAdmission
-
-  if (!economicAdmission && opts.authoritativeIssueAdmissionProvider) {
-    economicAdmission = await obtainAuthoritativeIssueAdmission(
-      opts.authoritativeIssueAdmissionProvider,
-      {
-        ...issueIntent,
-        counterInputReference: counterUtxo.txHash + '#' + counterUtxo.outputIndex,
-        controlStateReference: b2ControlUtxo
-          ? b2ControlUtxo.txHash + '#' + b2ControlUtxo.outputIndex
-          : '',
-        poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
-        liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
-        carrierStateReference: carrierUtxo
-          ? carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
-          : undefined,
-      },
-      opts.issueClassEvidence,
-    )
-  }
-
-  if (!economicAdmission) {
-    throw new Error(
-      'Authoritative Issue admission is required: provide economicAdmission or authoritativeIssueAdmissionProvider',
-    )
-  }
+  const economicAdmission = await obtainAuthoritativeIssueAdmission(
+    opts.authoritativeIssueAdmissionProvider,
+    {
+      ...issueIntent,
+      counterInputReference: counterUtxo.txHash + '#' + counterUtxo.outputIndex,
+      controlStateReference: b2ControlUtxo
+        ? b2ControlUtxo.txHash + '#' + b2ControlUtxo.outputIndex
+        : '',
+      poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
+      liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
+      carrierStateReference: carrierUtxo
+        ? carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
+        : undefined,
+    },
+    opts.issueClassEvidence,
+  )
 
   if (economicAdmission.actionClass !== issueIntent.action) {
     throw new Error('Economic admission action does not match the requested Issue intent')
@@ -1777,19 +1762,11 @@ export async function mintSerialNFT(
  * binding immediately before signing.
  */
 export async function mintSerialNFTWithAuthoritativeAdmission(
-  opts: Omit<MintSerialOptions, 'economicAdmission'> & {
-    authoritativeIssueAdmissionProvider: AuthoritativeIssueAdmissionProvider
-  },
+  opts: MintSerialOptions,
 ): Promise<MintSerialResult> {
-  return mintSerialNFT({
-    ...opts,
-    economicAdmission: undefined,
-    requireV3CarrierBinding: true,
-    requireB2ControlBinding: true,
-  })
+  return mintSerialNFTInternal(opts)
 }
 
 export default {
-  mintSerialNFT,
   mintSerialNFTWithAuthoritativeAdmission,
 }
