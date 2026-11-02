@@ -620,3 +620,58 @@ A second complete factory census followed the observer's datum-artifact serializ
 - Both PoolDatum records decoded; exact pair identities, datum/Value reserves and USDM quantities matched. No datum endpoint error. The artifact's datum-info JSON and observation manifest were independently parsed as valid JSON.
 
 The repeat snapshot confirms reproducibility and valid evidence serialization; it does not add a third pool or change the liquidity-venue-only qualification. P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**.
+
+## 24. Circle xReserve Cardano-domain collateral view and Koios USDCx supply reconciliation (2026-11-02)
+
+### Same-run read-only observation
+
+The new GitHub Actions workflow [41482604345](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41482604345) completed successfully on source SHA `c33fb643795e1f62cfeb05d0648b2fc47c7ed235`.
+
+- Deterministic decoder/conformance tests: **9/9 PASS**.
+- Artifact: [circle-cardano-usdcx-reserve-readonly-41482604345](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41482604345/artifacts/13158914351), ZIP SHA-256 `8654ec3463e17bb0159ffefc863d09b372aefc78f3a6d89bc62e816f7d64205c`.
+- JSON SHA-256 `3b0b0293b101050be9e368850f1734e960ae0093145bb030fef9240042793efe`.
+- Cardano tip before/after the acquisition was unchanged: slot `202070915`, block `14149078`, hash `7be54e7ecfdb22df698b4a61fc32adf487334be228c0e59e58abf23da284f64e`.
+
+Circle `GET /v1/info` again returned Cardano Mainnet remote domain **10004**, remote token **USDCx**, associated native token **USDC**, and the exact expected remote token identifier `0x9ea9794d33dbcef3f77718e903816e877ab2577f4d7ee653638f1f60fc671dd6`. `GET /v1/balances/10004` returned **39,032,540.052630 USDC** as the domain's expected balance at 2026-11-02 16:33:31 UTC. This endpoint remains classified as an expected-deposit balance, not a direct token-reserve read.
+
+### Correct xReserve on-chain view
+
+The first prototype incorrectly called ERC-20 `balanceOf(xReserveProxy)`; the observed 8.666550 USDC at that address is **not** the domain's reserve balance and is superseded by this section.
+
+The pinned Circle xReserve source explains the correct read: `balanceOfNativeCollateral(localToken, remoteDomain)` delegates to `GatewayWallet.availableBalance(localToken, getRemoteDomainDepositor(remoteDomain))`. The implementation is in the official [Circle xReserve source](https://github.com/circlefin/evm-xreserve-contracts/tree/12236a2b17ace9d1108af6f63dbe5d0ce5898017), specifically `src/xReserve.sol`, `src/modules/x-reserve/RemoteDomainRegistration.sol`, and `src/interfaces/IGatewayWallet.sol`.
+
+At Ethereum Mainnet block **26,328,316** (`0x191bcfc`, block hash `0xfbea3263740b99a252c7c5bc038fc0b51a5041cba75fd11c2ede88cf829dbde9`), read-only calls against the exact xReserve proxy returned:
+
+- xReserve proxy: `0x8888888199b2df864bf678259607d6d5ebb4e3ce`.
+- GatewayWallet: `0x77777777dcc4d5a8b6e418fd04d8997ef11000ee`.
+- Cardano RemoteDomainDepositor: `0x866e992217e0bfb8371f9ad32a53dcc47d1aa04e`.
+- `getRemoteToken(10004, USDC)` returned the exact registered USDCx remote token identifier above.
+- `balanceOfNativeCollateral(USDC, 10004)` returned **39,032,540.052630 USDC**.
+
+This domain-specific available collateral is an **exact match to Circle's expected-balance API value at the captured snapshot**: difference **0.000000 USDC**. For context only, the GatewayWallet's aggregate ERC-20 USDC balance was **59,533,829.650331 USDC**; that balance is shared and must not be allocated wholly to Cardano.
+
+### Koios supply and withdrawal reconciliation
+
+The corrected Koios decoder follows the documented `asset_history` representation: both mints and burns appear inside the single `minting_txs` array, with burns represented by negative signed quantities. The same-run exact-USDCx history returned:
+
+- 4,317 total events;
+- 2,997 positive mint events, gross **92,063,778.562765 USDCx**;
+- 1,320 negative burn events, gross **53,939,829.236409 USDCx**;
+- derived net supply **38,123,949.326356 USDCx**.
+
+Circle expected/domain-available collateral therefore exceeds this history-derived net supply by **908,590.726274 USDCx** at the cross-source comparison. This difference is **not yet explained**. Koios history is indexer-returned data; independent completeness and atomicity with Ethereum/Circle observations are not certified.
+
+The existing IOG history GET observer again found the same two exact burn records for its already-resolved public payment-address set:
+
+- 30 Oct 2026: **450,000 USDCx**, status `awaiting_finality`, 320 confirmations, no Ethereum release hash.
+- 29 Oct 2026: **450,000 USDCx**, status `finalized`; the exact Ethereum transaction receipt still shows a successful native USDC mint of **449,998 USDC**.
+
+These two records do **not** reconcile the full 908,590.726274 difference. We must not infer that the entire residual is a pending withdrawal, a fee, or an under-collateralization event. The remaining task is exact burn → IOG withdrawal → Ethereum release correlation for the additional burn history and a completeness check across the domain's payment addresses.
+
+### Qualification boundary
+
+**Newly supported:** exact xReserve Cardano-domain available collateral was observed on-chain and matched the Circle expected-balance endpoint exactly at the captured time/block. This is substantially stronger than comparing Circle's API with the aggregate GatewayWallet balance or with an ERC-20 balance at the xReserve proxy address.
+
+**Still not qualified:** full supply-to-withdrawal reconciliation; independent completeness of indexer and IOG status histories; an executable Moneta-USDM/USDCx quote; current fees, depth, redemption liveness/latency and operational failure bounds; and the complete Option B USD/USDM PriceReference contract. This observation does not establish USD/USDM price, USDCx/USD peg, unconditional redemption entitlement, a reserve guarantee, or permission to use the separate Preprod tUSDM as Moneta USDM.
+
+Option B remains **NOT QUALIFIED**; P-01 first Issue remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote, PriceReference, Kernel, EEV, Issue-admission or economic rule was changed. No approval, key, wallet operation, signature, burn, withdrawal, transaction, deployment or merge was performed. V3/Reveal and Materios remain untouched.
