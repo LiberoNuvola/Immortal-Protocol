@@ -22,7 +22,7 @@ function exactTip(raw) {
   const row = Array.isArray(raw) ? raw[0] : raw
   const hash = String(row?.hash ?? '').toLowerCase()
   const slot = Number(row?.abs_slot ?? row?.absolute_slot)
-  const blockHeight = Number(row?.block_height)
+  const blockHeight = Number(row?.block_height ?? row?.block_no)
   if (!/^[0-9a-f]{64}$/.test(hash) ||
       !Number.isSafeInteger(slot) || slot < 0 ||
       !Number.isSafeInteger(blockHeight) || blockHeight < 0) {
