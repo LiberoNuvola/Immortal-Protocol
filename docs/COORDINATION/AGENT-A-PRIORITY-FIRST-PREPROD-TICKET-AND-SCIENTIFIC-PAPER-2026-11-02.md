@@ -24,6 +24,19 @@ Only work that is a direct prerequisite, evidence-producing step, or safety gate
 
 **Exit evidence:** a versioned deployment manifest with exact identifiers, network, provenance, observation slot/time, and hashes. No secret or wallet key is stored in the repository.
 
+**Historical deployment evidence recovered from GitHub Actions artifact 12324421376 (run 39552468679, 2026-10-21):**
+
+- PrizeValidator address: `addr_test1wzf7ctkjwysu3v94f0ccqjef63kdwy2gc4qj368x3a70lvsq6uygp`
+- B1 PrizePool address: `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`
+- B1 PrizePool UTxO: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`
+- Pool singleton unit: `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e504f4f4c2d444952454354`
+- Ticket policy ID: `ca8ef9a7e51e65da526ad4392f8b1919532368c656c7571107a06e71`
+- Direct tUSDM unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`
+- Historical physical tUSDM quantity: 1,000,000,000 atomic units; derived EEV: 100,000 IMMORTAL USDM subunits (1,000 USDM).
+- Historical snapshot: slot 136879045, observed 2026-10-21T05:57:26.613Z; approval run 39552468679.
+
+These are **recovered historical identifiers/evidence, not a current live observation**. The approval explicitly requires LIVE_UTXO_REVALIDATION before Issue admission. Re-query the exact UTxO and bind a fresh snapshot before reuse. The B2 control deployment artifact/identifiers were not present in the recovered EEV artifact and remain to be recovered from its own deployment evidence. The workflow's configured deployment wallet is not presumed to be the owner's purchase wallet; keep those identities separate.
+
 ### P0.2 — revalidate the direct-USDM EEV for the exact Pool UTxO
 
 - Re-run the existing PRE-RICH-EEV-USDM-DIRECT-V1 source-set and qualification path against the exact current B1 Pool UTxO.
@@ -96,7 +109,11 @@ Do not claim novelty, security, solvency, decentralization, or formal verificati
 
 ### P1.5 — manuscript
 
-Prepare a structured draft: abstract; problem and motivation; related work; system model and threat model; economic semantics; architecture; provenance and admission; implementation; experimental method; results; limitations; discussion; conclusion; reproducibility appendix.
+The repository already has two distinct explanatory White Papers: root IMMORTAL White Paper (universal protocol scope) and docs/WHITEPAPER.md (PRE-RICH application scope). Preserve that separation and their normative/documentation boundaries; do not merge them or silently create a competing normative source.
+
+The scientific manuscript is a separate research output, not a rewrite of either orientation document. Its working research scope is IMMORTAL's chain-neutral economic protocol and evidence/refinement model, with PRE-RICH/Cardano as the concrete case study. Validate the research gap through prior art before claiming novelty. Prepare a structured article: abstract; problem and research question; related work; system/threat model; formal economic semantics; architecture and trust boundaries; provenance and admission; implementation; experimental method; results; limitations; discussion; conclusion; reproducibility appendix.
+
+The earlier PRE-RICH white-paper outline remains useful as explanatory coverage, but the scientific article must add explicit research question, methodology, prior-art comparison, testable claims, and evidence-backed evaluation. No target venue, language, or authorship convention is assumed until decided.
 
 No results section may promote a planned, simulated, fixture-only, or unverified run into a live result.
 
