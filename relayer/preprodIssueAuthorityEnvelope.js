@@ -143,6 +143,7 @@ function signIssueAuthorityEnvelope({
     classId: witness.issueClassId,
     price: witness.issuePrice,
     directUsdmUnit: unit,
+    directUsdmObservedValue: payload.poolUsdmValue,
     observationReference: payload.observationReference,
     observedAt,
     currentObservedAt:
