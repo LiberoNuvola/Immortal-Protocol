@@ -56,6 +56,22 @@ assert.ok(manyPrompt.length < 7001, "many checks with one shared run URL should 
 assert.match(manyPrompt, /R:this run/);
 assert.match(manyPrompt, /Hard boundaries:/);
 
+// Repeated, verbose caveats are retained in full but rendered once, not once
+// per check. Unique caveats remain independently addressable from each check.
+const repeatedLimit = "This result is scoped to the exact run and does not establish Preprod or mainnet qualification.";
+const repeatedChecks = structuredClone(registry);
+repeatedChecks.checks = Array.from({ length: 40 }, (_, index) => ({
+  checkId: "REPEATED.LIMIT." + String(index).padStart(2, "0"),
+  result: index === 39 ? "FAIL" : "PASS",
+  evidenceRefs: [{ kind: "workflow-run", uri: registry.subject.workflowRunUrl }],
+  limitations: [repeatedLimit],
+}));
+const repeatedPrompt = buildOperationalPrompt(repeatedChecks);
+assert.ok(repeatedPrompt.length < 7001, "repeated limitations should be deduplicated within the prompt budget");
+assert.equal(repeatedPrompt.split(repeatedLimit).length - 1, 1, "full repeated limitation text should appear exactly once");
+assert.match(repeatedPrompt, /REPEATED\.LIMIT\.39 FAIL R:this run L:L1/);
+assert.match(repeatedPrompt, /L1: This result is scoped to the exact run and does not establish Preprod or mainnet qualification\./);
+
 const diagnosticRegistry = structuredClone(registry);
 diagnosticRegistry.checks.push({
   checkId: "P2.8.HASKELL_V2.PENDING_EXPIRE",
