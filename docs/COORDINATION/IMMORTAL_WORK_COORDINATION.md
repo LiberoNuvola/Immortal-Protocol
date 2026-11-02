@@ -4355,7 +4355,7 @@ The detailed exit criteria and work breakdown are in [Agent A — First Preprod 
 
 - Existing authenticated Demeter/Ogmios v7 context observer has been extended to query the historical PrizeValidator address through `queryLedgerState/utxo` on the same WebSocket session as context/wallet/Pool observations.
 - It records raw UTxOs, normalized output references, datum/datumHash, tip-before/tip-after, SHA-256 sidecar and a summary. The address is explicitly marked `HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED`; it is not asserted as the current deployed address.
-- The existing `preprod-context` workflow job now verifies the PrizeValidator artifact and its sidecar digest; the probe fails on tip movement after retaining the diagnostic packet.
+- Each returned output must have a valid 32-byte transaction hash plus non-negative output index, and any returned address must match the queried PrizeValidator address. The existing `preprod-context` workflow job verifies the PrizeValidator artifact and sidecar digest, schema/provenance fields, and returned count versus identified references; the probe fails on malformed/mismatched rows or tip movement after retaining diagnostic evidence.
 - This is a same-session corroborating address observation, not a replacement for Koios pagination and not an authenticated source-completeness proof.
 - Changes are in `audit/cardano-integration/preprod-ogmios-context.mjs` and `.github/workflows/immortal-cardano-preprod.yml`.
 
