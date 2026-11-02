@@ -4614,3 +4614,36 @@ Current branch head: `35bc1fab224863901df7056888f1eee9c9f375f3`.
 6. **ProtectedCapital:** the complete authoritative PA1–PA7 item-level producer and full provenance certification remain open.
 
 Safety disposition: no Issue was built, signed or submitted; no deployment approval was issued; no B2 deployment or Oracle update was attempted. No V3, Reveal, economic formula, coefficient, ladder, payout or expiry semantics were changed. CI performed only the automatically triggered conformance/context work described above.
+
+
+## 45.61 AGENT A — ORACLE STATE READ-ONLY OBSERVATION (2026-11-02)
+
+This pass acquired fresh read-only ledger evidence for the historical bootstrap-wallet Oracle singleton and attempted the separate configured-runtime observation. It does not refresh the Oracle datum, qualify its external source, authorize settlement, or change any on-chain state.
+
+### Workflow and execution
+
+- Workflow: [Oracle Quote-Set Read-Only Observation](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41422819880), on `work/immortal-green-closure`, commit `ae18d121572cebe09fcb638b41e57b438cb987d3`.
+- Bootstrap-wallet Koios observation: **SUCCESS**. Its read-only artifact was uploaded as artifact `13129754997`, `bootstrap-wallet-oracle-observation-ae18d121572cebe09fcb638b41e57b438cb987d3`; archive SHA-256 `13b43742d7f7dadd845d140f35484ce8aba81bd4947b9e5403c7d1a0b01c8963`.
+- Configured runtime singleton observation: **BLOCKED before chain query**. The workflow's `DEMETER` environment supplied empty values for all five required configuration names: `BLOCKFROST_PROJECT_ID`, `ORACLE_STATE_ADDRESS`, `ORACLE_STATE_POLICY_ID`, `ORACLE_STATE_TOKEN_NAME_HEX`, `ORACLE_PUBLISHER_PKH`. The script therefore skipped the Blockfrost UTxO query and emitted no runtime singleton observation artifact. No secret values were logged.
+
+### Historical bootstrap-wallet singleton — exact observation
+
+Observation time from Koios Preprod chain tip: `2026-11-02T09:41:55.000Z`.
+
+- Tip: block `5364332`, absolute slot `137929315`, epoch `323`, hash `ed0eb06874389012ab2c0d64e380d194c31f3c446923c6ccdde99999d187edff`.
+- Historical identity: policy `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e`, token name `4f5241434c45`, configured publisher `69fe256b67d8f11822a34b250ab8ba271bdedb513daf99e618b6bc89`.
+- Exact live out-reference: `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`; lovelace `2000000`; datum CBOR SHA-256 `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`.
+- Datum: `legacy-single-quote`, one quote for `lovelace`, raw price field `100`, timestamp `2026-10-08T17:38:50.142Z`, publisher field matching the expected historical publisher.
+- Measured quote age: **24 days, 16 hours, 3 minutes, 4.858 seconds** (2,131,384,858 ms). The existing 1-hour quote-age contract classifies it `STALE_TIMESTAMP`; `usableForIssue=false`, `adaOnlySettlementStructurallyUsable=false`. The legacy one-quote schema additionally reports `LEGACY_SCHEMA_SUPPORTS_ONLY_ONE_ASSET_QUOTE`.
+- Artifact inspection explicitly reports `sourceTruthProven=false`, `externalPriceSourceVerified=false`, `configuredPublicPagesRuntimeIdentityProven=false`, and `multiAssetSettlementAuthorisedByThisObservation=false`.
+
+The artifact's JSON evidence digest is `6d05da2524ac799f98728ff4f5832370cf7259b9da81b7ae7be6b86468d9034e`. The run result is intentionally **partial**: the historical bootstrap singleton was observed, but it is not evidence for the configured public Pages runtime identity.
+
+### Interpretation and next dependency
+
+1. The historical bootstrap-wallet Oracle singleton is still live, but its existing quote is stale and structurally unsuitable for Issue settlement. Reusing the singleton does not refresh its timestamp; do not synthesize a new timestamp in the manifest.
+2. The configured runtime Oracle identity remains unknown to this workflow because the required GitHub `DEMETER` environment variables/secrets are missing. Do not substitute the historical bootstrap identity for the public runtime identity.
+3. The Oracle candidate/source qualification material in Notion (PRE Oracle source-set §22, evidence acquisition §23, and PriceReference deployment contract §30) continues to distinguish operational publisher presence from qualified external source truth. A datum's publisher-field match is not independent market-source verification.
+4. The next safe action is to populate/verify the five exact `DEMETER` environment values from the approved deployment record, then rerun this same read-only workflow. Do not bootstrap, sign, submit, refresh the on-chain datum, or deploy as part of that observation.
+
+Safety disposition: both jobs were read-only; bootstrap observation reports `signed=false`, `submitted=false`, `stateChanged=false`. The configured-runtime job stopped before querying Blockfrost. No Oracle update, Issue transaction, deployment approval, B2 deployment, wallet signature or on-chain state transition occurred. V3/Reveal semantics remain untouched.
