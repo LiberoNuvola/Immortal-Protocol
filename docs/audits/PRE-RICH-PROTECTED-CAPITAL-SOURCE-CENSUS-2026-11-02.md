@@ -26,7 +26,7 @@ A first machine-readable ledger sample has been produced from the existing repla
 | L2 conditional Jackpot | B1/V3 aggregates and state fields exist; current B1/V3 action sets do not implement an authorized Jackpot funding/lock/payout transition | **LIFECYCLE PROVENANCE OPEN** |
 | L3 unresolved tickets | Projection validates caller-supplied Pending/BeaconReady item prices/count against B1 aggregates; no complete source enumerator is wired to it | **FIXTURE-RECONCILABLE / POPULATION COMPLETENESS OPEN** |
 | L4 settled | Claim transition changes Revealed → Claimed and reduces the pending aggregate | **LOCAL TRANSITION EXISTS; HISTORICAL CENSUS NOT IMPLEMENTED** |
-| L5 expired / extinguished | Expiry consumes the PrizeDatum; Pending and Revealed Win have different exact accounting deltas | **LOCAL TRANSITION EXISTS; HISTORY SOURCE NOT IMPLEMENTED** |
+| L5 expired / extinguished | Losing Reveal moves L3 → L5; technical Expire consumes the PrizeDatum and releases the exact Pending reserve or Revealed Win liability | **LOCAL TRANSITIONS EXIST; CONSUMED-EXPIRY HISTORY SOURCE NOT IMPLEMENTED** |
 | L6 empty | No all-source census exists to prove that no additional material commitment is omitted | **NOT PROVEN** |
 
 **No actual Preprod ticket or liability identity was returned by this source audit.** Test IDs and fixture values are not live on-chain evidence.
@@ -92,7 +92,7 @@ The current Issue observation reader imports ppPendingLiabilities from the singl
 
 A future read-only census can derive candidate L1 rows from all live, valid PrizeDatum UTxOs at the exact configured PrizeValidator address:
 - Revealed with positive pdPrizeAmount: candidate L1 until an exact Claim or valid Expire transition consumes/releases it;
-- Revealed with zero payout: no crystallized payout; resolved loss follows the terminal/non-liability path;
+- Revealed with zero payout: L3 → L5 extinguished right; no crystallized payout liability, although its PrizeDatum may remain live until technical expiry;
 - Claimed: L4/history, not live L1;
 - Pending or BeaconReady: L3, not L1.
 
@@ -236,7 +236,7 @@ Adversarial tests were added:
 
 [`PC-item-ledger-source-census.conformance.test.ts`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts)
 
-The 15 Vitest cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum policy mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, invalid Beacon lifecycle status, losing Reveal → L5, and exact fractional-payout handling. The 9 Node tests cover provider page totals, missing/changed Content-Range, changed tip, duplicate references, DatumHash resolution, and missing datums.
+The 15 Vitest cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, incomplete pagination, unclassified source outputs, L1 aggregate mismatch, duplicate logical identity, duplicate UTxO reference, datum policy mismatch, positive Jackpot without transition proof, snapshot mismatch, non-canonical prices, invalid Beacon lifecycle status, losing Reveal → L5, and exact fractional-payout handling. The 13 Node tests cover provider page totals, missing/changed Content-Range, changed tip, address mismatch, invalid/duplicate asset rows, duplicate UTxO references, DatumHash resolution, and missing datums.
 
 **Execution status at this audit baseline:** the pure builder tests were authored but not yet run. The provider-specific reader and dedicated test workflow were added later; see §8. No live Preprod source census has been performed.
 
@@ -258,7 +258,7 @@ The item-ledger builder therefore preserves every payout amount exactly in USDM 
 
 This reveals an existing interface boundary, not a new economic rule: a non-integral-USD L1 aggregate cannot currently be projected into the V3 reference-unit integer without an explicit, governed unit treatment. The builder preserves the source amount and blocks the lossy bridge. No change was made to the existing projection or V3 kernel.
 
-The test suite at this point included both cases. The earlier item-ledger/payout tests totaled **14 authored, not executed**; seven additional provider-enumerator tests are recorded in §8.
+The test suite at this point included both fractional-payout cases. The current item-ledger suite totals **15 Vitest tests authored** and the provider reader totals **13 Node tests authored**; neither suite is declared passing until an exact-head Actions run is verified.
 
 
 ## 8. Follow-on implementation — shared Koios Preprod source census
