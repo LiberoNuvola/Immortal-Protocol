@@ -18,6 +18,22 @@ function canonicalJson(value) {
   return JSON.stringify(value)
 }
 
+function assertPreprodKoiosEndpoint(baseUrl) {
+  let parsed
+  try {
+    parsed = new URL(baseUrl)
+  } catch {
+    throw new Error('KOIOS_PREPROD_BASE_URL_INVALID')
+  }
+  if (parsed.protocol !== 'https:' ||
+      !parsed.hostname.toLowerCase().includes('preprod') ||
+      parsed.pathname.replace(/\\/$/, '') !== '/api/v1' ||
+      parsed.search || parsed.hash) {
+    throw new Error('KOIOS_ENDPOINT_MUST_BE_HTTPS_PREPROD_API_V1')
+  }
+  return parsed.toString().replace(/\\/$/, '')
+}
+
 function exactTip(raw) {
   const row = Array.isArray(raw) ? raw[0] : raw
   const hash = String(row?.hash ?? '').toLowerCase()
@@ -103,6 +119,7 @@ function createKoiosProtectedCapitalSource({
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 } = {}) {
   if (typeof fetchImpl !== 'function') throw new Error('fetch implementation is required')
+  const normalizedBaseUrl = assertPreprodKoiosEndpoint(baseUrl)
   if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > MAX_KOIOS_PAGE_SIZE) {
     throw new Error('pageSize must be an integer between 1 and 1000')
   }
@@ -136,7 +153,7 @@ function createKoiosProtectedCapitalSource({
 
   async function readTip() {
     const response = await requestJson(
-      makeUrl(baseUrl, '/tip'),
+      makeUrl(normalizedBaseUrl, '/tip'),
       undefined,
       'KOIOS_TIP',
     )
@@ -144,7 +161,7 @@ function createKoiosProtectedCapitalSource({
   }
 
   async function readAddressPage(address, offset) {
-    const url = makeUrl(baseUrl, '/address_utxos', {
+    const url = makeUrl(normalizedBaseUrl, '/address_utxos', {
       limit: pageSize,
       offset,
       order: 'tx_hash.asc,tx_index.asc',
@@ -245,7 +262,7 @@ function createKoiosProtectedCapitalSource({
     for (let offset = 0; offset < uniqueHashes.length; offset += DATUM_HASH_BATCH_SIZE) {
       const batch = uniqueHashes.slice(offset, offset + DATUM_HASH_BATCH_SIZE)
       const response = await requestJson(
-        makeUrl(baseUrl, '/datum_info'),
+        makeUrl(normalizedBaseUrl, '/datum_info'),
         { _datum_hashes: batch },
         'KOIOS_DATUM_INFO',
       )
@@ -383,6 +400,7 @@ module.exports = {
   MAX_KOIOS_PAGE_SIZE,
   createKoiosProtectedCapitalSource,
   parseContentRange,
+  assertPreprodKoiosEndpoint,
   canonicalJson,
   sha256Hex,
 }
