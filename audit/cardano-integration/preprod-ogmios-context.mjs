@@ -6,6 +6,7 @@ const endpoint = process.env.DEMETER_OGMIOS_URL?.trim()
 const evidenceDir = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
 const walletAddress = process.env.PREPROD_WALLET_ADDRESS?.trim()
 const poolAddress = process.env.PREPROD_B1_POOL_ADDRESS?.trim()
+const prizeValidatorAddress = process.env.PREPROD_PRIZE_VALIDATOR_ADDRESS?.trim()
 const explicitAuthenticatedEndpoint = process.env.DEMETER_OGMIOS_AUTHENTICATED_URL?.trim()
 const credentials = [
   ['DEMETER_API_KEY_PRIMARY', process.env.DEMETER_API_KEY_PRIMARY?.trim()],
@@ -16,6 +17,7 @@ const credentials = [
 if (!endpoint) throw new Error('DEMETER_OGMIOS_URL is required')
 if (!walletAddress) throw new Error('PREPROD_WALLET_ADDRESS is required')
 if (!poolAddress) throw new Error('PREPROD_B1_POOL_ADDRESS is required')
+if (!prizeValidatorAddress) throw new Error('PREPROD_PRIZE_VALIDATOR_ADDRESS is required')
 if (!credentials.length) throw new Error('No Demeter credential is configured')
 await mkdir(evidenceDir, { recursive: true })
 
@@ -205,6 +207,77 @@ try {
   ].join('\n') + '\n'
   await writeFile(`${evidenceDir}/preprod-wallet-summary.txt`, walletSummary)
   console.log(walletSummary)
+
+
+  // Read-only PrizeValidator address observation on the same authenticated
+  // Ogmios WebSocket. The configured address is a historical deployment
+  // candidate and must be revalidated against the current deployment manifest.
+  const prizeTipBefore = await rpc('queryNetwork/tip')
+  const prizeRaw = await rpc('queryLedgerState/utxo', { addresses: [prizeValidatorAddress] })
+  const prizeTipAfter = await rpc('queryNetwork/tip')
+  const prizeUtxos = Array.isArray(prizeRaw) ? prizeRaw.map(entry => {
+    const transaction = entry.outputReference?.transaction ?? entry.transaction ?? {}
+    const index = entry.outputReference?.index ?? entry.index
+    const value = entry.value ?? entry.amount ?? {}
+    return {
+      txHash: transaction.id ?? entry.txHash ?? null,
+      index,
+      address: entry.address ?? prizeValidatorAddress,
+      value,
+      datum: entry.datum ?? null,
+      datumHash: entry.datumHash ?? entry.datumhash ?? null,
+      script: entry.script ?? entry.referenceScript ?? null,
+    }
+  }) : []
+  const prizeTipStable =
+    JSON.stringify(prizeTipBefore) === JSON.stringify(prizeTipAfter)
+  const observedPrizeUtxoReferences = prizeUtxos
+    .filter(u => typeof u.txHash === 'string' && u.index !== null && u.index !== undefined)
+    .map(u => u.txHash.toLowerCase() + '#' + String(u.index))
+  const prizeObservations = {
+    schema: 'IMMORTAL-PREPROD-PRIZE-VALIDATOR-UTXO-v0.1',
+    source: {
+      provider: 'Demeter',
+      network: 'cardano-preprod',
+      interface: 'Ogmios v7 JSON-RPC',
+      endpoint,
+      authentication: 'GitHub Actions secret',
+      query: 'queryLedgerState/utxo by PrizeValidator address',
+      session: 'same-websocket-as-preprod-context',
+      addressProvenance: 'HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED',
+    },
+    observedAt: new Date().toISOString(),
+    prizeValidator: { address: prizeValidatorAddress },
+    tipBefore: prizeTipBefore,
+    tipAfter: prizeTipAfter,
+    tipStable: prizeTipStable,
+    utxoCount: prizeUtxos.length,
+    observedPrizeUtxoReferences,
+    utxos: prizeUtxos,
+    rawOgmiosUtxoResult: prizeRaw,
+  }
+  const prizeBody = JSON.stringify(prizeObservations, null, 2) + '\n'
+  await writeFile(`${evidenceDir}/preprod-prize-validator-utxo.json`, prizeBody)
+  const prizeDigest = createHash('sha256').update(prizeBody).digest('hex')
+  await writeFile(
+    `${evidenceDir}/preprod-prize-validator-utxo.sha256`,
+    `${prizeDigest}  preprod-prize-validator-utxo.json\\n`,
+  )
+  const prizeSummary = [
+    `status=${prizeTipStable ? 'TIP_STABLE' : 'TIP_CHANGED'}`,
+    'address_provenance=HISTORICAL_DEPLOYMENT_CANDIDATE_REVALIDATION_REQUIRED',
+    'provider=Demeter',
+    'network=cardano-preprod',
+    'interface=Ogmios-v7',
+    `prize_validator_address=${prizeValidatorAddress}`,
+    `utxo_count=${prizeUtxos.length}`,
+    `tip_before=${JSON.stringify(prizeTipBefore)}`,
+    `tip_after=${JSON.stringify(prizeTipAfter)}`,
+    `utxo_packet_sha256=${prizeDigest}`,
+    'session=same-websocket-as-preprod-context',
+  ].join('\\n') + '\\n'
+  await writeFile(`${evidenceDir}/preprod-prize-validator-summary.txt`, prizeSummary)
+  console.log(prizeSummary)
 
   // Read-only B1 Pool observation in the same authenticated Ogmios session.
   // The configured address is the historical deployment candidate; the
