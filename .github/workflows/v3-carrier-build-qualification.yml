@@ -63,7 +63,7 @@ jobs:
           set -e
           echo "Cabal V3 artifact generation exit code: $rc"
           echo "V3-specific compiler diagnostics:"
-          grep -E 'V3EconomicStateCarrier(MintPolicy)?\\.hs' plutus/v3-artifact-build.log | tail -200 || true
+          grep -E 'V3EconomicStateCarrier(MintPolicy)?\.hs' plutus/v3-artifact-build.log | tail -200 || true
           if [ "$rc" -ne 0 ]; then
             echo "Last 160 build-log lines:"
             tail -160 plutus/v3-artifact-build.log || true
@@ -176,7 +176,7 @@ jobs:
 
           await writeFile(
             resolve(root, 'audit/v3-carrier-build/qualification.json'),
-            JSON.stringify(manifest, null, 2) + '\\n',
+            JSON.stringify(manifest, null, 2) + '\n',
           )
           console.log(JSON.stringify({
             status: 'FRESH_V3_BUILD_QUALIFIED',
