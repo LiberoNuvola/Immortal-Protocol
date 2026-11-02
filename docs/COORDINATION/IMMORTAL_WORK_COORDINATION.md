@@ -4428,3 +4428,75 @@ All three address observations in the latest artifact report the same stable tip
 5. Bring up the external signed Issue authority and run the existing read-only `preprod-first-issue-readiness.mjs` gate. Only after it reports `READY_FOR_WALLET_REVIEW` may the owner review the actual DApp Sale path and prepare their own wallet purchase.
 
 **Safety disposition:** no transaction was built, signed or submitted by this session; no EEV deployment approval was issued; no B2 singleton was deployed; no ticket was purchased. V3, Reveal, validator semantics and economic formulas/parameters were not changed.
+
+
+## 45.58 AGENT A — R1/Kc, Ω, NON-VACUITY AND PA1–PA7 EXACT EXIT CONTRACT (2026-11-02)
+
+This section translates the existing normative certification specifications into concrete evidence inputs for the first Issue. It adds no new theorem, threshold, state variable, economic parameter, or acceptance rule.
+
+### R1 — concrete viability certificate (E1–E10)
+
+The normative source is `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`. A valid certificate has the versioned tuple `⟨id, version, M, χ, Wit, Bnd, Proofs⟩` and discharges VC1–VC6:
+
+- **E1 / model instance:** versioned PRE-RICH deployment/profile definition of `(𝒮, A, Accept, Ω, T, Safe)`; name the state representation, allowed canonical actions, acceptance predicate, event successors, transition function and safety predicate.
+- **E2 / χ:** total, deterministic, decidable, domain-separated membership predicate for `K_c`, with executable source and specification.
+- **E3 / Wit:** total deterministic witness/action selector for every admitted `S ∈ K_c`.
+- **E4 / VC2:** proof that every state admitted by `χ` is Safe.
+- **E5 / VC3:** inductive proof that the selected action is available and every successor under all `ω ∈ Ω(S,Wit(S))` remains in `K_c`; any finite abstraction needs a separate soundness argument.
+- **E6 / VC4:** proof and tests that the witness action satisfies `Accept(S,Wit(S))` when required authoritative inputs exist.
+- **E7 / VC5:** the Ω perimeter package and proof the checked envelope is a sound over-approximation of the declared environment.
+- **E8 / VC6:** concrete initial state `S₀` and derivation showing `χ(S₀)=1`.
+- **E9:** conservatism/liveness-cost report for the selected subset of `K*`.
+- **E10:** SHA-256 digest over the χ/Wit artefacts, bound to the deployment/version.
+
+The certificate is not valid by schema presence alone. R1 is discharged only when E1–E10 are published and VC1–VC6 are actually discharged. The generic mathematical theorems and certificate format are proven; a concrete PRE-RICH deployment `K_c` is not yet instantiated.
+
+### R3 — Ω completeness/perimeter package (P1–P8)
+
+The normative source is `docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md`. The required package is:
+
+- **P1:** finite, published `Env` event classes and boundary conditions.
+- **P2:** explicit exclusions with rationale.
+- **P3:** representation for all 13 contract dimensions: authority, event domain, actor independence, adaptive adversaries, repetition, correlation, timing, concurrency, liquidity shocks, oracle failure, boundary, unknown events and failure behaviour.
+- **P4:** justification of independence wherever Ω is factored as product components.
+- **P5:** soundness proof that any finite checked abstraction over-approximates Ω.
+- **P6:** residual-risk statement.
+- **P7:** discovery process for a new Ω-completeness witness and fail-closed response.
+- **P8:** re-certification trigger for any narrowing of Env/Ω.
+
+The condition is containment: `Ω` must cover all real induced successors in the declared Env; exact equality is not required. Enlarging Ω is conservative; narrowing Ω is an upgrade requiring re-certification. Do not infer event probabilities or omit correlated/adaptive/unknown events because they were absent from a historical sample.
+
+### R8 — non-vacuity and actual initial-state admission (NV1–NV5)
+
+The normative source is `docs/02-certification/NONVACUITY_AND_INITIAL_STATE_CERTIFICATION.md`:
+
+- **NV1:** concrete canonical initial state `S₀`.
+- **NV2:** evaluation of `χ(S₀)` with reproducible derivation trace.
+- **NV3:** complete R1 certificate E1–E10.
+- **NV4:** non-eroding action/QNE check, or a proof that the T-EROSION obstruction does not apply.
+- **NV5:** if claiming a truly quiescent singleton state, prove that its state is unchanged for every `ω ∈ Ω`, not merely expected events.
+
+Do not confuse the universal existence of an abstract greatest fixed point with a non-empty deployment-specific certified set or an admissible actual Preprod starting state.
+
+### R2 — implementation refinement (RF1–RF11)
+
+The normative source is `docs/02-certification/REFINEMENT_CONFORMANCE_SPECIFICATION.md`. In addition to R1, the concrete implementation needs a refinement relation `ρ` and evidence for RF1 state correspondence, RF2 action correspondence, RF3 transition correspondence, RF4 obligation correspondence, RF5 ProtectedCapital correspondence, RF6 Ω correspondence, RF7 safety preservation, **RF8 no-side-door coverage**, RF9 expiry preservation, RF10 atomicity and RF11 determinism/history.
+
+RF8 is the critical admission-boundary proof: enumerate every state-mutating path in the whole program and show each commits only after the authoritative gate. Unit tests over a subset of code paths are not a whole-program no-side-door proof.
+
+### R7 — item-level ProtectedCapital producer stop point
+
+The normative partition is `docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md`; the current PRE-RICH mapping and implementation contract are in the 2026-11-02 PA1–PA7 mapping and producer-contract audit documents.
+
+The canonical producer implementation sequence already documented in the item-level producer contract is retained:
+
+1. bind one profile/version and exact snapshot envelope;
+2. implement stable identities and atomic item records for already-typed obligations (tickets, crystallized payouts and locked Jackpot) from authoritative sources;
+3. normalize mandatory protocol-borne future costs separately from benchmark/observed costs, and reconcile the PC.MandatoryFutureCosts ↔ Fs/Fr/Fc boundary without double-counting;
+4. keep SafetyCapital and ReserveProtection unqualified until their meaning, R7 mapping, source, valuation/horizon, and pairwise non-overlap are governed;
+5. derive all six aggregates from qualified item allocations, produce overlap/completeness witnesses and deterministic replay;
+6. only then propose a minimal admission integration change; stop before integration while completeness, mapping, valuation or disjointness is open.
+
+This producer contract is documentation-level only and explicitly NOT IMPLEMENTED / NOT CERTIFIED. The live Koios/Ogmios evidence currently closes only the narrow ticket L1/L3 census plus Pool aggregate reconciliation; it is not an all-component PA1–PA7 certificate.
+
+**Agent A decision:** do not start with a hand-filled Kc JSON or a new workflow that fabricates certificate fields. The next implementation slice is the item-level authoritative source producer and its adversarial replay tests, while the concrete Env/Ω and non-eroding-witness semantics are governed against the current PRE-RICH deployment. No formula, parameter, V3, Reveal, validator or Issue semantics are to be changed under this evidence work.
