@@ -41,7 +41,6 @@ import {
 } from '@lucid-evolution/lucid'
 
 import { createServer as createViteServer } from 'vite'
-import { defaultPrizeTable } from '../../src/gameRules'
 import { buildPreRichProtectedCapitalItemLedger } from '../../PRE-RICH/src/PreRichProtectedCapitalItemLedger'
 import { createKoiosProtectedCapitalSource } from '../../relayer/koiosProtectedCapitalSourceCensus.js'
 import { loadProtectedCapitalDeploymentIdentity } from './preprod-protected-capital-deployment-identity.mjs'
@@ -202,7 +201,7 @@ function jsonBigIntReplacer(_key, value) {
   return typeof value === 'bigint' ? value.toString() : value
 }
 
-async function loadBuildScriptsFromLucid() {
+async function loadScriptTopologyModules() {
   const vite = await createViteServer({
     configFile: false,
     root: process.cwd(),
@@ -211,11 +210,18 @@ async function loadBuildScriptsFromLucid() {
     server: { middlewareMode: true },
   })
   try {
-    const runtime = await vite.ssrLoadModule('/src/loadValidator.ts')
-    if (typeof runtime.buildScriptsFromLucid !== 'function') {
-      throw new Error('PREPROD_SCRIPT_TOPOLOGY_BUILDER_NOT_EXPORTED')
+    const [runtime, gameRules] = await Promise.all([
+      vite.ssrLoadModule('/src/loadValidator.ts'),
+      vite.ssrLoadModule('/src/gameRules.ts'),
+    ])
+    if (typeof runtime.buildScriptsFromLucid !== 'function' ||
+        !gameRules.defaultPrizeTable) {
+      throw new Error('PREPROD_SCRIPT_TOPOLOGY_MODULES_INCOMPLETE')
     }
-    return runtime.buildScriptsFromLucid
+    return {
+      buildScriptsFromLucid: runtime.buildScriptsFromLucid,
+      defaultPrizeTable: gameRules.defaultPrizeTable,
+    }
   } finally {
     await vite.close()
   }
@@ -284,7 +290,7 @@ async function main() {
     }
   }
 
-  const buildScriptsFromLucid = await loadBuildScriptsFromLucid()
+  const { buildScriptsFromLucid, defaultPrizeTable } = await loadScriptTopologyModules()
   const topology = buildScriptsFromLucid(
     { utils: makeLucidScriptUtils() },
     defaultPrizeTable,
