@@ -5,10 +5,11 @@
  * deployment, Oracle update, or protocol integration. HTTP POSTs are limited
  * to read-only Koios account resolution and Ethereum JSON-RPC query methods.
  *
- * Circle /balances is an EXPECTED balance based on deposits. The direct USDC
- * balanceOf read is aggregate at a source-domain contract address, not a
- * Cardano-domain reserve allocation. The output never labels either as a
- * Cardano-specific reserve proof or as a USD/USDM price.
+ * Circle /balances is an EXPECTED balance based on deposits. The xReserve
+ * contract's balanceOfNativeCollateral(USDC, remoteDomain) view is used to
+ * read the domain-specific available collateral from GatewayWallet's
+ * RemoteDomainDepositor accounting. The GatewayWallet ERC20 balance remains
+ * aggregate and is not allocated to Cardano alone. No USD/USDM price is inferred.
  */
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -134,44 +135,102 @@ export function decodeKoiosHistory(payload) {
     String(x?.policy_id ?? '').toLowerCase() === USDCX_POLICY &&
     String(x?.asset_name ?? '').toLowerCase() === USDCX_NAME)
   if (rows.length !== 1) throw new Error('KOIOS_EXACT_USDCX_HISTORY_NOT_UNIQUE')
-  const mints = rows[0].minting_txs
-  const burns = rows[0].burning_txs
-  if (!Array.isArray(mints) || !Array.isArray(burns)) throw new Error('KOIOS_MINT_BURN_ARRAYS_MISSING')
+  // Koios /asset_history represents both mint and burn operations in the
+  // single minting_txs array; burns are signed negative quantities. There is
+  // no separate burning_txs array in the documented response schema.
+  const events = rows[0].minting_txs
+  if (!Array.isArray(events)) throw new Error('KOIOS_MINTING_TXS_ARRAY_MISSING')
   const seen = new Set()
-  const parseEvents = (events, kind) => events.map(x => {
+  const parsed = events.map(x => {
     if (typeof x?.tx_hash !== 'string' || !/^[0-9a-f]{64}$/i.test(x.tx_hash) ||
         typeof x?.quantity !== 'string' || !/^-?\d+$/.test(x.quantity)) {
-      throw new Error('KOIOS_' + kind + '_EVENT_INVALID')
+      throw new Error('KOIOS_HISTORY_EVENT_INVALID')
     }
     const hash = x.tx_hash.toLowerCase()
     if (seen.has(hash)) throw new Error('KOIOS_HISTORY_DUPLICATE_TX')
     seen.add(hash)
-    return { hash, quantity: BigInt(x.quantity), blockTime: Number.isSafeInteger(Number(x.block_time)) ? Number(x.block_time) : null }
+    return {
+      hash,
+      quantity: BigInt(x.quantity),
+      blockTime: Number.isSafeInteger(Number(x.block_time)) ? Number(x.block_time) : null,
+    }
   })
-  const mintEvents = parseEvents(mints, 'MINT')
-  const burnEvents = parseEvents(burns, 'BURN')
-  if (mintEvents.some(x => x.quantity < 0n)) throw new Error('KOIOS_MINT_NEGATIVE')
+  const mintEvents = parsed.filter(x => x.quantity > 0n)
+  const burnEvents = parsed.filter(x => x.quantity < 0n)
   const minted = mintEvents.reduce((s, x) => s + x.quantity, 0n)
-  const burned = burnEvents.reduce((s, x) => s + (x.quantity < 0n ? -x.quantity : x.quantity), 0n)
+  const burned = burnEvents.reduce((s, x) => s - x.quantity, 0n)
   if (burned > minted) throw new Error('KOIOS_NET_SUPPLY_NEGATIVE')
-  const all = [...mintEvents.map(x => ({...x, kind:'MINT'})), ...burnEvents.map(x => ({...x, kind:'BURN'}))]
-    .filter(x => x.blockTime !== null).sort((a,b) => b.blockTime - a.blockTime)
+  const all = parsed.filter(x => x.blockTime !== null).sort((a,b) => b.blockTime - a.blockTime)
+  const latest = all[0]
   return {
     unit: USDCX_UNIT, decimals: 6,
+    totalEventCount: parsed.length,
     mintEventCount: mintEvents.length, burnEventCount: burnEvents.length,
     grossMintedAtomic: minted.toString(), grossBurnedAtomic: burned.toString(),
     netSupplyAtomic: (minted-burned).toString(),
     netSupplyUsdcx: decimalDisplay(minted-burned),
-    latestEvent: all[0] ? {txHash:all[0].hash, kind:all[0].kind, blockTime:all[0].blockTime, quantityAtomic:all[0].quantity.toString()} : null,
+    latestEvent: latest ? {
+      txHash:latest.hash, kind:latest.quantity < 0n ? 'BURN' : 'MINT',
+      blockTime:latest.blockTime, quantityAtomic:latest.quantity.toString(),
+    } : null,
     completeness: 'RETURNED_KOIOS_HISTORY_ONLY_NOT_INDEPENDENTLY_CERTIFIED',
   }
 }
 
+function word(value) {
+  return BigInt(value).toString(16).padStart(64, '0')
+}
+
 export function balanceOfData(address) {
   if (typeof address !== 'string' || !/^0x[0-9a-f]{40}$/i.test(address)) {
-    throw new Error('SOURCE_CONTRACT_ADDRESS_INVALID')
+    throw new Error('TOKEN_HOLDER_ADDRESS_INVALID')
   }
   return '0x70a08231' + address.slice(2).toLowerCase().padStart(64, '0')
+}
+
+export function gatewayWalletCallData() {
+  return '0x131b4c0e'
+}
+
+export function remoteDomainDepositorCallData(remoteDomain = CARDANO_DOMAIN) {
+  return '0xfc31b97c' + word(remoteDomain)
+}
+
+export function remoteTokenCallData(remoteDomain, localToken = USDC) {
+  if (typeof localToken !== 'string' || !/^0x[0-9a-f]{40}$/i.test(localToken)) {
+    throw new Error('LOCAL_TOKEN_ADDRESS_INVALID')
+  }
+  return '0xb3467549' + word(remoteDomain) + localToken.slice(2).toLowerCase().padStart(64, '0')
+}
+
+export function balanceOfNativeCollateralCallData(localToken = USDC, remoteDomain = CARDANO_DOMAIN) {
+  if (typeof localToken !== 'string' || !/^0x[0-9a-f]{40}$/i.test(localToken)) {
+    throw new Error('LOCAL_TOKEN_ADDRESS_INVALID')
+  }
+  return '0xc47cf5ef' + localToken.slice(2).toLowerCase().padStart(64, '0') + word(remoteDomain)
+}
+
+export function decodeAddressResult(value, label) {
+  if (typeof value !== 'string' || !/^0x[0-9a-f]{64}$/i.test(value)) {
+    throw new Error(label + '_ABI_ADDRESS_INVALID')
+  }
+  const address = '0x' + value.slice(-40)
+  if (/^0x0{40}$/i.test(address)) throw new Error(label + '_ABI_ADDRESS_ZERO')
+  return address
+}
+
+export function decodeBytes32Result(value, label) {
+  if (typeof value !== 'string' || !/^0x[0-9a-f]{64}$/i.test(value)) {
+    throw new Error(label + '_ABI_BYTES32_INVALID')
+  }
+  return value.toLowerCase()
+}
+
+export function decodeUint256Result(value, label) {
+  if (typeof value !== 'string' || !/^0x[0-9a-f]+$/i.test(value)) {
+    throw new Error(label + '_ABI_UINT256_INVALID')
+  }
+  return BigInt(value)
 }
 
 export function decodeUsdcMintLogs(receipt, txHash) {
@@ -197,25 +256,62 @@ async function capture(fn) {
   catch (e) { return {status:'SOURCE_UNAVAILABLE_OR_INVALID',error:e?.message ?? 'UNKNOWN_ERROR'} }
 }
 
-async function observeSourceContract(address, rpcFetchFn) {
+async function observeCardanoDomainCollateral(xReserveAddress, rpcFetchFn) {
   const chainId = await rpc('eth_chainId', [], rpcFetchFn)
   if (chainId.result !== '0x1') throw new Error('ETHEREUM_CHAIN_ID_NOT_MAINNET')
   const blockNumber = await rpc('eth_blockNumber', [], rpcFetchFn)
-  const code = await rpc('eth_getCode', [address, blockNumber.result], rpcFetchFn)
+  const code = await rpc('eth_getCode', [xReserveAddress, blockNumber.result], rpcFetchFn)
   if (typeof code.result !== 'string' || code.result === '0x' || /^0x0*$/i.test(code.result)) {
-    throw new Error('SOURCE_CONTRACT_NO_CODE')
+    throw new Error('XRESERVE_PROXY_NO_CODE')
   }
-  const balance = await rpc('eth_call', [{to:USDC,data:balanceOfData(address)},blockNumber.result], rpcFetchFn)
-  if (typeof balance.result !== 'string' || !/^0x[0-9a-f]+$/i.test(balance.result)) {
-    throw new Error('USDC_BALANCE_RESULT_INVALID')
+
+  const gatewayWalletResult = await rpc('eth_call', [
+    {to:xReserveAddress,data:gatewayWalletCallData()}, blockNumber.result,
+  ], rpcFetchFn)
+  const gatewayWallet = decodeAddressResult(gatewayWalletResult.result, 'GATEWAY_WALLET')
+
+  const depositorResult = await rpc('eth_call', [
+    {to:xReserveAddress,data:remoteDomainDepositorCallData(CARDANO_DOMAIN)}, blockNumber.result,
+  ], rpcFetchFn)
+  const remoteDomainDepositor = decodeAddressResult(depositorResult.result, 'REMOTE_DOMAIN_DEPOSITOR')
+
+  const tokenResult = await rpc('eth_call', [
+    {to:xReserveAddress,data:remoteTokenCallData(CARDANO_DOMAIN,USDC)}, blockNumber.result,
+  ], rpcFetchFn)
+  const remoteTokenIdentifier = decodeBytes32Result(tokenResult.result, 'REMOTE_TOKEN')
+  if (remoteTokenIdentifier !== REMOTE_TOKEN_ID.toLowerCase()) {
+    throw new Error('XRESERVE_CARDANO_REMOTE_TOKEN_IDENTITY_MISMATCH')
   }
-  const atomic = BigInt(balance.result)
+
+  const collateralResult = await rpc('eth_call', [
+    {to:xReserveAddress,data:balanceOfNativeCollateralCallData(USDC,CARDANO_DOMAIN)},
+    blockNumber.result,
+  ], rpcFetchFn)
+  const domainAvailableAtomic = decodeUint256Result(collateralResult.result, 'DOMAIN_COLLATERAL')
+
+  const aggregateBalanceResult = await rpc('eth_call', [
+    {to:USDC,data:balanceOfData(gatewayWallet)}, blockNumber.result,
+  ], rpcFetchFn)
+  const aggregateGatewayWalletAtomic = decodeUint256Result(aggregateBalanceResult.result, 'GATEWAY_WALLET_USDC_BALANCE')
+
   const block = await rpc('eth_getBlockByNumber', [blockNumber.result,false], rpcFetchFn)
   return {
-    sourceContractAddress:address,usdcContract:USDC,blockNumber:blockNumber.result,
-    blockHash:block.result?.hash ?? null,blockTimestamp:block.result?.timestamp ?? null,
-    aggregateUsdcAtomic:atomic.toString(),aggregateUsdc:decimalDisplay(atomic),
-    scope:'AGGREGATE_SOURCE_CONTRACT_BALANCE_NOT_CARDANO_DOMAIN_ALLOCATION',
+    xReserveAddress,
+    gatewayWallet,
+    remoteDomainDepositor,
+    remoteDomain:CARDANO_DOMAIN,
+    localToken:USDC,
+    remoteTokenIdentifier,
+    remoteTokenIdentityMatches:true,
+    xReserveBlockNumber:blockNumber.result,
+    xReserveBlockHash:block.result?.hash ?? null,
+    xReserveBlockTimestamp:block.result?.timestamp ?? null,
+    domainAvailableCollateralAtomic:domainAvailableAtomic.toString(),
+    domainAvailableCollateralUsdc:decimalDisplay(domainAvailableAtomic),
+    gatewayWalletAggregateUsdcAtomic:aggregateGatewayWalletAtomic.toString(),
+    gatewayWalletAggregateUsdc:decimalDisplay(aggregateGatewayWalletAtomic),
+    scope:'XRESERVE_BALANCE_OF_NATIVE_COLLATERAL_FOR_CARDANO_DOMAIN_PLUS_AGGREGATE_GATEWAY_WALLET_CONTEXT',
+    semantics:'xReserve.balanceOfNativeCollateral delegates to GatewayWallet.availableBalance(localToken, RemoteDomainDepositor[remoteDomain])',
   }
 }
 
@@ -245,9 +341,9 @@ export async function runProbe({fetchFn=fetch,rpcFetchFn=fetch,now=()=>new Date(
     const {value,meta}=await getJson(url,'KOIOS_ASSET_HISTORY',fetchFn)
     return {...decodeKoiosHistory(value),meta,observedAt:now().toISOString()}
   })
-  const sourceBalances=[]
+  const domainCollateral=[]
   if(circleInfo.status==='OBSERVED') for(const source of circleInfo.ethereumMainnetSourceContracts) {
-    sourceBalances.push(await capture(()=>observeSourceContract(source.contractAddress,rpcFetchFn)))
+    domainCollateral.push(await capture(()=>observeCardanoDomainCollateral(source.contractAddress,rpcFetchFn)))
   }
   const iog=await capture(async()=>{
     const resolved=await resolvePaymentAddresses(stakeAddress,fetchFn)
@@ -268,26 +364,32 @@ export async function runProbe({fetchFn=fetch,rpcFetchFn=fetch,now=()=>new Date(
   })
   const expected=circleBalance.status==='OBSERVED'?BigInt(circleBalance.expectedBalanceAtomic):null
   const supply=koiosHistory.status==='OBSERVED'?BigInt(koiosHistory.netSupplyAtomic):null
-  const actuals=sourceBalances.filter(x=>x.status==='OBSERVED').map(x=>BigInt(x.aggregateUsdcAtomic))
-  const actual=actuals.length?actuals.reduce((a,b)=>a+b,0n):null
+  const availableBalances=domainCollateral.filter(x=>x.status==='OBSERVED')
+    .map(x=>BigInt(x.domainAvailableCollateralAtomic))
+  const available=availableBalances.length?availableBalances.reduce((a,b)=>a+b,0n):null
+  const gatewayBalances=domainCollateral.filter(x=>x.status==='OBSERVED')
+    .map(x=>BigInt(x.gatewayWalletAggregateUsdcAtomic))
+  const gatewayAggregate=gatewayBalances.length?gatewayBalances.reduce((a,b)=>a+b,0n):null
   const out={
     schema:'IMMORTAL-CIRCLE-CARDANO-USDCX-RESERVE-READONLY-v1',
     classification:'READ_ONLY_CROSS_SOURCE_RECONCILIATION_NOT_RESERVE_ORACLE_QUALIFICATION',
     startedAt,completedAt:now().toISOString(),
     network:{cardano:'mainnet',ethereum:'mainnet',cardanoRemoteDomain:CARDANO_DOMAIN},
     sources:{tipBefore,circleInfo,circleExpectedBalance:circleBalance,koiosAssetHistory:koiosHistory,
-      ethereumSourceContractBalances:sourceBalances,iogWithdrawalHistory:iog,ethereumReceipts:receipts,tipAfter},
+      ethereumCardanoDomainCollateral:domainCollateral,iogWithdrawalHistory:iog,ethereumReceipts:receipts,tipAfter},
     reconciliation:{
       circleExpectedUsdcAtomic:expected?.toString()??null,
       koiosNetUsdcxSupplyAtomic:supply?.toString()??null,
       expectedMinusNetSupplyAtomic:expected===null||supply===null?null:(expected-supply).toString(),
-      aggregateEthereumSourceContractUsdcAtomic:actual?.toString()??null,
-      aggregateContractMinusCardanoExpectedAtomic:actual===null||expected===null?null:(actual-expected).toString(),
-      classification:'OBSERVATIONS_HAVE_DISTINCT_TIMESTAMPS_AGGREGATE_CONTRACT_BALANCE_IS_NOT_DOMAIN_ALLOCATED_NO_COVERAGE_CONCLUSION',
+      xReserveCardanoAvailableCollateralAtomic:available?.toString()??null,
+      xReserveCardanoAvailableCollateralUsdc:available===null?null:decimalDisplay(available),
+      expectedMinusDomainAvailableAtomic:expected===null||available===null?null:(expected-available).toString(),
+      gatewayWalletAggregateUsdcAtomic:gatewayAggregate?.toString()??null,
+      classification:'CIRCLE_EXPECTED_BALANCE_VS_XRESERVE_DOMAIN_AVAILABLE_BALANCE; GATEWAY_WALLET_TOKEN_BALANCE_IS_AGGREGATE; NOT_A_COVERAGE_OR_REDEMPTION_QUALIFICATION',
     },
     limitations:[
       'Circle /v1/balances/{remoteDomain} is an expected balance based on deposits, not a direct reserve-contract read.',
-      'The Ethereum USDC balance is aggregate at a source-domain contract address and is not allocated to Cardano alone.',
+      'The GatewayWallet ERC20 USDC balance is aggregate; the xReserve balanceOfNativeCollateral view is the domain-specific available balance.',
       'Koios asset_history is an indexer-returned mint/burn history; completeness and atomicity with other sources are not certified.',
       'IOG withdrawal-history is an observed Portal backend GET route, not a published/versioned third-party API contract.',
       'IOG finalized status is independently checked against exact Ethereum USDC mint Transfer logs when an Ethereum transaction hash exists.',
@@ -310,7 +412,7 @@ async function main() {
     circleInfo:value.sources.circleInfo.status,
     expectedBalance:value.sources.circleExpectedBalance.status,
     koiosHistory:value.sources.koiosAssetHistory.status,
-    contractBalanceCount:value.sources.ethereumSourceContractBalances.filter(x=>x.status==='OBSERVED').length,
+    domainCollateralCount:value.sources.ethereumCardanoDomainCollateral.filter(x=>x.status==='OBSERVED').length,
     iogMatches:value.sources.iogWithdrawalHistory.exactBurnMatches?.length??0,
     receiptChecks:value.sources.ethereumReceipts.length,
     reconciliation:value.reconciliation,
