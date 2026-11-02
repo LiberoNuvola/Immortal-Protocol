@@ -249,7 +249,7 @@ try {
     utxos: poolUtxos,
     rawOgmiosUtxoResult: poolRaw,
   }
-  const poolBody = JSON.stringify(poolObservations, null, 2) + '\\n'
+  const poolBody = JSON.stringify(poolObservations, null, 2) + '\n'
   await writeFile(`${evidenceDir}/preprod-b1-pool-utxo.json`, poolBody)
   const poolDigest = createHash('sha256').update(poolBody).digest('hex')
   await writeFile(
@@ -267,7 +267,7 @@ try {
     `tip_after=${JSON.stringify(poolTipAfter)}`,
     `utxo_packet_sha256=${poolDigest}`,
     'session=same-websocket-as-preprod-context',
-  ].join('\\n') + '\\n'
+  ].join('\n') + '\n'
   await writeFile(`${evidenceDir}/preprod-b1-pool-summary.txt`, poolSummary)
   console.log(poolSummary)
 
@@ -294,7 +294,7 @@ try {
   }
   await writeFile(
     `${evidenceDir}/ogmios-preprod-diagnostic.json`,
-    JSON.stringify(diagnostic, null, 2) + '\\n',
+    JSON.stringify(diagnostic, null, 2) + '\n',
   )
   console.error(diagnostic.failure)
   process.exitCode = 1
