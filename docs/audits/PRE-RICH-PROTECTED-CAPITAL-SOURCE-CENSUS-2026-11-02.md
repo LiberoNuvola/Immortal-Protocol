@@ -350,3 +350,50 @@ It derives the script topology from deployment configuration, scans the PrizeVal
 Required deployment-specific values remain external environment configuration. This pass did not run the CLI against Preprod, did not obtain a real live census, and did not produce a provider signature. The test workflows are committed, but an exact-head successful Actions result has not been verified in this session.
 
 **Current status:** provider-specific enumeration and runner IMPLEMENTED; test suites AUTHORED and wired to CI; live Preprod scan NOT EXECUTED; provider completeness/authenticity NOT PROVEN; L2 lifecycle OPEN; full ProtectedCapital and PA1–PA7 NOT CERTIFIED.
+
+
+## 10. Agent A execution follow-up — 2026-11-02
+
+### 10.1 Canonical item-ledger conformance corrections
+
+The first exact-head census workflow exposed two independent test/runtime defects:
+
+- `PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts` called `referenceUnitsIfRepresentable` without defining it. The helper is now present and returns `null` for a non-integral reference-unit conversion while retaining the original USDM subunit amount. This matches the existing conformance contract: one 2.5 USDM payout remains exact in subunits and is not rounded; two fractional payouts can be aggregated if their exact sum is representable. No economic formula or parameter changed. Fix commit: `d97b0188f97cc59ef6c244aaffefc6a9e2925bda`.
+- `relayer/koiosProtectedCapitalSourceCensus.test.js` invoked `test()` before initializing the `node:test` binding. Imports were moved before the first test declaration. Fix commit: `17e29b4c9f033322811e24ba0cfb9b9e73d51f95`.
+
+The latest visible test workflow is run [41405446327](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41405446327), on commit `17e29b4c9f033322811e24ba0cfb9b9e73d51f95`. At the time of this update the job is still queued; no successful test result is claimed. Earlier failures were attributable to the two defects above.
+
+### 10.2 Read-only exact B1 Pool observation
+
+The existing authenticated Demeter/Ogmios v7 context observer was extended to query the historical B1 PrizePool address in the same read-only WebSocket session as the network context and wallet observation. It writes the raw Ogmios UTxO response, normalized output references/values/datums, a SHA-256 digest, and tip-before/tip-after values. The observer also compares the two complete tip responses and explicitly checks whether the historical candidate out-reference `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` is present.
+
+Relevant commits:
+- `7a4f7bfc327e25378ffe19c8f6c381e7d1a69716` — add B1 Pool query;
+- `a12d6d89c814cf38bd680d0f16e549ccf31007bb` — bind the historical candidate address in the workflow;
+- `4b58920fdeb6b14a322c2ecf8821a1d595264fd5` — correct newline serialization;
+- `3bb4fb9bf5e6c4331490f4e38fec493baf7f346e` — compare full tip responses and bind the exact historical out-reference.
+
+The exact-head observer workflow is [run 41405789774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41405789774), on commit `3bb4fb9bf5e6c4331490f4e38fec493baf7f346e`. It is pending with no job/artifact yet. A previous run was cancelled before producing an artifact. Consequently, **no fresh Demeter B1 Pool UTxO observation has yet been obtained**. The 2026-10-21 EEV artifact remains historical and requires live revalidation.
+
+A Cardanoscan address view and the historical funding transaction provide corroborating explorer evidence only; they do not establish the current exact UTxO, its datum, the current direct-tUSDM quantity, provider completeness, or EEV approval.
+
+### 10.3 B2 deployment identity remains unmaterialized
+
+The B2 Preprod deployment workflow was inspected. No `b2-control-deployment.json` artifact is present. Historical executions did not deploy B2:
+
+- run `37967057715`: failed during dependency installation because `libblst-dev` was unavailable; deployment steps did not run;
+- run `37967535347`: cancelled;
+- run `37972119553`: failed before seed UTxO selection because `BLOCKFROST_PROJECT_ID` was missing; deployment steps did not run.
+
+Therefore B2 control address, policy ID, singleton unit, state out-reference, and deployment transaction remain **unknown/unverified**. The configured token name is not a deployment witness. Do not synthesize B2 identifiers from the deployment script or environment naming.
+
+### 10.4 Current certification boundary
+
+- B1 deployment identifiers: historically recovered, live Pool state **not yet revalidated**.
+- B1 direct-USDM EEV: historical qualification exists, but current UTxO/quantity/snapshot approval **not refreshed**.
+- B2 deployment: **not evidenced as deployed**; exact identity missing.
+- ProtectedCapital item ledger: two CI defects corrected; exact-head CI **pending**, not yet passed.
+- Provider enumeration: implementation and datum-hash verification exist, but provider completeness/authenticity and same-backend query pinning remain **unproven**.
+- Full PA1–PA7, L2 lifecycle evidence, global R7 L6 emptiness, and full ProtectedCapital qualification remain **open**.
+
+No V3, Reveal, validator, kernel, consumer, economic parameter, Materios/B3, or on-chain state was changed in this follow-up.
