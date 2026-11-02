@@ -535,7 +535,7 @@ Stop before stage 6 if source completeness, R7 mapping, valuation, or disjointne
 **PA1–PA7: NOT CERTIFIED.**  
 **Current Issue admission aggregate witness: useful integrity/binding evidence, NOT item-level economic provenance.**
 
-The pure ticket-ledger builder is now present at `PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`, with adversarial conformance tests at `PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts`. It reconciles a caller-supplied census against L1/L3 B1 aggregates and deliberately marks source completeness authority as unverified. It preserves exact USDM sub-units for L1 items; if the aggregate cannot be represented as a whole IMMORTAL reference unit, it returns a blocking finding rather than rounding/truncating. Two 2.5-USDM items can be aggregated exactly as 5 reference units, while a single 2.5-USDM aggregate remains unrepresentable by the current integer bridge. This does not change the current projection or V3 unit semantics. The next valid engineering deliverable is the separate read-only PrizeValidator address enumerator with provider-specific pagination and signed source-manifest verification. It must report unresolved sources and classification gaps rather than manufacture values for them.
+The pure ticket-ledger builder is now present at `PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`, with adversarial conformance tests at `PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts`. It reconciles a caller-supplied census against L1/L3 B1 aggregates and deliberately marks source completeness authority as unverified. It preserves exact USDM sub-units for L1 items; if the aggregate cannot be represented as a whole IMMORTAL reference unit, it returns a blocking finding rather than rounding/truncating. Two 2.5-USDM items can be aggregated exactly as 5 reference units, while a single 2.5-USDM aggregate remains unrepresentable by the current integer bridge. This does not change the current projection or V3 unit semantics. The provider-specific read-only PrizeValidator address enumerator and manifest-based CLI integration are now implemented. The next valid engineering deliverable is an exact-head successful Preprod observation artifact, followed by an independently defensible source-completeness/snapshot-integrity mechanism and the still-open L2/PC-component provenance work. The current local manifest digest is not a provider signature and must not be promoted to source authority.
 
 
 ## 16. Follow-on provider enumerator and live-ticket source boundary
@@ -547,7 +547,7 @@ The branch now contains a provider-specific read-only implementation:
 - PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts
 - PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
 
-The Koios reader pages PrizeValidator and B1 Pool UTxOs with explicit limit/offset and exact numeric Content-Range totals, resolves DatumHash-only records, retains response/datum digests, checks the reported Preprod tip before and after, and produces a local canonical source manifest. The CLI derives the deployed script topology from the supplied deployment environment, decodes the 23-field PrizeDatum and 8-field B1 Pool datum, retains unclassified outputs, and writes a read-only evidence packet. No transaction is signed or submitted.
+The Koios reader pages PrizeValidator and B1 Pool UTxOs with explicit limit/offset and exact numeric Content-Range totals, resolves DatumHash-only records, retains response/datum digests, checks the reported Preprod tip before and after, and produces a local canonical source manifest. The CLI supports either explicit deployment environment values or the preferred pair of hash-checked direct-USDM and Oracle State deployment manifests. In manifest mode it cross-checks the Oracle State identity across both artifacts and re-derives the deployed script topology, refusing to query if any recorded script hash, ticket policy, or address differs. It then decodes the 23-field PrizeDatum and 8-field B1 Pool datum, retains unclassified outputs, and writes a read-only evidence packet. The manifest SHA-256 is self-integrity evidence, not a signature or independent deployment-authority certificate. No transaction is signed or submitted.
 
 **Provider trust remains open:** tip stability and page-total reconciliation do not pin all requests to the same Koios backend/database snapshot. The manifest explicitly reports providerAttestationVerified=false, providerSnapshotPinned=false, and sameBackendSnapshotVerified=false. Its digest is a local integrity digest, not a Koios signature or independent proof of source completeness.
 
@@ -577,6 +577,32 @@ The manifest digest binds datumBytesAvailableForAll, datumHashComparisonsVerifie
 Sources: CIP-32 and the Koios datum_info response type (hash, bytes). This prevents a false failure on the protocol's own inline PrizeDatum/Pool outputs without presenting inline bytes as a hash-reference proof.
 
 
-### Latest test-bearing CI run
+### Latest test-bearing CI runs
 
-Run [41407914884](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41407914884) is queued on `fa096850801a4738648bb307673c2333bf0bbaa3` and contains the current 19 Node Koios-reader tests and 15 Vitest item-ledger tests. The current branch is eight commits ahead of that queued head; the compare delta consists only of Ogmios observer/workflow and documentation changes. The Koios reader, item-ledger builder, CLI and their conformance test files are unchanged since the queued head. No success is claimed until run 41407914884 completes.
+- The dedicated provider/item-ledger suite [41407914884](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41407914884) was created on `fa096850801a4738648bb307673c2333bf0bbaa3`; it contains 19 Node Koios-reader tests and 15 Vitest item-ledger tests. It was still queued at the last check.
+- The integrated read-only Preprod EEV/census workflow [41408819902](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41408819902) was created on `5a74284c2984dc565913e5e850c50f11059e7bcd`; its job was still queued at the last check. It includes the six new deployment-manifest loader tests, the 19 Node Koios tests, the 15 Vitest item-ledger tests, and the read-only Preprod census step.
+- Subsequent branch commits updated the census report/contract documentation only; no workflow success or live census artifact is claimed.
+
+The exact-head workflow must complete before test success is declared. The live census is considered generated only when the workflow uploads `preprod-protected-capital-census.json`; the run being queued is not evidence of successful execution.
+
+
+## 18. Manifest-based no-secret Preprod integration
+
+The identity loader and census CLI now support the two existing deployment artifacts as a configuration source:
+- `audit/cardano-integration/preprod-protected-capital-deployment-identity.mjs`;
+- `audit/cardano-integration/preprod-protected-capital-deployment-identity.test.mjs`.
+
+The loader validates both artifact self-hashes and cross-checks the Oracle State policy/name/unit/publisher/address/out-reference and B1 Pool singleton policy/name/unit. The CLI re-derives the current script topology and compares the derived hashes, ticket policy, PrizeValidator address and B1 Pool address against the recorded topology before making provider requests.
+
+The output records `sourceMode=DEPLOYMENT_MANIFESTS_HASH_CHECKED`, `manifestIntegrity=SELF_HASH_MATCH_NOT_SIGNATURE_AUTHENTICATION`, and `manifestAuthorityCryptographicallyVerified=false`. The historical artifacts are used only as deployment-identity provenance; Koios is queried again for the current PrizeValidator and Pool UTxOs. The output still marks provider attestation, snapshot pinning, same-backend snapshot verification, full ProtectedCapital, L2 lifecycle and R7 L6 emptiness as unproven.
+
+The existing `preprod-eev-qualification.yml` read-only job now runs:
+1. the manifest identity tests;
+2. the Koios provider tests and pure item-ledger tests;
+3. Oracle State liveness re-observation;
+4. the live read-only PrizeValidator/B1 Pool census;
+5. the existing direct-USDM source-set/EV1–EV7 qualification without deployment approval.
+
+The census step receives manifest paths only and does not receive `PREPROD_REVEAL_SEED`. The job contains no bootstrap, deployment, signing, Issue, Reveal, or transaction-submission action.
+
+**Exact integrated run:** [41408819902](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41408819902), head `5a74284c2984dc565913e5e850c50f11059e7bcd`; status was **QUEUED** when last checked. No evidence artifact has been inspected from this run, so the live census remains **NOT YET VERIFIED**.
