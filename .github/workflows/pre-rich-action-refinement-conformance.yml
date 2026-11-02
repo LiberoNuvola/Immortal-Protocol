@@ -37,6 +37,11 @@ on:
       - "src/__tests__/canonical-transition-evidence.test.ts"
       - "PRE-RICH/src/PreRichCertifiedSettlement.ts"
       - "PRE-RICH/src/PreRichCardanoObservationProjection.ts"
+      - "audit/cardano-integration/preprod-protected-capital-census.mjs"
+      - "relayer/koiosProtectedCapitalSourceCensus.test.js"
+      - "relayer/koiosProtectedCapitalSourceCensus.js"
+      - "PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts"
+      - "PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts"
       - "PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts"
       - "src/__tests__/preRichCertifiedSettlement.test.ts"
       - "src/__tests__/preRich-gamerules-distribution.test.ts"
@@ -68,8 +73,10 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Run Issue and Expire refinement conformance
-        run: npx vitest run src/__tests__/differentialActionReplay.test.ts src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts
+        run: npx vitest run src/__tests__/differentialActionReplay.test.ts src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
       
+      - name: Run Koios source census pagination conformance
+        run: node --test relayer/koiosProtectedCapitalSourceCensus.test.js
       - name: Run Genesis Treasury admission conformance
         run: node --experimental-strip-types PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts
       - name: Typecheck PRE-RICH presentation/refinement code
