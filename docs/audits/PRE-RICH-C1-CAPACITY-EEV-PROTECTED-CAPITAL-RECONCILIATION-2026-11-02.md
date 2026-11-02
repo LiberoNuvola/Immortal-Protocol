@@ -171,6 +171,22 @@ The benchmark records require action class, adapter/profile/network version, fix
 
 The fee benchmark matrix still classifies SALE/MINT, REVEAL_LOSS, REVEAL_WIN, CLAIM, and relevant EXPIRE/operational paths as OPEN — measure. The evidence framework is consolidated; numerical calibration is deployment work. Until a mandatory cost has a defensible bound, it must not be silently set to zero where the protocol has promised to bear it.
 
+### 5.1 Cross-boundary no-double-count requirement
+
+A further reconciliation is required between:
+
+- `ProtectedCapital.MandatoryFutureCosts`, which is an addend of the current ProtectedCapital formula; and
+- `Fs(P)`, `Fr(P)`, and `Fc(P)`, which enter the class cost surface `X(P)`.
+
+The current sources do not provide a complete cohort/time-horizon mapping proving whether a given protocol-borne future cost is:
+1. an already committed obligation represented in the current state's ProtectedCapital;
+2. an incremental per-ticket cost used to assess the proposed class capacity; or
+3. both, as an expressly intended conservative buffer.
+
+The evidence packet must classify each cost by action, payer, beneficiary/population, obligation time horizon, and whether it is already represented in `MandatoryFutureCosts`. The same underlying future payment must not be silently duplicated across the PC addend and the X(P) cost surface. Conversely, a genuine incremental cost of a proposed new ticket must not be omitted merely because a related cost for existing tickets is already protected.
+
+No term is to be removed from `ProtectedCapital` or `X(P)` on the basis of this audit. The mapping and any intended conservative overlap require an explicit, versioned profile rule and replayable evidence.
+
 ## 6. Producer and implementation boundary
 
 Current implementation facts:
@@ -271,8 +287,9 @@ The evidence packet must allow an independent verifier to reproduce:
 | SafetyCapital source and bound | OPEN / UNPROVEN |
 | ReserveProtection source and disjointness | OPEN / UNPROVEN |
 | LockedJackpot evidence and accounting treatment | PARTIAL / profile conformance required |
-| MandatoryFutureCosts source and safety bounds | OPEN / numerical calibration evidence required |
+| MandatoryFutureCosts source, safety bounds, and cross-boundary mapping to Fs/Fr/Fc | OPEN / numerical calibration and no-double-count evidence required |
 | PA1–PA7 ProtectedCapital partition for PRE-RICH | OPEN / NOT CERTIFIED |
+| ProtectedCapital.MandatoryFutureCosts vs X(P) Fs/Fr/Fc overlap mapping | OPEN / NOT PROVEN |
 | Producer binds all inputs to one observation and exact V3/B2 state | OPEN |
 | Hysteresis result independently replayable at Issue | OPEN |
 
@@ -283,7 +300,7 @@ Do not change the Hysteresis formula or economic constants. The first implementa
 1. define/instantiate the PRE-RICH PA1–PA7 component map and prove disjointness/completeness;
 2. provide authenticated sources for the currently caller-supplied PC components;
 3. revalidate the current direct-USDM Preprod source and bind it to the exact candidate state;
-4. build the exact-integer C and X(P) derivation with same-snapshot/unit checks;
+4. build the exact-integer C and X(P) derivation with same-snapshot/unit checks and an explicit PC.MandatoryFutureCosts ↔ Fs/Fr/Fc cohort/horizon reconciliation;
 5. add positive/negative evidence-replay tests, including missing, stale, overlapping, omitted, duplicate, negative, and unit-mismatch cases;
 6. only then bind the replayed result to B2 transition and Issue admission.
 
