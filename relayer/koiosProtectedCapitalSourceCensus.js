@@ -351,6 +351,7 @@ function createKoiosProtectedCapitalSource({
       ...manifestBase,
       sourceManifestDigest,
       providerAttestationVerified: false,
+      datumHashContentVerified: false,
       providerSnapshotPinned: false,
       sameBackendSnapshotVerified: false,
       consistencyAssessment: 'TIP_STABLE_BUT_NOT_QUERY_PINNED',
