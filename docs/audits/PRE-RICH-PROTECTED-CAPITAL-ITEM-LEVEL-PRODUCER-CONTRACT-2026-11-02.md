@@ -529,10 +529,34 @@ Stop before stage 6 if source completeness, R7 mapping, valuation, or disjointne
 ## 15. Final status
 
 **Producer contract: DEFINED AT DOCUMENTATION LEVEL.**  
-**Item-level producer implementation: PARTIAL — a pure ticket-ledger builder exists; the provider enumerator, completeness-attestation verification, L2 lifecycle source, and aggregate admission integration are NOT IMPLEMENTED.**  
+**Item-level producer implementation: PARTIAL — pure ticket-ledger builder, Koios Preprod page enumerator, and read-only census CLI are implemented; provider attestation/snapshot pinning, L2 lifecycle source, full producer qualification, and aggregate admission integration are NOT IMPLEMENTED.**  
 **SafetyCapital / ReserveProtection qualification: OPEN.**  
 **MandatoryFutureCosts itemization: OPEN.**  
 **PA1–PA7: NOT CERTIFIED.**  
 **Current Issue admission aggregate witness: useful integrity/binding evidence, NOT item-level economic provenance.**
 
 The pure ticket-ledger builder is now present at `PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`, with adversarial conformance tests at `PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts`. It reconciles a caller-supplied census against L1/L3 B1 aggregates and deliberately marks source completeness authority as unverified. It preserves exact USDM sub-units for L1 items; if the aggregate cannot be represented as a whole IMMORTAL reference unit, it returns a blocking finding rather than rounding/truncating. Two 2.5-USDM items can be aggregated exactly as 5 reference units, while a single 2.5-USDM aggregate remains unrepresentable by the current integer bridge. This does not change the current projection or V3 unit semantics. The next valid engineering deliverable is the separate read-only PrizeValidator address enumerator with provider-specific pagination and signed source-manifest verification. It must report unresolved sources and classification gaps rather than manufacture values for them.
+
+
+## 16. Follow-on provider enumerator and live-ticket source boundary
+
+The branch now contains a provider-specific read-only implementation:
+- relayer/koiosProtectedCapitalSourceCensus.js
+- relayer/koiosProtectedCapitalSourceCensus.test.js
+- audit/cardano-integration/preprod-protected-capital-census.mjs
+- PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts
+- PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
+
+The Koios reader pages PrizeValidator and B1 Pool UTxOs with explicit limit/offset and exact numeric Content-Range totals, resolves DatumHash-only records, retains response/datum digests, checks the reported Preprod tip before and after, and produces a local canonical source manifest. The CLI derives the deployed script topology from the supplied deployment environment, decodes the 23-field PrizeDatum and 8-field B1 Pool datum, retains unclassified outputs, and writes a read-only evidence packet. No transaction is signed or submitted.
+
+**Provider trust remains open:** tip stability and page-total reconciliation do not pin all requests to the same Koios backend/database snapshot. The manifest explicitly reports providerAttestationVerified=false, providerSnapshotPinned=false, and sameBackendSnapshotVerified=false. Its digest is a local integrity digest, not a Koios signature or independent proof of source completeness.
+
+**Ticket identity/custody:** the atomic Issue path delivers the Ticket NFT to the buyer and creates a separate PrizeDatum output at the PrizeValidator address. The census therefore takes the stable ticket identity from pdTicketPolicy/pdTicketName inside the datum; it does not expect the NFT to be held by the PrizeValidator UTxO.
+
+**Lifecycle mapping:** a live positive Revealed payout remains L1 until Claim or valid Expire; losing Reveal maps L3 → L5 under the existing item-level lifecycle contract even while the datum may remain live until technical expiry; a positive Claimed datum maps to L4. Expire consumes the PrizeDatum UTxO, so an expiry event absent from the live scan requires transaction-history replay.
+
+**Unit handling:** exact USDM sub-units are retained for each item. Fractional values such as 250 sub-units (2.5 USDM) are never rounded/truncated; a non-integral aggregate-to-reference-unit conversion is a blocking finding.
+
+**Tests:** 15 Vitest item-ledger cases and 9 native Node Koios-reader tests are authored and wired into GitHub Actions. They have not yet been confirmed passing on an exact current-head run. The Preprod CLI has not been executed with current deployment configuration, and no live census has been produced.
+
+Accordingly this implementation advances the engineering path but does not certify source completeness, L2, SafetyCapital, ReserveProtection, MandatoryFutureCosts, full ProtectedCapital, or PA1–PA7.
