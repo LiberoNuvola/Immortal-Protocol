@@ -115,6 +115,7 @@ test('enumerates every page using explicit limit/offset and exact Content-Range 
   assert.equal(scan.manifest.paginationTotalsExactlyReconciled, true)
   assert.equal(scan.manifest.tipUnchangedAcrossScan, true)
   assert.equal(scan.manifest.providerAttestationVerified, false)
+  assert.equal(scan.manifest.datumHashContentVerified, false)
   assert.equal(scan.manifest.providerSnapshotPinned, false)
   assert.equal(scan.manifest.sameBackendSnapshotVerified, false)
   assert.equal(scan.manifest.consistencyAssessment, 'TIP_STABLE_BUT_NOT_QUERY_PINNED')
