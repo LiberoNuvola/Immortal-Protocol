@@ -1,0 +1,41 @@
+name: Circle Cardano USDCx Reserve Reconciliation (Read-only)
+
+on:
+  push:
+    branches: [work/immortal-green-closure]
+    paths:
+      - 'scripts/probeCircleCardanoUsdcxReserveReadOnly.mjs'
+      - 'scripts/probeCircleCardanoUsdcxReserveReadOnly.test.mjs'
+      - 'scripts/probeUsdcx450kIogWithdrawalsReadOnly.mjs'
+      - '.github/workflows/circle-cardano-usdcx-reserve-observation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: circle-cardano-usdcx-reserve-observation
+  cancel-in-progress: false
+
+jobs:
+  read-only-reconciliation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run deterministic regressions
+        run: node --test scripts/probeCircleCardanoUsdcxReserveReadOnly.test.mjs
+      - name: Capture Circle, Koios, IOG and Ethereum read-only evidence
+        run: node scripts/probeCircleCardanoUsdcxReserveReadOnly.mjs --out audit/oracles/circle-cardano-usdcx-reserve-readonly.json
+      - name: Upload evidence packet
+        uses: actions/upload-artifact@v4
+        with:
+          name: circle-cardano-usdcx-reserve-readonly-${{ github.run_id }}
+          path: audit/oracles/circle-cardano-usdcx-reserve-readonly.json
+          if-no-files-found: error
+          retention-days: 90
