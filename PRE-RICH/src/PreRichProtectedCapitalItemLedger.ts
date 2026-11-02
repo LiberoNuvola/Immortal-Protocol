@@ -123,7 +123,7 @@ export type PreRichProtectedCapitalItemLedger = {
   items: PrizeDatumLedgerItem[]
   totals: {
     l1PayoutUsdmSubunits: bigint
-    l1PayoutReferenceUnits: bigint
+    l1PayoutReferenceUnits: bigint | null
     l1ItemCount: bigint
     l3FacePriceUsdmSubunits: bigint
     l3FacePriceReferenceUnits: bigint
@@ -133,7 +133,7 @@ export type PreRichProtectedCapitalItemLedger = {
     l5ResolvedOrExpiredItemCount: bigint
     l6UnclassifiedItemCount: bigint
     l2LockedJackpotUsdmSubunits: bigint
-    l2LockedJackpotReferenceUnits: bigint
+    l2LockedJackpotReferenceUnits: bigint | null
     l2Status: 'ZERO_AT_THIS_SNAPSHOT' | 'AGGREGATE_ONLY_LIFECYCLE_NOT_PROVEN'
   }
   reconciliation: {
@@ -284,7 +284,7 @@ function classifyPrizeDatum(
         classificationReason: 'Revealed loss; no crystallized payout remains',
       }
     }
-    const payoutReferenceUnits = referenceUnitsFromSubunits(
+    const payoutReferenceUnits = referenceUnitsIfRepresentable(
       record.prizeAmountUsdmSubunits,
       'revealed prize amount',
     )
@@ -322,7 +322,6 @@ function classifyPrizeDatum(
         classificationReason: 'Claimed datum has no positive crystallized payout',
       }
     }
-    referenceUnitsFromSubunits(record.prizeAmountUsdmSubunits, 'claimed prize amount')
     return {
       ...common,
       r7Cell: 'L4',
@@ -490,6 +489,14 @@ export function buildPreRichProtectedCapitalItemLedger(
     }
   })
 
+  const l1PayoutReferenceUnits = referenceUnitsIfRepresentable(
+    l1PayoutUsdmSubunits,
+    'L1 payout total',
+  )
+  const l2LockedJackpotReferenceUnits = referenceUnitsIfRepresentable(
+    census.pool.lockedJackpotUsdmSubunits,
+    'L2 locked Jackpot',
+  )
   const l1MatchesB1PendingLiabilities =
     l1PayoutUsdmSubunits === census.pool.pendingLiabilitiesUsdmSubunits
   const l3FacePriceMatchesB1UnresolvedReserve =
@@ -504,6 +511,9 @@ export function buildPreRichProtectedCapitalItemLedger(
     census.unclassifiedUtxoCount === 0n
 
   if (!l1MatchesB1PendingLiabilities) blockers.push('L1_ITEM_SUM_DOES_NOT_MATCH_B1_PENDING_LIABILITIES')
+  if (l1PayoutReferenceUnits === null) {
+    blockers.push('L1_PAYOUT_TOTAL_NOT_EXACTLY_REPRESENTABLE_IN_IMMORTAL_REFERENCE_UNITS')
+  }
   if (!l3FacePriceMatchesB1UnresolvedReserve) blockers.push('L3_ITEM_PRICE_SUM_DOES_NOT_MATCH_B1_UNRESOLVED_RESERVE')
   if (!l3CountMatchesB1UnresolvedTicketCount) blockers.push('L3_ITEM_COUNT_DOES_NOT_MATCH_B1_UNRESOLVED_COUNT')
   if (!declaredSourceCountsReconcile) blockers.push('PRIZE_ADDRESS_DECLARED_SOURCE_COUNTS_DO_NOT_RECONCILE')
@@ -551,7 +561,7 @@ export function buildPreRichProtectedCapitalItemLedger(
     items,
     totals: {
       l1PayoutUsdmSubunits,
-      l1PayoutReferenceUnits: referenceUnitsFromSubunits(l1PayoutUsdmSubunits, 'L1 payout total'),
+      l1PayoutReferenceUnits,
       l1ItemCount,
       l3FacePriceUsdmSubunits,
       l3FacePriceReferenceUnits: referenceUnitsFromSubunits(l3FacePriceUsdmSubunits, 'L3 face-price total'),
@@ -561,10 +571,7 @@ export function buildPreRichProtectedCapitalItemLedger(
       l5ResolvedOrExpiredItemCount,
       l6UnclassifiedItemCount,
       l2LockedJackpotUsdmSubunits: census.pool.lockedJackpotUsdmSubunits,
-      l2LockedJackpotReferenceUnits: referenceUnitsFromSubunits(
-        census.pool.lockedJackpotUsdmSubunits,
-        'L2 locked Jackpot',
-      ),
+      l2LockedJackpotReferenceUnits,
       l2Status,
     },
     reconciliation: {
