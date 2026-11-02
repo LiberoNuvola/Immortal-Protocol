@@ -328,6 +328,7 @@ async function main() {
       ticketLedgerInternallyReconciled: ledger.qualification.ticketLedgerInternallyReconciled,
       sourceCompletenessAuthorityVerified: false,
       providerAttestationVerified: false,
+      datumHashContentVerified: false,
       providerSnapshotPinned: false,
       sameBackendSnapshotVerified: false,
       fullProtectedCapitalQualified: false,
@@ -366,6 +367,7 @@ async function main() {
     l3TicketCountMatch: ledger.reconciliation.l3CountMatchesB1UnresolvedTicketCount,
     sourceCompletenessAuthorityVerified: false,
     providerAttestationVerified: false,
+    datumHashContentVerified: false,
     transactionSubmissionAttempted: false,
   }, null, 2))
 
