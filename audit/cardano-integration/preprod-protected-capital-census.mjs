@@ -248,12 +248,18 @@ async function main() {
 
   const prizeScan = scan.addressScans.prizeValidator
   const poolScan = scan.addressScans.b1PrizePool
-  const matchingPoolUtxos = poolScan.rows.filter((row) => assetQuantity(row, poolUnit) === 1n)
-  if (matchingPoolUtxos.length !== 1) {
-    throw new Error('B1_POOL_SINGLETON_NOT_UNIQUE:' + matchingPoolUtxos.length)
+  const poolCandidates = poolScan.rows
+    .map((row) => ({ row, quantity: assetQuantity(row, poolUnit) }))
+    .filter((entry) => entry.quantity > 0n)
+  if (poolCandidates.length !== 1 || poolCandidates[0].quantity !== 1n) {
+    throw new Error(
+      'B1_POOL_SINGLETON_NOT_UNIQUE_OR_BAD_QUANTITY:' +
+      poolCandidates.length + ':' +
+      poolCandidates.map((entry) => entry.quantity.toString()).join(','),
+    )
   }
 
-  const poolRow = matchingPoolUtxos[0]
+  const poolRow = poolCandidates[0].row
   const poolState = parsePoolDatum(
     poolRow,
     topology.prizeHash,
