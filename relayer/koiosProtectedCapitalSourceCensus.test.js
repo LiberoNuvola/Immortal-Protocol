@@ -258,3 +258,20 @@ test('keeps unresolved or missing datums visible for caller-side fail-closed cla
   ])
   assert.equal(scan.manifest.addresses.prize.missingDatumCount, 2)
 })
+
+test('accepts the documented Koios tip block_no field', async () => {
+  const address = 'addr_test_prize'
+  const koiosTip = {
+    hash: 'f'.repeat(64),
+    abs_slot: 2000,
+    block_no: 900,
+  }
+  const mock = mockKoios({
+    pagesByAddress: { [address]: [makeUtxo(0, address)] },
+    tipSequence: [koiosTip, koiosTip],
+  })
+  const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+  const scan = await source.scanSnapshot([{ name: 'prize', address }])
+  assert.equal(scan.manifest.snapshot.blockHeight, 900)
+})
