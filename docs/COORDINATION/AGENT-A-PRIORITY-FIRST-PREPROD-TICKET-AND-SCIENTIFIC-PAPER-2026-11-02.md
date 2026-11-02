@@ -49,6 +49,7 @@ These are **recovered historical identifiers/evidence, not a current live observ
 ### P0.3 — close the ProtectedCapital source and completeness gap
 
 - Continue the existing PA1–PA7 profile mapping and item-level producer contract.
+- Use the canonical existing implementation at audit/cardano-integration/preprod-protected-capital-census.mjs and relayer/koiosProtectedCapitalSourceCensus.js; do not create a competing enumerator. Its provider tests are relayer/koiosProtectedCapitalSourceCensus.test.js.
 - Use the read-only Preprod PrizeValidator census as an enumerator, not as an independent authority certificate. Resolve source completeness/authority with a defensible ledger/provider evidence chain; preserve the explicit unverified status until then.
 - Reconcile exact ticket items, crystallized liabilities, unresolved exposure, locked Jackpot, SafetyCapital, ReserveProtection, and MandatoryFutureCosts against their authoritative sources and the applicable profile.
 - Keep unresolved reserve as the accounting representation specified by the existing canonical semantics; do not add it a second time to worst-case exposure.
