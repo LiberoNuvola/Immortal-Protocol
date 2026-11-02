@@ -382,6 +382,8 @@ async function main() {
     network: 'Preprod',
     deploymentIdentity: {
       sourceMode: identity.sourceMode,
+      manifestIntegrity: identity.manifestIntegrity ?? 'ENVIRONMENT_CONFIGURATION_NO_MANIFEST',
+      manifestAuthorityCryptographicallyVerified: identity.manifestAuthorityCryptographicallyVerified ?? false,
       deploymentManifestPath: identity.deploymentManifestPath,
       deploymentManifestEvidenceHash: identity.deploymentManifestEvidenceHash,
       oracleStateManifestPath: identity.oracleStateManifestPath,
@@ -407,6 +409,7 @@ async function main() {
     },
     qualifications: {
       ticketLedgerInternallyReconciled: ledger.qualification.ticketLedgerInternallyReconciled,
+      deploymentManifestAuthorityCryptographicallyVerified: identity.manifestAuthorityCryptographicallyVerified ?? false,
       sourceCompletenessAuthorityVerified: false,
       providerAttestationVerified: false,
       datumBytesAvailableForAll: scan.manifest.datumBytesAvailableForAll,
