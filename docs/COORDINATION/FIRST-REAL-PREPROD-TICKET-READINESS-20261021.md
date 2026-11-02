@@ -573,3 +573,54 @@ The reviewed scripts are candidate-discovery and observation surfaces, not an au
 V3 build qualification and the listed conformance runs are now green. The first purchase remains blocked by the independent gates already recorded above: fresh and source-qualified settlement quotes for every Treasury output asset; authorized publisher/transition for the configured Oracle singleton; full ProtectedCapital source coverage and PA1–PA7 evidence; replayable `K_c`/Omega viability and Hysteresis evidence; production Issue-authority source and signer qualification; and the reviewed DApp/Pages release path.
 
 No V3/Reveal semantics, economic constant, Oracle datum, key, wallet configuration, or on-chain state was changed by this follow-up. No deployment, signature, transaction, or merge was performed.
+
+## 2026-11-02 correction — Preprod tUSDM scope and USD/USDM Option B source status
+
+This section supersedes any earlier wording in this dossier that describes Charli3 USDM/USD as an available operational feed candidate. It also distinguishes the accepted Preprod accounting asset from the Mainnet Moneta token and from any USD price/redemption claim.
+
+### Normative asset identity: accepted for a narrow EEV purpose only
+
+GitHub [Issue #37](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37) records the specification authority's acceptance of the exact Cardano Preprod unit for the physical direct-USDM EEV profile:
+
+- Network: Cardano Preprod.
+- Policy ID: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`.
+- Asset name hex: `0014df10745553444d`.
+- Full unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
+
+**Permitted meaning:** count the physical quantity of this exact token in the exact, live-revalidated B1 PrizePool UTxO as `VerifiedUSDM` for `PRE-RICH-EEV-USDM-DIRECT-V1`.
+
+**Not established by that acceptance:** Moneta/Mainnet token identity, USD parity, issuer redemption, secondary-market price, or permission to substitute another token. Moneta's published Mainnet USDM is a different unit (policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`, asset name `0014df105553444d`). Do not join the two by ticker.
+
+### USD/USDM conversion: Option B is selected; source is still unqualified
+
+Issue #37 records the protocol-authority decision of **2026-10-26: Option B — verify USD/USDM separately**. Option A (assumed/fixed parity) is not authorized; Option C was not selected. The decision fixes the approach, not a provider, price or conversion rule.
+
+Source findings already recorded by Agent A:
+
+- **Pyth:** `Crypto.NAV.USDM/RESERVES` feed 3326 is a Moneta reserve NAV, not a unit spot quote. Feed 609 is inactive Mountain Protocol USD; feed 3324 is US Dollar M1. No active public Moneta `Crypto.USDM/USD` unit-price feed was found in the 2026-10-31 catalog query. The reserve NAV also had an unresolved, non-contemporaneous value discrepancy against the Moneta transparency page; neither displayed reserve number is a USD-per-USDM price.
+- **Charli3:** the previously cited network page described feed configuration, not current active publication. The 2026-10-31 review found no active public feed and no current Mainnet USDM/USD registry entry. Its ADA/USD observation in run 41240334298 was expired (May 2026), and its USDM/USD candidate is not established as an active feed. Therefore the source-code observer's configured USDM/USD address is only an acquisition candidate, not a live qualified source.
+- **Orcfax:** the 2026-10-31 observer acquired five ADA/USD and five ADA/USDM statements, but the newest observed statements were dated 2026-06-18 and approximately 135 days old against a 3,600-second maximum. Both feed legs were stale; no cross-rate is admissible.
+- **DEX cross-reference:** the 2026-11-01 primary cross-reference combined six structurally validated direct ADA/USDM pool observations across five venues with four ADA/USD CEX midpoints. The 24 indicative cross-rates spanned **0.96182484–1.01571743**. These were asynchronous snapshots (pool ages 1,270–160,539 seconds), with no approved freshness cutoff, averaging, confidence, manipulation or executable-depth model. The span is a market-research observation, not consensus, a peg band, or an oracle value.
+- **Moneta USDM/USDCx:** two exact Mainnet Danogo CLMM USDM/USDCx pools were structurally reconciled and SDK-pinned marginal spots were 0.99499497 and 0.99425159 USDCx per USDM. These were pre-fee marginal spots from asynchronous snapshots, not executable quotes and not a USD rate.
+- **USDCx/xReserve/USD redemption route:** Circle's public API identified Cardano Mainnet remote domain 10004 and USDCx; its expected balance exceeded observed Cardano net supply by approximately 458,843–460,345 units in the compared snapshots. That balance endpoint is described as expected deposits, not a direct reserve-balance proof. One 29-Oct 450,000 USDCx burn was correlated to a finalized IOG record and a successful Ethereum mint of 449,998 USDC; the 30-Oct 450,000 burn remained `awaiting_finality` at the time of observation. Aggregate backing/release reconciliation and current operational cost/latency remain open.
+- **NBX:** USDM/EUR and USDM/USDC market labels are possible discovery leads, but NBX's terms distinguish NBX-issued EEA USDM from Moneta-issued USDM. The exact on-chain unit/issuer-of-record for those market instruments was not joined; market API availability/depth also remained unverified.
+- **MuesliSwap:** a repeatable factory-wide Mainnet census established current USDM/USDA and ADA/USDM pools. It did not establish a USD anchor, peg or redemption path.
+
+Primary evidence is preserved in [Issue #37](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37), especially comments [6553361468](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6553361468), [6553425592](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6553425592), [6553457345](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6553457345), [6554359524](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6554359524), [6556440453](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6556440453), [6556740676](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6556740676), and [6556788737](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6556788737).
+
+### Updated next-step priority
+
+The repository already contains source-discovery observers and venue-specific pool decoders; duplicating those collectors or treating another feed label as an approval would not advance the first Issue. The next useful gate is to resolve one exact USD/USDM route end-to-end under Option B, with all required joins and evidence:
+
+1. exact Cardano asset identity ↔ issuer/market instrument;
+2. source provenance and publisher trust;
+3. both conversion legs and direction, with compatible timestamps/freshness;
+4. executable depth, fees, bridge/redemption availability and failure conditions where relevant;
+5. reproducible integer-rational PriceReference semantics and governed rounding;
+6. human-approved, deployment-bound evidence consumed by the existing Issue path.
+
+Do not change the Oracle datum schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, Kernel or settlement rules before the source and versioned PriceReference contract are approved. Do not convert these exploratory Mainnet observations into a quote for the separate Preprod tUSDM token by implication.
+
+**Disposition remains:** Preprod direct-USDM EEV asset identity accepted for its narrow physical-accounting purpose; EV1–EV7 observed qualified at the 2026-11-02 snapshot but current deployment approval not established; USD/USDM Option B source **NOT QUALIFIED**; full ProtectedCapital/PA1–PA7 and `K_c`/Omega evidence incomplete; R1/Kc certificate missing; first Issue **BLOCKED**.
+
+No source admission, quote publication, approval, key, wallet operation, signature, transaction, deployment or merge was performed by this documentation correction. V3/Reveal and economic semantics remain untouched.
