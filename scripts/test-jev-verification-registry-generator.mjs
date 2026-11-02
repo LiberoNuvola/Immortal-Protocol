@@ -107,6 +107,25 @@ assert.equal(materializationFailureRegistry.checks.find((c) => c.checkId === "P2
 assert.equal(materializationFailureRegistry.checks.find((c) => c.checkId === "P2.8.LEDGER.EVIDENCE.GATE").result, "NOT_RUN");
 assert.equal(materializationFailureRegistry.overallResult, "FAIL", "materialization failure must dominate skipped decoder and gate");
 
+const pendingExpire = structuredClone(base);
+pendingExpire.checks.push({
+  checkId: "P2.8.HASKELL_V2.PENDING_EXPIRE",
+  requirementRef: "IMMORTAL Cardano Integration Lab / Execute Haskell V2 Pending EXPIRE ledger trace",
+  stepOutcome: "failure",
+  evidenceRefs: [{ kind: "workflow-run", uri: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908" }],
+  limitations: [
+    "This FAIL records the workflow step outcome only; it is not itself a typed Plutus ValidationFailure or a native ledger rejection.",
+    "A transaction-size or fee failure during construction, before submission, is a pre-submission build/resource block and must not be interpreted as validator semantic failure.",
+    "Inspect the linked step log to identify the actual cause; this check does not infer it from the exit code.",
+  ],
+});
+const pendingExpireRegistry = generateRegistry(pendingExpire);
+const pendingExpireCheck = pendingExpireRegistry.checks.find((c) => c.checkId === "P2.8.HASKELL_V2.PENDING_EXPIRE");
+assert.equal(pendingExpireCheck.result, "FAIL");
+assert.match(pendingExpireCheck.limitations.join(" "), /not itself a typed Plutus ValidationFailure/);
+assert.match(pendingExpireCheck.limitations.join(" "), /before submission/);
+assert.deepEqual(validateRegistry(pendingExpireRegistry), []);
+
 const noEvidence = structuredClone(base);
 noEvidence.checks[0].evidenceRefs = [];
 assert.throws(() => generateRegistry(noEvidence), /PASS outcome requires explicit evidence references/);
