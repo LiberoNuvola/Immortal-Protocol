@@ -5,6 +5,8 @@ const {
   createKoiosProtectedCapitalSource,
   parseContentRange,
   assertPreprodKoiosEndpoint,
+  canonicalJson,
+  sha256Hex,
 } = require('./koiosProtectedCapitalSourceCensus')
 
 test('rejects a non-Preprod or non-HTTPS Koios endpoint', () => {
@@ -355,12 +357,14 @@ test('rejects repeated asset units in one Koios UTxO row', async () => {
   )
 })
 
-test('verifies an inline Plutus datum CBOR against its Cardano BLAKE2b-256 hash', async () => {
+test('binds inline datum hash-not-applicable classification into the source manifest digest', async () => {
   const address = 'addr_test_prize'
-  const expectedHash = '923918e403bf43c34b4ef6b48eb2ee04babed17320d8d1b9ff9ad086e86f44ec'
   const mock = mockKoios({
     pagesByAddress: {
-      [address]: [makeUtxo(0, address, { datum_hash: expectedHash })],
+      [address]: [makeUtxo(0, address, {
+        inline_datum: { bytes: 'd87980' },
+        datum_hash: null,
+      })],
     },
   })
   const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
@@ -368,17 +372,28 @@ test('verifies an inline Plutus datum CBOR against its Cardano BLAKE2b-256 hash'
   const scan = await source.scanSnapshot([{ name: 'prize', address }])
   const row = scan.addressScans.prize.rows[0]
 
-  assert.equal(row.calculated_datum_hash, expectedHash)
-  assert.equal(row.datum_hash_content_verified, true)
-  assert.equal(scan.manifest.datumHashComparisonsVerified, true)
+  assert.equal(row.datum_source, 'INLINE')
+  assert.equal(row.datum_hash, null)
+  assert.equal(row.datum_hash_content_verified, null)
+  assert.equal(row.datum_hash_verification, 'INLINE_DATUM_HASH_NOT_APPLICABLE')
+  assert.equal(scan.manifest.inlineDatumWithoutHashCount, 1)
+  assert.equal(
+    scan.sourceManifestDigest,
+    sha256Hex(Buffer.from(canonicalJson(scan.manifestBase), 'utf8')),
+  )
 })
 
-test('retains but fails closed on inline CBOR whose computed datum hash differs', async () => {
+test('fails closed when datum_info CBOR does not match a hash-reference output', async () => {
   const address = 'addr_test_prize'
+  const expectedHash = 'f'.repeat(64)
   const mock = mockKoios({
     pagesByAddress: {
-      [address]: [makeUtxo(0, address, { datum_hash: 'f'.repeat(64) })],
+      [address]: [makeUtxo(0, address, {
+        inline_datum: null,
+        datum_hash: expectedHash,
+      })],
     },
+    datumRows: [{ datum_hash: expectedHash, bytes: 'd87980' }],
   })
   const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
 
