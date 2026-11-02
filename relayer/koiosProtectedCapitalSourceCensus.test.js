@@ -57,6 +57,7 @@ function makeUtxo(index, address, overrides = {}) {
     address,
     value: '2000000',
     asset_list: [],
+    is_spent: false,
     inline_datum: { bytes: 'd87980' },
     ...overrides,
   }
@@ -107,6 +108,24 @@ function mockKoios({
 
   return { fetchImpl, calls }
 }
+
+
+test('rejects Koios rows that are spent or omit the explicit unspent marker', async () => {
+  const address = 'addr_test_prize'
+  for (const override of [{ is_spent: true }, { is_spent: undefined }]) {
+    const mock = mockKoios({
+      pagesByAddress: {
+        [address]: [makeUtxo(0, address, override)],
+      },
+    })
+    const source = createKoiosProtectedCapitalSource({ fetchImpl: mock.fetchImpl })
+
+    await assert.rejects(
+      () => source.scanSnapshot([{ name: 'prize', address }]),
+      /KOIOS_ADDRESS_UTXO_NOT_CONFIRMED_UNSPENT/,
+    )
+  }
+})
 
 test('parseContentRange requires an exact numeric total', () => {
   assert.deepEqual(parseContentRange('0-99/257'), {
