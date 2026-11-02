@@ -145,7 +145,7 @@ function validateViabilityCertificate(value) {
   })
 }
 
-function validateEevQualification(value) {
+function validateEevQualification(value, expected) {
   const qualification = requiredObject(value, 'eevQualification')
   if (qualification.status !== 'qualified') {
     throw new Error('eevQualification status must be qualified')
@@ -191,6 +191,67 @@ function validateEevQualification(value) {
     qualification.governance,
     'eevQualification.governance',
   )
+  const sourceSet = requiredObject(
+    qualification.sourceSet,
+    'eevQualification.sourceSet',
+  )
+  const sourceSetEvidenceHash = requiredDigest(
+    sourceSet.sourceEvidenceHash,
+    'eevQualification.sourceSet.sourceEvidenceHash',
+  )
+  const expectedPoolInputReference = requiredString(
+    expected.poolInputReference,
+    'expected poolInputReference',
+  )
+  const expectedDirectUsdmUnit = requiredString(
+    expected.directUsdmUnit,
+    'expected directUsdmUnit',
+  ).toLowerCase()
+  const sourceSetPoolInputReference = requiredString(
+    sourceSet.poolInputReference,
+    'eevQualification.sourceSet.poolInputReference',
+  )
+  if (sourceSetPoolInputReference !== expectedPoolInputReference) {
+    throw new Error('EEV qualification source-set Pool reference does not match the live Issue Pool UTxO')
+  }
+  if (sourceSet.directUsdmUnit.toLowerCase() !== expectedDirectUsdmUnit) {
+    throw new Error('EEV qualification source-set direct-USDM unit does not match the live Issue asset')
+  }
+  if (sourceSet.statusAtQualification !== 'OBSERVED_NOT_QUALIFIED') {
+    throw new Error('EEV qualification source-set was not captured before separate deployment approval')
+  }
+  if (sourceSet.freshnessModel !== 'LIVE_UTXO_REVALIDATION') {
+    throw new Error('EEV qualification source-set does not require live UTxO revalidation')
+  }
+  const expectedDirectUsdmObservedValue = nonNegative(
+    expected.directUsdmObservedValue,
+    'expected directUsdmObservedValue',
+  )
+  const sourceSetObservedUsdmSubunits = nonNegative(
+    sourceSet.observedUsdmSubunits,
+    'eevQualification.sourceSet.observedUsdmSubunits',
+  )
+  if (sourceSetObservedUsdmSubunits !== expectedDirectUsdmObservedValue) {
+    throw new Error('EEV qualification source-set USDM amount does not match the live physical Pool observation')
+  }
+  if (
+    deploymentApproval.candidateId !==
+    'PRE-RICH-EEV-USDM-DIRECT-V1:' + expectedPoolInputReference
+  ) {
+    throw new Error('EEV deployment approval candidateId does not bind to the live Pool UTxO')
+  }
+  if (
+    deploymentApproval.sourceSetId !==
+    'PRE-RICH-EEV-USDM-DIRECT-V1-SOURCE-SET-v0.1:' + sourceSetEvidenceHash
+  ) {
+    throw new Error('EEV deployment approval sourceSetId does not bind to the qualified source-set digest')
+  }
+  if (
+    qualification.sourceReference !==
+    'cardano:preprod/utxo/' + expectedPoolInputReference
+  ) {
+    throw new Error('EEV qualification sourceReference does not bind to the live Pool UTxO')
+  }
   const approvalInputQualificationHash = requiredDigest(
     governance.approvalInputQualificationHash,
     'eevQualification.governance.approvalInputQualificationHash',
@@ -199,6 +260,13 @@ function validateEevQualification(value) {
     governance.approvalEvidenceHash,
     'eevQualification.governance.approvalEvidenceHash',
   )
+  const approvalInputSourceSetHash = requiredDigest(
+    governance.approvalInputSourceSetHash,
+    'eevQualification.governance.approvalInputSourceSetHash',
+  )
+  if (approvalInputSourceSetHash !== sourceSetEvidenceHash) {
+    throw new Error('deployment approval source-set digest does not match the approved qualification source-set')
+  }
   if (approvalQualificationEvidenceHash !== approvalInputQualificationHash) {
     throw new Error(
       'deployment approval qualificationEvidenceHash does not match original qualified EEV evidenceHash',
@@ -440,7 +508,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   try { valid = crypto.verify(null, signedBytes, publicKeyPem, signatureBytes) } catch (error) { throw new Error('Issue authority signature verification failed: ' + error.message) }
   if (!valid) throw new Error('Issue authority signature is invalid')
 
-  const eevQualification = validateEevQualification(payload.eevQualification)
+  const eevQualification = validateEevQualification(payload.eevQualification, expected)
   const protectedCapitalProvenance = validateProtectedCapitalProvenance(payload.protectedCapitalProvenance)
   const viabilityCertificate = validateViabilityCertificate(
     payload.viabilityCertificate,
