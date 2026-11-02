@@ -53,7 +53,7 @@ manyChecks.checks = Array.from({ length: 30 }, (_, index) => ({
 }));
 const manyPrompt = buildOperationalPrompt(manyChecks);
 assert.ok(manyPrompt.length < 7001, "many checks with one shared run URL should fit the prompt budget");
-assert.match(manyPrompt, /R:this run/);
+assert.match(manyPrompt, /R:1 L:1 \(registry\)/);
 assert.match(manyPrompt, /Hard boundaries:/);
 
 // Large sets of unique, verbose caveats remain canonical in the registry.
@@ -70,7 +70,7 @@ verboseRegistry.checks = verboseLimitations.map((limitation, index) => ({
 }));
 const verbosePrompt = buildOperationalPrompt(verboseRegistry);
 assert.ok(verbosePrompt.length < 7001, "verbose registry limitations should not overflow the operational prompt");
-assert.match(verbosePrompt, /VERBOSE\.LIMIT\.39 FAIL R:this run L:1 recorded in registry/);
+assert.match(verbosePrompt, /VERBOSE\.LIMIT\.39 FAIL R:1 L:1 \(registry\)/);
 assert.match(verbosePrompt, /Full limitation text and complete evidence references are retained without alteration in the validated source registry/);
 assert.doesNotMatch(verbosePrompt, /Unique limitation 0:/, "full limitation text must remain in the registry, not be duplicated into the prompt");
 
@@ -86,7 +86,7 @@ diagnosticRegistry.checks.push({
   ],
 });
 const diagnosticPrompt = buildOperationalPrompt(diagnosticRegistry);
-assert.match(diagnosticPrompt, /P2\.8\.HASKELL_V2\.PENDING_EXPIRE FAIL/);
+assert.match(diagnosticPrompt, /P2\.8\.HASKELL_V2\.PENDING_EXPIRE FAIL R:1 L:3 \(registry\)/);
 assert.match(diagnosticPrompt, /L:3 recorded in registry/);
 assert.match(diagnosticPrompt, /Full limitation text and complete evidence references are retained without alteration in the validated source registry/);
 assert.doesNotMatch(diagnosticPrompt, /before submission/);
