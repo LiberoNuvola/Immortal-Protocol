@@ -1,0 +1,113 @@
+{
+  "artifact": "PRE-RICH-ProtectedCapital-ItemLedger-Fixture",
+  "schemaVersion": "0.1-draft",
+  "classification": "SYNTHETIC_TEST_FIXTURE_ONLY",
+  "livePreprodObservation": false,
+  "executableForIssueAdmission": false,
+  "source": {
+    "repository": "LiberoNuvola/Immortal-Protocol",
+    "branch": "work/immortal-green-closure",
+    "file": "src/__tests__/immortal-cardano-replay.test.ts",
+    "fixtureFunction": "preInput",
+    "fixtureIdentityNote": "ticket-1, ticket-2 and ticket-3 are test labels, not Cardano asset names, transaction references, or observed live tickets."
+  },
+  "units": {
+    "poolMonetaryUnit": "USDM_SUBUNITS",
+    "immortalReferenceUnit": "USDM_REFERENCE_UNIT",
+    "usdmSubunitsPerReferenceUnit": "100",
+    "preRichMaximumNormalPayoutMultiplier": "500",
+    "allAmountsAreExactIntegersEncodedAsStrings": true
+  },
+  "fixturePoolObservation": {
+    "pendingLiabilitiesUsdmSubunits": "500",
+    "unresolvedReserveUsdmSubunits": "600",
+    "unresolvedTicketCount": "3",
+    "lockedJackpotUsdmSubunits": "0",
+    "jackpotThresholdUsdmSubunits": "10000"
+  },
+  "atomicItems": [
+    {
+      "itemId": "fixture:immortal-cardano-replay:preInput:ticket-1",
+      "sourceStatus": "Pending",
+      "ticketId": "ticket-1",
+      "classId": "0",
+      "priceUsdmSubunits": "100",
+      "facePriceReferenceUnits": "1",
+      "r7Cell": "L3",
+      "pcComponent": "worstCaseExposure",
+      "worstCaseExposureReferenceUnits": "500",
+      "allocationStatus": "DERIVED_FROM_FIXTURE",
+      "authoritative": false
+    },
+    {
+      "itemId": "fixture:immortal-cardano-replay:preInput:ticket-2",
+      "sourceStatus": "BeaconReady",
+      "ticketId": "ticket-2",
+      "classId": "1",
+      "priceUsdmSubunits": "200",
+      "facePriceReferenceUnits": "2",
+      "r7Cell": "L3",
+      "pcComponent": "worstCaseExposure",
+      "worstCaseExposureReferenceUnits": "1000",
+      "allocationStatus": "DERIVED_FROM_FIXTURE",
+      "authoritative": false
+    },
+    {
+      "itemId": "fixture:immortal-cardano-replay:preInput:ticket-3",
+      "sourceStatus": "Pending",
+      "ticketId": "ticket-3",
+      "classId": "2",
+      "priceUsdmSubunits": "300",
+      "facePriceReferenceUnits": "3",
+      "r7Cell": "L3",
+      "pcComponent": "worstCaseExposure",
+      "worstCaseExposureReferenceUnits": "1500",
+      "allocationStatus": "DERIVED_FROM_FIXTURE",
+      "authoritative": false
+    }
+  ],
+  "aggregateOnlyRecords": [
+    {
+      "recordId": "fixture:immortal-cardano-replay:preInput:ppPendingLiabilities",
+      "sourceField": "pool.pendingLiabilitiesUsdm",
+      "amountUsdmSubunits": "500",
+      "amountReferenceUnits": "5",
+      "candidateR7Cell": "L1",
+      "itemizationStatus": "NOT_ITEMIZED",
+      "blockingReason": "Fixture contains no revealed-winning PrizeDatum identities or individual crystallized payout records.",
+      "authoritative": false
+    },
+    {
+      "recordId": "fixture:immortal-cardano-replay:preInput:ppLockedJackpot",
+      "sourceField": "pool.lockedJackpotUsdm",
+      "amountUsdmSubunits": "0",
+      "amountReferenceUnits": "0",
+      "candidateR7Cell": "L2",
+      "itemizationStatus": "ZERO_IN_FIXTURE_ONLY",
+      "blockingReason": "A zero test fixture does not establish the live Jackpot balance or its lifecycle provenance.",
+      "authoritative": false
+    }
+  ],
+  "reconciliation": {
+    "unresolvedTicketPriceSumUsdmSubunits": "600",
+    "poolUnresolvedReserveUsdmSubunits": "600",
+    "unresolvedPriceReserveMatches": true,
+    "unresolvedTicketCountFromItems": "3",
+    "poolUnresolvedTicketCount": "3",
+    "unresolvedCountMatches": true,
+    "derivedWorstCaseExposureReferenceUnits": "3000",
+    "l3ItemSumReferenceUnits": "3000",
+    "l3ExposureMatches": true,
+    "l1AtomicItemizationComplete": false,
+    "l2LifecycleProvenanceEstablished": false,
+    "r7L6Empty": false,
+    "overallQualification": "UNQUALIFIED_FIXTURE_ONLY"
+  },
+  "nonClaims": [
+    "This artifact is not a current Cardano Preprod observation.",
+    "Fixture ticket IDs are not real NFT policy/name identities.",
+    "The L1 pending-liability aggregate is not decomposed into individual revealed winning tickets.",
+    "The L2 zero is a fixture value and not evidence of a zero live Jackpot.",
+    "Passing fixture arithmetic does not prove source census completeness, on-chain state, R7 exhaustiveness, disjointness, or Issue admission authority."
+  ]
+}
