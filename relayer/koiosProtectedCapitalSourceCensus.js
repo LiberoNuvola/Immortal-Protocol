@@ -39,12 +39,15 @@ function parseContentRange(value) {
   if (!match || match[3] === '*') {
     throw new Error('KOIOS_EXACT_CONTENT_RANGE_REQUIRED:' + value)
   }
-  return {
-    first: match[1] === undefined ? null : Number(match[1]),
-    last: match[2] === undefined ? null : Number(match[2]),
-    total: Number(match[3]),
-    raw: value.trim(),
+  const first = match[1] === undefined ? null : Number(match[1])
+  const last = match[2] === undefined ? null : Number(match[2])
+  const total = Number(match[3])
+  if ((first !== null && !Number.isSafeInteger(first)) ||
+      (last !== null && !Number.isSafeInteger(last)) ||
+      !Number.isSafeInteger(total) || total < 0) {
+    throw new Error('KOIOS_CONTENT_RANGE_OUT_OF_SAFE_INTEGER_BOUNDS')
   }
+  return { first, last, total, raw: value.trim() }
 }
 
 function validateKoiosUtxoRow(row) {
@@ -304,7 +307,7 @@ function createKoiosProtectedCapitalSource({
       startedAt,
       completedAt: now(),
       snapshot: tipBefore,
-      snapshotReference: 'koios-preprod:' + tipBefore.slot + ':' + tipBefore.hash,
+      snapshotReference: 'koios-preprod-observation:' + tipBefore.slot + ':' + tipBefore.hash,
       pageSize,
       addresses: Object.fromEntries(Object.entries(addressScans).map(([name, scan]) => [
         name,
@@ -332,6 +335,9 @@ function createKoiosProtectedCapitalSource({
       ...manifestBase,
       sourceManifestDigest,
       providerAttestationVerified: false,
+      providerSnapshotPinned: false,
+      sameBackendSnapshotVerified: false,
+      consistencyAssessment: 'TIP_STABLE_BUT_NOT_QUERY_PINNED',
       tipUnchangedAcrossScan: true,
       paginationTotalsExactlyReconciled: true,
     }
