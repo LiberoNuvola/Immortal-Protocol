@@ -239,3 +239,21 @@ The 12 cases cover L1/L3 reconciliation, expired-by-clock but still-live L1, inc
 **Execution status:** tests are authored but have not been run in GitHub Actions or a local checkout in this session. The current change does not alter any workflow to trigger them. A live Preprod provider census is still not possible from the tracked repository configuration because its deployment-specific PrizeValidator address/ticket policy and provider credentials are not populated in `.env.example`.
 
 **Next bounded task:** implement a separate provider-specific, read-only PrizeValidator address enumerator that proves pagination completion and supplies a verifiable source manifest to this pure builder. No Issue integration, V3/Reveal/validator change, or on-chain action is part of this increment.
+
+
+### 7.1 Exact sub-unit preservation at the L1 bridge
+
+The PRE-RICH payout-unit conformance artifact explicitly defines 1 USDM = 100 sub-units and confirms that a valid tier-2 payout is 250 sub-units = 2.5 USDM. The B1 PrizePool monetary fields are also denominated in USDM sub-units.
+
+Sources:
+- [PRE-RICH payout unit conformance](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/docs/PAYOUT-UNIT-CONFORMANCE.md)
+- [B1 monetary datum units](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/plutus/Types.hs#L180-L218)
+- [Current PRE-RICH projection conversion](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/src/PreRichCardanoObservationProjection.ts#L240-L310)
+
+The item-ledger builder therefore preserves every payout amount exactly in USDM sub-units and never rounds or truncates an individual L1 item. Its reference-unit projection is nullable:
+- one unpaid 2.5-USDM payout remains exactly 250 sub-units; its aggregate cannot be represented as a whole reference unit, so the builder reports a blocking conversion finding rather than truncating it to 2;
+- two unpaid 2.5-USDM payouts remain two exact 250-sub-unit items; their aggregate is 500 sub-units = 5 reference units and is exactly representable as an aggregate.
+
+This reveals an existing interface boundary, not a new economic rule: a non-integral-USD L1 aggregate cannot currently be projected into the V3 reference-unit integer without an explicit, governed unit treatment. The builder preserves the source amount and blocks the lossy bridge. No change was made to the existing projection or V3 kernel.
+
+The test suite now includes both cases. Total test cases: **14 authored, not executed**.
