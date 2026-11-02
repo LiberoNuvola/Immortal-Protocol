@@ -154,7 +154,9 @@ export async function loadProtectedCapitalDeploymentIdentity({
   }
 
   return {
-    sourceMode: 'VERIFIED_DEPLOYMENT_MANIFESTS',
+    sourceMode: 'DEPLOYMENT_MANIFESTS_HASH_CHECKED',
+    manifestIntegrity: 'SELF_HASH_MATCH_NOT_SIGNATURE_AUTHENTICATION',
+    manifestAuthorityCryptographicallyVerified: false,
     deploymentManifestPath,
     deploymentManifestEvidenceHash: deployment.evidenceHash.toLowerCase(),
     oracleStateManifestPath,
