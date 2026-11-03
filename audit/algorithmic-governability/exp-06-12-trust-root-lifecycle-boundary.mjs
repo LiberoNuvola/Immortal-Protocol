@@ -30,6 +30,9 @@ const signatureTests = read('relayer/signedIssueAuthority.test.js')
 const gov27 = read('docs/01-formal-records/governance/GOV-27-AUTHORIZATION-EVIDENCE-RULESET.md')
 const govAuthorization = read('IMMORTAL/governance/GovernanceAuthorization.hs')
 const rulesetRegistry = read('IMMORTAL/governance/RulesetRegistry.hs')
+const materiosAuthority = read('poc/materios-grandpa/src/authority.ts')
+const materiosTransition = read('poc/materios-grandpa/src/authority-transition.ts')
+const b2Committee = read('services/beacon-b2-verifier/server.mjs')
 
 const start = signed.indexOf('function verifySignedIssueAuthorityEnvelope')
 const end = signed.indexOf('async function fetchSignedIssueAuthority', start)
@@ -132,10 +135,44 @@ assert(
   'the existing governance RulesetRegistry is not an issuer-key registry',
 )
 
+assert(
+  materiosAuthority.includes('trust: "untrusted-evidence"') &&
+    materiosAuthority.includes('status: "unverified"') &&
+    materiosAuthority.includes('trustedAuthorityStateFromVerifiedTransition') &&
+    materiosAuthority.includes('VerifiedAuthoritySetTransition'),
+  'Materios separates untrusted authority-set evidence from trusted state created only after verified transition',
+)
+
+assert(
+  materiosTransition.includes('AuthoritySetTransitionProofVerifier') &&
+    materiosTransition.includes('proofVerifier.verify') &&
+    materiosTransition.includes('toSetId !== statement.fromSetId + 1n') &&
+    materiosTransition.includes('activationBlock'),
+  'Materios provides a reusable authority-transition pattern with chain/set continuity and activation binding',
+)
+
+assert(
+  materiosTransition.includes('The current repository does not yet provide such an implementation') &&
+    materiosTransition.includes('callers must therefore supply one explicitly'),
+  'Materios authority-transition pattern is not misrepresented as a completed cryptographic proof verifier',
+)
+
+assert(
+  b2Committee.includes('B2_COMMITTEE_JSON') &&
+    b2Committee.includes('B2_THRESHOLD') &&
+    b2Committee.includes('member.id') &&
+    b2Committee.includes('unknown committee member') &&
+    b2Committee.includes('duplicate member attestation'),
+  'B2 committee verifier has explicit member identities and threshold checks but remains a separate application-specific mechanism',
+)
+
 console.log('ISSUE_TRUST_ANCHOR=EXTERNAL_CONFIGURED_KEY')
 console.log('V3_CARRIER_KEY_PIN=DEPLOYMENT_PARAMETER')
 console.log('ISSUER_ID_AND_KEY_ID_BINDING=OPEN')
 console.log('KEY_ROTATION_AND_REVOCATION=OPEN')
 console.log('APPRAISAL_POLICY_AND_AUDIENCE_BINDING=OPEN')
 console.log('PRODUCTION_KEY_CUSTODY_AND_SIGNER_DEPLOYMENT=NOT_VERIFIED')
+console.log('MATERIOS_AUTHORITY_PATTERN=REUSE_TRANSITION_BOUNDARY_ONLY')
+console.log('MATERIOS_CRYPTO_PROOF_VERIFIER=INTERFACE_ONLY')
+console.log('B2_COMMITTEE=SEPARATE_APPLICATION_MECHANISM_NOT_ISSUE_TRUST_ROOT')
 console.log('RESULT=ISSUE_SPECIFIC_TRUST_ROOT_REUSE_WITH_LIFECYCLE_GAP')
