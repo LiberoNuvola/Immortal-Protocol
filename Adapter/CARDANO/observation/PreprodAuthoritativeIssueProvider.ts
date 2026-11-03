@@ -15,7 +15,10 @@
  */
 
 import type { AuthoritativeIssueAdmissionProvider } from '../../../src/preRichIssueAdmissionBridge'
-import { observePreprodDirectUsdmPool } from './PreprodDirectUsdmObservation'
+import {
+  assertDirectUsdmMatchesPoolDatum,
+  observePreprodDirectUsdmPool,
+} from './PreprodDirectUsdmObservation'
 import {
   createHaskellIssueAdmissionProvider,
   type HaskellIssueObservation,
@@ -158,6 +161,15 @@ export function createPreprodAuthoritativeIssueProvider(
               ? undefined
               : BigInt(String(authorityRequest.observedAt)),
         })
+
+        const poolDatumTotalLiquidity = authorityRequest.poolDatumTotalLiquidity
+        if (typeof poolDatumTotalLiquidity !== 'bigint') {
+          throw new Error('live B1 PrizePool datum totalLiquidity is required for direct-USDM reconciliation')
+        }
+        assertDirectUsdmMatchesPoolDatum(
+          poolDatumTotalLiquidity,
+          direct.poolUsdmValue,
+        )
 
         const authority = await fetchSignedIssueAuthority({
           baseUrl: options.authorityUrl,
