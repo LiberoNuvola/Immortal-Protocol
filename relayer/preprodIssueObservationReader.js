@@ -371,6 +371,7 @@ async function readPreprodIssueObservation({
       controlStateReference: control.controlStateReference,
       classId,
       price,
+      poolDatumTotalLiquidity: poolState.totalLiquidity,
       ...(observedAt === undefined || observedAt === null
         ? {}
         : { observedAt: BigInt(observedAt) }),
