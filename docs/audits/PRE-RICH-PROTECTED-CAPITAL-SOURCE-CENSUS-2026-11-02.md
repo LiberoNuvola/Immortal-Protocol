@@ -509,3 +509,48 @@ No wallet seed is passed to the census step. The workflow does not call any boot
 **Exact-head workflow state:** run [41408819902](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41408819902), commit `5a74284c2984dc565913e5e850c50f11059e7bcd`, was created and its only job remained `queued` at the time this report was updated. No live census artifact or test success is claimed yet. The run must still demonstrate that the historical identity artifact is retrievable, the current live Oracle State/Pool/PrizeValidator topology matches, and the Koios item census completes. If any of those conditions fail, the run must remain blocked rather than falling back to environment guesses or fixture values.
 
 **Current status:** manifest-based census handoff IMPLEMENTED; read-only live-census workflow WIRED; exact-head workflow QUEUED; live ticket census/artifact NOT YET VERIFIED; provider authority and same-backend snapshot pinning UNPROVEN; full ProtectedCapital, L2 lifecycle, R7 L6 emptiness and PA1–PA7 NOT CERTIFIED.
+
+
+## 14. Agent A — PA1–PA7 profile certification audit and live snapshot result (2026-11-03)
+
+### 14.1 Exact live observation carried forward
+
+The successful read-only EEV qualification run [#41581487013](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41581487013), commit `257c90fffe02c6157e236150a57da6c6ef8fd145`, uploaded artifact `13205288872` (ZIP SHA-256 `0b286fd0435de292d0da884b498884dd9462ad6dd16a4bf5a79fcd5455244114`). Its census observed:
+
+- Koios Preprod tip: block `5367465`, slot `137998892`, hash `ea7b8e620fb9e7bcef9d14da6e49e96fc99156bf2868b7c11f5a54cb006a90b0`.
+- Derived PrizeValidator address: `addr_test1wzf7ctkjwysu3v94f0ccqjef63kdwy2gc4qj368x3a70lvsq6uygp`; live UTxO count `0`, one exact empty page (`*/0`).
+- B1 Pool address: `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`; exactly one live UTxO, `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- The Pool inline datum hash was independently recomputed as BLAKE2b-256 and matched the on-chain datum hash. Its decoded aggregate values were: total liquidity `100000` sub-units, pending liabilities `0`, unresolved reserve `0`, unresolved ticket count `0`, locked Jackpot `0`, Jackpot threshold `10000`.
+- The exact direct-USDM unit remained `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`; its Pool quantity was `1000000000` atomic units, deriving `100000` IMMORTAL USDM sub-units.
+
+The item ledger reports `ticketLedgerInternallyReconciled=true` with no internal arithmetic blockers. It deliberately still reports `sourceCompletenessAuthorityVerified=false`, `fullProtectedCapitalQualified=false`, and `r7L6EmptinessProven=false`. Koios attestation, pinned snapshot, same-backend verification, and cryptographically authenticated deployment-manifest authority are all false. The empty scan is therefore a **bounded current observation**, not proof of global or historical emptiness.
+
+### 14.2 PA1–PA7 disposition against R7 v3.0.0
+
+The normative reference is `docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md`. PA1–PA7 are profile-level certification artifacts for the two-sided partition `A1…A5` and `L1…L6`, not merely seven test labels.
+
+| Artifact | Existing evidence on this branch | Disposition |
+|---|---|---|
+| **PA1 — profile instantiation of A1–A5 and L1–L6** | Direct-USDM V1 identifies the exact physical tUSDM Pool asset as the bounded EEV source. The ticket ledger maps Pending/BeaconReady to L3, positive Revealed payout to L1, losing Reveal to L5, and Claimed to L4. The Pool datum exposes the L1/L3/L2 aggregates. No complete profile inventory of every economic asset, contingent asset, informational holding, and commitment class is attached to these mappings. | **PARTIAL** |
+| **PA2 — PC1/PC2 exhaustiveness** | The live scan covers the derived PrizeValidator and B1 Pool addresses only. It does not enumerate every profile asset/commitment source, all Treasury or other protocol-controlled locations, or the complete historical transition surface. A page-complete query of one address cannot prove that the declared profile perimeter is exhaustive. | **OPEN — principal R7 blocker** |
+| **PA3 — PC3 disjointness** | The item classifier uses mutually exclusive ticket lifecycle states and separately reconciles L1 and L3 to the Pool aggregates. The accounting kernel keeps the EEV asset total distinct from ProtectedCapital. Disjointness for every asset class, conditional allocation, and A4↔L3 contingency outside the ticket/Pool path is not demonstrated. | **PARTIAL** |
+| **PA4 — valuation per cell** | L1 is preserved exactly in USDM sub-units; L3 uses the existing canonical ticket price ladder and PRE-RICH 500× worst-case rule. Direct physical USDM is separately derived from the exact Pool UTxO. L2 has only a scalar observation and no independently proven funding/lock/payout lifecycle. Non-direct-USDM valuation remains excluded/unqualified, not inferred from ADA/USD or peg assumptions. | **PARTIAL** |
+| **PA5 — PC6 delta closure** | Existing B1 actions are FundTreasury, TicketIssued, TicketRevealed, TicketClaimed and TicketExpired; V3 actions are Issue, Reveal, Claim and Expire. Their existing ticket deltas map to asset funding, L3 creation, L3 resolution to L1/L5, L1 settlement to L4, and terminal expiry. No B1/V3 Jackpot/CAR funding, lock or payout action exists in the inspected action sets; other profile operations and historical replay are not fully joined to the R7 cell map. | **PARTIAL** |
+| **PA6 — PC7 executability / L6 empty** | B1/V3 solvency predicates and the IMMORTAL Economic Gate reject unsafe states. The Gate consumes `obligationsComplete` and `allOmegaSuccessorsInCertifiedKernel` as supplied booleans; it does not itself prove source completeness or derive an L6-emptiness witness. The Koios census fails on unclassified rows but its provider completeness remains unverified. | **OPEN** |
+| **PA7 — adversarial omitted-class review** | Existing tests reject incomplete pagination, unclassified outputs, duplicate identities/references, datum/policy/Pool mismatches, L1/L3 aggregate mismatches, unsupported prices and positive Jackpot without lifecycle proof. The audit has not yet demonstrated an adversarial search over *all* profile sources for a commitment class omitted from `𝔏`. | **PARTIAL** |
+
+### 14.3 Why the zero ledger does not close R7
+
+R7's T-CONS-GAP states that omitting a material commitment class can understate ProtectedCapital while the conservation identity over the *recorded* cells still passes. The current census demonstrates exactly why local reconciliation is insufficient: a zero-row PrizeValidator scan can reconcile to zero Pool liabilities/reserve while the source authority and global profile perimeter remain unproved.
+
+The B1/V3 kernel remains responsible for the existing solvency arithmetic; this audit does not alter it. The unresolved proof obligation is upstream: prove that all economic content the profile can create is represented in the source perimeter before the booleans consumed by Economic Gate may be treated as authoritative.
+
+### 14.4 Smallest next evidence tranche
+
+1. Freeze a source-to-cell inventory for every current PRE-RICH asset and commitment origin, mapping each to exactly one of A1–A5, L1–L6, or the separate historical ledger. Any unmapped material class remains L6 and blocks certification.
+2. Join every current protocol operation to the R7 permitted deltas, including Treasury/funding paths and the currently absent L2/CAR lifecycle. Do not invent a Jackpot transition to fill the row.
+3. Produce a source-completeness witness for the exact Preprod script topology and ledger snapshot. A second read-only node/backend comparison can improve corroboration, but without an approved trust/proof model it must not be relabelled as cryptographic completeness authority.
+4. Add an explicit PA6/PA7 evidence binding to the external certification contract only after the underlying profile evidence exists; do not replace it with another self-asserted boolean or a larger digest list.
+5. Reconstruct consumed L4/L5 history from exact transaction replay where historical classification is required; never infer an expiry/settlement from wall-clock passage or a current empty UTxO set.
+
+**Disposition:** PA1 PARTIAL; PA2 OPEN; PA3 PARTIAL; PA4 PARTIAL; PA5 PARTIAL; PA6 OPEN; PA7 PARTIAL. Full ProtectedCapital / PA1–PA7 remains **NOT CERTIFIED**. The first Issue remains blocked. No economic formula, source policy, signer, threshold, Jackpot semantics, V3/Reveal logic, deployment, signature, or ledger state was changed by this audit.
