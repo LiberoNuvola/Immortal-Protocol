@@ -59,3 +59,19 @@ node audit/algorithmic-governability/exp-01-c17-structural-partition-boundary.mj
 ```
 
 The checker exercises identity uniqueness, declared-bucket membership, exact single assignment, no unclassified source item, snapshot/manifest binding and fail-closed outcomes. Its only positive result is `STRUCTURALLY_VALID_ONLY`. It does not authenticate source completeness, valuation or authority and never declares C17 certified. It is a non-normative conformance prototype, not a production obligation model.
+
+
+## EXP-06 / EXP-12 — existing signed-binding reuse boundary
+
+Run:
+
+```bash
+node audit/algorithmic-governability/exp-06-12-existing-binding-boundary.mjs
+node relayer/signedIssueAuthority.test.js
+```
+
+The first check audits the already-existing PRE-RICH Issue path; it does not create a new evidence schema or authority service. It verifies that the consumer composes the external Ed25519 authority verifier, exact Cardano input/observation references, EEV approval/source-set digest binding, independent Haskell recomputation of the signed state/action/post-state digests, and the existing economic-admission ↔ canonical-transition evidence binding.
+
+The Ed25519 unit test exercises the verifier's real positive and negative signature cases with ephemeral test keys. No production key or signer is created.
+
+**Scope is deliberately narrow:** this is evidence of the PRE-RICH Issue consumer's existing binding path, not a universal EXP-06 verifier, a generic EXP-12 authority lifecycle, a GOV-27 evidence authenticator, or a live deployment certificate. The audit explicitly retains generic authenticated appraisal and authority lifecycle as OPEN. The Economic Gate continues to consume externally verified conditions; it does not manufacture their truth. GOV-27 evidence references remain structural unless resolved by their separate evidence contract.
