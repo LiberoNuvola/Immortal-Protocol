@@ -146,7 +146,8 @@ assert(
 assert(
   materiosTransition.includes('AuthoritySetTransitionProofVerifier') &&
     materiosTransition.includes('proofVerifier.verify') &&
-    materiosTransition.includes('toSetId !== statement.fromSetId + 1n') &&
+    materiosTransition.includes('statement.toSetId !==') &&
+    materiosTransition.includes('statement.fromSetId + 1n') &&
     materiosTransition.includes('activationBlock'),
   'Materios provides a reusable authority-transition pattern with chain/set continuity and activation binding',
 )
