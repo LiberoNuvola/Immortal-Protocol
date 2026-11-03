@@ -481,3 +481,51 @@ Sources: [Seedelf contract constants](https://github.com/logical-mechanism/Seede
 **Correct classification:** the payment credential is consistent with the Seedelf Wallet validator v1. The exact output contains `123` atomic units of the pinned Preprod tUSDM, `2,521,350` lovelace, and assets named `SIRIUS-B`, `RIGEL`, `SIRIUS-A`, `VEGA`, and `USDr` under their respective policies. These are wallet holdings, not evidence of pool reserves or a price quote. The exact out-reference and datum/value witness still match the independent Koios re-read; no attempt is made here to infer the wallet owner's identity or to treat asset labels as verified issuer/oracle metadata.
 
 Combined with §31, the two strongest non-Minswap script candidates are now explained as (1) a UTxO at the official Hydra Head V2.2.0 Preprod validator and (2) a UTxO at the Seedelf Wallet Preprod validator. Neither is a DEX pool. This narrows the current candidates but does not exhaust every protocol or establish a USD/USDM conversion source. Option B and all qualification gates remain unchanged.
+
+
+## 33. Agent A — official Pyth Pro Cardano Preprod path now documented; first leg candidate only — 2026-11-03
+
+A fresh review of the current official Cardano Developer Portal and Pyth deployment registry establishes a more concrete path for the **ADA/USD leg** than the October discovery notes. This is a source-discovery and integration-contract update only; it does not qualify a source for PRE-RICH settlement or authorize a transaction.
+
+### Official network identity and feed
+
+The official Pyth Pro contract-address registry currently lists the Cardano Preprod Pyth Pro policy ID (`pyth_id`) as:
+
+`c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45`
+
+The same registry lists a separate policy ID for Cardano Mainnet. Do not copy the Mainnet ID into Preprod or infer the identity from an asset name. See [Pyth Pro contract addresses](https://docs.pyth.network/pro/contract-addresses).
+
+The official Cardano integration guide documents the `Crypto.ADA/USD` feed as Pyth Pro feed ID `16`. The Pyth Terminal metadata currently reports quote currency USD, exponent `-8`, minimum publisher count `3`, spot instrument and `fixed_rate@200ms` minimum channel. The displayed live price is a market display, not a transaction-bound settlement witness. See [Cardano Developer Portal — Pyth integration](https://developers.cardano.org/docs/build/integrate/oracles/pyth/) and [Pyth Terminal — ADA/USD](https://app.pyth.com/explore/Crypto.ADA%2FUSD).
+
+### Transaction verification shape
+
+The official Cardano guide describes a pull-based Pyth Pro flow:
+
+1. The off-chain client fetches a signed Pyth Lazer update; the guide uses the `@pythnetwork/pyth-lazer-sdk` and requires a Pyth Pro access token.
+2. The consuming transaction includes the Pyth State UTxO as a reference input.
+3. The transaction performs a zero-withdrawal from the network-specific Pyth withdraw script, with the signed update bytes as redeemer.
+4. A consuming validator reads the verified update from that same transaction using `pyth.get_updates`; the documented Cardano library is `pyth-network/pyth-lazer-cardano`.
+5. The Pyth signature check proves update integrity, **not freshness**. The consumer must check `timestamp_us` against its own transaction validity interval and governed freshness rule. The guide explicitly notes that the zero-withdrawal and consuming validator must participate in the same transaction.
+
+This makes Pyth a concrete **candidate ADA/USD authentication path** for Preprod. It does not prove that the repository's current Plutus V2 MintPolicy already consumes this Pyth Pro update, nor that its existing legacy Oracle State datum can be treated as equivalent. The documented Pyth Cardano example is Aiken-based; an exact Plutus V2 / current-settlement integration and native-ledger equivalence must be demonstrated rather than assumed.
+
+### Boundaries that remain open
+
+- **ADA/USD first leg:** official feed ID and official Preprod Pyth Pro policy ID are identified. The repo still needs an independently replayable Preprod transaction witness proving the exact policy/state UTxO, reference input, zero-withdrawal redeemer, verified feed ID, raw price/exponent/timestamps, publisher metadata and consumer freshness predicate all bind in one transaction.
+- **USD/USDM second leg:** still OPEN / NOT QUALIFIED. The October Pyth catalogue result identified Mountain Protocol's inactive USDM/USD instrument and Moneta's USDM reserve-NAV feed, not a current exact Moneta USDM unit-price feed. No active, exact USD-per-Moneta-USDM feed is established by the current official ADA/USD integration documentation.
+- **Unit conversion:** Option B remains selected. Do not insert `D = 1`, assume a peg, rename USD/ADA as USDM/ADA, or feed the ADA/USD result directly into `OracleQuote` / `Economic.totalUsdmValue`. The second ratio still needs exact issuer/asset identity, source qualification, precision/direction, freshness/skew, manipulation/liquidity limits, exact rational arithmetic and governed rounding.
+- **Credential/access:** Pyth Pro fetching requires an access token. The official guide says Intersect has arranged access for Cardano projects and describes how to request a key; no project credential or permission is assumed in this record. No secret is requested, read or copied.
+- **Integration compatibility:** the official Pyth guide's Aiken consumer example is not itself proof of compatibility with the repository's Haskell Plutus V2 MintPolicy. Any integration must preserve the existing Issue boundary and prove the Pyth update is consumed by the exact validator path that enforces the Treasury equality; an adjacent test validator or successful feed fetch is insufficient.
+
+### Bounded next proof
+
+The next safe experiment is a **read-only / isolated Preprod integration proof**, not an Issue or a production settlement change:
+
+1. Confirm access to the official Pyth Pro Preprod policy `c7d51d...` and retrieve its exact Pyth State identity from the official documented discovery method.
+2. Build a minimal test consumer that proves the same-transaction reference-input + zero-withdrawal + signed ADA/USD update path, with a freshness assertion anchored to the finite transaction validity upper bound. Keep the freshness value governed by the existing approved profile; do not import the illustrative value from the Pyth guide.
+3. Capture and independently decode the submitted/simulated transaction and its redeemer/reference input on Preprod; preserve the raw signed payload and evidence digest. Do not call this a PRE-RICH settlement or Issue proof.
+4. Separately continue the USD/USDM source search. The successful first leg must not be used to infer or synthesize the second leg.
+
+**Disposition:** ADA/USD Pyth Pro — OFFICIAL PREPROD INTEGRATION PATH IDENTIFIED / PRE-RICH CONSUMER CONFORMANCE NOT YET PROVEN. USD/USDM Option B — OPEN / NOT QUALIFIED. Oracle State freshness and authorized publisher/update path — still BLOCKED. First Issue — BLOCKED.
+
+No production code, Oracle datum/schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, economic parameter, V3/Reveal semantics, deployment approval, wallet, signature, transaction, or ledger state was changed by this review.
