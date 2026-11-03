@@ -47,7 +47,7 @@ assert(
   (verifier.match(/crypto\.verify\(/g) ?? []).length === 2 &&
     verifier.includes('publicKeyPem,') &&
     verifier.includes('Buffer.from(carrierBindingSignature, \'hex\')') &&
-    verifier.includes('Buffer.from(signedBytes, \'utf8\')'),
+    verifier.includes('crypto.verify(null, signedBytes, publicKeyPem, signatureBytes)'),
   'the same configured Ed25519 public key verifies the full authority payload and the carrier-binding signature',
 )
 
@@ -126,7 +126,7 @@ assert(
 )
 
 assert(
-  rulesetRegistry.includes('data RulesetRegistry') &&
+  rulesetRegistry.includes('type RulesetRegistry = [RulesetDefinition]') &&
     !rulesetRegistry.includes('AuthorityKey') &&
     !rulesetRegistry.includes('IssuerKey'),
   'the existing governance RulesetRegistry is not an issuer-key registry',
