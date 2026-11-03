@@ -75,3 +75,22 @@ The first check audits the already-existing PRE-RICH Issue path; it does not cre
 The Ed25519 unit test exercises the verifier's real positive and negative signature cases with ephemeral test keys. No production key or signer is created.
 
 **Scope is deliberately narrow:** this is evidence of the PRE-RICH Issue consumer's existing binding path, not a universal EXP-06 verifier, a generic EXP-12 authority lifecycle, a GOV-27 evidence authenticator, or a live deployment certificate. The audit explicitly retains generic authenticated appraisal and authority lifecycle as OPEN. The Economic Gate continues to consume externally verified conditions; it does not manufacture their truth. GOV-27 evidence references remain structural unless resolved by their separate evidence contract.
+
+
+## EXP-06 / EXP-12 — trust root and issuer lifecycle boundary
+
+Run:
+
+```bash
+node audit/algorithmic-governability/exp-06-12-trust-root-lifecycle-boundary.mjs
+```
+
+This source-level guard makes the current PRE-RICH Issue trust model explicit:
+
+- the off-chain verifier receives one externally configured Ed25519 public key and uses it for both the signed Issue payload and the carrier-binding signature;
+- the V3 deployment helper embeds the same configured public key into the parameterized carrier validator; the on-chain validator verifies the carrier-binding signature against that parameter;
+- the verifier does not currently bind a signed issuer identity/key ID, relying-party audience, appraisal-policy identity, key validity interval, revocation or supersession claim;
+- the current freshness check uses the verifier host's `Date.now()`;
+- GOV-27 evidence references and the governance RulesetRegistry are not issuer-key authentication or key-lifecycle infrastructure.
+
+The output deliberately distinguishes existing Issue-specific cryptographic reuse from the open universal EXP-06/12 lifecycle. It does not establish production key custody, signer deployment, current live carrier deployment, or a generic trust-root registry. No keys are created, rotated or revoked by this harness.
