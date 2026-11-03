@@ -107,7 +107,8 @@ assert(
 
 assert(
   transitionEvidence.includes('This is not an economic authority') &&
-    transitionEvidence.includes('does not validate the transition itself') &&
+    transitionEvidence.includes('does not validate the transition') &&
+    transitionEvidence.includes('itself. It binds') &&
     !transitionEvidence.includes('crypto.verify('),
   'canonical transition evidence remains evidence-only and is not mistaken for an authority verifier',
 )
