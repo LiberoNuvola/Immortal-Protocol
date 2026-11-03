@@ -65,6 +65,8 @@ jobs:
           aiken build
           test -s plutus.json
 
+      # Push-triggered runs can only fetch/update evidence: PYTH_SUBMIT_PREPROD is false unless a manual dispatch explicitly sets submit_preprod=true.
+      # The manual submission path is isolated to a dedicated test wallet and never authorizes PRE-RICH Issue.
       - name: Fetch genuine signed update; submit only when explicitly requested
         env:
           PYTH_CARDANO_POLICY_ID: ${{ github.event.inputs.pyth_policy_id || 'c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45' }}
