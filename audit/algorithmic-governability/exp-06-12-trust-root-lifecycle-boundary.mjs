@@ -153,8 +153,10 @@ assert(
 )
 
 assert(
-  materiosTransition.includes('The current repository does not yet provide such an implementation') &&
-    materiosTransition.includes('callers must therefore supply one explicitly'),
+  materiosTransition.includes('The current repository does not yet') &&
+    materiosTransition.includes('provide such an implementation') &&
+    materiosTransition.includes('supply one') &&
+    materiosTransition.includes('explicitly rather than receiving trust by construction'),
   'Materios authority-transition pattern is not misrepresented as a completed cryptographic proof verifier',
 )
 
