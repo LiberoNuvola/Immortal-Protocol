@@ -529,3 +529,54 @@ The next safe experiment is a **read-only / isolated Preprod integration proof**
 **Disposition:** ADA/USD Pyth Pro — OFFICIAL PREPROD INTEGRATION PATH IDENTIFIED / PRE-RICH CONSUMER CONFORMANCE NOT YET PROVEN. USD/USDM Option B — OPEN / NOT QUALIFIED. Oracle State freshness and authorized publisher/update path — still BLOCKED. First Issue — BLOCKED.
 
 No production code, Oracle datum/schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, economic parameter, V3/Reveal semantics, deployment approval, wallet, signature, transaction, or ledger state was changed by this review.
+
+
+## 34. Agent A — existing Pyth probe executed; access token lacks ADA/USD feed entitlement — 2026-11-03
+
+The repository already contained the isolated Pyth Pro integration path. A review of the exact branch source and an automatic push-triggered probe establish the following:
+
+### Existing integration artifacts — no duplicate consumer required
+
+- `scripts/pythPreprodConfig.mts` already pins the official Cardano Preprod Pyth Pro `pyth_id` `c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45` and rejects any other policy ID. Its test verifies exact identity and rejects a same-length but incorrect ID.
+- `poc/aiken-pyth-ada-usd/validators/pyth_signed_update_ledger_probe.ak` is an isolated Plutus V3 consumer requiring a Pyth update and freshness against a finite validity upper bound.
+- `poc/aiken-pyth-ada-usd/validators/ada_usd_quote_carrier.ak` and its library implement a separate candidate carrier that binds the exact raw ADA/USD tuple from the same Pyth update to a unique continuing singleton.
+- `plutus/PythQuoteCarrierBinding.hs` exposes a Haskell Plutus V2 view that checks the carrier input/output/singleton/address/value shape and extracts the raw quote tuple. It explicitly says it is not wired into production MintPolicy.
+- `plutus/PythAdaUsdConversion.hs` is an exact-rational candidate helper; the USD-per-USDM ratio and exponent bound are caller inputs. It is not wired into `MintPolicy` or `Economic.totalUsdmValue`.
+
+Direct comparison with current source confirms that `plutus/MintPolicy.hs` still imports `Economic` and calls `Economic.totalUsdmValue` inside `atomicTreasuryPaymentValid`. The production Treasury equality therefore still consumes the legacy Oracle State reference input. `PythQuoteCarrierBinding.hs` is not imported/called by `MintPolicy.hs`; presence in the Cabal module list and passing isolated tests do not close this source-to-economics binding. This is the concrete Gate B gap described in the design note above.
+
+### Real Pyth access attempt — run #9
+
+A push-triggered run of the existing [Pyth Signed Update — Preprod Ledger Probe #9](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41581346253) was made through the workflow's non-submitting path. On commit `861f5d1cb2ad8d5bff7e4fc0b5b21d04e7061ffb`:
+
+- The pinned Aiken consumers compiled successfully.
+- `PYTH_LAZER_TOKEN` was configured (the secret value was never printed or copied).
+- Pyth returned HTTP 403: `Not entitled: feed 16 (no grant accepts this feed (asset type 'crypto', instrument type 'spot'))`.
+- Artifact ID `13205682056`, ZIP digest `d209383a7aac0d8c6b675abd211eda6ba772a7ae6a6b98e3049022cff94d7cca`.
+- Evidence status: `BLOCKED_PYTH_FEED_ENTITLEMENT`; `signedUpdateFetched=false`; `pythStateResolved=false`; `walletLoaded=false`; `transactionBuilt=false`; `transactionSigned=false`; `transactionSubmitted=false`; `ledgerGateA=NOT_PROVEN`.
+
+Because the request was denied before the Pyth State lookup, this run does not establish a current live Preprod Pyth State UTxO or withdraw-script hash. It does establish that the configured token is not entitled to the requested ADA/USD feed. No production path or ledger state was affected.
+
+### External access resolution
+
+The current Pyth Pro FAQ says access tokens can be scoped by asset type, minimum channel and optional feed IDs, and that a 403/not-entitled response requires the token grant to be adjusted by the account manager. The Cardano onboarding offer published by Intersect says Cardano projects can request a one-year Pyth Pro API key and onboarding by contacting `genia@dourolabs.xyz` with the project name and a description of the build.
+
+For this specific probe, the request must explicitly include:
+- Cardano project: IMMORTAL / PRE-RICH;
+- network: Cardano Preprod;
+- feed: Pyth Pro `Crypto.ADA/USD`, feed ID `16`;
+- asset type/instrument: `crypto / spot`;
+- minimum channel required by the existing runner: `fixed_rate@200ms`;
+- purpose: isolated, non-submit signed-update and Preprod verifier proof.
+
+This is an entitlement request, not permission to alter protocol economics or submit a transaction. No request was sent by this pass. Sources: [Pyth Pro FAQ — access tokens and 403 entitlement](https://docs.pyth.network/pro/faq) · [Intersect — one-year Pyth Pro Cardano onboarding](https://intersectmbo.org/news/pyth-pro-on-cardano-subscription-offer).
+
+### Updated disposition and next action
+
+**Pyth ADA/USD:** integration code and official Preprod policy identity exist; the current API token is configured but lacks the feed 16 entitlement. No genuine signed update or live Pyth State was obtained. Gate A remains **NOT PROVEN**.
+
+**Pyth → production settlement:** the quote-carrier candidate and Haskell extraction helper are not yet wired into `MintPolicy.atomicTreasuryPaymentValid`; Gate B remains **OPEN**. The USD/USDM second leg under Option B is still **NOT QUALIFIED**. Oracle State freshness and authorized publisher/update path remain blocked.
+
+The next externally dependent step is to obtain the exact feed entitlement, then re-run the existing probe in its default non-submitting mode. Only after a signed update and Pyth State identity are observed should a separately reviewed native-ledger test be considered. Do not run the manual `submit_preprod=true` path, connect this probe to production MintPolicy, or treat ADA/USD as an USDM quote.
+
+No change to production `MintPolicy`, `Economic.totalUsdmValue`, Oracle schema/datum, unit conversion, economic parameters, V3/Reveal, EEV approval, Issue authority, wallet, transaction or ledger state was made by this pass.
