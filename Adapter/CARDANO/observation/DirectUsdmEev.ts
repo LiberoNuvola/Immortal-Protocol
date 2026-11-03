@@ -66,6 +66,15 @@ export function observeDirectUsdmEev({
     throw new Error('expectedUnit must be a valid native-asset unit')
   }
 
+  const quantity = assets[expectedUnit] ?? 0n
+  requiredNonNegative(quantity, 'direct USDM quantity')
+
+  if (quantity === 0n) {
+    throw new Error(
+      'exact observed PrizePool UTxO does not contain the expected direct-USDM asset',
+    )
+  }
+
   const allowedUnits = new Set(
     allowedNonEconomicUnits.map((unit) => {
       if (typeof unit !== 'string' || !unit.trim()) {
@@ -83,15 +92,6 @@ export function observeDirectUsdmEev({
     ) {
       throw new Error('direct-USDM profile rejects unqualified Pool asset ' + unit)
     }
-  }
-
-  const quantity = assets[expectedUnit] ?? 0n
-  requiredNonNegative(quantity, 'direct USDM quantity')
-
-  if (quantity === 0n) {
-    throw new Error(
-      'exact observed PrizePool UTxO does not contain the expected direct-USDM asset',
-    )
   }
 
   return {
