@@ -31,6 +31,30 @@ describe('Direct USDM EEV boundary', () => {
       },
     })).toThrow(/does not contain the expected direct-USDM asset/)
   })
+  it('rejects a non-profile asset even when direct tUSDM is also present', () => {
+    const directUnit = 'e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d'
+    const foreignUnit = 'ab'.repeat(28) + '505245'
+    expect(() => observeDirectUsdmEev({
+      assets: {
+        [directUnit]: 1_000_000_000n,
+        [foreignUnit]: 10_000_000n,
+      },
+    })).toThrow(/rejects unqualified Pool asset/)
+  })
+
+  it('ignores only explicitly allowlisted envelope assets such as ADA and the Pool NFT', () => {
+    const directUnit = 'e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d'
+    const poolUnit = 'cd'.repeat(28) + '504f4f4c'
+    expect(observeDirectUsdmEev({
+      assets: {
+        lovelace: 2_000_000n,
+        [poolUnit]: 1n,
+        [directUnit]: 1_000_000_000n,
+      },
+      allowedNonEconomicUnits: ['lovelace', poolUnit],
+    }).eevUsdmSubunits).toBe(100_000n)
+  })
+
   it('rejects malformed asset-unit identity instead of treating a ticker as identity', () => {
     expect(() => observeDirectUsdmEev({
       assets: { USDM: 1_000_000n },
