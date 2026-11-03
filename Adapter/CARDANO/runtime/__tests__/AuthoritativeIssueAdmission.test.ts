@@ -61,9 +61,9 @@ function eevQualification() {
     contractVersion: '3.0.0',
     deploymentApproval: {
       status: 'DEPLOYMENT_APPROVED' as const,
-      candidateId: 'test-eev-v1',
+      candidateId: 'PRE-RICH-EEV-USDM-DIRECT-V1:' + poolRef,
       sourceSetId: 'test-source-set-v1',
-      profileVersion: 'test-eev-profile-v1',
+      profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
       evidenceHash: 'e'.repeat(64),
       qualifiedProperties: ['EV1','EV2','EV3','EV4','EV5','EV6','EV7'],
       excludedProperties: [],
@@ -72,7 +72,7 @@ function eevQualification() {
       validFrom: '2026-10-07T00:00:00Z',
       validUntilOrRevalidationRule: 'revalidate-on-source-or-profile-change',
     },
-    sourceReference: 'source://test-eev',
+    sourceReference: 'cardano:preprod/utxo/' + poolRef,
     verificationReference: 'verify://test-eev',
     derivationVersion: 'test-eev-v1',
     snapshotReference: 'snapshot://issue/1',
@@ -179,6 +179,47 @@ describe('AuthoritativeIssueAdmission', () => {
       { id: 'test-authority', version: '1', provider: async () => bad },
       inputs, classEvidence,
     )).rejects.toThrow()
+  })
+})
+
+describe('low-level EEV profile and Pool binding', () => {
+  it('rejects a different deployment profile', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).profileVersion = 'OTHER-EEV-PROFILE'
+    await expect(resolveAuthoritativeIssueAdmission(
+      { id: 'test-authority', version: '1', provider: async () => bad },
+      inputs, classEvidence,
+    )).rejects.toThrow(/profile must be PRE-RICH-EEV-USDM-DIRECT-V1/)
+  })
+
+  it('rejects an EEV qualification source for a different Pool UTxO', async () => {
+    const bad = witness()
+    ;(bad.eevQualification as any).sourceReference =
+      'cardano:preprod/utxo/' + 'c'.repeat(64) + '#0'
+    await expect(resolveAuthoritativeIssueAdmission(
+      { id: 'test-authority', version: '1', provider: async () => bad },
+      inputs, classEvidence,
+    )).rejects.toThrow(/EEV source is not bound/)
+  })
+
+  it('rejects a deployment candidate for a different Pool UTxO', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).candidateId =
+      'PRE-RICH-EEV-USDM-DIRECT-V1:' + 'c'.repeat(64) + '#0'
+    await expect(resolveAuthoritativeIssueAdmission(
+      { id: 'test-authority', version: '1', provider: async () => bad },
+      inputs, classEvidence,
+    )).rejects.toThrow(/candidate is not bound/)
+  })
+
+  it('rejects an approval missing one EV qualification property', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).qualifiedProperties =
+      ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6']
+    await expect(resolveAuthoritativeIssueAdmission(
+      { id: 'test-authority', version: '1', provider: async () => bad },
+      inputs, classEvidence,
+    )).rejects.toThrow(/missing required qualification property: EV7/)
   })
 })
 
