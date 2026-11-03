@@ -15,5 +15,9 @@ jobs:
         with:
           node-version: 20
       - run: node audit/algorithmic-governability/no-result-dependent-authority.mjs
+      - name: EXP-06/12 existing signed-binding reuse boundary
+        run: node audit/algorithmic-governability/exp-06-12-existing-binding-boundary.mjs
+      - name: PRE-RICH Issue Ed25519 authority verifier tests
+        run: node relayer/signedIssueAuthority.test.js
       - name: EXP-01 C17 structural partition boundary
         run: node audit/algorithmic-governability/exp-01-c17-structural-partition-boundary.mjs
