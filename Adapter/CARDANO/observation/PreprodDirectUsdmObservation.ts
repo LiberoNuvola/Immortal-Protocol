@@ -11,6 +11,29 @@ export type PreprodDirectUsdmObservation = {
   liquiditySourceReferences: readonly string[]
 }
 
+/**
+ * Require the legacy B1 accounting datum to reconcile with the approved
+ * direct-USDM value observed from the same Pool UTxO. A mismatch means the
+ * legacy basket includes value outside the direct-USDM profile (or the
+ * snapshot is otherwise inconsistent), so Issue admission must stall.
+ */
+export function assertDirectUsdmMatchesPoolDatum(
+  poolDatumTotalLiquidity: bigint,
+  directUsdmValue: bigint,
+): void {
+  if (typeof poolDatumTotalLiquidity !== 'bigint' || poolDatumTotalLiquidity < 0n) {
+    throw new Error('B1 PrizePool datum totalLiquidity must be a non-negative bigint')
+  }
+  if (typeof directUsdmValue !== 'bigint' || directUsdmValue < 0n) {
+    throw new Error('direct-USDM EEV must be a non-negative bigint')
+  }
+  if (poolDatumTotalLiquidity !== directUsdmValue) {
+    throw new Error(
+      'B1 PrizePool datum totalLiquidity does not match direct physical USDM observation',
+    )
+  }
+}
+
 function exactReference(utxo: UTxO): string {
   if (
     !utxo ||
@@ -84,6 +107,7 @@ export async function observePreprodDirectUsdmPool({
   const direct = observeDirectUsdmEev({
     assets: pool.assets,
     expectedUnit: directUsdmUnit,
+    allowedNonEconomicUnits: [poolTokenUnit, 'lovelace'],
   })
 
   return {
