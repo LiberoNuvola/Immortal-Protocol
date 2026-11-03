@@ -94,3 +94,13 @@ This source-level guard makes the current PRE-RICH Issue trust model explicit:
 - GOV-27 evidence references and the governance RulesetRegistry are not issuer-key authentication or key-lifecycle infrastructure.
 
 The output deliberately distinguishes existing Issue-specific cryptographic reuse from the open universal EXP-06/12 lifecycle. It does not establish production key custody, signer deployment, current live carrier deployment, or a generic trust-root registry. No keys are created, rotated or revoked by this harness.
+
+
+### Internal prior art mapped by the EXP-06/12 trust-root guard
+
+The guard also checks two adjacent mechanisms without merging their domains:
+
+- **Materios GRANDPA authority-set transition:** `AuthoritySetEvidence` is explicitly untrusted; `TrustedAuthorityState` can only be created from the branded result of an injected `AuthoritySetTransitionProofVerifier`. The transition binds chain/genesis identity, previous and next set IDs, authority-set identity and an activation block. This is a useful transition-boundary pattern, but the POC explicitly says the concrete cryptographic proof verifier is not yet supplied. It is not an issuer-key registry and is not imported as one.
+- **PRE-RICH B2 Beacon committee verifier:** it supports configured member IDs/public keys and a threshold, rejecting duplicate or unknown attestations. It remains a separate application-specific off-chain verifier and is not wired into the V3 Issue trust root or the B2 Plutus transition validator.
+
+The guard labels Materios as a transition-boundary pattern only and B2 as a separate application mechanism. Neither is silently promoted to a generic IMMORTAL trust-root lifecycle.
