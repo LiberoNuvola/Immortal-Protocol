@@ -48,3 +48,14 @@ Expected result: all assertions PASS.
 - no economic parameter;
 - no claim of cryptographic proof;
 - no substitution for AG-01 canonical replay/finality evidence.
+
+
+## EXP-01 — C17 structural partition boundary
+
+Run:
+
+```bash
+node audit/algorithmic-governability/exp-01-c17-structural-partition-boundary.mjs
+```
+
+The checker exercises identity uniqueness, declared-bucket membership, exact single assignment, no unclassified source item, snapshot/manifest binding and fail-closed outcomes. Its only positive result is `STRUCTURALLY_VALID_ONLY`. It does not authenticate source completeness, valuation or authority and never declares C17 certified. It is a non-normative conformance prototype, not a production obligation model.

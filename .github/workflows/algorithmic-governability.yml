@@ -15,3 +15,5 @@ jobs:
         with:
           node-version: 20
       - run: node audit/algorithmic-governability/no-result-dependent-authority.mjs
+      - name: EXP-01 C17 structural partition boundary
+        run: node audit/algorithmic-governability/exp-01-c17-structural-partition-boundary.mjs
