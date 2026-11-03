@@ -41,9 +41,16 @@ export function directUsdmEevFromAtomic(quantity: bigint): bigint {
 export function observeDirectUsdmEev({
   assets,
   expectedUnit = PREPROD_TUSDM_CANDIDATE_UNIT,
+  allowedNonEconomicUnits = [],
 }: {
   assets: Record<string, bigint>
   expectedUnit?: string
+  /**
+   * Explicit non-EEV assets required for the Pool UTxO envelope, such as
+   * lovelace for min-UTxO and the Pool authority NFT. No other positive
+   * native-asset balance is silently ignored by the direct-USDM profile.
+   */
+  allowedNonEconomicUnits?: readonly string[]
 }): {
   unit: string
   atomicQuantity: bigint
@@ -57,6 +64,25 @@ export function observeDirectUsdmEev({
     !/^[0-9a-fA-F]{56,}$/.test(expectedUnit)
   ) {
     throw new Error('expectedUnit must be a valid native-asset unit')
+  }
+
+  const allowedUnits = new Set(
+    allowedNonEconomicUnits.map((unit) => {
+      if (typeof unit !== 'string' || !unit.trim()) {
+        throw new Error('allowed non-economic asset units must be non-empty strings')
+      }
+      return unit.toLowerCase()
+    }),
+  )
+  for (const [unit, amount] of Object.entries(assets)) {
+    requiredNonNegative(amount, 'asset quantity for ' + unit)
+    if (
+      amount > 0n &&
+      unit.toLowerCase() !== expectedUnit.toLowerCase() &&
+      !allowedUnits.has(unit.toLowerCase())
+    ) {
+      throw new Error('direct-USDM profile rejects unqualified Pool asset ' + unit)
+    }
   }
 
   const quantity = assets[expectedUnit] ?? 0n
