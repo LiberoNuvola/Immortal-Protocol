@@ -17,6 +17,17 @@ import type {
 
 const stripTxPrefix = (value: string): string => String(value).trim().replace(/^cardano:tx\//, '')
 
+const REQUIRED_EEV_PROFILE_VERSION = 'PRE-RICH-EEV-USDM-DIRECT-V1'
+const REQUIRED_EEV_PROPERTIES = ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'] as const
+
+function canonicalPoolReference(value: string): string {
+  const normalized = stripTxPrefix(value).toLowerCase()
+  if (!/^[0-9a-f]{64}#(0|[1-9][0-9]*)$/.test(normalized)) {
+    throw new Error('authoritative Issue Pool reference is not a canonical txHash#outputIndex')
+  }
+  return normalized
+}
+
 export type IssueEvidenceArtifact = {
   reference: string
   digest: string
@@ -169,6 +180,36 @@ export function assertAuthoritativeIssueAdmissionWitness(
   requiredString(eev.deploymentApproval.candidateId, 'eevQualification.deploymentApproval.candidateId')
   requiredString(eev.deploymentApproval.sourceSetId, 'eevQualification.deploymentApproval.sourceSetId')
   requiredString(eev.deploymentApproval.profileVersion, 'eevQualification.deploymentApproval.profileVersion')
+  if (eev.deploymentApproval.profileVersion !== REQUIRED_EEV_PROFILE_VERSION) {
+    throw new Error('authoritative Issue witness EEV profile must be PRE-RICH-EEV-USDM-DIRECT-V1')
+  }
+  for (const key of REQUIRED_EEV_PROPERTIES) {
+    if (!eev.deploymentApproval.qualifiedProperties.includes(key)) {
+      throw new Error('authoritative Issue deployment approval is missing required qualification property: ' + key)
+    }
+  }
+
+  const authenticatedPoolInputReference = canonicalPoolReference(
+    requiredString(candidate.authenticatedPoolInputReference, 'authenticatedPoolInputReference'),
+  )
+  const sourcePrefix = 'cardano:preprod/utxo/'
+  const sourceReference = eev.sourceReference.trim()
+  if (
+    !sourceReference.startsWith(sourcePrefix) ||
+    canonicalPoolReference(sourceReference.slice(sourcePrefix.length)) !== authenticatedPoolInputReference
+  ) {
+    throw new Error('authoritative Issue EEV source is not bound to the authenticated B1 PrizePool input')
+  }
+
+  const candidatePrefix = REQUIRED_EEV_PROFILE_VERSION + ':'
+  const candidateId = eev.deploymentApproval.candidateId.trim()
+  if (
+    !candidateId.startsWith(candidatePrefix) ||
+    canonicalPoolReference(candidateId.slice(candidatePrefix.length)) !== authenticatedPoolInputReference
+  ) {
+    throw new Error('authoritative Issue EEV deployment approval candidate is not bound to the authenticated B1 PrizePool input')
+  }
+
   assertDigest(eev.deploymentApproval.evidenceHash, 'eevQualification.deploymentApproval.evidenceHash')
   for (const key of ['qualifiedProperties', 'excludedProperties'] as const) {
     if (!Array.isArray(eev.deploymentApproval[key])) {
