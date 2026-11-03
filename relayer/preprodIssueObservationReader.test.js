@@ -151,6 +151,54 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
   assert.equal(result.decisionInput.observationReference.includes(ref('c')), true)
 })
 
+test('passes the decoded B1 datum liquidity to the authenticated authority source', async () => {
+  let observedPoolDatumLiquidity
+  await readPreprodIssueObservation({
+    lucid: fakeLucid(),
+    counterAddress: 'counter',
+    b1PrizePoolAddress: 'pool',
+    poolTokenUnit: 'poolpolicy' + 'poolname',
+    carrierAddress: 'carrier',
+    carrierPolicyId: 'carrierpolicy',
+    carrierTokenNameHex: 'carriername',
+    controlAddress: 'control',
+    controlPolicyId: 'ab'.repeat(28),
+    controlTokenNameHex: 'b2c0',
+    classId: 0,
+    price: 1,
+    observedAt: 123n,
+    authoritySource: async (request) => {
+      observedPoolDatumLiquidity = request.poolDatumTotalLiquidity
+      return {
+        poolUsdmValue: 1_000n,
+        preEEV: 1_000n,
+        candidateEEV: 1_000n,
+        requiredImmediateLiquidity: 1n,
+        truthVerified: true,
+        eevFresh: true,
+        obligationsComplete: true,
+        allOmegaSuccessorsCertified: true,
+        decisionReference: 'decision-datum-binding',
+        observedAt: 123n,
+        protectedCapitalProvenance: {
+          sourceReference: ref('c') + '#2',
+          components: {
+            crystallizedLiabilities: 10n,
+            worstCaseExposure: 1500n,
+            safetyCapital: 20n,
+            reserveProtection: 30n,
+            lockedJackpot: 50n,
+            mandatoryFutureCosts: 40n,
+          },
+          accountingInputs: { unresolvedReserve: 3n, unresolvedTicketCount: 2n },
+          total: 1650n,
+        },
+      }
+    },
+  })
+  assert.equal(observedPoolDatumLiquidity, 1_000n)
+})
+
 test('fails closed when the carrier singleton is ambiguous', async () => {
   const lucid = fakeLucid()
   const original = lucid.utxosAt
