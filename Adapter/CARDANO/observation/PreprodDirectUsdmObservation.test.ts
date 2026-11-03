@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { observePreprodDirectUsdmPool } from './PreprodDirectUsdmObservation'
+import {
+  assertDirectUsdmMatchesPoolDatum,
+  observePreprodDirectUsdmPool,
+} from './PreprodDirectUsdmObservation'
 
 const poolUnit = 'a'.repeat(56)
 const usdmUnit = 'b'.repeat(56)
@@ -51,6 +54,40 @@ describe('Preprod direct-USDM runtime observation', () => {
         observedAt: 123n,
       }),
     ).rejects.toThrow(/no longer live/)
+  })
+
+  it('rejects an unqualified asset mixed into a live Pool UTxO', async () => {
+    await expect(
+      observePreprodDirectUsdmPool({
+        lucid: {
+          async utxosAt() {
+            return [{
+              txHash: '1'.repeat(64),
+              outputIndex: 0,
+              assets: {
+                [poolUnit]: 1n,
+                [usdmUnit]: 1_000_000_000n,
+                ['c'.repeat(56)]: 1_000_000n,
+              },
+            }]
+          },
+        },
+        poolAddress: 'addr_test1wexample',
+        poolInputReference: poolRef,
+        poolTokenUnit: poolUnit,
+        directUsdmUnit: usdmUnit,
+        observationReference: 'preprod-issue:' + poolRef,
+        observedAt: 123n,
+      }),
+    ).rejects.toThrow(/rejects unqualified Pool asset/)
+  })
+
+  it('requires exact equality between the B1 datum liquidity and direct-USDM observation', () => {
+    expect(() => assertDirectUsdmMatchesPoolDatum(100_000n, 100_000n)).not.toThrow()
+    expect(() => assertDirectUsdmMatchesPoolDatum(110_000n, 100_000n))
+      .toThrow(/does not match direct physical USDM/)
+    expect(() => assertDirectUsdmMatchesPoolDatum(90_000n, 100_000n))
+      .toThrow(/does not match direct physical USDM/)
   })
 
   it('fails closed when the expected direct-USDM asset is absent', async () => {
