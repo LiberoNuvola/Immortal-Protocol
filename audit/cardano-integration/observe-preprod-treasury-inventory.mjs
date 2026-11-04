@@ -21,31 +21,137 @@ const validator = { type: 'PlutusV2', script: artifact.cborHex }
 const treasuryAddress = lucid.utils.validatorToAddress(validator)
 const treasuryScriptHash = lucid.utils.validatorToScriptHash(validator)
 
-const response = await fetch(`${KOIOS}/address_utxos`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ _addresses: [treasuryAddress] }),
-})
-if (!response.ok) throw new Error(`KOIOS_ADDRESS_UTXOS_HTTP_${response.status}`)
-const rows = await response.json()
-if (!Array.isArray(rows)) throw new Error('KOIOS_ADDRESS_UTXOS_INVALID_RESPONSE')
-const addressRows = rows.filter((row) => row?.address === treasuryAddress)
-if (addressRows.length !== rows.length) {
-  throw new Error('KOIOS_RETURNED_UTXO_FOR_UNEXPECTED_ADDRESS')
+async function koiosPost(endpoint, payload, label) {
+  const response = await fetch(`${KOIOS}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error(`${label}_HTTP_${response.status}`)
+  const rows = await response.json()
+  if (!Array.isArray(rows)) throw new Error(`${label}_INVALID_RESPONSE`)
+  return rows
 }
 
-const utxos = addressRows.map((u) => {
-  const assets = Object.fromEntries((u.asset_list ?? []).map((a) => [
-    String(a.policy_id) + String(a.asset_name ?? ''),
-    String(a.quantity),
-  ]))
+async function fetchDatumDetails(datumHashes, label) {
+  const uniqueHashes = [...new Set(datumHashes)]
+  const details = new Map()
+
+  // The public Koios request-body limit is small; keep each batch safely below 1 KiB.
+  for (let offset = 0; offset < uniqueHashes.length; offset += 8) {
+    const batch = uniqueHashes.slice(offset, offset + 8)
+    const rows = await koiosPost('datum_info', { _datum_hashes: batch }, `${label}_DATUM_INFO`)
+    for (const row of rows) {
+      const hash = String(row?.hash ?? '').toLowerCase()
+      if (!batch.includes(hash) || details.has(hash)) {
+        throw new Error(`${label}_DATUM_INFO_UNEXPECTED_OR_DUPLICATE_HASH`)
+      }
+      if (typeof row.bytes !== 'string' || row.bytes.length === 0 || row.bytes.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(row.bytes)) {
+        throw new Error(`${label}_DATUM_INFO_INVALID_CBOR`)
+      }
+      details.set(hash, { value: row.value ?? null, bytes: row.bytes.toLowerCase() })
+    }
+    for (const hash of batch) {
+      if (!details.has(hash)) throw new Error(`${label}_DATUM_INFO_MISSING_HASH_${hash}`)
+    }
+  }
+
+  return details
+}
+
+async function observeTreasuryAddress(address, label) {
+  const rows = await koiosPost('address_info', { _addresses: [address] }, `KOIOS_${label}_ADDRESS_INFO`)
+  if (rows.length !== 1 || rows[0]?.address !== address) {
+    throw new Error(`KOIOS_${label}_ADDRESS_INFO_ADDRESS_MISMATCH`)
+  }
+
+  const info = rows[0]
+  if (info.script_address !== true) {
+    throw new Error(`KOIOS_${label}_ADDRESS_IS_NOT_SCRIPT_CONTROLLED`)
+  }
+  if (!Array.isArray(info.utxo_set)) {
+    throw new Error(`KOIOS_${label}_UTXO_SET_MISSING`)
+  }
+
+  const datumHashes = info.utxo_set
+    .map((utxo) => utxo?.datum_hash == null ? null : String(utxo.datum_hash).toLowerCase())
+    .filter((hash) => hash !== null)
+  for (const hash of datumHashes) {
+    if (!/^[0-9a-f]{64}$/.test(hash)) {
+      throw new Error(`KOIOS_${label}_DATUM_HASH_INVALID`)
+    }
+  }
+  const datumDetails = await fetchDatumDetails(datumHashes, label)
+
+  const seenRefs = new Set()
+  const utxos = info.utxo_set.map((utxo) => {
+    if (utxo?.tx_hash == null || utxo?.tx_index == null || utxo?.value == null) {
+      throw new Error(`KOIOS_${label}_UTXO_REFERENCE_OR_VALUE_MISSING`)
+    }
+    const ref = String(utxo.tx_hash) + '#' + String(utxo.tx_index)
+    if (seenRefs.has(ref)) throw new Error(`KOIOS_${label}_DUPLICATE_UTXO_REFERENCE`)
+    seenRefs.add(ref)
+
+    if (utxo.asset_list != null && !Array.isArray(utxo.asset_list)) {
+      throw new Error(`KOIOS_${label}_UTXO_ASSET_LIST_INVALID`)
+    }
+    const assets = (utxo.asset_list ?? []).map((asset) => {
+      if (typeof asset?.policy_id !== 'string' || asset.quantity == null) {
+        throw new Error(`KOIOS_${label}_UTXO_ASSET_INVALID`)
+      }
+      return {
+        policyId: asset.policy_id,
+        assetNameHex: String(asset.asset_name ?? ''),
+        unit: asset.policy_id + String(asset.asset_name ?? ''),
+        quantity: String(asset.quantity),
+      }
+    })
+
+    const datumHash = utxo.datum_hash == null ? null : String(utxo.datum_hash).toLowerCase()
+    const inlineDatum = utxo.inline_datum ?? null
+    const hashDatum = datumHash === null ? null : datumDetails.get(datumHash)
+    if (datumHash !== null && !hashDatum) {
+      throw new Error(`KOIOS_${label}_HASH_ONLY_DATUM_NOT_RESOLVED`)
+    }
+
+    return {
+      ref,
+      blockHeight: utxo.block_height == null ? null : Number(utxo.block_height),
+      blockTime: utxo.block_time == null ? null : Number(utxo.block_time),
+      lovelace: String(utxo.value),
+      assets,
+      datum: {
+        hash: datumHash,
+        inlinePresent: inlineDatum !== null,
+        inline: inlineDatum,
+        hashResolved: hashDatum !== null,
+        hashValue: hashDatum?.value ?? null,
+        hashBytes: hashDatum?.bytes ?? null,
+      },
+      referenceScriptPresent: utxo.reference_script != null,
+    }
+  })
+
   return {
-    ref: String(u.tx_hash) + '#' + String(u.tx_index),
-    lovelace: String(u.value),
+    address,
+    scriptAddress: info.script_address,
+    stakeAddress: info.stake_address == null ? null : String(info.stake_address),
+    balanceLovelace: String(info.balance ?? '0'),
+    utxoCount: utxos.length,
+    datumHashCount: datumHashes.length,
+    inlineDatumCount: utxos.filter((u) => u.datum.inlinePresent).length,
+    noDatumCount: utxos.filter((u) => u.datum.hash === null && !u.datum.inlinePresent).length,
+    utxos,
+  }
+}
+
+const currentInventory = await observeTreasuryAddress(treasuryAddress, 'CURRENT_TREASURY')
+const utxos = currentInventory.utxos.map((utxo) => {
+  const assets = Object.fromEntries(utxo.assets.map((asset) => [asset.unit, asset.quantity]))
+  return {
+    ...utxo,
     tUSDMAtomic: assets[TUSDM_UNIT] ?? '0',
-    otherNativeAssets: Object.entries(assets)
-      .filter(([unit]) => unit !== TUSDM_UNIT)
-      .map(([unit, quantity]) => ({ unit, quantity })),
+    otherNativeAssets: utxo.assets.filter((asset) => asset.unit !== TUSDM_UNIT),
   }
 })
 // Historical candidate: the Treasury artifact before the 2026-09-05 artifact update.
@@ -63,29 +169,11 @@ if (historicalArtifact.type !== 'PlutusScriptV2' || typeof historicalArtifact.cb
 const historicalValidator = { type: 'PlutusV2', script: historicalArtifact.cborHex }
 const historicalTreasuryAddress = lucid.utils.validatorToAddress(historicalValidator)
 const historicalTreasuryScriptHash = lucid.utils.validatorToScriptHash(historicalValidator)
-const historicalUtxoResponse = await fetch(`${KOIOS}/address_utxos`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ _addresses: [historicalTreasuryAddress] }),
-})
-if (!historicalUtxoResponse.ok) {
-  throw new Error(`KOIOS_HISTORICAL_ADDRESS_UTXOS_HTTP_${historicalUtxoResponse.status}`)
-}
-const historicalUtxoRows = await historicalUtxoResponse.json()
-if (!Array.isArray(historicalUtxoRows)) {
-  throw new Error('KOIOS_HISTORICAL_ADDRESS_UTXOS_INVALID_RESPONSE')
-}
-if (historicalUtxoRows.some((row) => row?.address !== historicalTreasuryAddress)) {
-  throw new Error('KOIOS_HISTORICAL_RETURNED_UTXO_FOR_UNEXPECTED_ADDRESS')
-}
-const historicalUtxos = historicalUtxoRows.map((u) => {
-  const assets = Object.fromEntries((u.asset_list ?? []).map((a) => [
-    String(a.policy_id) + String(a.asset_name ?? ''),
-    String(a.quantity),
-  ]))
+const historicalInventory = await observeTreasuryAddress(historicalTreasuryAddress, 'HISTORICAL_TREASURY')
+const historicalUtxos = historicalInventory.utxos.map((utxo) => {
+  const assets = Object.fromEntries(utxo.assets.map((asset) => [asset.unit, asset.quantity]))
   return {
-    ref: String(u.tx_hash) + '#' + String(u.tx_index),
-    lovelace: String(u.value),
+    ...utxo,
     tUSDMAtomic: assets[TUSDM_UNIT] ?? '0',
   }
 })
@@ -199,7 +287,7 @@ const observation = {
   treasuryScriptHash,
   treasuryArtifactPath: ARTIFACT_PATH,
   treasuryArtifactSha256: createHash('sha256').update(artifactText).digest('hex'),
-  source: { provider: 'Koios', endpoint: 'POST /address_utxos', responseAddressMatched: rows.length > 0 && addressRows.every((u) => u.address === treasuryAddress), noUtxosReturned: rows.length === 0, returnedUtxoRows: rows.length },
+  source: { provider: 'Koios', endpoints: ['POST /address_info', 'POST /datum_info'], responseAddressMatched: currentInventory.address === treasuryAddress, scriptAddressConfirmed: currentInventory.scriptAddress, noUtxosReturned: currentInventory.utxoCount === 0, returnedUtxoRows: currentInventory.utxoCount, datumHashCount: currentInventory.datumHashCount, inlineDatumCount: currentInventory.inlineDatumCount, noDatumCount: currentInventory.noDatumCount },
   assetIdentity: {
     tADA: 'native lovelace (testnet ADA; 1000000 lovelace per ADA)',
     tUSDM: { policyId: TUSDM_POLICY_ID, assetNameHex: TUSDM_ASSET_NAME_HEX, unit: TUSDM_UNIT },
@@ -212,6 +300,7 @@ const observation = {
     tUSDM: formatSixDecimals(totalTusdm),
   },
   utxos,
+  treasuryAddressInventory: currentInventory,
   historicalTreasuryArtifactCandidate: {
     sourceCommit: HISTORICAL_TREASURY_COMMIT,
     sourcePath: 'src/plutusScripts/treasury.plutus.json',
@@ -224,6 +313,7 @@ const observation = {
     tUSDMAtomic: historicalTotalTusdm.toString(),
     tUSDM: formatSixDecimals(historicalTotalTusdm),
     utxos: historicalUtxos,
+    inventory: historicalInventory,
   },
   tUSDMScriptAddressHolderDiscovery: {
     provider: 'Koios',
@@ -271,7 +361,7 @@ const observation = {
     qneProven: false,
   },
   limitations: [
-    'This is a read-only snapshot of the exact script address derived from the current repository artifact.',
+    'This is a read-only snapshot of the exact script address derived from the current repository artifact; Koios reports the UTxO set, datum hashes, inline datums, assets and referenced datum bytes.',
     'Native lovelace is reported as testnet ADA; it is not USDM liquidity.',
     'The tUSDM unit is matched exactly by policy ID and asset-name hex; this observation does not independently certify issuer or redemption value.',
     'Balances do not prove an executable DEX route, minimum output, execution costs, or a non-erosive QNE action.',
