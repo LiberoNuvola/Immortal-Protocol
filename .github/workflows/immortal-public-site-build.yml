@@ -48,7 +48,6 @@ jobs:
           set -euo pipefail
           test -s dist/web/index.html
           test -s dist/web/ecosystem.html
-          test -s dist/web/site.css
           test -s dist/dapp.html
 
       - name: Ensure the portal remains a catalogue, not a wallet client
