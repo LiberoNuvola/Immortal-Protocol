@@ -214,3 +214,18 @@ A destination address alone does not prove the economic classification of an inf
 - No fresh CI was run as part of this document's source audit.
 
 **Overall status: SINGLE TREASURY MODEL CONFIRMED AT PRE-RICH ACCOUNTING-INTENT LEVEL / CATEGORY LEDGER NOT YET PROVEN / FUNDING SOURCE AND CLAIM OUTFLOW CONFORMANCE OPEN / PA5 OPEN.**
+
+## 12. Clarification: "Reward" is not one interchangeable category
+
+The repository and adjacent research use the word Reward for several economically different things. They must remain separate:
+
+| Reward meaning | Owner / scope | Source and custody model | Evidence/status |
+|---|---|---|---|
+| **PRE holder reward (PRE staking)** | PRE-RICH application | A non-custodial PRE wallet-balance snapshot consumes an authenticated internal staking-accounting amount from the single PRE-RICH Treasury. No separate on-chain pool or PRE lock is intended. | Calculator exists; source amount, allocation decision, snapshot/eligibility/weight and distribution path remain open. |
+| **Contributor / governance reward budget** | Universal IMMORTAL protocol-revenue research, not PRE-RICH holder staking | The separate research boundary is ProtocolRevenueReceived → AccountingClassification → CertifiedRewardBudget → RewardAllocation. It requires RewardBudget ≤ AvailableProtocolRevenue and RewardAllocation ≤ RewardBudget; the destination alone does not create a budget. | Found only as NON-NORMATIVE research on work/b3-materios-provenance-evidence, not as a current PRE-RICH on-chain category or a production implementation on work/immortal-green-closure. |
+| **Relayer execution reward** | Optional execution-facilitator compensation | Historically embedded in the legacy percentage calculation as a relayer amount/minimum; it is not a PRE holder entitlement. | Current relayer worker is fail-closed at distribution; no active payment path is proven. |
+| **Prize winner payout** | PRE-RICH game economy | Paid from the Prize/PrizePool accounting position against a crystallized ticket liability. | Claim builder/validator asset-debit mismatch remains open. |
+
+The contributor-reward research source is [TREASURY-REWARD-ACCOUNTING-BOUNDARY-v1.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/TREASURY-REWARD-ACCOUNTING-BOUNDARY-v1.md). It is explicitly research/non-normative and belongs to a different branch/workstream. It must not be silently imported into PRE-RICH or interpreted as proof that a general Reward sub-ledger already exists in the current Green Closure branch.
+
+**Result:** the term Reward needs an explicit category identity and owner before it can enter the PRE-RICH category ledger. PRE holder staking, contributor/governance rewards, relayer compensation and game prizes are four different economic flows. No generic shared Reward balance is evidenced by the current PRE-RICH implementation.
