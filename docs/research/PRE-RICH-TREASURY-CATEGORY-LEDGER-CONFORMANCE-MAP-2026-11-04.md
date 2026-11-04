@@ -89,7 +89,7 @@ A current production builder for FundTreasury consuming an authenticated Treasur
 - src/gameFlow.ts builds Reveal, Claim and Expire;
 - the FundTreasury construction appears in the synthetic Yaci audit harness, not in the inspected production sale/game-flow builder.
 
-This leaves a concrete semantic distinction to close: is Pool funding permitted as a third-party donation, or must a funding transition debit the canonical Treasury? The existing PRE-RICH specification describes Treasury funding as protocol-controlled. The current B1 validator does not prove that source. This audit does **not** choose a new donation policy or change the validator; it records the provenance gap.
+The PRE-RICH V1 policy question is **not open**: GAME-ECONOMY §15 already specifies protocol-controlled Treasury → PrizePool funding, and the 2026-11-04 owner-level Control Center reconciliation confirms that PrizePool is funded from the central Treasury's Prize accounting category. Third-party donations are not the specified funding source for this path and must not be silently substituted as an alternative policy. The implementation gap is narrower and concrete: the current B1 validator does not authenticate a funding input from the canonical Treasury, and the inspected Yaci trace funds the Pool from a synthetic test wallet. The production path must bind the authorized Prize-category debit, canonical Treasury source, Pool credit and post-state atomically.
 
 Source references:
 - [B1PrizePool.hs — FundTreasury](../../plutus/B1PrizePool.hs)
@@ -159,7 +159,7 @@ This creates two different certification problems:
 1. **Internal category/custody reallocation:** prove that the same physical asset is moved or reattributed without being duplicated in aggregate EEV; identify the source and destination categories and preserve all protected constraints.
 2. **Final external disbursement:** prove that the correct category's asset balance physically decreases, the claimant/beneficiary receives the certified amount, and the corresponding liability/budget is settled atomically.
 
-The current Claim path fails the physical asset-debit requirement at source level. The B1 FundTreasury path fails to prove Treasury provenance. The PRE staking calculator lacks an authenticated source/budget and distribution path. Maintenance has no demonstrated budget/debit ledger.
+The current Claim path fails the physical asset-debit requirement at source level; its intended funding source is the Prize/PrizePool accounting position, not a generic external budget. The B1 FundTreasury path fails to prove the already-specified Treasury provenance. The PRE staking calculator lacks an authenticated source/budget and distribution path. Maintenance has no demonstrated budget/debit ledger.
 
 | R7 artifact | Current PRE-RICH evidence from this audit | Status |
 |---|---|---|
@@ -195,8 +195,8 @@ A destination address alone does not prove the economic classification of an inf
 ## 10. Ordered closure work (no policy invented)
 
 1. **Treasury identity:** reconcile sale, manual deposit/observation and Genesis observer to one authenticated deployment Treasury identity; record exact script hash, address, canonical datum and live UTxO/source-set.
-2. **Category representation:** decide and specify how Prize, Reserve, Maintenance and Reward/staking are recorded inside the single Treasury accounting state. Do not create four new Treasury authorities or copy the legacy percentages.
-3. **Prize funding:** determine whether the approved funding operation must consume a Treasury-owned input (as the current policy text suggests) or whether independent donations are separately allowed; then bind source, destination and Pool post-state atomically.
+2. **Category representation:** specify and implement the authenticated internal ledger representation for Prize, Reserve, Maintenance, Reward and PRE staking inside the single Treasury accounting model. The architectural categories are established; their persisted balances, postings, availability and reconciliation are not. Do not create four new Treasury authorities or copy legacy percentages.
+3. **Prize funding:** enforce the already-specified protocol-controlled Treasury → PrizePool path by authenticating the canonical Treasury input, debiting the Prize category, crediting the Pool's physical Value and reconciling both post-states atomically. Do not reopen a Treasury-versus-donation policy choice.
 4. **Claim settlement:** reconcile the accepted R7 asset-side settlement semantics with the actual Pool Value delta and claimant output; only then implement the source/debit builder and verify against the validator.
 5. **PRE-holder rewards:** define the authenticated Treasury staking balance, allocation authority, snapshot/eligibility/weight decisions and direct-versus-claim distribution before using the calculator for a real epoch.
 6. **Maintenance:** enumerate only mandatory protocol-paid obligations, their authorized budget, payment beneficiary/service evidence and debit path; keep chain execution fees distinct.
