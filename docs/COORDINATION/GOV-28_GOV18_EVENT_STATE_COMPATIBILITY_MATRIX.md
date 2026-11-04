@@ -137,3 +137,13 @@ Exact evidence on `9c5b6276f7ca132c3fcaaf170439747236a39d53`:
 Do not treat the four implemented acts as proof that the entire GOV-18 event vocabulary is implemented. The Phase-2 contract lists 20 event identities; the current `GovernanceEventSchema.EventType` has ten constructors. The following normative identities still lack dedicated event constructors: `IMPACT_REVIEW_COMPLETED`, `EVIDENCE_RECORDED`, `COMMUNITY_REVIEW_OPENED`, `VOTING_OPENED`, `VOTING_CLOSED`, `CHALLENGE_OPENED`, `CHALLENGE_RESOLVED`, `REJECTED`, `RETURNED_FOR_REVISION`, `CANCELLED`, `EMERGENCY_ACTIVATED`, `EMERGENCY_RENEWED`, and `EMERGENCY_EXPIRED`. Some outcomes are represented by `EStatusChanged`; challenge operations remain helper/witness paths. That representation boundary requires a separate specification/consumer review, not inferred closure from the four-act tests.
 
 No economic or governance parameters have been introduced by this update. The four-act replay conformance slice is GREEN; the broader event-vocabulary milestone remains OPEN.
+
+## 2026-11-04 — exact HEAD verification
+
+The four-act replay status above was revalidated on the branch/PR exact HEAD `ff5cf47ae0c83c8305e6a0e0ddb3626d55232e06`:
+
+- Standalone Governance [41893028158](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028158): SUCCESS (five suites).
+- Haskell Semantic Conformance [41893028165](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028165): SUCCESS (canonical replay conformance included).
+- Kernel Invalid-Class Fail-Closed [41893028203](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203): SUCCESS (canonical replay regression included), artifact [13356812140](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203/artifacts/13356812140), SHA-256 `c1cbc16b5ad3709548e1377086c3bb57bc306920ec5162f59bdd173b9b2b5bb1`.
+
+This supersedes the need to rely on source-equivalence from the earlier `9c5b627` test SHA for the current branch tip. It does not change the remaining event-identity gap listed above.

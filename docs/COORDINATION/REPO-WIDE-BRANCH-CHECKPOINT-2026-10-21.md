@@ -7220,3 +7220,41 @@ The old coordination findings that claimed the four lifecycle handlers were abse
 However, the Phase-2 normative contract lists 20 canonical event identities while the current `GovernanceEventSchema.EventType` has ten constructors. The 13 normative identities still lacking distinct event constructors are `IMPACT_REVIEW_COMPLETED`, `EVIDENCE_RECORDED`, `COMMUNITY_REVIEW_OPENED`, `VOTING_OPENED`, `VOTING_CLOSED`, `CHALLENGE_OPENED`, `CHALLENGE_RESOLVED`, `REJECTED`, `RETURNED_FOR_REVISION`, `CANCELLED`, `EMERGENCY_ACTIVATED`, `EMERGENCY_RENEWED`, and `EMERGENCY_EXPIRED`. Some are represented by generic `EStatusChanged`; challenge lifecycle remains in helper/witness paths. This distinction requires separate source/consumer and specification reconciliation.
 
 **Disposition:** the replay-fixture defect and the dedicated four-act canonical lifecycle replay slice are **GREEN** on `9c5b627`; the full grouped GOV-28/GOV-18 event-vocabulary scope remains **OPEN**. No governance parameters, authorization semantics, economic rules, V3, Reveal, transaction or chain state were changed.
+
+## 10.90 Governance canonical replay — exact-HEAD revalidation (2026-11-04)
+
+This entry closes the pending exact-HEAD execution items left by §10.89. It does **not** close the broader GOV-18 event-vocabulary gap.
+
+### Exact source and branch
+
+- Repository: `LiberoNuvola/Immortal-Protocol`.
+- Branch `work/immortal-green-closure` HEAD and PR #19 HEAD were both verified as `ff5cf47ae0c83c8305e6a0e0ddb3626d55232e06`.
+- The Haskell Semantic, Kernel Invalid-Class and Governance Standalone runs below all checked out this exact SHA.
+
+### Exact-HEAD CI results
+
+All three core gates completed **SUCCESS**:
+
+- Governance Standalone [#41893028158](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028158): compiled and passed all five suites — `governance-ruleset-tests`, `governance-conformance-tests`, `governance-phase6-tests`, `governance-canonical-replay-tests`, `governance-canonical-event-tests`.
+- Haskell Semantic Conformance [#41893028165](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028165): every workflow step passed, including the dedicated `cabal test governance-canonical-replay-tests` invocation; that suite reported `1 of 1 test suites (1 of 1 test cases) passed`.
+- Kernel Invalid-Class Fail-Closed [#41893028203](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203): regression suite completed successfully, including `governance-canonical-replay-tests`, which reported PASS. Evidence artifact [13356812140](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203/artifacts/13356812140), ZIP SHA-256 `c1cbc16b5ad3709548e1377086c3bb57bc306920ec5162f59bdd173b9b2b5bb1`.
+
+Companion workflows also completed **SUCCESS** on the same SHA:
+- Adapter Sale [#41893028151](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028151);
+- Portability [#41893028146](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028146);
+- Algorithmic Governability [#41893028150](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028150);
+- Protocol Declaration [#41893028233](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028233);
+- Documentation Link Check [#41893028154](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028154);
+- Flux Point DoD Pilot [#41893028139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028139).
+
+### Disposition
+
+- Replay fixture correction: **PASS**.
+- Governance standalone: **PASS, 5/5 suites**.
+- Haskell Semantic conformance: **PASS**.
+- Kernel Invalid-Class regression: **PASS**.
+- Companion workflows listed above: **PASS**.
+- Four dedicated lifecycle handlers and end-to-end replay sequence: **GREEN on exact branch HEAD `ff5cf47`**.
+- Full GOV-18 event-identity vocabulary: **OPEN**. The normative Phase-2 contract lists 20 event identities; the current `EventType` enum has ten constructors. The 13 identities listed in §10.89 still need dedicated representation or an explicit specification/consumer disposition. Do not infer full GOV-28/GOV-18 closure from this green slice.
+
+No normative governance parameters, authorization semantics, economic rules, V3/Reveal semantics, wallet operations, transaction submission, or chain state were changed by this revalidation.

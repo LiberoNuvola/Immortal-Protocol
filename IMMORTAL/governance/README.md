@@ -78,3 +78,15 @@ This is executable conformance evidence for the implemented lifecycle slice. It 
 ### Remaining scope — do not infer full GOV-18 vocabulary closure
 
 The normative Phase-2 implementation contract lists 20 canonical event identities. The current `EventType` algebra exposes ten constructors. The dedicated finalization/adoption/conformance/canonicalization handlers are now present, but several other normative identities still do not have dedicated event constructors (including impact review, evidence recorded, community review opened, voting opened/closed, challenge opened/resolved, and emergency activation/renewal/expiry). Rejected/returned/cancelled outcomes remain representable through the generic status event rather than distinct event identities. Track that broader event-vocabulary work separately; these green suites do not close it.
+
+## 2026-11-04 — exact-HEAD revalidation
+
+The documentation reconciliation commit `ff5cf47ae0c83c8305e6a0e0ddb3626d55232e06` was checked out by all three Governance/Kernel gates; each completed **SUCCESS** on this exact SHA:
+
+- Standalone Governance [41893028158](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028158): all five standalone suites passed, including `governance-canonical-replay-tests` and `governance-canonical-event-tests`.
+- Haskell Semantic Conformance [41893028165](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028165): all workflow steps passed; the separately built `governance-canonical-replay-tests` suite passed.
+- Kernel Invalid-Class Fail-Closed [41893028203](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203): regression suite passed, including `governance-canonical-replay-tests`; artifact [13356812140](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203/artifacts/13356812140), ZIP SHA-256 `c1cbc16b5ad3709548e1377086c3bb57bc306920ec5162f59bdd173b9b2b5bb1`.
+
+Companion runs on the same SHA also passed: Adapter Sale [41893028151](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028151), Portability [41893028146](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028146), Algorithmic Governability [41893028150](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028150), Protocol Declaration [41893028233](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028233), Documentation Link Check [41893028154](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028154), and Flux Point DoD [41893028139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028139).
+
+The evidence closes the standalone fixture issue and revalidates the four dedicated lifecycle handlers on the exact branch HEAD. It does not close the broader 20-event GOV-18 identity gap described above.

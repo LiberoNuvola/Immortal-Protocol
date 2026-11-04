@@ -122,3 +122,15 @@ This evidence establishes the implemented four-act lifecycle replay slice and th
 The source branch subsequently advanced through documentation/coordination-only commits. The compare from the tested source SHA to branch HEAD `449f1d054514967cf7913bf136e5680bc219273e` showed only `AGENTS.md`, this checkpoint, and Materios/Treasury documentation changes; no Governance/Plutus/Adapter/workflow source changed. This reconciliation commit also changes only Governance documentation/README and the checkpoint, and is intentionally under `IMMORTAL/**` so the Haskell and Kernel workflows re-run on the resulting exact branch HEAD.
 
 This evidence remains separate from production evidence-object authenticity, external actor credential verification and deployment certification.
+
+## 2026-11-04 — exact HEAD revalidation
+
+The earlier evidence on `9c5b627` was followed by an exact branch-HEAD revalidation. All three gates completed **SUCCESS** on `ff5cf47ae0c83c8305e6a0e0ddb3626d55232e06`:
+
+- Standalone Governance [41893028158](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028158): all five suites passed.
+- Haskell Semantic Conformance [41893028165](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028165): all steps passed, including canonical replay conformance.
+- Kernel Invalid-Class Fail-Closed [41893028203](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203): all regression suites passed, including `governance-canonical-replay-tests`; artifact [13356812140](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203/artifacts/13356812140), ZIP SHA-256 `c1cbc16b5ad3709548e1377086c3bb57bc306920ec5162f59bdd173b9b2b5bb1`.
+
+The six companion workflows on the same SHA also passed: Adapter Sale, Portability, Algorithmic Governability, Protocol Declaration, Documentation Link Check and Flux Point DoD. Branch `work/immortal-green-closure` and PR #19 were both observed at this same SHA.
+
+This completes exact-HEAD executable validation for the current implementation slice. The broader event identity coverage qualification remains OPEN: green executable evidence does not add the 13 missing dedicated identities to the current ten-constructor `EventType` algebra.
