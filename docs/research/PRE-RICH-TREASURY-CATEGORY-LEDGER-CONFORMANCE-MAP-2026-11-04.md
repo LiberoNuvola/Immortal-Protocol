@@ -38,9 +38,9 @@ Current sale path:
 This is an atomic pairing of **Treasury receipt + PrizePool risk reservation**. The reserve update is not a second physical deposit or a second EEV inflow.
 
 Source references:
-- [src/mint.ts](../src/mint.ts)
-- [plutus/MintPolicy.hs](../plutus/MintPolicy.hs)
-- [plutus/B1PrizePool.hs](../plutus/B1PrizePool.hs)
+- [src/mint.ts](../../src/mint.ts)
+- [plutus/MintPolicy.hs](../../plutus/MintPolicy.hs)
+- [plutus/B1PrizePool.hs](../../plutus/B1PrizePool.hs)
 - [PRE-RICH Game Economy](../../PRE-RICH/docs/GAME-ECONOMY.md)
 
 ### Treasury-address consistency caveat
@@ -50,9 +50,9 @@ The sale path honours the configured TREASURY_ADDRESS before falling back to the
 The PRE Genesis observer independently requires exactly one PRE-bearing Treasury UTxO. Multiple PRE-bearing UTxOs therefore fail closed in that observer; it does not aggregate them into one canonical PRE balance.
 
 Source references:
-- [src/config.ts](../src/config.ts)
-- [src/treasuryPage.ts](../src/treasuryPage.ts)
-- [src/genesisTreasuryObservation.ts](../src/genesisTreasuryObservation.ts)
+- [src/config.ts](../../src/config.ts)
+- [src/treasuryPage.ts](../../src/treasuryPage.ts)
+- [src/genesisTreasuryObservation.ts](../../src/genesisTreasuryObservation.ts)
 
 ## 3. Category-by-category accounting and custody map
 
@@ -92,9 +92,9 @@ A current production builder for FundTreasury consuming an authenticated Treasur
 This leaves a concrete semantic distinction to close: is Pool funding permitted as a third-party donation, or must a funding transition debit the canonical Treasury? The existing PRE-RICH specification describes Treasury funding as protocol-controlled. The current B1 validator does not prove that source. This audit does **not** choose a new donation policy or change the validator; it records the provenance gap.
 
 Source references:
-- [B1PrizePool.hs — FundTreasury](../plutus/B1PrizePool.hs)
+- [B1PrizePool.hs — FundTreasury](../../plutus/B1PrizePool.hs)
 - [FundTreasury Yaci trace](../../audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts)
-- [MintPolicy atomic sale](../plutus/MintPolicy.hs)
+- [MintPolicy atomic sale](../../plutus/MintPolicy.hs)
 
 ## 5. Claim: physical asset debit mismatch
 
@@ -115,7 +115,7 @@ Therefore the source builder's continuing Pool Value does not satisfy the valida
 
 The correction cannot be reduced to a datum-only decrement: the asset-side decrease, claimant output and liability settlement have to be atomic and source-attributed. It also cannot be certified solely by the existing scalar Claim tests.
 
-Sources: [gameFlow.ts](../src/gameFlow.ts) · [B1PrizePool.hs](../plutus/B1PrizePool.hs) · [claim settlement address test](../src/__tests__/claim-settlement-address.test.ts).
+Sources: [gameFlow.ts](../../src/gameFlow.ts) · [B1PrizePool.hs](../../plutus/B1PrizePool.hs) · [claim settlement address test](../../src/__tests__/claim-settlement-address.test.ts).
 
 ## 6. EEV perimeter: aggregate accounting versus current Direct-USDM observation
 
@@ -146,7 +146,7 @@ This is not a current canonical economic allocation:
 
 Do not restore a historical percentage, infer a replacement split, or delete/refactor the legacy validator without a separate deployment/release-isolation decision. The source census establishes **legacy distribution code remains**, but does not prove the legacy distribution validator is the current economically active authority.
 
-Sources: [Treasury.hs](../plutus/Treasury.hs) · [treasuryPolicy.ts](../src/treasuryPolicy.ts) · [relayer worker](../relayer/relayer.js) · [RF8 regression](../src/__tests__/rf8-treasury-relayer-boundary.test.ts).
+Sources: [Treasury.hs](../../plutus/Treasury.hs) · [treasuryPolicy.ts](../../src/treasuryPolicy.ts) · [relayer worker](../../relayer/relayer.js) · [RF8 regression](../../src/__tests__/rf8-treasury-relayer-boundary.test.ts).
 
 ## 8. R7 / PA1–PA7 consequence
 
