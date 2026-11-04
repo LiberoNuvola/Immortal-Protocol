@@ -296,3 +296,37 @@ Both distinct tracked artifact-derived script hashes were queried through Koios 
 
 This closes the migration inventory for the repository-tracked Treasury artifacts on the observed Preprod ledger. It still cannot rule out an undocumented artifact compiled outside the tracked paths, a manually deployed validator from another repository, another network, or an off-chain accounting record. No such external deployment is inferred. No migration datum, genesis category balance or initial ledger value is derived from the empty observation.
 
+### 11.9 Revenue classification is not implied by the Treasury destination
+
+The normative PRE-RICH source distinguishes the destination rule from the accounting classification:
+- [GAME-ECONOMY §8](https://github.com/LiberoNuvola/Immortal-Protocol/blob/6ccba95866fb4ed046cff67b2582fcfd71fedcc4/PRE-RICH/docs/GAME-ECONOMY.md#8-treasury-and-historical-allocation) sends player payments into protocol-controlled Treasury and marks the old `75/10/10/5` split HISTORICAL / NON-CANONICAL.
+- [GAME-ECONOMY §15](https://github.com/LiberoNuvola/Immortal-Protocol/blob/6ccba95866fb4ed046cff67b2582fcfd71fedcc4/PRE-RICH/docs/GAME-ECONOMY.md#15-treasury-prizepool-funding) closes Treasury → PrizePool as protocol-controlled, constrained by the economic invariants; it does not prescribe an initial percentage split or state that every sale receipt is immediately spendable PrizePool liquidity.
+- [FRONT-IMMORTAL-TREASURY-FEE](https://github.com/LiberoNuvola/Immortal-Protocol/blob/6ccba95866fb4ed046cff67b2582fcfd71fedcc4/docs/COORDINATION/FRONT-IMMORTAL-TREASURY-FEE.md) classifies the legacy percentage validator as non-authoritative and keeps universal ProtocolUsageFee / revenue classification separate from the PRE-RICH sale settlement. The Notion Economic Usage Fee workflow itself explicitly excludes PRE-RICH from its scope.
+
+The inspected normative/application sources do not define a current complete posting function from each PRE-RICH receipt type to Prize, Reserve, Maintenance, PRE-holder staking or another category. In particular, they do not authorize either (a) assigning 100% of gross ticket sale receipts to Prize or (b) reviving the historical four-way split. Prize as the authorized source of Treasury → PrizePool funding does not by itself settle how each incoming sale receipt is initially classified.
+
+**Implementation gate:** before a receipt can increase a spendable category balance, an application-owned classification rule must specify the event type, source asset units, category credit, any protected/conditional part, and the evidence/authority that admits the posting. A destination address, a USDM-equivalent price, or a caller-supplied balance is not that rule. Do not invent a new spendable “unclassified” category either; any suspense/intake representation must be explicitly defined as non-spendable accounting evidence, not promoted silently into a new economic category.
+
+Cross-layer non-regression:
+- a PRE-RICH ticket-sale receipt is not automatically an IMMORTAL ProtocolUsageFee;
+- PRE-RICH AppSurplus / Treasury is not a funding source for IMMORTAL contributor Reward or ProtocolTreasury;
+- PRE-holder staking, contributor/governance Reward and legacy relayer compensation remain separate flows.
+
+### 11.10 Treasury state-carrier integration boundary — candidate, not adopted
+
+The current repository code exposes two concrete integration constraints:
+1. `MintPolicy.singleScriptOutputValue` returns `Nothing` when more than one output uses the Treasury payment script hash. A sale transaction with both a continuing state-carrier output and a separate sale-receipt output at that same hash would therefore fail the existing atomic Treasury check.
+2. `src/mint.ts::getTreasuryDatum` currently uses `selectConsistentTreasuryDatum`, which requires all observed Treasury UTxOs to carry one consistent datum. It cannot remain the state selector once a Treasury address contains a singleton ledger datum plus separate receipt/vault UTxOs.
+
+A topology compatible with **one logical Treasury and one Treasury script/address** is a state-bearing singleton UTxO inside that same Treasury custody boundary, distinguished by one exact marker asset, while receipt/vault UTxOs remain separate outputs at the same address. This is a candidate design only:
+- the marker would identify the state UTxO; it would not be a second pool, account authority, or economic category;
+- the state datum would hold versioned asset-qualified category accounting, while physical custody would continue to be enumerated as independent UTxOs;
+- the Treasury validator would need explicit state/receipt datum constructors and would require the unique marker input plus exactly one marker continuation for every category-changing transition;
+- MintPolicy and the PRE-RICH Treasury selectors would have to distinguish the marker-bearing state output from the single sale-receipt output, rather than counting or comparing every Treasury output as equivalent;
+- Treasury → PrizePool would spend the canonical state reference and the Prize custody input, debit the authorized Prize position, create the exact Pool credit and continue the state atomically. Internal movement must be reconciled as a custody change, not double-counted as new assets;
+- Claim, Maintenance, PRE-holder staking and contributor Reward would require their own separately typed obligations/authorizations; this candidate design does not close those semantics or R7 PA5.
+
+A separate accounting-carrier script/address remains an alternative only if a concrete size, script-complexity or validator boundary proves necessary; it must still be governed by the same single Treasury identity and cannot become a second Treasury authority.
+
+No marker policy ID, marker token name, seed UTxO, datum encoding, category posting function, initial category balance, authority signature format or new script has been selected or created here. The current sale flow is not switched to this candidate design. It requires a dedicated implementation specification and conformance tests before code changes.
+
