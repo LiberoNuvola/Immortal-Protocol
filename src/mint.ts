@@ -44,6 +44,10 @@ import {
 } from 'lucid-cardano'
 
 import wallet from './wallet'
+import {
+  resolveCanonicalTreasuryAddress,
+  selectCanonicalTreasuryDatum,
+} from './treasuryIdentity'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   obtainAuthoritativeIssueAdmission,
@@ -572,32 +576,8 @@ async function getTreasuryDatum(
   lucid: any,
   treasuryAddress: string,
 ): Promise<Data> {
-  const utxos =
-    await lucid.utxosAt(
-      treasuryAddress,
-    )
-
-  const candidates =
-    utxos.filter(
-      (utxo: UTxO) =>
-        utxo.datum != null,
-    )
-
-  if (candidates.length === 0) {
-    throw new Error(
-      'No existing Treasury UTxO with datum found. ' +
-        'The first Treasury deposit requires a bootstrap Treasury UTxO with its canonical datum.',
-    )
-  }
-
-  const datum =
-    candidates[0].datum
-
-  if (typeof datum === 'string') {
-    return Data.from(datum)
-  }
-
-  return datum as Data
+  const utxos: UTxO[] = await lucid.utxosAt(treasuryAddress)
+  return selectCanonicalTreasuryDatum(utxos, treasuryAddress)
 }
 
 // ============================================================
@@ -1307,15 +1287,13 @@ async function mintSerialNFTInternal(
   // Treasury
   // ----------------------------------------------------------
 
-  const treasuryAddress =
-    TREASURY_ADDRESS ||
-    derivedTreasuryAddress
-
-  if (!treasuryAddress) {
-    throw new Error(
-      'Treasury address not configured',
-    )
-  }
+  // The environment value is a deployment pin, never an address override.
+  // The exact address must be derived from the same Treasury validator that
+  // is bound into MintPolicy; payment-credential-only equality is insufficient.
+  const treasuryAddress = resolveCanonicalTreasuryAddress(
+    derivedTreasuryAddress,
+    TREASURY_ADDRESS,
+  )
 
   const treasuryDatum =
     await getTreasuryDatum(
