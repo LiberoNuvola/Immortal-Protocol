@@ -50,8 +50,19 @@ jobs:
           test -s dist/web/ecosystem.html
           test -s dist/web/site.css
           test -s dist/dapp.html
-          grep -q "Arb Agent" dist/web/ecosystem.html
-          grep -q "PRE-RICH" dist/web/ecosystem.html
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('dist/web/ecosystem.html', 'utf8');
+          const checks = {
+            arbAgent: /Arb\\s+Agent/i.test(html),
+            preRich: /PRE-RICH/i.test(html)
+          };
+          console.log('Rendered application catalogue checks:', checks);
+          if (!checks.arbAgent || !checks.preRich) {
+            console.error('The built ecosystem page is missing a registered application label.');
+            process.exit(1);
+          }
+          NODE
 
       - name: Ensure the portal remains a catalogue, not a wallet client
         run: |
