@@ -61,6 +61,23 @@ async function fetchDatumDetails(datumHashes, label) {
 
 async function observeTreasuryAddress(address, label) {
   const rows = await koiosPost('address_info', { _addresses: [address] }, `KOIOS_${label}_ADDRESS_INFO`)
+  if (rows.length === 0) {
+    // Koios address_info may omit an address with no indexed UTxO history.
+    // The empty result is a valid empty UTxO inventory, but it does not prove
+    // the address's script flag or an account-level balance.
+    return {
+      address,
+      addressInfoReturned: false,
+      scriptAddress: null,
+      stakeAddress: null,
+      balanceLovelace: null,
+      utxoCount: 0,
+      datumHashCount: 0,
+      inlineDatumCount: 0,
+      noDatumCount: 0,
+      utxos: [],
+    }
+  }
   if (rows.length !== 1 || rows[0]?.address !== address) {
     throw new Error(`KOIOS_${label}_ADDRESS_INFO_ADDRESS_MISMATCH`)
   }
@@ -134,6 +151,7 @@ async function observeTreasuryAddress(address, label) {
 
   return {
     address,
+    addressInfoReturned: true,
     scriptAddress: info.script_address,
     stakeAddress: info.stake_address == null ? null : String(info.stake_address),
     balanceLovelace: String(info.balance ?? '0'),
@@ -287,7 +305,7 @@ const observation = {
   treasuryScriptHash,
   treasuryArtifactPath: ARTIFACT_PATH,
   treasuryArtifactSha256: createHash('sha256').update(artifactText).digest('hex'),
-  source: { provider: 'Koios', endpoints: ['POST /address_info', 'POST /datum_info'], responseAddressMatched: currentInventory.address === treasuryAddress, scriptAddressConfirmed: currentInventory.scriptAddress, noUtxosReturned: currentInventory.utxoCount === 0, returnedUtxoRows: currentInventory.utxoCount, datumHashCount: currentInventory.datumHashCount, inlineDatumCount: currentInventory.inlineDatumCount, noDatumCount: currentInventory.noDatumCount },
+  source: { provider: 'Koios', endpoints: ['POST /address_info', 'POST /datum_info'], addressInfoReturned: currentInventory.addressInfoReturned, responseAddressMatched: currentInventory.addressInfoReturned ? currentInventory.address === treasuryAddress : null, scriptAddressConfirmed: currentInventory.scriptAddress === true, noUtxosReturned: currentInventory.utxoCount === 0, returnedUtxoRows: currentInventory.utxoCount, datumHashCount: currentInventory.datumHashCount, inlineDatumCount: currentInventory.inlineDatumCount, noDatumCount: currentInventory.noDatumCount },
   assetIdentity: {
     tADA: 'native lovelace (testnet ADA; 1000000 lovelace per ADA)',
     tUSDM: { policyId: TUSDM_POLICY_ID, assetNameHex: TUSDM_ASSET_NAME_HEX, unit: TUSDM_UNIT },
