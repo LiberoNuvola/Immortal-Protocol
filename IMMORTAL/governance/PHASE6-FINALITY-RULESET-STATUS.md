@@ -24,3 +24,21 @@
 
 ## Claim boundary
 The package is a conformance candidate and test artifact. It is not a deployment certificate and does not prove the repository implementation is formally verified.
+
+## 2026-11-04 — canonical replay integration and test evidence
+
+The prior remaining-gate list is a historical snapshot. Current `GovernanceCanonicalReplay.hs` now wires the four distinct lifecycle acts into the canonical-event application path:
+
+1. `DECISION_FINALIZED` validates the `DecisionRecord`, voting result and challenge/finality prerequisites, then records `finalizationAt` and advances the compatible projection to `Accepted`.
+2. `ADOPTION_RECORDED` requires that finalized `Accepted` projection and advances to `Adopted`.
+3. `CONFORMANCE_RECORDED` requires `Adopted` and a valid conformance witness with no failed-test record.
+4. `CANONICALIZED` requires the applicable canonicalization gates and, for classes that require it, the immediately preceding conformance event. Replay binds its DecisionRecord reference to the earlier finalized witness.
+
+Important distinction: `GovernanceFinality.finalize` is an auxiliary helper and returns an `Accepted` proposal with `finalizationAt`; it does not itself set `Canonical`. The authoritative canonicalization projection is reached through the separate `ECanonicalized` event handler.
+
+The current replay tests exercise the complete four-event sequence through `replayCanonical` and negative twins for premature finalization, upheld challenges, adoption without prior finalization, failed conformance, missing conformance, unresolved mandatory gates, reference mismatch, and timestamp regression. Exact source SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53` passed:
+- standalone Governance [41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731);
+- Haskell Semantic Conformance [41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733);
+- Kernel Invalid-Class Audit [41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774).
+
+Remaining boundaries: this does not create separate canonical event identities for every event in the 20-item GOV-18 contract; challenge evidence is currently represented through the finalization witness/helper path rather than distinct `ChallengeOpened`/`ChallengeResolved` event constructors. External evidence authenticity, production actor credentials and deployment certification remain separate.

@@ -104,3 +104,21 @@ Existing SHA-256 commitment semantics and serialized commitment bytes are unchan
 ## 2026-09-26 — GOV-28 ruleset binding hardening
 
 The canonical event boundary now binds `ruleset_version` in three places: registry registration, timestamp-effective activation, and embedded Decision/Conformance witness records. A future-effective ruleset cannot be used before its registry effective timestamp, and a witness cannot silently carry a different ruleset version from the canonical event.
+
+## 2026-11-04 — executable replay evidence update and scope qualification
+
+The previous "EXACT-HEAD EXECUTABLE EVIDENCE PENDING" status is superseded for the implemented canonical lifecycle replay slice by the following completed runs on source SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53`:
+
+- Standalone Governance [41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731): **SUCCESS**; all five standalone suites passed, including `governance-canonical-event-tests`.
+- Haskell Semantic Conformance [41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733): **SUCCESS**; all steps passed, including Governance and canonical replay conformance.
+- Kernel Invalid-Class Fail-Closed [41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774): **SUCCESS**; all eight registered suites passed, including `governance-canonical-replay-tests`. Evidence artifact [13353226524](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774/artifacts/13353226524), SHA-256 `5cd35d7d93ba18ffacd6f45d2f293811ac9aa728eb15d9bbb130113276085a52`.
+
+The replay fixture correction supplies the complete predecessor history to `replayCanonical`; it does not alter predecessor validation or accept partial replay. The Plutus canonical replay tests exercise `DECISION_FINALIZED -> ADOPTION_RECORDED -> CONFORMANCE_RECORDED -> CANONICALIZED`, including the finalized DecisionRecord reference and fail-closed negative cases.
+
+### Scope qualification
+
+This evidence establishes the implemented four-act lifecycle replay slice and the exact source revision tested above. It does not prove the full 20-event GOV-18 vocabulary is represented by distinct event constructors: current `GovernanceEventSchema.EventType` contains ten constructors; several normative event identities still map to generic `EStatusChanged` or helper/witness paths. The compatibility matrix records those remaining identities. Keep the broader grouped GOV-28/GOV-18 vocabulary classification **OPEN** until those remaining representation/consumer requirements are dispositioned.
+
+The source branch subsequently advanced through documentation/coordination-only commits. The compare from the tested source SHA to branch HEAD `449f1d054514967cf7913bf136e5680bc219273e` showed only `AGENTS.md`, this checkpoint, and Materios/Treasury documentation changes; no Governance/Plutus/Adapter/workflow source changed. This reconciliation commit also changes only Governance documentation/README and the checkpoint, and is intentionally under `IMMORTAL/**` so the Haskell and Kernel workflows re-run on the resulting exact branch HEAD.
+
+This evidence remains separate from production evidence-object authenticity, external actor credential verification and deployment certification.

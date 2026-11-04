@@ -32,3 +32,26 @@ It also does not yet close:
 - independent second implementation.
 
 Therefore this remains an implementation/conformance candidate, not a conformance certificate.
+
+## 2026-11-04 — replay integration correction
+
+The earlier statement that replay is defined over ordered `(CanonicalEvent, GovernanceEvent)` pairs is a historical phase snapshot and is no longer the current replay API.
+
+Current source exposes:
+
+```haskell
+replayCanonical
+  :: RulesetRegistry
+  -> GovernanceState
+  -> [CanonicalEvent]
+  -> Either String GovernanceState
+```
+
+Payloads that have a direct legacy transition are mapped internally by `canonicalPayloadToGovernanceEvent`. The four distinct lifecycle payloads (`DecisionFinalized`, `AdoptionRecorded`, `ConformanceRecorded`, `Canonicalized`) use dedicated handlers; they are not represented as paired caller-supplied semantic events. The replay maintains canonical history for predecessor, duplicate-ID, timestamp and finalized-decision-reference checks.
+
+Evidence on source SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53`:
+- standalone five-suite package: PASS, [run 41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731);
+- Plutus Haskell semantic conformance, including canonical replay: PASS, [run 41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733);
+- Kernel fail-closed regression suite: PASS, [run 41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774).
+
+This supersedes the old paired-event replay description for the implemented event subset. It does not assert that all 20 event identities in the GOV-18 implementation contract have dedicated constructors; see the 2026-11-04 scope note in `IMMORTAL/governance/README.md`.

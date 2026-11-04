@@ -43,3 +43,17 @@ Instead, classify them explicitly:
 4. Canonical replay and authoritative application of the same semantic event sequence must yield identical governance state.
 
 No new economic or governance parameter is introduced by this finding.
+
+## 2026-11-04 — updated distinction after canonical handler implementation
+
+The 2026-09-23 observation above is historical. The previous `finalize -> Canonical` behavior is no longer the current helper behavior: `GovernanceFinality.finalize` now returns an `Accepted` proposal with `finalizationAt`. It does not itself set `Canonical`.
+
+The current canonical path separates:
+- `DECISION_FINALIZED`: finalization witness and challenge/finality prerequisites; projection to `Accepted`;
+- `ADOPTION_RECORDED`: requires finalization; projection to `Adopted`;
+- `CONFORMANCE_RECORDED`: requires `Adopted` and a valid non-failing witness;
+- `CANONICALIZED`: requires applicable gates, any required conformance predecessor and the matching finalized DecisionRecord reference; projection to `Canonical`.
+
+The complete four-event sequence is now exercised through `replayCanonical`, with negative cases. Exact executable evidence on SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53` is green in standalone Governance [41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731), Haskell Semantic Conformance [41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733), and Kernel Invalid-Class Fail-Closed [41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774).
+
+The remaining gap is not the absence of those four handlers. It is the wider GOV-18 event vocabulary: the normative contract lists 20 event identities and the current `EventType` has ten constructors. Several lifecycle and emergency operations still lack dedicated event identity. Therefore this false-closure note is superseded for the four-event replay/finality slice, but the broader GOV-28 event-vocabulary scope is not declared closed.

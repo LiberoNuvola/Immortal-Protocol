@@ -50,3 +50,31 @@ The standalone target includes the governance conformance, canonical-event, cano
 This target proves only compilation and bounded Haskell conformance of the current Governance source/tests. It does not authenticate production actors or credentials, establish a live governance authority, prove production evidence authenticity, or certify deployment/on-chain governance.
 
 Workflow: .github/workflows/immortal-governance-standalone-conformance.yml.
+
+## 2026-11-04 — canonical lifecycle replay evidence refresh
+
+The standalone Governance package and Plutus-side replay suite now exercise the dedicated GOV-18 lifecycle handlers. The current implementation path is:
+
+`CanonicalEvent -> canonicalGovernanceEventValid -> canonicalLifecycleAdmission -> dedicated lifecycle handler / legacy-compatible payload handler`.
+
+The public replay entry point is `replayCanonical :: RulesetRegistry -> GovernanceState -> [CanonicalEvent] -> Either String GovernanceState`. Four distinct lifecycle payloads are handled directly in `GovernanceCanonicalReplay.hs`:
+
+- `EDecisionFinalized / PayloadDecisionFinalized`: validates the decision witness and finality prerequisites; records finalization and projects to `Accepted`, not `Canonical`.
+- `EAdoptionRecorded / PayloadAdoptionRecorded`: requires the prior finalized `Accepted` projection and a non-regressing timestamp; advances to `Adopted`.
+- `EConformanceRecorded / PayloadConformanceRecorded`: requires `Adopted` and a valid, non-failing conformance witness.
+- `ECanonicalized / PayloadCanonicalized`: requires valid canonicalization evidence and mandatory gates, checks the required conformance predecessor by proposal class, and binds the canonicalization record to the prior finalized decision record.
+
+The earlier replay fixture failure was a test-input defect: the test supplied a projected state while omitting the predecessor event from the replay sequence. The test now replays the complete canonical history and retains negative predecessor/lifecycle cases. No replay rule was weakened.
+
+### Executable evidence
+
+- Standalone Governance: [run 41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731), **SUCCESS** on `9c5b6276f7ca132c3fcaaf170439747236a39d53`; all five standalone suites passed: `governance-ruleset-tests`, `governance-conformance-tests`, `governance-phase6-tests`, `governance-canonical-replay-tests`, and `governance-canonical-event-tests`.
+- Haskell Semantic Conformance: [run 41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733), **SUCCESS** on the same SHA; all workflow steps passed, including Governance and Governance canonical replay conformance.
+- Kernel Invalid-Class Fail-Closed: [run 41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774), **SUCCESS** on the same SHA; all eight registered regression suites passed, including `governance-canonical-replay-tests`.
+- Kernel evidence artifact: [13353226524](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774/artifacts/13353226524), SHA-256 `5cd35d7d93ba18ffacd6f45d2f293811ac9aa728eb15d9bbb130113276085a52`.
+
+This is executable conformance evidence for the implemented lifecycle slice. It is not production evidence authenticity, a live authority certificate, a deployment certificate, or an on-chain governance claim.
+
+### Remaining scope — do not infer full GOV-18 vocabulary closure
+
+The normative Phase-2 implementation contract lists 20 canonical event identities. The current `EventType` algebra exposes ten constructors. The dedicated finalization/adoption/conformance/canonicalization handlers are now present, but several other normative identities still do not have dedicated event constructors (including impact review, evidence recorded, community review opened, voting opened/closed, challenge opened/resolved, and emergency activation/renewal/expiry). Rejected/returned/cancelled outcomes remain representable through the generic status event rather than distinct event identities. Track that broader event-vocabulary work separately; these green suites do not close it.

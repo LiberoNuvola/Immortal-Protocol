@@ -113,3 +113,27 @@ Do not solve the gap by making `StatusChanged` more permissive, or by making `Go
 Inspect every consumer of `DecisionRecorded`, `Accepted`, `Adopted`, `Canonical`, `finalizationAt`, and `GovernanceFinality.finalize`. Derive the smallest compatibility-preserving representation from those consumers and the closed GOV-01/GOV-18 semantics. Only then modify the canonical event algebra and authoritative replay together.
 
 No new economic or governance parameter is introduced by this handoff.
+
+## 2026-11-04 — current source and evidence delta (supersedes the earlier live-source tables)
+
+The earlier tables accurately describe the source snapshot inspected when this matrix was authored. The four dedicated lifecycle acts are now represented and exercised as follows:
+
+| GOV-18 act | Current canonical event/payload | Replay handler and tested effect |
+|---|---|---|
+| `DECISION_FINALIZED` | `EDecisionFinalized / PayloadDecisionFinalized` | Validates `DecisionRecord` and finality prerequisites; records `finalizationAt`, projects to `Accepted` |
+| `ADOPTION_RECORDED` | `EAdoptionRecorded / PayloadAdoptionRecorded` | Requires finalized `Accepted`; projects to `Adopted` |
+| `CONFORMANCE_RECORDED` | `EConformanceRecorded / PayloadConformanceRecorded` | Requires `Adopted` and valid non-failing `ConformanceRecord`; records the event in replay history |
+| `CANONICALIZED` | `ECanonicalized / PayloadCanonicalized` | Requires valid canonicalization witness/mandatory gates, applicable conformance predecessor and matching finalized DecisionRecord reference; projects to `Canonical` |
+
+The end-to-end replay sequence is tested through `replayCanonical`, not only by calling the handlers independently. Negative cases include a mismatched DecisionRecord reference, absent conformance predecessor, unresolved mandatory gate, failed conformance, premature finalization/adoption, invalid challenge set, and timestamp regression.
+
+Exact evidence on `9c5b6276f7ca132c3fcaaf170439747236a39d53`:
+- Standalone Governance [41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731), SUCCESS — five suites;
+- Haskell Semantic Conformance [41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733), SUCCESS — canonical replay step included;
+- Kernel Invalid-Class Audit [41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774), SUCCESS — eight regression suites; artifact [13353226524](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774/artifacts/13353226524), ZIP SHA-256 `5cd35d7d93ba18ffacd6f45d2f293811ac9aa728eb15d9bbb130113276085a52`.
+
+### Remaining event-identity gap
+
+Do not treat the four implemented acts as proof that the entire GOV-18 event vocabulary is implemented. The Phase-2 contract lists 20 event identities; the current `GovernanceEventSchema.EventType` has ten constructors. The following normative identities still lack dedicated event constructors: `IMPACT_REVIEW_COMPLETED`, `EVIDENCE_RECORDED`, `COMMUNITY_REVIEW_OPENED`, `VOTING_OPENED`, `VOTING_CLOSED`, `CHALLENGE_OPENED`, `CHALLENGE_RESOLVED`, `REJECTED`, `RETURNED_FOR_REVISION`, `CANCELLED`, `EMERGENCY_ACTIVATED`, `EMERGENCY_RENEWED`, and `EMERGENCY_EXPIRED`. Some outcomes are represented by `EStatusChanged`; challenge operations remain helper/witness paths. That representation boundary requires a separate specification/consumer review, not inferred closure from the four-act tests.
+
+No economic or governance parameters have been introduced by this update. The four-act replay conformance slice is GREEN; the broader event-vocabulary milestone remains OPEN.

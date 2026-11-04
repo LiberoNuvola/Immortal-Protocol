@@ -7189,3 +7189,34 @@ This is an interim evidence record. It does **not** close GOV-28 and does not ch
 - Kernel invalid-class audit: **PENDING**.
 - GOV-28: **OPEN — do not close** until both pending runs complete successfully and their final job/step results and SHAs are recorded.
 - No Governance lifecycle semantics, Governance API contract, PRE-RICH economics, V3, Reveal, treasury policy, or workflow definitions were changed in this evidence update. No wallet action, signature, transaction, deployment, or chain write was performed.
+
+## 10.89 Governance canonical replay — completed evidence and scope reconciliation (2026-11-04)
+
+This entry supersedes the pending statuses recorded in §10.88 for the three runs below. It does **not** claim that the entire 20-event GOV-18 vocabulary is complete.
+
+### Completed exact-source evidence
+
+All three previously active workflows completed **SUCCESS** on exact source SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53`:
+
+- [Governance Standalone Conformance #41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731): **SUCCESS**. The standalone package compiled the library and all test components, then passed all five suites: `governance-ruleset-tests`, `governance-conformance-tests`, `governance-phase6-tests`, `governance-canonical-replay-tests`, and `governance-canonical-event-tests`.
+- [Haskell Semantic Conformance #41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733): **SUCCESS**. Every workflow step passed, including Governance conformance and Governance canonical replay conformance.
+- [Kernel Invalid-Class Fail-Closed Audit #41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774): **SUCCESS**. The regression command passed all eight suites, including `governance-canonical-replay-tests`. Evidence artifact: [13353226524](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774/artifacts/13353226524) (ZIP SHA-256 `5cd35d7d93ba18ffacd6f45d2f293811ac9aa728eb15d9bbb130113276085a52`); contained `kernel-conformance.txt` SHA-256 `797d83612e86e010d5635412cf6ede23ab69f042f4f341b3adcffa6c6adde62f` and `projection-boundary-provenance.txt` SHA-256 `8497fcba8361010293acf06bc22de7ed0785fb6c1ee07d83274e8cf87f99ab42`.
+
+The standalone canonical replay test now starts from `emptyState` and supplies the complete event history `[e1c, e2c]`; negative tests retain the invalid-predecessor and direct-lifecycle-jump rejections. The Plutus Haskell/Kernel replay suite additionally passed the full dedicated lifecycle sequence:
+`DECISION_FINALIZED -> ADOPTION_RECORDED -> CONFORMANCE_RECORDED -> CANONICALIZED`,
+including reference binding and negative cases for missing conformance, unresolved gates, tampered witnesses, premature finalization/adoption and challenge conditions.
+
+### Branch/PR and exact-SHA reconciliation
+
+- Before this evidence refresh, branch and PR #19 both pointed to `449f1d054514967cf7913bf136e5680bc219273e`.
+- The compare from `9c5b627` to `449f1d0` showed four commits and only four changed paths: `AGENTS.md`, this checkpoint, the Materios chain-identity/RPC research record, and the PRE-RICH Treasury category-ledger spec. No Governance, Plutus, Adapter or workflow source path changed.
+- Companion workflows on `449f1d0` all completed **SUCCESS**: Cardano Adapter Sale #41889082828, IMMORTAL Portability #41889082787, Algorithmic Governability #41889082867, Protocol Declaration #41889083270, Documentation Link Check #41889083135, and Flux Point DoD Pilot #41889083046.
+- This evidence-reconciliation commit also updates `IMMORTAL/governance/README.md` and governance status notes only. That path is intentionally included under `IMMORTAL/**` by both Haskell Semantic Conformance and Kernel Invalid-Class workflows, so both are expected to run again on the resulting branch HEAD. Their run IDs and outcomes are not inferred before completion; the commit's GitHub check-runs bind the exact current-head validation.
+
+### Source review — what is fixed and what remains open
+
+The old coordination findings that claimed the four lifecycle handlers were absent are superseded. Current `GovernanceCanonicalReplay.hs` has dedicated handlers for the four lifecycle payloads; `replayCanonical` consumes `GovernanceState + [CanonicalEvent]`, preserves ordered history, and binds canonicalization to the finalized DecisionRecord reference. The helper `GovernanceFinality.finalize` now produces `Accepted` plus `finalizationAt`, not `Canonical`; canonicalization is a separate `ECanonicalized` event.
+
+However, the Phase-2 normative contract lists 20 canonical event identities while the current `GovernanceEventSchema.EventType` has ten constructors. The 13 normative identities still lacking distinct event constructors are `IMPACT_REVIEW_COMPLETED`, `EVIDENCE_RECORDED`, `COMMUNITY_REVIEW_OPENED`, `VOTING_OPENED`, `VOTING_CLOSED`, `CHALLENGE_OPENED`, `CHALLENGE_RESOLVED`, `REJECTED`, `RETURNED_FOR_REVISION`, `CANCELLED`, `EMERGENCY_ACTIVATED`, `EMERGENCY_RENEWED`, and `EMERGENCY_EXPIRED`. Some are represented by generic `EStatusChanged`; challenge lifecycle remains in helper/witness paths. This distinction requires separate source/consumer and specification reconciliation.
+
+**Disposition:** the replay-fixture defect and the dedicated four-act canonical lifecycle replay slice are **GREEN** on `9c5b627`; the full grouped GOV-28/GOV-18 event-vocabulary scope remains **OPEN**. No governance parameters, authorization semantics, economic rules, V3, Reveal, transaction or chain state were changed.
