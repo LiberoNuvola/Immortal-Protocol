@@ -90,3 +90,14 @@ The documentation reconciliation commit `ff5cf47ae0c83c8305e6a0e0ddb3626d55232e0
 Companion runs on the same SHA also passed: Adapter Sale [41893028151](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028151), Portability [41893028146](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028146), Algorithmic Governability [41893028150](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028150), Protocol Declaration [41893028233](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028233), Documentation Link Check [41893028154](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028154), and Flux Point DoD [41893028139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028139).
 
 The evidence closes the standalone fixture issue and revalidates the four dedicated lifecycle handlers on the exact branch HEAD. It does not close the broader 20-event GOV-18 identity gap described above.
+
+## 2026-11-04 — legacy vocabulary source clarification
+
+The 20 GOV-18 event names are **not absent from the repository**. `IMMORTAL/governance/CanonicalEvent.hs` contains all 20 constructors in its older `EventType` algebra and an explicit sequence validator. Its module header, however, labels it **LEGACY / PARALLEL GOVERNANCE MODEL**, states that GOV-22 replay is defined by `GovernanceEventSchema.hs` plus `GovernanceCanonicalReplay.hs`, and forbids treating the old module as a second authoritative stream.
+
+The precise gap is therefore a **legacy-to-GOV-22 schema migration**, not event-name discovery or a new normative design:
+- legacy `CanonicalEvent.EventType`: 20 event identities;
+- authoritative `GovernanceEventSchema.EventType`: ten constructors, including the four dedicated finalization/adoption/conformance/canonicalization events plus the earlier generic/operational types;
+- authoritative replay: typed payloads and dedicated handlers for the four late lifecycle acts; several of the other GOV-18 identities remain folded into `EStatusChanged`, envelope/evidence metadata, or helper-only challenge/emergency structures.
+
+Do not revive `CanonicalEvent.CanonicalEvent`, its parallel `replayCanonical`, or its simplified `authorizedTransition` function as a second semantic source. The next implementation pass must reconcile the old 20-name vocabulary against the normative Phase-2 contract, current actor classes, typed payloads, authorization/evidence/ruleset gates and all live consumers, then extend the existing GOV-22 schema/replay in place. Do not port the legacy module wholesale and do not guess payload contents or authority rules.

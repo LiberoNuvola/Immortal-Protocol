@@ -147,3 +147,18 @@ The four-act replay status above was revalidated on the branch/PR exact HEAD `ff
 - Kernel Invalid-Class Fail-Closed [41893028203](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203): SUCCESS (canonical replay regression included), artifact [13356812140](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41893028203/artifacts/13356812140), SHA-256 `c1cbc16b5ad3709548e1377086c3bb57bc306920ec5162f59bdd173b9b2b5bb1`.
 
 This supersedes the need to rely on source-equivalence from the earlier `9c5b627` test SHA for the current branch tip. It does not change the remaining event-identity gap listed above.
+
+## 2026-11-04 — legacy vocabulary source clarification
+
+The 20 normative GOV-18 event names are already present in `IMMORTAL/governance/CanonicalEvent.hs`, whose `EventType` has the complete 20-constructor list and a simple ordered-transition validator. That module explicitly marks itself **LEGACY / PARALLEL GOVERNANCE MODEL** and says it is not the authoritative semantic source for GOV-22 replay.
+
+Consequently, “13 missing identities” means **13 normative identities do not yet have dedicated constructors/payloads in the authoritative `GovernanceEventSchema.EventType` algebra**; it does not mean the names/design are absent from the repository. The source-of-truth migration target remains `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs`. Preserve one public replay API and one semantic stream.
+
+The legacy module may be used as a migration inventory/reference for:
+- identity spelling and its proposed ordering constraints;
+- the prior lifecycle sequence, including challenges and emergency operations;
+- identification of cases currently collapsed into `EStatusChanged`.
+
+It must **not** be imported as a second transition system or copied wholesale: its envelope, actor vocabulary, opaque payload commitment and simplified predecessor validator are not equivalent to the current typed GOV-22 contract. Each event needs a typed payload or an explicit normative reason to remain envelope-only, plus compatibility review against the closed actor/evidence/ruleset semantics and every live consumer.
+
+This refines the earlier gap label: **legacy vocabulary exists; authoritative-schema migration and conformance remain OPEN**. No lifecycle or authorization semantics are inferred by this clarification.

@@ -7258,3 +7258,23 @@ Companion workflows also completed **SUCCESS** on the same SHA:
 - Full GOV-18 event-identity vocabulary: **OPEN**. The normative Phase-2 contract lists 20 event identities; the current `EventType` enum has ten constructors. The 13 identities listed in §10.89 still need dedicated representation or an explicit specification/consumer disposition. Do not infer full GOV-28/GOV-18 closure from this green slice.
 
 No normative governance parameters, authorization semantics, economic rules, V3/Reveal semantics, wallet operations, transaction submission, or chain state were changed by this revalidation.
+
+## 10.91 GOV-18 legacy vocabulary vs authoritative schema migration (2026-11-04)
+
+A further source inspection refines the event-vocabulary gap recorded in §§10.89–10.90.
+
+### Finding
+
+The repository **already contains all 20 normative GOV-18 event names** in `IMMORTAL/governance/CanonicalEvent.hs`. Its legacy `EventType` includes ProposalCreated, ProposalClassified, ImpactReviewCompleted, EvidenceRecorded, CommunityReviewOpened, VotingOpened, VoteCast, VotingClosed, ChallengeOpened, ChallengeResolved, DecisionFinalized, AdoptionRecorded, ConformanceRecorded, Canonicalized, Rejected, ReturnedForRevision, Cancelled, EmergencyActivated, EmergencyRenewed, and EmergencyExpired.
+
+However, the module header expressly classifies it as **LEGACY / PARALLEL GOVERNANCE MODEL**, states that authoritative GOV-22 replay is defined by `GovernanceEventSchema.hs` and `GovernanceCanonicalReplay.hs`, and says the old module must not become a second canonical event stream.
+
+The authoritative GOV-22 `GovernanceEventSchema.EventType` currently has ten constructors. Its typed event/payload model gives dedicated identity/handlers for `DECISION_FINALIZED`, `ADOPTION_RECORDED`, `CONFORMANCE_RECORDED`, and `CANONICALIZED`, while several of the other normative acts remain generic `EStatusChanged`, envelope/evidence metadata, or helper-only challenge/emergency structures.
+
+### Correct disposition
+
+The remaining gap is **migration of the legacy 20-event vocabulary into the existing authoritative GOV-22 schema/replay**, not rediscovery or invention of the event names. The legacy module is a useful inventory for identity and historical ordering, but it must not be imported as a second transition system or copied wholesale: its event envelope, actor vocabulary, opaque payload commitment and simplified predecessor validator are not equivalent to the current typed GOV-22 contract.
+
+Next work must map each normative identity to the authoritative event type, typed payload, actor authorization, evidence requirement, ruleset/commitment binding, predecessor admissibility, state projection and live consumer. Any item that is intentionally represented by a generic event must carry an explicit closed-spec justification. Do not invent payload fields, actors, authority or transitions. Preserve a single replay API and one semantic stream.
+
+This source clarification does not change the GREEN status of the four-act replay slice on exact HEAD `ff5cf47`; it refines the remaining full GOV-28/GOV-18 task from “missing event names” to **authoritative schema migration + conformance**, which remains OPEN. No source-code semantics or normative governance parameter changed.
