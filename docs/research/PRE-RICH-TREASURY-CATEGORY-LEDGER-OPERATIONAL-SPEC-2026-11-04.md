@@ -260,3 +260,26 @@ The following rules must remain explicit before implementation:
 
 **Status:** Treasury script identity and observed-datum consistency are implemented; the canonical Treasury accounting-state carrier and category postings are NOT IMPLEMENTED. No balance, category allocation, marker asset, new validator, new threshold or R7 delta has been invented in this section.
 
+
+### 11.7 Read-only Preprod Treasury inventory evidence — 2026-11-04
+
+A read-only Koios inventory was executed by workflow [Observe Preprod Treasury Inventory #41872051973](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41872051973), on commit `1a397329ddfd0291898f90942926f57a615bc44f`. The run completed SUCCESS and uploaded artifact `preprod-treasury-inventory-observation` (artifact ID `13344053818`; ZIP digest `sha256:cba587240f790d9b3cdf51000af0d6792757be7a7376f69ff16e8e15957c8b40`). Observation timestamp: `2026-11-04T16:54:48.046Z` UTC.
+
+The inventory covered the exact validator-derived current Treasury address and one explicitly selected historical Treasury artifact candidate:
+
+| Scope | Address | Payment script hash | Address UTxOs | Same-script-hash UTxOs |
+|---|---|---|---:|---:|
+| Current artifact `plutus/out/treasury.plutus.json` | `addr_test1wpaz5k9ejt3f6y82ufu6araf8w6ymp20lqe0pq3mpxcewzq4mhrsw` | `7a2a58b992e29d10eae279ae8fa93bb44d854ff832f0823b09b19708` | 0 | 0 |
+| Historical candidate artifact at commit `2d3277ecf89a1b2e7489c85795470b0777446691` | `addr_test1wp3534ewfhn88gduvs723k0x8eakdduf5rpsdhr823enzlqumm5u4` | `6348d72e4de673a1bc643ca8d9e63e7b66b789a0c306dc675473317c` | 0 | 0 |
+
+For both script hashes, the Koios `script_utxos` query returned no UTxOs. The exact address inventory returned no `address_info` row, so Koios did **not** separately attest the address-level `script_address` flag or an address balance; the result is correctly represented as an empty returned UTxO set rather than as an independently certified zero account balance. There were therefore no Treasury datums (inline or hash-only) to decode in these two queried scopes.
+
+Global asset discovery was also recorded, but it is not Treasury attribution:
+- The exact tUSDM unit (policy `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`, name `0014df10745553444d`) had 291 holder addresses; 15 were script addresses. Neither the current nor historical Treasury payment credential appeared in the script-hash inventory, and none of the 291 holder rows matched the exact current Treasury address.
+- The canonical PRE asset policy/name query returned 0 holders; the tUSDM/PRE holder intersection was 0.
+- tUSDM policy discovery returned two asset names. Exact identity matching of the target tUSDM unit is not issuer, redemption, or USDM-value certification.
+
+**Interpretation:** this Preprod snapshot finds no UTxOs at either queried Treasury address and no UTxOs controlled by either queried Treasury payment script hash. It does not prove that every historical Treasury artifact/address ever deployed is empty, that no off-chain ledger exists, or that any other script address discovered by token-holder search belongs to PRE-RICH. No candidate script-address balance is attributed to Treasury. The inventory is an observational baseline for migration design, not a ledger-state initialization or deployment approval.
+
+Artifact JSON SHA-256: `e2e6b3343c65c7713325e1ae0b4ca89dcc9a66b128031f738cba94a0da47631e` (1,530,909 bytes).
+
