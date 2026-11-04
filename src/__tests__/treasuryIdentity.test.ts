@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { Constr, Data, Emulator, Lucid, type UTxO } from 'lucid-cardano'
+import { describe, expect, it } from 'vitest'
+import type { UTxO } from 'lucid-cardano'
 import {
   resolveCanonicalTreasuryAddress,
   selectCanonicalTreasuryDatum,
@@ -7,10 +7,8 @@ import {
 
 const DERIVED = 'addr_test1wqderivedtreasury'
 const OTHER = 'addr_test1wqotherstakecredential'
-
-function datum(value = 1n) {
-  return new Constr(0, [value, '00'.repeat(28)])
-}
+const DATUM_A = 'd8799f01ff'
+const DATUM_B = 'd8799f02ff'
 
 function utxo(
   txHash: string,
@@ -26,12 +24,6 @@ function utxo(
     datum: rawDatum,
   } as unknown as UTxO
 }
-
-beforeAll(async () => {
-  // Data.to uses Lucid's WASM ledger-data runtime; initialize it as in the
-  // repository's read-only observer scripts before serializing Plutus data.
-  await Lucid.new(new Emulator([]), 'Preprod')
-})
 
 describe('PRE-RICH canonical Treasury identity', () => {
   it('uses the validator-derived address when no deployment pin is configured', () => {
@@ -58,13 +50,11 @@ describe('PRE-RICH canonical Treasury identity', () => {
 })
 
 describe('PRE-RICH canonical Treasury datum selection', () => {
-  it('accepts multiple Treasury UTxOs when every one carries the same datum', () => {
-    const expected = datum(1n)
-    const first = utxo('aa'.repeat(32), 0, Data.to(expected))
-    const second = utxo('bb'.repeat(32), 1, expected)
+  it('accepts multiple Treasury UTxOs when every one carries the same raw CBOR datum', () => {
+    const first = utxo('aa'.repeat(32), 0, DATUM_A)
+    const second = utxo('bb'.repeat(32), 1, '0x' + DATUM_A.toUpperCase())
 
-    const result = selectCanonicalTreasuryDatum([first, second], DERIVED)
-    expect(Data.to(result)).toBe(Data.to(expected))
+    expect(selectCanonicalTreasuryDatum([first, second], DERIVED)).toBe(DATUM_A)
   })
 
   it('rejects an empty Treasury custody set', () => {
@@ -73,7 +63,7 @@ describe('PRE-RICH canonical Treasury datum selection', () => {
   })
 
   it('rejects any Treasury UTxO without a datum instead of silently omitting it', () => {
-    const withDatum = utxo('aa'.repeat(32), 0, Data.to(datum()))
+    const withDatum = utxo('aa'.repeat(32), 0, DATUM_A)
     const withoutDatum = utxo('bb'.repeat(32), 1, undefined)
 
     expect(() => selectCanonicalTreasuryDatum([withDatum, withoutDatum], DERIVED))
@@ -81,22 +71,22 @@ describe('PRE-RICH canonical Treasury datum selection', () => {
   })
 
   it('rejects conflicting datums instead of selecting the first UTxO', () => {
-    const first = utxo('aa'.repeat(32), 0, datum(1n))
-    const second = utxo('bb'.repeat(32), 1, datum(2n))
+    const first = utxo('aa'.repeat(32), 0, DATUM_A)
+    const second = utxo('bb'.repeat(32), 1, DATUM_B)
 
     expect(() => selectCanonicalTreasuryDatum([first, second], DERIVED))
       .toThrow(/TREASURY_DATUM_CONFLICT/)
   })
 
   it('rejects UTxOs returned for a different address', () => {
-    const unexpected = utxo('aa'.repeat(32), 0, datum(), OTHER)
+    const unexpected = utxo('aa'.repeat(32), 0, DATUM_A, OTHER)
     expect(() => selectCanonicalTreasuryDatum([unexpected], DERIVED))
       .toThrow(/TREASURY_UTXO_ADDRESS_MISMATCH/)
   })
 
   it('rejects duplicated UTxO references', () => {
-    const first = utxo('aa'.repeat(32), 0, datum())
-    const duplicate = utxo('aa'.repeat(32), 0, datum())
+    const first = utxo('aa'.repeat(32), 0, DATUM_A)
+    const duplicate = utxo('aa'.repeat(32), 0, DATUM_A)
 
     expect(() => selectCanonicalTreasuryDatum([first, duplicate], DERIVED))
       .toThrow(/TREASURY_UTXO_REFERENCE_DUPLICATE/)
@@ -106,5 +96,15 @@ describe('PRE-RICH canonical Treasury datum selection', () => {
     const malformed = utxo('aa'.repeat(32), 0, 'not-cbor-hex')
     expect(() => selectCanonicalTreasuryDatum([malformed], DERIVED))
       .toThrow(/TREASURY_UTXO_DATUM_INVALID/)
+  })
+
+  it('compares object-form datums without invoking Lucid serialization', () => {
+    const first = utxo('aa'.repeat(32), 0, { index: 0, fields: [1n, '00'] })
+    const same = utxo('bb'.repeat(32), 1, { fields: [1n, '00'], index: 0 })
+    const different = utxo('cc'.repeat(32), 2, { index: 0, fields: [2n, '00'] })
+
+    expect(selectCanonicalTreasuryDatum([first, same], DERIVED)).toEqual({ index: 0, fields: [1n, '00'] })
+    expect(() => selectCanonicalTreasuryDatum([first, different], DERIVED))
+      .toThrow(/TREASURY_DATUM_CONFLICT/)
   })
 })

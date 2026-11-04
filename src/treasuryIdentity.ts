@@ -1,4 +1,4 @@
-import { Data, type UTxO } from 'lucid-cardano'
+import type { UTxO } from 'lucid-cardano'
 
 /**
  * Resolve the one PRE-RICH Treasury address for the current deployment.
@@ -26,29 +26,68 @@ export function resolveCanonicalTreasuryAddress(
   return derivedAddress
 }
 
-function decodeTreasuryDatum(raw: unknown): Data {
-  if (typeof raw === 'string') {
-    return Data.from(raw)
+/** Stable structural representation for non-CBOR Data objects used by a provider/test. */
+function stableDataShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (typeof value === 'bigint') return `bigint:${value.toString()}`
+  if (typeof value === 'string') return `string:${JSON.stringify(value)}`
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new Error('TREASURY_DATUM_NUMBER_INVALID')
+    return `number:${value}`
   }
+  if (typeof value === 'boolean') return value ? 'boolean:true' : 'boolean:false'
+  if (Array.isArray(value)) {
+    return `array:[${value.map(stableDataShape).join(',')}]`
+  }
+  if (value instanceof Uint8Array) {
+    return `bytes:${Array.from(value, byte => byte.toString(16).padStart(2, '0')).join('')}`
+  }
+  if (value instanceof Map) {
+    const entries = [...value.entries()]
+      .map(([key, item]) => [stableDataShape(key), stableDataShape(item)] as const)
+      .sort(([left], [right]) => left.localeCompare(right))
+    return `map:{${entries.map(([key, item]) => `${key}=>${item}`).join(',')}}`
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    const keys = Object.keys(record).sort()
+    return `object:{${keys.map(key => `${JSON.stringify(key)}:${stableDataShape(record[key])}`).join(',')}}`
+  }
+  throw new Error('TREASURY_DATUM_TYPE_INVALID')
+}
+
+function canonicalDatumEncoding(raw: unknown): string {
+  if (typeof raw === 'string') {
+    const normalized = raw.trim().replace(/^0x/i, '').toLowerCase()
+    if (normalized.length === 0 || normalized.length % 2 !== 0 || !/^[0-9a-f]+$/.test(normalized)) {
+      throw new Error('TREASURY_DATUM_CBOR_HEX_INVALID')
+    }
+    // A UTxO datum string is the exact provider-returned CBOR byte sequence.
+    // Compare these bytes directly; do not invoke Lucid/WASM serialization.
+    return `cbor:${normalized}`
+  }
+
   if (raw === null || typeof raw !== 'object') {
     throw new Error('TREASURY_DATUM_MISSING_OR_INVALID')
   }
-  return raw as Data
+
+  return `shape:${stableDataShape(raw)}`
 }
 
 /**
- * Return the canonical Treasury datum only when the entire observed custody
- * set at the exact Treasury address is unambiguous.
+ * Return the selected raw datum only when the entire observed custody set at
+ * the exact Treasury address is unambiguous. The caller decodes a CBOR string
+ * with Lucid Data.from; the selector itself stays pure and WASM-independent.
  *
  * Multiple UTxOs are allowed: the Treasury is one script-controlled custody
  * boundary, not necessarily one UTxO. Every UTxO must nevertheless carry the
- * same decodable datum. This function does not infer category balances or
- * promote the legacy percentage fields into current accounting policy.
+ * same canonical datum. This function does not infer category balances or
+ * promote legacy percentage fields into current accounting policy.
  */
 export function selectCanonicalTreasuryDatum(
   utxos: readonly UTxO[],
   treasuryAddress: string,
-): Data {
+): unknown {
   if (!treasuryAddress) {
     throw new Error('TREASURY_ADDRESS_REQUIRED')
   }
@@ -57,7 +96,7 @@ export function selectCanonicalTreasuryDatum(
   }
 
   const seenRefs = new Set<string>()
-  let canonicalDatum: Data | undefined
+  let canonicalDatum: unknown
   let canonicalEncoding: string | undefined
 
   for (const utxo of utxos) {
@@ -75,17 +114,15 @@ export function selectCanonicalTreasuryDatum(
       throw new Error('TREASURY_UTXO_DATUM_MISSING: custody set is not fully classifiable')
     }
 
-    let datum: Data
     let encoding: string
     try {
-      datum = decodeTreasuryDatum(utxo.datum)
-      encoding = Data.to(datum)
+      encoding = canonicalDatumEncoding(utxo.datum)
     } catch {
       throw new Error('TREASURY_UTXO_DATUM_INVALID')
     }
 
     if (canonicalEncoding === undefined) {
-      canonicalDatum = datum
+      canonicalDatum = utxo.datum
       canonicalEncoding = encoding
     } else if (encoding !== canonicalEncoding) {
       throw new Error('TREASURY_DATUM_CONFLICT: Treasury UTxOs do not share one canonical datum')

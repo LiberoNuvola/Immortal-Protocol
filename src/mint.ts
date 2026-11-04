@@ -577,7 +577,10 @@ async function getTreasuryDatum(
   treasuryAddress: string,
 ): Promise<Data> {
   const utxos: UTxO[] = await lucid.utxosAt(treasuryAddress)
-  return selectCanonicalTreasuryDatum(utxos, treasuryAddress)
+  const selectedDatum = selectCanonicalTreasuryDatum(utxos, treasuryAddress)
+  return typeof selectedDatum === 'string'
+    ? Data.from(selectedDatum)
+    : selectedDatum as Data
 }
 
 // ============================================================
