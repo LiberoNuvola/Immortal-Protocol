@@ -386,3 +386,55 @@ Sources:
 - [PRE-RICH — Control Center, Treasury category map and PA5 framing](https://app.notion.com/p/3d9c4454d6d581e680d5e5d3f3a9df79)
 - [Current PRE-RICH GAME-ECONOMY](https://github.com/LiberoNuvola/Immortal-Protocol/blob/905ab45b9a8b6359f9206382c4a4389e6b8f368b/PRE-RICH/docs/GAME-ECONOMY.md)
 
+### 11.14 Category bookkeeping versus physical distribution — target boundary clarification
+
+The single-Treasury decision implies that Prize, Reserve/protection, Maintenance and PRE-holder staking are **accounting positions within one Treasury custody perimeter**, not automatically separate wallets, scripts or physical pools. A posting from one category to another is therefore a **bookkeeping reclassification**, not a transfer of assets. It must conserve the aggregate Treasury custody amount for each exact asset unit and must not create a new EEV inflow or outflow.
+
+The distinction is:
+
+1. **Receipt recognition:** identify the exact TicketSale payment received by the canonical Treasury. This is a factual, transaction-bound event.
+2. **Category posting:** classify that receipt under an adopted PRE-RICH allocation rule. This changes the category ledger, not physical custody. The current sources still do not supply the full posting function; neither gross-price-to-Prize nor the legacy percentage split may be inferred.
+3. **Physical settlement:** move assets across a custody boundary, for example Treasury → B1 PrizePool, or pay an externally held PRE-staking/reward entitlement or mandatory service obligation. This is a real Value movement and requires an authorized transaction.
+
+**The distribution target is not a prerequisite for receipt recognition or an internal category posting.** Its economically useful role is to batch actual physical settlements/outflows so that the protocol does not create a separate transaction for every small allocation. Where category positions remain inside the same Treasury custody perimeter, there is no reason to create category-to-category transfers merely to make the accounting visible.
+
+This does not mean an on-chain ledger update is free. If category balances are persisted in an authoritative on-chain datum, changing that datum consumes a ledger transition and therefore a Cardano transaction. The design should avoid an additional transaction solely for bookkeeping by integrating the required state continuation into an already-required TicketSale transition, or by consolidating multiple receipts and postings in one authorized batch transition. An off-chain observer journal can record and reconstruct receipts immediately, but it is evidence/derived state only: it cannot classify spendable balances, authorize an outflow or replace an on-chain economic check.
+
+#### 11.14.1 Preferred integration candidate — receipt integrated into the Treasury state continuation
+
+The cleanest candidate, subject to concurrency and transaction-budget tests, is one canonical Treasury state UTxO whose continuing output receives the TicketSale payment and advances the accounting state in the **same TicketSale transaction**. The payment remains physically in the one Treasury custody pool; the datum records the receipt event or a non-spendable pending-receipt accumulator until the PRE-RICH classification rule is available. This pending receipt representation is an event/clearing record, not a new spendable economic category.
+
+This topology would not add a second transaction fee to each sale, but it is **not a drop-in change** to the current code:
+
+- src/mint.ts::getTreasuryDatum currently reads the Treasury-address UTxO set and requires one consistent legacy datum. It does not select or authenticate a unique category-ledger state UTxO.
+- The current sale builder emits a Treasury output containing the ticket payment and the legacy Treasury datum; it does not spend and continue a canonical accounting-state input.
+- MintPolicy.singleScriptOutputValue accepts exactly one output at the Treasury payment credential, and atomicTreasuryPaymentValid currently requires the USDM-equivalent value of that entire output to equal priceUsdm. A state continuation carrying previously accumulated assets would make that equality incorrect.
+- Before using this candidate, the Issue policy/validator boundary must authenticate the unique Treasury state input and its unique continuation, and verify the **net asset delta** (continuing Treasury output minus consumed Treasury state input) equals the exact TicketSale payment basket under the existing verified conversion/rounding rules. The transition must also reject stale state, duplicate state inputs, missing continuation, unauthorized asset additions and any value not represented by the state.
+- The singleton state introduces contention: concurrent TicketSales would compete to consume the same Treasury state UTxO. This is a liveness/concurrency constraint to benchmark, not a reason to silently create a second Treasury authority.
+
+If this candidate passes the transaction, validator, concurrency and replay tests, category bookkeeping can be updated as part of a sale already being submitted. No separate per-sale bookkeeping transaction is needed. The current code does not yet implement this topology.
+
+#### 11.14.2 Compatibility fallback — receipt UTxOs followed by one target-triggered batch
+
+If the singleton Treasury state causes unacceptable contention or transaction-size/script-cost pressure, preserve the present sale shape: one exact Treasury receipt output per TicketSale, with each receipt identified by its transaction hash/output reference and exact asset units. A read-only journal may index these receipts. When the adopted batch target or a safety-triggered settlement condition is met, one authorized transaction can consume a set of receipts, consolidate custody and post the corresponding category ledger state. The on-chain transition must reconstruct its totals from the actual consumed inputs; it cannot trust a relayer-provided total or a caller-supplied category label.
+
+This fallback creates no category-specific wallet or pool. It delays the **on-chain consolidation/posting transaction**, not the observation of the receipt. The journal remains non-authoritative until the batch transition is validated on-chain. The batch size must also respect Cardano input, transaction-size and execution-unit limits; the economic target alone cannot force an oversized transaction.
+
+#### 11.14.3 What the target may and may not gate
+
+The target should gate only batchable physical settlement where waiting is economically safe. It must not:
+
+- delay recording a TicketSale receipt;
+- turn an unclassified receipt into a spendable category balance;
+- create transfers among virtual Treasury categories that share the same custody pool;
+- delay a PrizePool funding action when required to preserve solvency or an already-promised obligation;
+- delay a crystallized winner Claim or another due mandatory payment;
+- override ProtectedCapital, unresolved exposure, locked Jackpot, category budget or the applicable Economic Gate.
+
+A target-triggered batch may combine several authorized settlements, but each output must still be debited from its correct category/sub-ledger and satisfy its own obligation/authorization. A target is an execution trigger, not an allocation formula or spending authority.
+
+#### 11.14.4 Historical threshold is not promoted
+
+The current relayer/relayer.js retains DEFAULT_THRESHOLD = 25_000_000n (25 ADA) and an environment override TREASURY_THRESHOLD. The same worker now returns after observation and explicitly fails closed because canonical EconomicAdmission is required. The old value belongs to the legacy percentage-distribution surface; the repository's FRONT-IMMORTAL-TREASURY-FEE.md classifies that surface as legacy/application policy and non-authoritative. Therefore 25 ADA is evidence of a historical operational threshold, **not proof that it is the currently adopted PRE-RICH batch target**. Do not reactivate it or combine it with the historical 75/10/10/5 split without an explicit decision record.
+
+**Disposition:** architecture clarification only. Internal category accounting is separated from physical distribution; the batch target is retained for batchable outflows, not required for virtual category bookkeeping. The exact current target value/formula, the receipt classification function, the preferred carrier topology and all corresponding validator changes remain unadopted until their evidence/decision gates are closed. No category percentage, initial balance, new category, on-chain marker, validator, R7 delta, wallet action or transaction is introduced by this clarification.
