@@ -1,6 +1,8 @@
 import './style.css'
 import wallet from './wallet'
 import { PRE_POLICY_ID, PRE_ASSET_NAME_HEX, TREASURY_ADDRESS, BLOCKFROST_PROJECT_ID } from './config'
+import { treasuryValidator } from './loadValidator'
+import { resolveCanonicalTreasuryAddress } from './treasuryIdentity'
 
 const unit = PRE_POLICY_ID + PRE_ASSET_NAME_HEX
 const $ = (id:string) => document.getElementById(id)
@@ -27,14 +29,22 @@ async function checkReadiness() {
     }
     mark('pre', true, 'OBSERVED')
     set('check-pre', pre > 0n ? `OBSERVED · ${pre.toString()} PRE` : 'OBSERVED · 0 PRE')
-    if (TREASURY_ADDRESS && lucid) {
-      const treasury = await lucid.utxosAt(TREASURY_ADDRESS)
-      let treasuryPre = 0n
-      for (const u of treasury) treasuryPre += BigInt(u.assets?.[unit] ?? 0n)
-      mark('treasury', true)
-      set('check-treasury', `OBSERVED · ${treasuryPre.toString()} PRE`)
+    if (lucid) {
+      try {
+        const treasuryAddress = resolveCanonicalTreasuryAddress(
+          lucid.utils.validatorToAddress(treasuryValidator),
+          TREASURY_ADDRESS,
+        )
+        const treasury = await lucid.utxosAt(treasuryAddress)
+        let treasuryPre = 0n
+        for (const u of treasury) treasuryPre += BigInt(u.assets?.[unit] ?? 0n)
+        mark('treasury', true)
+        set('check-treasury', `OBSERVED · ${treasuryPre.toString()} PRE`)
+      } catch (error) {
+        mark('treasury', false, error instanceof Error ? error.message : String(error))
+      }
     } else {
-      mark('treasury', false, 'CONFIGURATION OPEN')
+      mark('treasury', false, 'OBSERVATION UNAVAILABLE')
     }
     set('first-user-status', `Runtime observation completed · Issue admission producer remains OPEN · provider ${BLOCKFROST_PROJECT_ID ? 'configured' : 'not configured'} · ${new Date().toISOString()}`)
   } catch (error) {

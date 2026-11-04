@@ -1,6 +1,8 @@
 import './style.css'
 import wallet from './wallet'
 import { PRE_POLICY_ID, PRE_ASSET_NAME_HEX, TREASURY_ADDRESS, BLOCKFROST_PROJECT_ID } from './config'
+import { treasuryValidator } from './loadValidator'
+import { resolveCanonicalTreasuryAddress } from './treasuryIdentity'
 
 const unit = PRE_POLICY_ID + PRE_ASSET_NAME_HEX
 const $ = (id:string) => document.getElementById(id)
@@ -23,16 +25,20 @@ async function observe() {
     }
     set('wallet-pre', walletPre.toString())
 
-    if (TREASURY_ADDRESS && lucid) {
-      const treasuryUtxos = await lucid.utxosAt(TREASURY_ADDRESS)
+    if (lucid) {
+      const treasuryAddress = resolveCanonicalTreasuryAddress(
+        lucid.utils.validatorToAddress(treasuryValidator),
+        TREASURY_ADDRESS,
+      )
+      const treasuryUtxos = await lucid.utxosAt(treasuryAddress)
       let treasuryPre = 0n
       for (const u of treasuryUtxos) treasuryPre += BigInt(u.assets?.[unit] ?? 0n)
-      set('treasury-address', TREASURY_ADDRESS)
+      set('treasury-address', treasuryAddress)
       set('treasury-pre', treasuryPre.toString())
       set('treasury-state','OBSERVED')
     } else {
       set('treasury-state','CONFIGURATION OPEN')
-      set('treasury-address','Not configured in this deployment')
+      set('treasury-address','Treasury observation unavailable')
     }
 
     set('provider-state', BLOCKFROST_PROJECT_ID ? 'CONFIGURED' : 'NOT CONFIGURED')
