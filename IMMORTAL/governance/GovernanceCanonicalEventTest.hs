@@ -3,6 +3,7 @@ module Main where
 import Governance
 import GovernanceEventSchema
 import GovernanceCanonicalReplay
+import GovernanceAuthorization
 import RulesetRegistry hiding (rulesetVersion)
 import GovernanceCommitment
 
