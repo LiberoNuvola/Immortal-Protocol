@@ -1,0 +1,59 @@
+name: IMMORTAL Public Site Build
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "web/**"
+      - "dapp.html"
+      - "src/**"
+      - "PRE-RICH/**"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/immortal-public-site-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: immortal-public-site-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-site-build:
+    name: Build IMMORTAL portal and DApp
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout proposed revision
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build portal and DApp
+        run: npm run build
+
+      - name: Verify published entry points
+        run: |
+          set -euo pipefail
+          test -s dist/web/index.html
+          test -s dist/web/ecosystem.html
+          test -s dist/dapp.html
+
+      - name: Ensure the portal remains a catalogue, not a wallet client
+        run: |
+          set -euo pipefail
+          if grep -Eiq 'window\.cardano|\.enable\(\)|signTx|submitTx' dist/web/index.html dist/web/ecosystem.html; then
+            echo "Wallet-provider access or transaction actuation detected in public portal pages."
+            exit 1
+          fi
