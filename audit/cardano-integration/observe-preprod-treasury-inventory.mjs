@@ -59,6 +59,123 @@ async function fetchDatumDetails(datumHashes, label) {
   return details
 }
 
+async function observeTreasuryScriptHash(scriptHash, exactAddress, addressInventory, label) {
+  const pageSize = 100
+  const rows = []
+  const seenRefs = new Set()
+  let offset = 0
+
+  while (true) {
+    const query = new URLSearchParams({
+      _script_hash: scriptHash,
+      _extended: 'true',
+      limit: String(pageSize),
+      offset: String(offset),
+    })
+    const response = await fetch(`${KOIOS}/script_utxos?${query.toString()}`)
+    if (!response.ok) throw new Error(`KOIOS_${label}_SCRIPT_UTXOS_HTTP_${response.status}`)
+    const page = await response.json()
+    if (!Array.isArray(page)) throw new Error(`KOIOS_${label}_SCRIPT_UTXOS_INVALID_RESPONSE`)
+
+    for (const utxo of page) {
+      if (typeof utxo?.address !== 'string' || typeof utxo?.tx_hash !== 'string' || utxo?.tx_index == null) {
+        throw new Error(`KOIOS_${label}_SCRIPT_UTXO_ROW_INVALID`)
+      }
+      if (utxo.payment_cred != null && String(utxo.payment_cred).toLowerCase() !== scriptHash.toLowerCase()) {
+        throw new Error(`KOIOS_${label}_SCRIPT_UTXO_PAYMENT_CREDENTIAL_MISMATCH`)
+      }
+      const ref = String(utxo.tx_hash) + '#' + String(utxo.tx_index)
+      if (seenRefs.has(ref)) throw new Error(`KOIOS_${label}_SCRIPT_UTXO_DUPLICATE_REFERENCE`)
+      seenRefs.add(ref)
+      rows.push(utxo)
+    }
+
+    if (page.length < pageSize) break
+    offset += page.length
+  }
+
+  const exactAddressRefs = new Set(addressInventory.utxos.map((utxo) => utxo.ref))
+  const scriptHashExactAddressRefs = new Set(
+    rows.filter((utxo) => utxo.address === exactAddress).map((utxo) => String(utxo.tx_hash) + '#' + String(utxo.tx_index)),
+  )
+
+  for (const ref of exactAddressRefs) {
+    if (!scriptHashExactAddressRefs.has(ref)) {
+      throw new Error(`KOIOS_${label}_ADDRESS_UTXO_MISSING_FROM_SCRIPT_HASH_INVENTORY_${ref}`)
+    }
+  }
+  for (const ref of scriptHashExactAddressRefs) {
+    if (!exactAddressRefs.has(ref)) {
+      throw new Error(`KOIOS_${label}_SCRIPT_HASH_EXACT_ADDRESS_UTXO_MISSING_FROM_ADDRESS_INVENTORY_${ref}`)
+    }
+  }
+
+  const datumHashes = rows
+    .map((utxo) => utxo.datum_hash == null ? null : String(utxo.datum_hash).toLowerCase())
+    .filter((hash) => hash !== null)
+  for (const hash of datumHashes) {
+    if (!/^[0-9a-f]{64}$/.test(hash)) {
+      throw new Error(`KOIOS_${label}_SCRIPT_UTXO_DATUM_HASH_INVALID`)
+    }
+  }
+  const datumDetails = await fetchDatumDetails(datumHashes, `${label}_SCRIPT`)
+
+  const observed = rows.map((utxo) => {
+    if (utxo.value == null) throw new Error(`KOIOS_${label}_SCRIPT_UTXO_VALUE_MISSING`)
+    if (utxo.asset_list != null && !Array.isArray(utxo.asset_list)) {
+      throw new Error(`KOIOS_${label}_SCRIPT_UTXO_ASSET_LIST_INVALID`)
+    }
+    const assets = (utxo.asset_list ?? []).map((asset) => {
+      if (typeof asset?.policy_id !== 'string' || asset.quantity == null) {
+        throw new Error(`KOIOS_${label}_SCRIPT_UTXO_ASSET_INVALID`)
+      }
+      return {
+        policyId: asset.policy_id,
+        assetNameHex: String(asset.asset_name ?? ''),
+        unit: asset.policy_id + String(asset.asset_name ?? ''),
+        quantity: String(asset.quantity),
+      }
+    })
+    const datumHash = utxo.datum_hash == null ? null : String(utxo.datum_hash).toLowerCase()
+    const inlineDatum = utxo.inline_datum ?? null
+    const hashDatum = datumHash === null ? null : datumDetails.get(datumHash)
+    if (datumHash !== null && !hashDatum) throw new Error(`KOIOS_${label}_SCRIPT_HASH_ONLY_DATUM_UNRESOLVED`)
+
+    return {
+      ref: String(utxo.tx_hash) + '#' + String(utxo.tx_index),
+      address: utxo.address,
+      exactTreasuryAddress: utxo.address === exactAddress,
+      stakeAddress: utxo.stake_address == null ? null : String(utxo.stake_address),
+      paymentCredential: utxo.payment_cred == null ? null : String(utxo.payment_cred),
+      blockHeight: utxo.block_height == null ? null : Number(utxo.block_height),
+      blockTime: utxo.block_time == null ? null : Number(utxo.block_time),
+      lovelace: String(utxo.value),
+      assets,
+      datum: {
+        hash: datumHash,
+        inlinePresent: inlineDatum !== null,
+        inline: inlineDatum,
+        hashResolved: hashDatum !== null,
+        hashValue: hashDatum?.value ?? null,
+        hashBytes: hashDatum?.bytes ?? null,
+      },
+      referenceScriptPresent: utxo.reference_script != null,
+    }
+  })
+
+  const distinctAddresses = [...new Set(observed.map((utxo) => utxo.address))]
+  return {
+    scriptHash,
+    queriedExactAddress: exactAddress,
+    totalUtxoCount: observed.length,
+    exactTreasuryAddressUtxoCount: observed.filter((utxo) => utxo.exactTreasuryAddress).length,
+    otherAddressCandidateUtxoCount: observed.filter((utxo) => !utxo.exactTreasuryAddress).length,
+    distinctAddressCount: distinctAddresses.length,
+    differentAddresses: distinctAddresses.filter((address) => address !== exactAddress),
+    utxos: observed,
+  }
+}
+
 async function observeTreasuryAddress(address, label) {
   const rows = await koiosPost('address_info', { _addresses: [address] }, `KOIOS_${label}_ADDRESS_INFO`)
   if (rows.length === 0) {
@@ -198,6 +315,19 @@ const historicalUtxos = historicalInventory.utxos.map((utxo) => {
 const historicalTotalLovelace = historicalUtxos.reduce((sum, u) => sum + BigInt(u.lovelace), 0n)
 const historicalTotalTusdm = historicalUtxos.reduce((sum, u) => sum + BigInt(u.tUSDMAtomic), 0n)
 
+const currentScriptHashInventory = await observeTreasuryScriptHash(
+  treasuryScriptHash,
+  treasuryAddress,
+  currentInventory,
+  'CURRENT_TREASURY',
+)
+const historicalScriptHashInventory = await observeTreasuryScriptHash(
+  historicalTreasuryScriptHash,
+  historicalTreasuryAddress,
+  historicalInventory,
+  'HISTORICAL_TREASURY',
+)
+
 const holderResponse = await fetch(
   `${KOIOS}/asset_addresses?_asset_policy=${TUSDM_POLICY_ID}&_asset_name=${TUSDM_ASSET_NAME_HEX}`,
 )
@@ -319,7 +449,9 @@ const observation = {
   },
   utxos,
   treasuryAddressInventory: currentInventory,
+  treasuryScriptHashInventory: currentScriptHashInventory,
   historicalTreasuryArtifactCandidate: {
+    scriptHashInventory: historicalScriptHashInventory,
     sourceCommit: HISTORICAL_TREASURY_COMMIT,
     sourcePath: 'src/plutusScripts/treasury.plutus.json',
     artifactSha256: createHash('sha256').update(historicalArtifactText).digest('hex'),
