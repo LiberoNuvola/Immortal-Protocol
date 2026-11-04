@@ -249,3 +249,123 @@ This document does not claim that:
 - a green source-level conformance guard proves a production signer, live service, deployed validator or on-chain transaction.
 
 **Disposition:** GOV-30 records the unresolved design space for EXP-06 / EXP-12. A subsequent normative decision must select the applicable authority classes and lifecycle rules before any generic schema or runtime implementation is proposed.
+
+
+## 10. 2026-11-04 clarification — actor identity, credential and event binding
+
+**Status:** semantic clarification / non-normative / no identity model, credential format or implementation authorized. This section narrows the open questions already identified above; it does not create a new governance matrix, identity registry or wire schema.
+
+### 10.1 Identity terms that must not be conflated
+
+The inspected Governance implementation has several different concepts which must remain distinct:
+
+| Concept | Meaning | Current source boundary |
+|---|---|---|
+| **Governance representation entity** | The EntityId whose eligibility/weight is evaluated for a proposal snapshot; it is a protocol representation identifier, not proof of one unique human. | Vote.voter, proposal snapshot and delegation calculations in Governance.hs. |
+| **Actor identity** | The protocol-level actor to whom a permission or mandate is attributed for a particular action. It may identify a person, organization, process or governed entity according to the eventual policy. | Not authenticated by the current CanonicalEvent path. |
+| **Actor class** | A category used by the event-type authorization matrix (Proposer, Voter, Reviewer, System, etc.). | CanonicalEvent.actorClass; it is a permission classification, not an actor identity or credential. |
+| **Credential / verification key** | Cryptographic material or a credential whose proof can establish control/possession or an issuer-backed claim under a specified trust model. | The generic Governance event path does not currently bind such a proof to an actor. |
+| **Signer** | The key or signing service that produces a cryptographic signature. Its operator/custodian may differ from the actor whose decision is represented. | Role vocabulary in GOV-30 §3; no generic signer binding selected. |
+| **Submitter / transport** | The process or service that submits an event to a repository, API, chain or canonical log. It may relay another actor's authorized statement. | Not represented as a separately authenticated principal in the current Governance event schema. |
+| **Delegated actor** | An actor acting within an explicit authority delegated by another actor or mandate, with scope and lifecycle. | Delegation semantics exist in the governance model, but credential-to-delegation authentication and the accepted trust source remain open. |
+
+GOV-06's separation of economic ownership, governance representation and human identity remains controlling: a wallet, address or EntityId is not automatically a unique human. **Credential authentication is not an anti-Sybil guarantee.** A signature can establish that a key signed a message under its cryptographic assumptions; it does not prove one-person-one-credential, legal identity, token ownership, account control, or authority to perform the action.
+
+### 10.2 Separate claims required for a governance event
+
+A future conforming event path must establish these claims independently. This is a semantic decomposition for analysis and testing, not a proposed serialization:
+
+1. **Canonical event integrity:** exact canonical bytes, payload, predecessor, commitment and ruleset reference are internally consistent under GOV-25/26.
+2. **Credential proof validity:** a signature or other credential proof verifies over the exact event/decision context and intended cryptographic purpose. A valid signature proves only what that proof mechanism is specified to prove.
+3. **Credential-to-actor binding:** an independently accepted binding establishes that the credential was attributable to the claimed actor identity for the relevant purpose and time. A key identifier or certificate subject without an authenticated resolver/binding is insufficient.
+4. **Actor-to-permission binding:** the authenticated actor is allowed to perform this event type and exact operation within the applicable jurisdiction, object/scope and active governance rules. This reuses GOV-02 P0–P5 and GOV-27's event/ruleset structure; it does not duplicate them.
+5. **Representation or delegation binding:** where an event represents a governance EntityId (especially VoteCast), the authenticated acting actor must be shown to be that represented entity or an explicitly authorized delegate under the applicable proposal snapshot and delegation rules. A signature from actor B must not silently be recorded as a vote from entity A.
+6. **Submission attribution:** if a relayer, adapter, agent or service submits an event for another actor, the record must preserve the distinction between decision actor, credential signer and transport submitter. Submission access alone grants no governance permission.
+7. **Evidence appraisal:** each required evidence object must be resolvable and authenticated/appraised under its own accepted evidence contract. An EvidenceRef or its inclusion in a digest does not prove existence, authenticity, completeness or truth.
+8. **Canonical decision and finality:** accepted decision, challenge/finality state and canonical history must satisfy GOV-28 and applicable rules. A valid actor signature does not itself finalize a proposal or enact a decision.
+9. **Relying-context acceptance:** the relying authority must determine that the authenticated decision is effective for the target consumer, registry, network and operation. A governance event in one jurisdiction does not silently authorize another profile or economic transition.
+
+No single credential, signature, actor label, evidence digest or CI result is sufficient to collapse these claims into one authorization assertion.
+
+### 10.3 Special case — VoteCast and delegated representation
+
+The current Vote payload contains voter as an EntityId, choice and castAt. The state transition checks snapshot weight, voting-window validity and duplicate/delegator restrictions. The canonical event additionally carries actorClass; it does not bind voter to an authenticated signer/submitter credential.
+
+A later implementation must therefore answer, without assuming a human-identity model:
+
+- Is the credential directly controlled by the represented EntityId, or is the entity represented through a governed delegate?
+- If a delegate signs, what proof binds the delegate to the exact EntityId, proposal, voting window and delegated scope?
+- How do snapshot eligibility, credential validity and delegation validity align at the relevant event time?
+- How are revocation, key rotation and historical verification applied to a vote already included in a canonical decision?
+
+These are conformance questions against the selected GOV-06/GOV-14 representation and delegation rules. This note does not choose a voting credential, identity provider, wallet-signature model, delegation depth or new voting rule.
+
+The same principle applies to System, Reviewer, Delegate and other actor classes: a class name does not identify the concrete system/reviewer/delegate or authenticate the process that emitted the event.
+
+### 10.4 Delegation, issuer and key custody
+
+The relationship between actor and signer must be explicit when they are not the same:
+
+- **Issuer** attributes a statement to an identity.
+- **Key custodian / signer operator** protects or operates the signing material.
+- **Delegated actor** acts under a bounded mandate.
+- **Verifier / appraiser** checks the proof and relevant evidence.
+- **Policy authority** controls the criteria.
+- **Relying authority** decides whether the result is accepted for a stated use.
+- **Submitter / adapter** transports the statement or realizes an already authorized action.
+
+A role may be combined operationally only where applicable policy permits it; combining roles does not create additive authority. When a policy requires independence, multiple keys or endpoints under the same effective controller do not automatically constitute independent authorities.
+
+Credential issuance, identity binding, delegation, key purpose, revocation, recovery and historical verification remain under the open GOV-30 decision sequence. No universal issuer, root, credential type or separation-of-duty rule is selected here.
+
+### 10.5 Cross-consumer ownership and prior-art reuse
+
+| Consumer / prior art | Reuse boundary | Must not be inferred |
+|---|---|---|
+| **IMMORTAL Governance** | GOV-02 remains the permission matrix; GOV-25/26 integrity and canonical validity; GOV-27 authorization/evidence/ruleset gates; GOV-28 replay/finality conformance. IMMORTAL EXP-06/12 states generic semantic relationships and fail-closed evidence requirements once approved. | Existing governance code or actorClass is not a production identity/credential resolver or authority root. |
+| **PRE-RICH Issue / Cardano** | Reuse the exact existing application-specific signed Issue and V3 carrier-binding path only within its declared deployment. The Cardano Adapter preserves transaction, key-parameter and execution-evidence binding. | The configured Issue Ed25519 key is not a generic IMMORTAL governance key; wallet signature, script parameter or adapter submission does not establish universal actor authority. |
+| **Cormia** | Cormia owns local operator consent, Project Mandate, task child authority, host identity and Runtime enforcement within its project/workspace scope. Its prior-art review identifies A2A for agent interoperability, Cedar/OPA for policy-decision engines, and UCAN/Biscuit as candidate attenuated-capability patterns to compare. | ADR-0009/0010 remain proposed, not production-enabled. Project Mandate is not financial Principal authority; tool/API credentials do not prove account ownership or authorize IMMORTAL economic actions. |
+| **Arb Agent** | Arb supplies provider-specific read-only observations and mapping to IMMORTAL contracts. Its identity/account claims must be established at the appropriate consumer/deployment boundary. | S1 read-only status, CIP-30 connectivity or provider API credentials do not close D0 Principal/financial authority or D1 account/resource isolation; S2/S3 remain unauthorized. |
+| **Materios** | Reuse the authority-set transition and proof-verifier boundary as chain-specific evidence, with the concrete verifier and historical witness independently supplied. | A node/adapter or unverified transition interface does not become IMMORTAL governance authority. |
+
+TUF contributes scoped key roles and succession/rollback patterns but assumes an initial trusted root; RATS separates attestation, appraisal and reliance; SCITT contributes issuer-bound signed statements and transparency receipts but does not authorize IMMORTAL policy; A2A supports agent interoperability and declared authentication mechanisms but not project mandate authority; UCAN/Biscuit provide candidate delegated-capability patterns whose root identity and revocation source still require trust; Cedar/OPA separate policy decisions from authentication. These are references, not adopted components. No one of these systems supplies the complete IMMORTAL authority decision.
+
+### 10.6 Required positive and negative conformance cases
+
+Before a generic Governance credential path can be treated as implemented, the selected mechanism must demonstrate:
+
+**Positive cases**
+- credential proof verified against the exact canonical event/decision context;
+- credential bound to actor identity and applicable time/purpose;
+- actor permission matches the exact event, operation, jurisdiction and active ruleset;
+- a vote's represented EntityId matches the authenticated actor or a valid, scoped delegate;
+- a relayed submission preserves the original decision actor and does not promote the relayer;
+- historical signatures remain verifiable under the authority state and policy applicable at event time.
+
+**Negative / adversarial cases**
+- actorClass label without actor/credential proof;
+- valid signature from an unknown, wrong-scope, suspended or revoked credential;
+- credential for one actor, proposal, profile, network, action or ruleset replayed in another context;
+- vote whose voter differs from authenticated actor without valid delegation proof;
+- transport submitter or adapter attempting to claim the decision actor's permission;
+- credential verifies cryptographically but its holder lacks the required GOV-02 permission;
+- changed or stale delegation, ruleset, revocation or canonical-history state;
+- key rotation, compromise or recovery that cannot be independently reconstructed;
+- attempt to infer human uniqueness, PRE ownership or financial Principal authority from credential validity alone.
+
+A structural source guard is useful regression evidence but cannot substitute for cryptographic vectors, resolver/authority verification, full canonical replay, historical-state validation or deployment evidence.
+
+### 10.7 Open decisions retained
+
+This clarification does **not** select or authorize:
+
+- a human-identity or proof-of-personhood model;
+- a canonical EntityId namespace or actor-identity resolver;
+- an issuer/key/credential registry or trust root;
+- a signature envelope, algorithm, key custody provider or key-purpose policy;
+- a delegation format, depth, revocation or recovery mechanism;
+- a quorum, threshold, governance permission or independence rule;
+- a universal timestamp, nonce, expiry or freshness interval;
+- production signer custody, deployment, registry or on-chain change.
+
+**Disposition:** GOV-02, GOV-06 and GOV-25–GOV-28 retain their existing scope. This section clarifies the missing actor/credential/event relationship for future EXP-06/12 conformance; it is not a new normative decision and authorizes no implementation.
