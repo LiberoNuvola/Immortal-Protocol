@@ -7163,3 +7163,29 @@ A transaction-body byte identity may be useful for the first purpose only. It mu
 - Canonical report: [MuesliSwap audit §9](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MUESLISWAP_USDM_ONCHAIN_AUDIT_2026-11-01.md); matrix §23.
 - P-01 remains **BLOCKED**; P-16 remains **NOT ISSUED**. No OracleQuote/PriceReference/Kernel/EEV integration or economic rule changes. No transaction, signature, approval or deployment. V3, Reveal and Materios untouched.
 
+## 10.88 Governance canonical replay — evidence refresh (2026-11-04)
+
+This is an interim evidence record. It does **not** close GOV-28 and does not change Governance or PRE-RICH economic semantics.
+
+#### Exact source and branch reconciliation
+
+- Repository: `LiberoNuvola/Immortal-Protocol`; branch: `work/immortal-green-closure`; PR: [#19](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19).
+- The replay-test correction is commit [`9c5b6276f7ca132c3fcaaf170439747236a39d53`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/9c5b6276f7ca132c3fcaaf170439747236a39d53), whose patch is limited to `IMMORTAL/governance/GovernanceCanonicalEventTest.hs`. The positive replay now uses the complete canonical sequence `[e1c, e2c]`; negative predecessor and direct-lifecycle-jump cases likewise retain complete history. The determinism assertion compares complete replay with sequential application.
+- Branch/PR HEAD observed at refresh: [`d2e3cb34e96fd7ff50efe623ef754762e5596834`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d2e3cb34e96fd7ff50efe623ef754762e5596834). The GitHub compare reports exactly three commits after `9c5b6276f7ca132c3fcaaf170439747236a39d53`: `89055b3` (historical Materios v6 chain-spec path documentation), `94e285d` (pinned historical Materios fixture documentation), and `d2e3cb3` (Treasury category-bookkeeping versus batch-settlement documentation).
+- The compare reports only three changed paths across that delta: `AGENTS.md`, `docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md`, and `docs/research/PRE-RICH-TREASURY-CATEGORY-LEDGER-OPERATIONAL-SPEC-2026-11-04.md`. No `IMMORTAL/**`, `plutus/**`, adapter, test, or workflow source path changed after `9c5b6276f7ca132c3fcaaf170439747236a39d53`. Therefore the relevant executable source/test tree is unchanged across the three later documentation commits; this is source-equivalence by inspected diff, **not** a claim that the later full HEAD itself was checked out by those two long-running runs.
+
+#### Actions evidence
+
+- [Governance Standalone Conformance #41885987731](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987731): **SUCCESS** on exact SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53`. The job completed checkout, standalone Haskell toolchain setup, Cabal index update, library/all test-component compilation, and all Governance conformance suites.
+- [Haskell Semantic Conformance #41885987733](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987733): **IN PROGRESS** on exact SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53`. Last observed active step: “Beacon commitment cross-language conformance”; “Governance canonical replay conformance” is later in the workflow and has not yet run. No failure is reported, but no result is available.
+- [Kernel Invalid-Class Fail-Closed Audit #41885987774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41885987774): **IN PROGRESS** on exact SHA `9c5b6276f7ca132c3fcaaf170439747236a39d53`. Last observed active step: “Run kernel regression suite”, which includes `governance-canonical-replay-tests`. No failure is reported, but no result is available.
+- On current branch HEAD `d2e3cb34e96fd7ff50efe623ef754762e5596834`, the following relevant companion workflows completed **SUCCESS**: Cardano Adapter Sale #41888360420, IMMORTAL Portability #41888360410, Algorithmic Governability Adversarial Lab #41888360601, Protocol Declaration #41888360430, Documentation Link Check #41888360771, and Flux Point DoD Pilot #41888360495.
+- The Haskell and Kernel workflow path filters do not include the three documentation-only delta paths, so no new run for those workflows was automatically created on `d2e3cb34e96fd7ff50efe623ef754762e5596834`. Both workflow definitions expose `workflow_dispatch`; an exact-current-HEAD manual dispatch remains available if the final acceptance rule requires runs whose `head_sha` equals the branch tip, rather than source-equivalent evidence anchored at `9c5b6276f7ca132c3fcaaf170439747236a39d53`.
+
+#### Disposition
+
+- Replay fixture/test correction: **verified by standalone PASS**.
+- Haskell semantic conformance: **PENDING**.
+- Kernel invalid-class audit: **PENDING**.
+- GOV-28: **OPEN — do not close** until both pending runs complete successfully and their final job/step results and SHAs are recorded.
+- No Governance lifecycle semantics, Governance API contract, PRE-RICH economics, V3, Reveal, treasury policy, or workflow definitions were changed in this evidence update. No wallet action, signature, transaction, deployment, or chain write was performed.
