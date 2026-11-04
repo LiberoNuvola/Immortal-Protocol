@@ -50,6 +50,16 @@ describe('Genesis Treasury observation', () => {
     expect(genesisTreasuryThresholdReached(observation)).toBe(true)
   })
 
+  it('rejects a Treasury UTxO whose returned address differs from the derived address', async () => {
+    const mismatched = { ...utxo('treasuryTx',0,{'PRENAME':100000000n},null), address: 'other-address' }
+    const lucid = lucidFor([mismatched], [])
+    await expect(observeGenesisTreasuryState({
+      lucid, treasuryAddress:'treasury', oracleStateAddress:'oracle',
+      prePolicyId:'PRE', preAssetNameHex:'NAME', oracleStatePolicyId:'O', oracleStateTokenNameHex:'S',
+      oraclePublisherPkh:'PUB', nowMs:1000n,
+    })).rejects.toThrow(/TREASURY_UTXO_ADDRESS_MISMATCH/)
+  })
+
   it('rejects a caller-configured Treasury address that is not the validator-derived address', async () => {
     const lucid = lucidFor([], [], 'canonical-treasury')
     await expect(observeGenesisTreasuryState({

@@ -49,12 +49,12 @@ export async function observeGenesisTreasuryState(
   }
   if (!input.oraclePublisherPkh) throw new Error('Oracle publisher is required')
 
-  const deriveTreasuryAddress = input.lucid?.utils?.validatorToAddress
-  if (typeof deriveTreasuryAddress !== 'function') {
+  const lucidUtils = input.lucid?.utils
+  if (typeof lucidUtils?.validatorToAddress !== 'function') {
     throw new Error('TREASURY_DERIVATION_UNAVAILABLE')
   }
 
-  const derivedTreasuryAddress = deriveTreasuryAddress(treasuryValidator)
+  const derivedTreasuryAddress = lucidUtils.validatorToAddress(treasuryValidator)
   const treasuryAddress = resolveCanonicalTreasuryAddress(
     derivedTreasuryAddress,
     input.treasuryAddress,
@@ -64,6 +64,9 @@ export async function observeGenesisTreasuryState(
   const oracleUnit = input.oracleStatePolicyId + input.oracleStateTokenNameHex
 
   const treasuryUtxos: UTxO[] = await input.lucid.utxosAt(treasuryAddress)
+  if (treasuryUtxos.some((utxo) => utxo.address !== treasuryAddress)) {
+    throw new Error('TREASURY_UTXO_ADDRESS_MISMATCH')
+  }
   const treasuryMatches = treasuryUtxos.filter((u) => (u.assets?.[preUnit] ?? 0n) > 0n)
   if (treasuryMatches.length !== 1) {
     throw new Error(`Treasury PRE state is ambiguous: expected exactly one PRE-bearing UTxO, found ${treasuryMatches.length}`)
