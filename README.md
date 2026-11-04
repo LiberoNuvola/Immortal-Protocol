@@ -2,22 +2,26 @@
 
 **Chain-neutral economic protocol** with explicit obligations, protected capital, deterministic transitions, and auditable evidence.
 
-> **IMMORTAL = protocol · Cardano = adapter · PRE-RICH = first application**
+> **IMMORTAL = universal protocol · adapters = execution boundaries · PRE-RICH = first application · Arb Agent = separate experimental wallet companion**
 
 **Status:** experimental open source — not a finished product, not certified mainnet, and not a custodial service.
 
 ```text
 IMMORTAL
-  universal economic rules
-      ↓
-Cardano Adapter
-  realize / observe / evidence
-      ↓
-PRE-RICH
-  Scratch & Win application
-      ↓
-Cardano ledger
+  universal economic rules, obligations and EXP boundaries
+      |
+      +-- Cardano Adapter
+      |     realize / observe / evidence
+      |         |
+      |         +-- PRE-RICH (first application)
+      |
+      +-- application-facing wallet / runtime interfaces
+            |
+            +-- Arb Agent (separate, experimental companion)
+                  initial W1 profile: read-only CIP-30
 ```
+
+PRE-RICH and Arb Agent are independent applications. Arb Agent is not a PRE-RICH feature, and PRE-RICH is not a dependency of Arb Agent. The public IMMORTAL portal is their shared catalogue, not their shared wallet execution origin.
 
 ## Read first — 2 minutes
 
@@ -41,6 +45,10 @@ PRE-RICH is the current application built on IMMORTAL:
 - Beacon model: **B1 is the current authorized-publisher path; B3 is the stronger publisher-independent target and remains evidence-tracked/open.**
 
 These are application-level facts, not universal IMMORTAL semantics.
+
+## Other applications in the IMMORTAL ecosystem
+
+**Arb Agent** is a separate Wallet Intelligence & Execution Companion under experimental integration. Its initial W1 scope is read-only CIP-30 wallet-context observation. It does not custody private keys, sign or submit transactions in this initial profile, and does not define IMMORTAL economic semantics or PRE-RICH policy. Its runtime and dedicated wallet-connection origin remain subject to separate qualification. See [the application registry](docs/ECOSYSTEM-APPLICATION-REGISTRY.md) and [the Arb Agent source repository](https://github.com/LiberoNuvola/PRE-RICH-AEP-Arb-Agent/tree/Immortal-Protocol).
 
 ## What this is not
 
