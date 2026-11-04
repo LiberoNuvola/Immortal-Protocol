@@ -56,7 +56,7 @@ jobs:
       - name: Ensure the portal remains a catalogue, not a wallet client
         run: |
           set -euo pipefail
-          if grep -Eiq 'window\\.cardano|\.enable\\(\)|signTx|submitTx' dist/web/index.html dist/web/ecosystem.html; then
+          if grep -Eiq 'window\.cardano|\.enable\(\)|signTx|submitTx' dist/web/index.html dist/web/ecosystem.html; then
             echo "Wallet-provider access or transaction actuation detected in public portal pages."
             exit 1
           fi
