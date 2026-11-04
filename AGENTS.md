@@ -30,34 +30,39 @@ Do not replace the existing B3-B pipeline. Use:
 
 The preflight is authoritative for determining whether an RPC really serves the historical state required by B3-B.
 
-## 2026-11-04 chain-identity HOLD — resolve before any sync
+## 2026-11-04 chain-identity gate — historical v6 fixture identified; sync still held
 
-A read-only upstream inspection found that the previous recipe is not yet safe to execute as written:
+The upstream chain-identity review is now more precise:
 
-- The recorded pin `076964a0c117640a83aa1f13ace681a89b428611` is dated 2026-10-03. At that revision, `--chain preprod` loads `chain_spec_preprod::preprod_config()`.
-- Upstream Materios at `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` (2026-10-21) explicitly states that live Preprod v6 starts from its dedicated raw chain spec, not `preprod_config()`. Its `PREPROD_V6_GENESIS` is `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`.
-- Therefore the old pinned binary's generated `--chain preprod` genesis has not been shown to match live Preprod v6 or the history containing the exact B3-B anchor.
+- The recorded pin `076964a0c117640a83aa1f13ace681a89b428611` is dated 2026-10-03 and declares runtime `spec_version: 240`.
+- At that revision, `partnerchain/node/src/command.rs` maps the built-in alias `--chain preprod` to `chain_spec_preprod::preprod_config()`. Do **not** use that alias as the historical v6 identity check.
+- The same pinned revision contains `tools/launch-preflight/fixtures/preprod-v6-raw.json.gz` (Git blob SHA `01ed435660aa8846fc0143894bdaa76d842a0d6a`). Its `test_launch_preflight.py` describes it as the raw chain spec published by the Preprod network and says its genesis hash was read from a live node. The test `test_genesis_hash_matches_the_live_preprod_genesis` asserts the computed genesis hash equals `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`.
+- The same repository revision contains a separate generated fixture, `preprod-spec240-raw.json`; it is not the historical `preprod-v6-raw.json.gz`. Keep these artifacts distinct.
+- The pinned `command.rs` accepts a chain-spec file path through `ChainSpec::from_json_file`. The intended route is therefore to decompress the historical v6 fixture and pass its absolute path to `--chain`.
+- Upstream main `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` is 90 commits ahead and has a separate spec-243 builder fixture. Do not silently upgrade the source pin or substitute that fixture.
 
-**HOLD:** do not build/sync from the old `--chain preprod` recipe or spend Codespace disk on a full sync until the proposed binary + raw chain spec genesis is reproduced offline and matched to the live-v6 genesis. Then establish that block 1856408 maps to the exact target hash already listed above. Do not silently move the pin to upstream main; select and record a reproducible revision only after this identity check.
+**HOLD:** the historical raw v6 fixture and its source-level genesis test are now located, but the pinned node binary has not yet been run offline against that exact file in this environment. Before an archive sync, decompress the fixture, run the pinned genesis test, and make the pinned `materios-node` load the file by path in an offline `build-spec` round-trip. Confirm the resulting genesis hash remains the live-v6 value above. Only then inspect Codespace capacity and start archive sync using the explicit raw-file path—not `--chain preprod`. B3-B remains OPEN until block 1856408 is independently shown to map to the exact target hash below.
+
+This is a corrected chain-spec selection procedure, not proof that the B3-B target belongs to another chain or that the historical storage witness has been acquired.
 
 The public Materios workflow probe on 2026-11-04 also found no GRANDPA justifications in 769 recent blocks and no exposed `grandpa_proveFinality` or `grandpa_subscribeJustifications` RPC method. This is a public RPC capability limitation, not proof that the chain lacks finality. Successful recent storage proofs for a different receipt do not close the exact B3-B historical target.
 
-See [the 2026-11-04 chain-identity and RPC evidence record](docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md) for upstream commit references, CI/artifact details, and the next read-only gate.
+See [the 2026-11-04 chain-identity and RPC evidence record](docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md) for the upstream fixture/test references and the remaining gates.
 
 ## Codespace / node setup
 
 1. Inspect the available CPU, RAM and free disk first. Do not start an expensive sync on an obviously undersized Codespace.
 2. Use the Materios upstream repository `Flux-Point-Studios/materios`.
-3. Use a reproducible pinned upstream revision. The repository currently records upstream tip `076964a0c117640a83aa1f13ace681a89b428611`; verify the repository state before using it.
+3. Use the reproducible pinned upstream revision `076964a0c117640a83aa1f13ace681a89b428611`; verify the checkout and use its historical `preprod-v6-raw.json.gz` fixture, not the generated `--chain preprod` alias.
 4. Build `materios-node` from `partnerchain`, respecting the upstream `rust-toolchain.toml` and locked dependencies. If the upstream build needs a documented compatibility patch, follow the upstream build instructions rather than inventing a new patch.
 5. Do NOT run the Materios registration/deployment wizard. We only need a syncing node for historical read access; do not spend ADA or mutate Cardano state.
-6. Start the partner-chain node against the existing `preprod` chain and enable archive state pruning. Prefer loopback RPC inside the Codespace while testing.
+6. After the offline fixture round-trip passes, start the partner-chain node with `--chain <absolute-path-to-preprod-v6-raw.json>` and enable archive state pruning. Never use the built-in `--chain preprod` alias for this historical chain. Prefer loopback RPC inside the Codespace while testing.
 7. Use a dedicated persistent Codespace directory for the node database, separate from the Immortal repository worktree, so the repository never receives chain data.
 8. Keep the node running while the historical target is acquired. Do not delete or purge the database once block 1856408 is reachable.
 
 A suitable starting shape is equivalent to:
 
-`materios-node --chain preprod --base-path <persistent-archive-path> --state-pruning archive --db rocksdb --rpc-port 9945 --rpc-methods safe`
+`materios-node --chain <absolute-path-to-preprod-v6-raw.json> --base-path <persistent-archive-path> --state-pruning archive --db rocksdb --rpc-port 9945 --rpc-methods safe`
 
 Do not add validator/registration flags unless the upstream preprod chain requires them for syncing.
 
