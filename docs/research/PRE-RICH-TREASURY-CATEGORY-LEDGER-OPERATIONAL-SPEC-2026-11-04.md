@@ -330,3 +330,23 @@ A separate accounting-carrier script/address remains an alternative only if a co
 
 No marker policy ID, marker token name, seed UTxO, datum encoding, category posting function, initial category balance, authority signature format or new script has been selected or created here. The current sale flow is not switched to this candidate design. It requires a dedicated implementation specification and conformance tests before code changes.
 
+### 11.11 Reuse / prior implementation audit — selected active branches
+
+A source/tree audit was performed against the following repository refs to look for an existing canonical Treasury accounting-state carrier, asset-qualified category balances, a transition journal, or a reusable posting implementation:
+
+| Ref inspected | Treasury-related reusable material found | Classification |
+|---|---|---|
+| `main` — `97b09a38742098f17a61eb07734c401aeedccc06` | Legacy Treasury validator/datum, Genesis observer, read-only surfaces; no category ledger carrier | No accounting-state implementation found |
+| `b1-hardening` — `c561393e7eb842529aeaa272377e5afe0138d085` | B1 PrizePool state and legacy Treasury validator | PrizePool is a separate liability/custody state, not the central Treasury ledger |
+| `review/treasury-readonly-observer` — `e6a21b4287c6d39c7b07d08e7f527683b0b524bd` | `observe-configured-preprod-treasury.mjs`, paginated Koios address UTxO reader, exact artifact-derived address pin and script-hash check | Reusable read-only observation method; no category balances or posting authority |
+| `work/b3-materios-provenance-evidence` — `cf5b41f86bb69c5e277d52cfbb91d933e4148cdd` | `TREASURY-REWARD-ACCOUNTING-BOUNDARY-v1.md`, `reward-treasury-boundary.mjs`, `treasury-legacy-isolation.mjs` | Research/non-normative revenue→classification→reward-budget boundary and legacy usage detector; not a PRE-RICH ledger or posting implementation |
+| `release/public-main-curated-2026-09-24` — `04f2684244ddbf26946980ab764e4336fd2ab0a7` | Historical Treasury/Genesis and ledger-observation paths | No category ledger carrier found |
+
+The existing V3 economic-state and B2 control singleton carriers are useful **structural precedents only**: they demonstrate explicit marker identity, one-state-UTxO observation, version/continuation checks and deployment evidence. They are not Treasury components, do not encode PRE-RICH category balances and must not be imported as an economic allocation rule. The B1 PrizePool singleton remains the separate specialized Prize liability/custody state.
+
+The B3 research boundary is particularly relevant as a guardrail, not as an implementation to transplant. It models `FeeObligation → SettlementAmount → ProtocolRevenueReceived → AccountingClassification → CertifiedRewardBudget → RewardAllocation`; it explicitly says destination alone does not classify value, prohibits automatic mapping to ProtectedCapital/RawSurplus, and is marked research/non-normative. Its workflow is scoped to IMMORTAL Protocol + Adapter; PRE-RICH is out of scope. PRE-RICH AppSurplus/Treasury cannot become IMMORTAL ProtocolTreasury or a contributor-reward source.
+
+**Reuse conclusion:** the only direct reuse justified now is the read-only observer discipline and generic singleton-carrier engineering pattern. No current inspected branch contains a Treasury category-ledger datum, unique Treasury ledger marker, posting transition, or asset-qualified category journal that can be reused without designing and adopting PRE-RICH-specific semantics. Do not copy the B3 reward-boundary test as a PRE-RICH posting rule.
+
+**Audit scope limitation:** this is a documented audit of the named refs above, not a claim that every historical or private/unlisted repository branch, external deployment, or untracked artifact was exhaustively searched.
+
