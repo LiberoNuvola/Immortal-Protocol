@@ -366,3 +366,23 @@ This is a source-call-surface/release-boundary result only. It does **not** remo
 
 No percentage, replacement allocation, datum, validator, script hash or on-chain transaction changed.
 
+### 11.13 Earlier PRE-RICH sale trace and category-credit boundary
+
+The historical Notion audit `T5 — SALE Trace b1-hardening v0.1 — 12 September 2026` confirms the already-established application flow: each ticket SALE was built atomically with Ticket mint, Treasury payment, B1 PrizePool `TicketIssued` reservation, Counter transition and PrizeDatum. It describes a Treasury receipt output and a separate Pool datum update `unresolvedReserve += priceUsdm`; the physical Pool liquidity did not increase during TicketIssued. That trace established sale atomicity and the liability/reserve relationship; it did **not** establish an internal category-ledger credit.
+
+The later Control Center accounting map is explicit about the distinction:
+- `Ticket receipts` are an inflow to the **central Treasury**. The code proves a same-transaction Treasury output with the ticket-price value.
+- The concurrent B1 `unresolvedReserve` update records the ticket commitment/risk. It is not another physical inflow and does not transfer liquidity to the PrizePool.
+- `Prize / winner payout` is sourced from the Treasury's Prize accounting category and becomes available to the specialized PrizePool through controlled funding.
+- The audit explicitly says the sale receipt does not prove that a Prize quota is automatically funded by the purchase.
+
+This is consistent with the sequence in §11.9:
+`Player payment → Treasury accounting → Prize allocation / PrizePool funding → established Prize liability → Claim from PrizePool`.
+
+**Disposition:** the user-visible design of one Treasury and the Prize source for PrizePool funding is settled. The ticket-sale transaction proves a receipt into Treasury and a Pool liability/reserve update; it does not decide the later accounting classification/credit amount of that receipt. The posting/classification rule remains an explicit PRE-RICH policy/conformance input and cannot be filled by treating `priceUsdm` as an automatic Prize-category credit, by assuming 100% gross ticket revenue is Prize, or by reviving the historical percentage split. This section adds no new policy.
+
+Sources:
+- [T5 — SALE Trace b1-hardening v0.1 — 12 September 2026](https://app.notion.com/p/3d9c4454d6d5811993aff67da26e7ea1)
+- [PRE-RICH — Control Center, Treasury category map and PA5 framing](https://app.notion.com/p/3d9c4454d6d581e680d5e5d3f3a9df79)
+- [Current PRE-RICH GAME-ECONOMY](https://github.com/LiberoNuvola/Immortal-Protocol/blob/905ab45b9a8b6359f9206382c4a4389e6b8f368b/PRE-RICH/docs/GAME-ECONOMY.md)
+
