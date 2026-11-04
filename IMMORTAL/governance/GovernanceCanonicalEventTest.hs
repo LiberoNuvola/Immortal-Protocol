@@ -3,7 +3,7 @@ module Main where
 import Governance
 import GovernanceEventSchema
 import GovernanceCanonicalReplay
-import RulesetRegistry hiding (rulesetVersion)
+import RulesetRegistry
 import GovernanceCommitment
 
 assert :: String -> Bool -> IO ()

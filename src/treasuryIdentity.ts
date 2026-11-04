@@ -75,16 +75,18 @@ function canonicalDatumEncoding(raw: unknown): string {
 }
 
 /**
- * Return the selected raw datum only when the entire observed custody set at
- * the exact Treasury address is unambiguous. The caller decodes a CBOR string
- * with Lucid Data.from; the selector itself stays pure and WASM-independent.
+ * Return the observed raw datum only when every UTxO returned for the exact
+ * Treasury address has one consistent datum representation. The caller decodes
+ * a CBOR string with Lucid Data.from; this selector stays WASM-independent.
  *
- * Multiple UTxOs are allowed: the Treasury is one script-controlled custody
- * boundary, not necessarily one UTxO. Every UTxO must nevertheless carry the
- * same canonical datum. This function does not infer category balances or
- * promote legacy percentage fields into current accounting policy.
+ * IMPORTANT: consistency is not authentication. This helper does not prove
+ * that the datum is an authoritative ledger state, does not authenticate its
+ * category balances (there are none in the legacy datum), and does not prove
+ * that any asset was posted to a category. It is only a fail-closed guard for
+ * the legacy Issue output datum while the Treasury accounting-state carrier
+ * remains unimplemented.
  */
-export function selectCanonicalTreasuryDatum(
+export function selectConsistentTreasuryDatum(
   utxos: readonly UTxO[],
   treasuryAddress: string,
 ): unknown {

@@ -30,20 +30,6 @@ Do not replace the existing B3-B pipeline. Use:
 
 The preflight is authoritative for determining whether an RPC really serves the historical state required by B3-B.
 
-## 2026-11-04 chain-identity HOLD — resolve before any sync
-
-A read-only upstream inspection found that the previous recipe is not yet safe to execute as written:
-
-- The recorded pin `076964a0c117640a83aa1f13ace681a89b428611` is dated 2026-10-03. At that revision, `--chain preprod` loads `chain_spec_preprod::preprod_config()`.
-- Upstream Materios at `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` (2026-10-21) explicitly states that live Preprod v6 starts from its dedicated raw chain spec, not `preprod_config()`. Its `PREPROD_V6_GENESIS` is `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`.
-- Therefore the old pinned binary's generated `--chain preprod` genesis has not been shown to match live Preprod v6 or the history containing the exact B3-B anchor.
-
-**HOLD:** do not build/sync from the old `--chain preprod` recipe or spend Codespace disk on a full sync until the proposed binary + raw chain spec genesis is reproduced offline and matched to the live-v6 genesis. Then establish that block 1856408 maps to the exact target hash already listed above. Do not silently move the pin to upstream main; select and record a reproducible revision only after this identity check.
-
-The public Materios workflow probe on 2026-11-04 also found no GRANDPA justifications in 769 recent blocks and no exposed `grandpa_proveFinality` or `grandpa_subscribeJustifications` RPC method. This is a public RPC capability limitation, not proof that the chain lacks finality. Successful recent storage proofs for a different receipt do not close the exact B3-B historical target.
-
-See [the 2026-11-04 chain-identity and RPC evidence record](docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md) for upstream commit references, CI/artifact details, and the next read-only gate.
-
 ## Codespace / node setup
 
 1. Inspect the available CPU, RAM and free disk first. Do not start an expensive sync on an obviously undersized Codespace.

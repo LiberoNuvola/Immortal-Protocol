@@ -46,7 +46,7 @@ import {
 import wallet from './wallet'
 import {
   resolveCanonicalTreasuryAddress,
-  selectCanonicalTreasuryDatum,
+  selectConsistentTreasuryDatum,
 } from './treasuryIdentity'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
@@ -577,7 +577,9 @@ async function getTreasuryDatum(
   treasuryAddress: string,
 ): Promise<Data> {
   const utxos: UTxO[] = await lucid.utxosAt(treasuryAddress)
-  const selectedDatum = selectCanonicalTreasuryDatum(utxos, treasuryAddress)
+  // This only guards legacy datum consistency at the derived custody address.
+  // It is not an authenticated Treasury category-ledger read.
+  const selectedDatum = selectConsistentTreasuryDatum(utxos, treasuryAddress)
   return typeof selectedDatum === 'string'
     ? Data.from(selectedDatum)
     : selectedDatum as Data

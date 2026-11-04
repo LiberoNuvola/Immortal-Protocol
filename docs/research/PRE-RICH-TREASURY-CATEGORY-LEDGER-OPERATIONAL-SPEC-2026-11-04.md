@@ -172,3 +172,91 @@ The IMMORTAL contributor-reward boundary `ProtocolRevenueReceived → Accounting
 - No code, transaction, key, signer, deployment or on-chain state is modified by this documentation work.
 
 **Overall status:** SINGLE PRE-RICH TREASURY + INTERNAL CATEGORY ACCOUNTING / PRIZEPOOL SPECIALIZED CUSTODY — ARCHITECTURAL BASELINE CONFIRMED; AUTHENTICATED CATEGORY LEDGER, TREASURY-SOURCED PRIZE FUNDING, CLAIM ASSET DEBIT, MAINTENANCE AND REWARD/STAKING POSTINGS — IMPLEMENTATION / CONFORMANCE OPEN; PA5 OPEN / NON-CERTIFIABLE.
+
+## 11. Canonical accounting state versus custody — source-level architecture finding
+
+This section records the current implementation boundary and the next carrier design. It does not adopt a new economic allocation rule or authorize a new authority.
+
+### 11.1 What the current Treasury datum actually represents
+
+At the audited branch HEAD, `plutus/Types.hs::TreasuryDatum` contains:
+
+- a lovelace threshold;
+- four destination script hashes (Prize, Stake, Reserve and Maintenance);
+- four percentage fields.
+
+It contains **no** category balances, asset identities, receipt sequence, category posting, source debit or custody reconciliation. `plutus/Treasury.hs` exposes only `TreasuryAction = Distribute`; its validator calculates percentages over the lovelace value of the consumed input and checks four script-hash outputs. It is therefore a legacy distribution configuration, not the PRE-RICH category ledger and not a multi-asset accounting state.
+
+The UI helper `src/treasuryPage.ts::treasuryDatum()` constructs a sample datum with four equal percentage fields and zero script hashes. That sample is a legacy/demo surface; it is not a canonical allocation decision.
+
+### 11.2 What the current Issue transaction authenticates
+
+The current sale path:
+
+1. derives the Treasury address from the unparameterized `treasuryValidator`;
+2. reads the UTxO set at that address and applies the datum-consistency guard;
+3. creates one Treasury output for the sale settlement basket in the same transaction as ticket mint and PrizePool reservation;
+4. relies on `MintPolicy.atomicTreasuryPaymentValid` to require exactly one output at the Treasury script hash and verify its USDM-equivalent value against the ticket price.
+
+The on-chain sale predicate authenticates the **existence and value** of the Treasury output. It does not decode or authenticate the Treasury datum, does not spend/update a Treasury accounting-state UTxO, and does not post the receipt to Prize, Reserve, Maintenance, Reward or PRE-holder staking.
+
+Accordingly, the code added in this workstream establishes:
+- exact script-derived Treasury address and deployment-pin equality;
+- returned UTxO address consistency;
+- deterministic off-chain selection only when observed datum representations are consistent.
+
+It does **not** establish:
+- authenticated category balances;
+- authoritative category posting;
+- source-category debit;
+- category availability or spend authorization;
+- an on-chain Treasury state transition.
+
+The helper is deliberately named `selectConsistentTreasuryDatum`: datum consistency must not be mistaken for state authentication.
+
+### 11.3 Existing state-carrier precedent and missing Treasury carrier
+
+The repository already uses singleton-carrier patterns for the B1 PrizePool, V3 economic-state carrier and B2 control carrier. Their deployment identities are configured separately and observers require exactly one matching singleton UTxO.
+
+No equivalent Treasury accounting marker/token, unique Treasury ledger-state reference, category-balance datum or Treasury state-continuation validator was found in the inspected current branch.
+
+The current Treasury is one logical protocol-controlled custody domain and may consist of multiple UTxOs. It must not be modeled as “whichever Treasury UTxO was first returned by the provider”. The Genesis PRE bootstrap observer is a separate, PRE-specific admission reader: its exactly-one-PRE-bearing-UTxO requirement is not a general Treasury accounting inventory and cannot be reused as the category-ledger reader.
+
+### 11.4 Recommended implementation topology — one ledger state, multiple custody outputs
+
+The implementation target should be **one logical Treasury accounting state**, identified by one authenticated singleton state reference, alongside the Treasury's physical custody UTxOs. The singleton carrier is a ledger-state anchor, not a second treasury, pool or economic authority.
+
+Recommended properties:
+
+- one unique marker identifies the current Treasury accounting-state UTxO; exactly one such state must be observable;
+- the state datum records category postings in native asset units, keyed by exact asset identity (policy ID + asset name; ADA separately), not merely a fiat/USDM scalar;
+- physical custody remains independently observable as a set of UTxOs; ledger balances must reconcile to that set and every UTxO/source reference must be accounted for;
+- category accounting and custody location remain separate: an internal Treasury → PrizePool movement must not create a second copy of the same asset in an aggregate perimeter;
+- state sequence/reference and transition evidence must make replay, stale-state and duplicate-posting attempts fail closed;
+- updates are accepted only as part of the same authenticated economic transition that creates the corresponding physical outputs/inputs; the state carrier itself does not acquire allocation authority;
+- category availability is derived through the authoritative economic/obligation checks. A raw category balance or a caller-supplied `availableBalance` does not by itself authorize spending.
+
+A dedicated accounting-state carrier separate from the sale receipt output is the cleaner fit for the current `MintPolicy.singleScriptOutputValue` rule: placing both a continuing state output and a receipt output at the same Treasury script hash would currently make that helper see more than one Treasury output. The exact script/address boundary and one-time marker policy still require a deployment/migration design; this is a recommended topology, not yet an adopted normative or on-chain decision.
+
+### 11.5 Posting boundary — do not infer policy
+
+The existing PRE-RICH policy fixes the direction of protocol-controlled Treasury → PrizePool funding and makes the Prize accounting position its source. It does not authorize a legacy percentage split.
+
+The following rules must remain explicit before implementation:
+- sale receipt is proven as a Treasury inflow; its exact posting to a spendable category must follow an adopted classification rule. Do not silently assume a fixed share or that receipt automatically makes the entire amount available for PrizePool funding;
+- Treasury → PrizePool must bind the authorized Prize source, physical Treasury input, exact Pool credit, category/custody post-state and replay protection in one transition;
+- winner Claim is a final external Prize disbursement and must reconcile the physical Pool debit with the corresponding liability settlement. R7 PA5 remains OPEN / NON-CERTIFIABLE; this document adds no asset-side R7 delta;
+- Maintenance is posted only for a mandatory protocol-paid obligation and authorized budget;
+- PRE-holder staking remains distinct from contributor/governance Reward and legacy relayer compensation. Its source amount and distribution authority remain OPEN.
+
+### 11.6 Required implementation order
+
+1. Run a read-only Preprod inventory for the exact validator-derived Treasury address and classify all UTxOs (datum/no-datum, asset units, references, script identity). Determine whether legacy holdings require migration; do not assume the old address is empty.
+2. Freeze the implementation-level state-carrier and migration boundary without changing category economics or creating a second authority.
+3. Define the minimal asset-qualified datum and singleton identity; add validator/policy tests for unique state, monotonic continuation, stale state, duplicate posting and unrepresented custody.
+4. Bind Issue receipts and Treasury → PrizePool funding to the state continuation and physical settlement in the same transaction.
+5. Keep the current Direct-USDM EEV profile PrizePool-only until a separately qualified aggregate source-set exists.
+6. Resolve Claim asset-side settlement/R7 PA5 separately before claiming complete end-to-end category-ledger certification.
+
+**Status:** Treasury script identity and observed-datum consistency are implemented; the canonical Treasury accounting-state carrier and category postings are NOT IMPLEMENTED. No balance, category allocation, marker asset, new validator, new threshold or R7 delta has been invented in this section.
+
