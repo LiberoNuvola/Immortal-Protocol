@@ -85,9 +85,9 @@ main = do
                                       , eventTimestamp = 2
                                       , eventPayload = PayloadStatusChanged 1 Canonical 2
                                       , payloadCommitment = "" })
+      Right st2' = replayCanonical rs emptyState [e1c, e2c]
   assert "canonical replay rejects direct lifecycle jump to Canonical"
     (case replayCanonical rs st1 [directCanonical] of Left _ -> True; Right _ -> False)
-      Right st2' = replayCanonical rs emptyState [e1c, e2c]
   assert "canonical-only replay is deterministic" (st2 == st2')
 
   putStrLn "CANONICAL EVENT PHASE CHECKS PASSED"

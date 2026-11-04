@@ -30,3 +30,23 @@ This is a convergence patch, not a conformance certificate.
 ## Algorithmic governability
 
 - `ALGORITHMIC-GOVERNABILITY-GAP.md` — AG-01 cross-cutting conformance boundary: the algorithm may adapt within an authorized rule space but cannot self-authorize or rewrite constitutional authority.
+
+
+## Standalone Governance package — 2026-11-04
+
+The Governance core now has an independent Cabal project in this directory. It compiles the Governance modules using only the package's own Haskell dependencies; it does not load the Plutus/Cardano package or its native build dependencies.
+
+Run locally:
+
+~~~~sh
+cd IMMORTAL/governance
+cabal update
+cabal build all --enable-tests
+cabal test all --test-show-details=direct
+~~~~
+
+The standalone target includes the governance conformance, canonical-event, canonical-replay, ruleset-registry and Phase-6 suites. It runs alongside the existing pre-rich-plutus Governance suites; it does not replace them.
+
+This target proves only compilation and bounded Haskell conformance of the current Governance source/tests. It does not authenticate production actors or credentials, establish a live governance authority, prove production evidence authenticity, or certify deployment/on-chain governance.
+
+Workflow: .github/workflows/immortal-governance-standalone-conformance.yml.

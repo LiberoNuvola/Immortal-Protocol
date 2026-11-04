@@ -34,3 +34,25 @@ The next safe implementation step remains: define the authoritative canonical-ev
 Current governance tests are implementation/conformance evidence, not production integration evidence.
 
 External event-sourcing references support treating immutable event history and replay as the source-of-truth architecture and using version/conflict checks for competing successors; they do not determine IMMORTAL normative lifecycle.
+
+## 2026-11-04 correction — active Cabal integration and standalone package
+
+The earlier statement above that Governance modules were outside the active Cabal package boundary was incomplete and is superseded by this source-level clarification:
+
+- plutus/pre-rich-plutus.cabal already includes ../IMMORTAL/governance in the library hs-source-dirs, exposes the canonical Governance modules and includes the Haskell crypto/text dependencies.
+- That Cabal file already declares governance-tests, governance-canonical-replay-tests, governance-ruleset-tests and governance-phase6-tests.
+- .github/workflows/immortal-haskell-conformance.yml already invokes those four suites as part of the larger Plutus/Cardano semantic conformance workflow.
+
+Therefore Governance was not absent from compilation or CI. The actual limitation was that it had no independent package/CI target: its existing suites were coupled to the pre-rich-plutus library, the wider package resolver and the Plutus native dependency bootstrap.
+
+A separate package has now been added at IMMORTAL/governance/immortal-governance.cabal with its own cabal.project, pinned to the repository's GHC 9.6.7 toolchain. It compiles the Governance library using only base, bytestring, base16-bytestring, cryptohash-sha256 and text, and runs five focused suites:
+
+- GovernanceConformanceTest.hs
+- GovernanceCanonicalEventTest.hs (its existing let layout was corrected; no assertion or protocol semantics changed)
+- GovernanceCanonicalReplayTest.hs
+- RulesetRegistryTest.hs
+- GovernancePhase6Test.hs
+
+The new .github/workflows/immortal-governance-standalone-conformance.yml runs cabal build all --enable-tests and cabal test all --test-show-details=direct from the standalone Governance directory, without installing Plutus native dependencies.
+
+Scope: this separates build and test execution only. It does not change Governance semantics, actor authentication, GOV-02 permissions, GOV-25–30 authority choices, finality/adoption policy, any economic rule, Cardano V3/Reveal behavior, deployment or ledger state. The new exact-head workflow run is required before treating this standalone target as CI-green.

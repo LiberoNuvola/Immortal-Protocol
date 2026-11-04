@@ -1,0 +1,6 @@
+packages: .
+
+index-state:
+  , hackage.haskell.org 2026-06-22T23:30:49Z
+
+with-compiler: ghc-9.6.7
