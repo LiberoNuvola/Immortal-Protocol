@@ -7278,3 +7278,15 @@ The remaining gap is **migration of the legacy 20-event vocabulary into the exis
 Next work must map each normative identity to the authoritative event type, typed payload, actor authorization, evidence requirement, ruleset/commitment binding, predecessor admissibility, state projection and live consumer. Any item that is intentionally represented by a generic event must carry an explicit closed-spec justification. Do not invent payload fields, actors, authority or transitions. Preserve a single replay API and one semantic stream.
 
 This source clarification does not change the GREEN status of the four-act replay slice on exact HEAD `ff5cf47`; it refines the remaining full GOV-28/GOV-18 task from “missing event names” to **authoritative schema migration + conformance**, which remains OPEN. No source-code semantics or normative governance parameter changed.
+
+
+## 10.92 GOV-18 full vocabulary/consumer audit — replay-integrity blockers identified (2026-11-04)
+
+- Audit source: `b49d0c7dea33a4adb251604e8eae4e958d789552`, branch `work/immortal-green-closure`; branch and PR #19 were verified aligned before this documentation update.
+- Full event-by-event disposition: [GOV-28 Event Vocabulary Migration Audit](GOV-28_EVENT_VOCABULARY_MIGRATION_AUDIT.md). It maps all 20 Phase-2 identities to the authoritative GOV-22 event algebra, typed payloads, actors, state effects and current missing/helper-only representations.
+- **GOV28-EV-01 — HIGH:** `PayloadProposalSubmitted Proposal` commits only proposal id/class, snapshot fields and creation timestamp, while `applyEvent ProposalSubmitted` inserts the entire Proposal. Status, lifecycle timestamps, votes, delegations and gates are neither serialized into the payload commitment nor constrained by an initial-state predicate. Replay can therefore apply state-affecting Proposal fields not covered by the commitment.
+- **GOV28-EV-02 — HIGH:** generic `EStatusChanged -> Rejected` is not blocked at canonical lifecycle admission; the underlying `DecisionRecorded -> Rejected` transition lacks the dedicated DecisionRecord/finality/challenge checks. Add a state-unchanged negative twin and preserve the dedicated `EDecisionFinalized` requirements.
+- Challenge open/resolve still produce helper values rather than canonical history; emergency activation/renewal/expiry remain absent from active GOV-22 replay; `EmergencyAuthority` remains reserved by GOV-27. `EDelegationSet` and `EGatesSet` are active-only extras outside the 20 Phase-2 identities.
+- Exact source SHA `b49d0c7dea33a4adb251604e8eae4e958d789552` passed the core Governance Standalone #41899743535, Haskell Semantic #41899743733 and Kernel Invalid-Class #41899744010 runs; kernel artifact #13358492259 (SHA-256 `36b9adb72d80f7d5bbee19f10cc2cc555108ccd4b9e1fb8ac37fc7a72eb2ba62`). This establishes only the current bounded tests, not closure of these findings.
+- No source semantics changed in this audit. The four dedicated lifecycle replay acts remain GREEN; full GOV-18 migration and GOV28-EV-01/02 remain OPEN/HIGH priority. Do not revive `CanonicalEvent.hs` as a second replay stream or infer missing actor/evidence/emergency rules.
+

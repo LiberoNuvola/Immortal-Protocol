@@ -162,3 +162,17 @@ The legacy module may be used as a migration inventory/reference for:
 It must **not** be imported as a second transition system or copied wholesale: its envelope, actor vocabulary, opaque payload commitment and simplified predecessor validator are not equivalent to the current typed GOV-22 contract. Each event needs a typed payload or an explicit normative reason to remain envelope-only, plus compatibility review against the closed actor/evidence/ruleset semantics and every live consumer.
 
 This refines the earlier gap label: **legacy vocabulary exists; authoritative-schema migration and conformance remain OPEN**. No lifecycle or authorization semantics are inferred by this clarification.
+
+
+## 2026-11-04 — full 20-event mapping and replay-integrity audit
+
+See [GOV-28 Event Vocabulary Migration Audit](GOV-28_EVENT_VOCABULARY_MIGRATION_AUDIT.md) for the event-by-event comparison of the Phase-2 20-event contract against the authoritative GOV-22 schema/replay and the legacy inventory.
+
+Two additional high-priority defects were confirmed on source SHA `b49d0c7dea33a4adb251604e8eae4e958d789552`:
+
+1. **GOV28-EV-01 — ProposalSubmitted commitment gap.** `PayloadProposalSubmitted Proposal` serializes only proposal id/class, snapshot id/time/weights and creation time, but replay inserts the full Proposal record. Mutable status, lifecycle timestamps, votes, delegations and gates are not bound by the payload commitment or constrained by an initial-state predicate.
+2. **GOV28-EV-02 — Rejected finality bypass.** Generic `EStatusChanged -> Rejected` is not blocked by `canonicalLifecycleAdmission`; the underlying `DecisionRecorded -> Rejected` transition does not enforce the dedicated DecisionRecord/finality/challenge checks.
+
+The audit also confirms that challenge open/resolve are helper-returned values rather than canonical history events; emergency activation/renewal/expiry are not represented in the active replay, and `EmergencyAuthority` remains reserved under GOV-27. EDelegationSet/EGatesSet exist as active-only extras outside the normative 20-name inventory.
+
+These are source findings, not implemented fixes. The single authoritative GOV-22 event stream must be retained; GOV-28 remains OPEN.
