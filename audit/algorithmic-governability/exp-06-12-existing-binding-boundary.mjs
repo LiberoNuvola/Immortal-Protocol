@@ -18,9 +18,15 @@ const count = (source, pattern) => (source.match(pattern) ?? []).length
  * composes its external Ed25519 authority verifier, Haskell digest
  * recomputation, economic-admission witness and transition-evidence binding.
  *
+ * It also preserves the distinction between IMMORTAL Governance's current
+ * structural actor-class gate and cryptographic actor/credential
+ * authentication, which remains OPEN.
+ *
  * It deliberately does not define a generic appraisal envelope, verifier
  * registry, trust-root lifecycle, evidence status machine or authority model.
- * Its positive result is scoped to the PRE-RICH Issue consumer only.
+ * Its positive result is scoped to the existing PRE-RICH Issue binding path
+ * and negative conformance assertions for the currently inspected governance
+ * boundary only.
  */
 
 const provider = read('Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts')
@@ -30,6 +36,9 @@ const transitionBinding = read('Adapter/CARDANO/observation/EconomicAdmissionTra
 const transitionEvidence = read('Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts')
 const gate = read('IMMORTAL/kernel/EconomicGate.hs')
 const governanceAuthorization = read('IMMORTAL/governance/GovernanceAuthorization.hs')
+const governanceEventSchema = read('IMMORTAL/governance/GovernanceEventSchema.hs')
+const governance = read('IMMORTAL/governance/Governance.hs')
+const governanceCommitment = read('IMMORTAL/governance/GovernanceCommitment.hs')
 const gov27 = read('docs/01-formal-records/governance/GOV-27-AUTHORIZATION-EVIDENCE-RULESET.md')
 const caesTest = read('src/__tests__/caes-transition-closure.test.ts')
 
@@ -135,7 +144,42 @@ assert(
   'GOV-27 evidence references remain a governance structural gate, not a universal cryptographic evidence verifier',
 )
 
+const canonicalEventRecord =
+  governanceEventSchema.match(/data CanonicalEvent = CanonicalEvent([\s\S]*?)\} deriving/)?.[1] ?? ''
+const voteRecord =
+  governance.match(/data Vote = Vote([\s\S]*?)\} deriving/)?.[1] ?? ''
+
+assert(
+  canonicalEventRecord.includes('actorClass :: ActorClass') &&
+    canonicalEventRecord.includes('eventPayload :: CanonicalPayload') &&
+    !/(actorIdentity|actorCredential|submitterIdentity|submitterCredential|signatureProof)/i.test(canonicalEventRecord),
+  'current canonical governance event binds an actor class and payload, but no actor/submitter credential or signature proof',
+)
+
+assert(
+  /authorizationValid e =\s*case \(eventType e, actorClass e\) of/.test(governanceAuthorization) &&
+    governanceAuthorization.includes('(EVoteCast, Voter)') &&
+    !governanceAuthorization.includes('verifySignature'),
+  'GOV-27 event authorization remains an event-type/actor-class permission matrix, not actor credential authentication',
+)
+
+assert(
+  voteRecord.includes('voter :: EntityId') &&
+    governance.includes('snapshotWeight (proposalSnapshot p) (voter v) > 0'),
+  'governance Vote identifies an EntityId and checks snapshot eligibility, without binding that identity to an authenticated submitter credential',
+)
+
+assert(
+  governanceCommitment.includes('SHA-256 over UTF-8 canonical commitment preimage') &&
+    governanceCommitment.includes('SHA256.hash') &&
+    gov27.includes('A valid SHA-256 commitment does not establish authority'),
+  'governance SHA-256 commitment provides canonical digest integrity, not signer identity or authorization',
+)
+
 console.log('ISSUE_SIGNED_BINDING=EXISTS_FOR_PRE_RICH_ISSUE')
+console.log('GOVERNANCE_ACTOR_CLASS_GATE=STRUCTURAL_ONLY')
+console.log('GOVERNANCE_VOTE_CREDENTIAL_BINDING=OPEN')
+console.log('GOVERNANCE_COMMITMENT=HASH_INTEGRITY_NOT_SIGNER_AUTHENTICATION')
 console.log('GENERIC_EXP_06_AUTHENTICATED_APPRAISAL=OPEN')
 console.log('GENERIC_EXP_12_AUTHORITY_LIFECYCLE=OPEN')
 console.log('RESULT=REUSE_BOUNDARY_CONFORMANT_NOT_UNIVERSALLY_CERTIFIED')
