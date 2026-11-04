@@ -5,6 +5,7 @@ import { observeAndAdmitGenesisTreasury } from '../../src/GenesisTreasuryRuntime
 describe('Genesis Treasury runtime composition', () => {
   it('admits a fresh observed Treasury value at the 4000 USDM threshold', async () => {
     const lucid = {
+      utils: { validatorToAddress: () => 'treasury' },
       utxosAt: async (address:string) => address === 'treasury'
         ? [{txHash:'treasuryTx',outputIndex:0,assets:{'PRENAME':100000000n},datum:null}]
         : [{txHash:'oracleTx',outputIndex:0,assets:{'OS':1n},datum:new Constr(0,['PRE','NAME',4000n,1000n,'PUB'] as any)}],
@@ -26,6 +27,7 @@ describe('Genesis Treasury runtime composition', () => {
 
   it('does not admit a stale Oracle observation', async () => {
     const lucid = {
+      utils: { validatorToAddress: () => 'treasury' },
       utxosAt: async (address:string) => address === 'treasury'
         ? [{txHash:'treasuryTx',outputIndex:0,assets:{'PRENAME':100000000n},datum:null}]
         : [{txHash:'oracleTx',outputIndex:0,assets:{'OS':1n},datum:new Constr(0,['PRE','NAME',40000n,0n,'PUB'] as any)}],
