@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { Constr, Data, type UTxO } from 'lucid-cardano'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { Constr, Data, Emulator, Lucid, type UTxO } from 'lucid-cardano'
 import {
   resolveCanonicalTreasuryAddress,
   selectCanonicalTreasuryDatum,
@@ -26,6 +26,12 @@ function utxo(
     datum: rawDatum,
   } as unknown as UTxO
 }
+
+beforeAll(async () => {
+  // Data.to uses Lucid's WASM ledger-data runtime; initialize it as in the
+  // repository's read-only observer scripts before serializing Plutus data.
+  await Lucid.new(new Emulator([]), 'Preprod')
+})
 
 describe('PRE-RICH canonical Treasury identity', () => {
   it('uses the validator-derived address when no deployment pin is configured', () => {
