@@ -39,6 +39,22 @@ const STORAGE_KEY =
   process.env.MATERIOS_B3_ANCHOR_STORAGE_KEY ??
   "0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55";
 
+/**
+ * Keep the endpoint usable for diagnostics without persisting credentials or
+ * provider-specific paths/tokens in the witness or CI logs.
+ */
+function safeRpcOrigin(value: string): string {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "configured RPC endpoint (address redacted)";
+    }
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return "configured RPC endpoint (address redacted)";
+  }
+}
+
 async function main(): Promise<void> {
   const rpc = new MateriosRpc(RPC);
 
@@ -58,7 +74,9 @@ async function main(): Promise<void> {
   const packet = {
     schema_version: "materios-b3-anchor-state-witness-v1",
     captured_at: new Date().toISOString(),
-    rpc_endpoint: RPC,
+    // Origin only: never persist URL userinfo, path, query, or fragment.
+    rpc_endpoint: safeRpcOrigin(RPC),
+    rpc_endpoint_redacted: true,
     target: {
       block_hash: BLOCK_HASH,
       block_number: blockNumber.toString(),
@@ -96,7 +114,7 @@ async function main(): Promise<void> {
   writeFileSync(outPath, JSON.stringify(packet, null, 2) + "\n", "utf8");
 
   console.log("Materios B3-B anchor witness");
-  console.log("RPC:", RPC);
+  console.log("RPC origin:", safeRpcOrigin(RPC));
   console.log("block:", blockNumber.toString());
   console.log("block hash:", BLOCK_HASH);
   console.log("state root:", header.stateRoot);
