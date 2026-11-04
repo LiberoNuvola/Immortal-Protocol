@@ -350,3 +350,19 @@ The B3 research boundary is particularly relevant as a guardrail, not as an impl
 
 **Audit scope limitation:** this is a documented audit of the named refs above, not a claim that every historical or private/unlisted repository branch, external deployment, or untracked artifact was exhaustively searched.
 
+### 11.12 Legacy percentage-distribution isolation — CI evidence
+
+The research/non-normative treasury legacy-isolation check was added to the current PRE-RICH Cardano Adapter Sale conformance workflow as an executable release-boundary guard. The exact current-branch run is [Cardano Adapter Sale Conformance #41874629934](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41874629934), commit `6908949ead1f6d786df1a30c0e38f809d6794e85`.
+
+The `Run legacy Treasury distribution isolation audit` step completed SUCCESS and emitted:
+- legacy Treasury policy ES-module import detection: PASS;
+- legacy Treasury policy CommonJS import detection: PASS;
+- unrelated economic-adapter import remains non-triggering: PASS;
+- no active import/invocation/consumer call surface for legacy Treasury distribution in runtime/deployment tooling: PASS;
+- legacy Treasury worker remains explicitly fail-closed pending canonical EconomicAdmission: PASS;
+- final result: `ALL TREASURY LEGACY ISOLATION CHECKS PASSED`.
+
+This is a source-call-surface/release-boundary result only. It does **not** remove or deactivate the historical `plutus/Treasury.hs` validator or its compiled artifact, prove that no old deployment exists on any network, or replace the migration/release isolation decision. The on-chain legacy surface remains identified and must not be used as the current PRE-RICH category-posting mechanism.
+
+No percentage, replacement allocation, datum, validator, script hash or on-chain transaction changed.
+
