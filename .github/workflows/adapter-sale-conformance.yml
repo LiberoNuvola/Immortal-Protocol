@@ -34,6 +34,8 @@ jobs:
       - run: npx vitest run Adapter/CARDANO/runtime/__tests__/AuthoritativeIssueAdmission.test.ts src/__tests__/preRichIssueAdmissionBridge.test.ts Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.test.ts Adapter/CARDANO/observation/DirectUsdmEev.test.ts Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts
       - name: Run repository-wide RF8 production boundary audit
         run: node scripts/check-rf8-production-boundary.mjs
+      - name: Run legacy Treasury distribution isolation audit
+        run: node audit/algorithmic-governability/treasury-legacy-isolation.mjs
 
   frontend-build:
     runs-on: ubuntu-24.04
