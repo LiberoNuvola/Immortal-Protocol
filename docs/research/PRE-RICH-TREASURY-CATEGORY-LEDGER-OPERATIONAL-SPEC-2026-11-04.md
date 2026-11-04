@@ -265,7 +265,7 @@ The following rules must remain explicit before implementation:
 
 A read-only Koios inventory was executed by workflow [Observe Preprod Treasury Inventory #41872051973](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41872051973), on commit `1a397329ddfd0291898f90942926f57a615bc44f`. The run completed SUCCESS and uploaded artifact `preprod-treasury-inventory-observation` (artifact ID `13344053818`; ZIP digest `sha256:cba587240f790d9b3cdf51000af0d6792757be7a7376f69ff16e8e15957c8b40`). Observation timestamp: `2026-11-04T16:54:48.046Z` UTC.
 
-The inventory covered the exact validator-derived current Treasury address and one explicitly selected historical Treasury artifact candidate:
+The inventory covered the exact validator-derived current Treasury address and the historical artifact candidate initially identified before the 2026-09-05 artifact update:
 
 | Scope | Address | Payment script hash | Address UTxOs | Same-script-hash UTxOs |
 |---|---|---|---:|---:|
@@ -282,4 +282,17 @@ Global asset discovery was also recorded, but it is not Treasury attribution:
 **Interpretation:** this Preprod snapshot finds no UTxOs at either queried Treasury address and no UTxOs controlled by either queried Treasury payment script hash. It does not prove that every historical Treasury artifact/address ever deployed is empty, that no off-chain ledger exists, or that any other script address discovered by token-holder search belongs to PRE-RICH. No candidate script-address balance is attributed to Treasury. The inventory is an observational baseline for migration design, not a ledger-state initialization or deployment approval.
 
 Artifact JSON SHA-256: `e2e6b3343c65c7713325e1ae0b4ca89dcc9a66b128031f738cba94a0da47631e` (1,530,909 bytes).
+
+### 11.8 Repository artifact-history closure — same snapshot
+
+After the inventory run, the Git history for both tracked Treasury artifact paths was inspected:
+
+- `src/plutusScripts/treasury.plutus.json` has two content revisions: commit `2d3277ecf89a1b2e7489c85795470b0777446691` and commit `4ad9bcdb491b65af5bbb32a18756186a1ff0ecb5`.
+- `plutus/out/treasury.plutus.json` has two content revisions: commit `e70480d9bac4c9678a1717da227e51120a35d978` and commit `4ad9bcdb491b65af5bbb32a18756186a1ff0ecb5`.
+- The two paths at `4ad9bcdb491b65af5bbb32a18756186a1ff0ecb5` contain the same artifact blob / CBOR (3,096 hex characters); the two earlier path revisions contain the same older artifact blob / CBOR (3,078 hex characters).
+- The current artifact-derived payment script hash is `7a2a58b992e29d10eae279ae8fa93bb44d854ff832f0823b09b19708`; the only other distinct artifact-derived hash in those tracked paths is `6348d72e4de673a1bc643ca8d9e63e7b66b789a0c306dc675473317c`.
+
+Both distinct tracked artifact-derived script hashes were queried through Koios `script_utxos` in the same inventory run and both returned zero UTxOs, including any address variants with a different stake credential. Thus the inventory covers **all distinct Treasury validator artifacts present in the two tracked artifact paths in repository history**, not merely the two exact bech32 addresses.
+
+This closes the migration inventory for the repository-tracked Treasury artifacts on the observed Preprod ledger. It still cannot rule out an undocumented artifact compiled outside the tracked paths, a manually deployed validator from another repository, another network, or an off-chain accounting record. No such external deployment is inferred. No migration datum, genesis category balance or initial ledger value is derived from the empty observation.
 
