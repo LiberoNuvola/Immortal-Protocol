@@ -79,16 +79,20 @@ main = do
       bad = e2c { predecessor = Just "wrong" }
   assert "canonical replay applies event" (eventsApplied st1 == 1)
   assert "bad predecessor rejected"
-    (case replayCanonical rs st1 [bad] of Left _ -> True; Right _ -> False)
+    (case replayCanonical rs emptyState [e1c, bad] of Left _ -> True; Right _ -> False)
 
-  let Right st2 = replayCanonical rs st1 [e2c]
-      directCanonical = committed (e2 { eventId = "evt-canonical-direct"
+  let directCanonical = committed (e2 { eventId = "evt-canonical-direct"
                                       , eventTimestamp = 2
                                       , eventPayload = PayloadStatusChanged 1 Canonical 2
                                       , payloadCommitment = "" })
-      Right st2' = replayCanonical rs emptyState [e1c, e2c]
+      validSequence = replayCanonical rs emptyState [e1c, e2c]
+      sequentialApplication = do
+        afterFirst <- applyCanonicalEvent rs emptyState Nothing e1c
+        applyCanonicalEvent rs afterFirst (Just e1c) e2c
+  assert "canonical replay applies valid sequence"
+    (case validSequence of Right st -> eventsApplied st == 2; Left _ -> False)
   assert "canonical replay rejects direct lifecycle jump to Canonical"
-    (case replayCanonical rs st1 [directCanonical] of Left _ -> True; Right _ -> False)
-  assert "canonical-only replay is deterministic" (st2 == st2')
+    (case replayCanonical rs emptyState [e1c, directCanonical] of Left _ -> True; Right _ -> False)
+  assert "canonical-only replay is deterministic" (validSequence == sequentialApplication)
 
   putStrLn "CANONICAL EVENT PHASE CHECKS PASSED"
