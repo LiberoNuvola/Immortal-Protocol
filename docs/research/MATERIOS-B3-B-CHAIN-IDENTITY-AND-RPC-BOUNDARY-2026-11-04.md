@@ -19,21 +19,37 @@ The B3-B target remains exactly the one pinned in `AGENTS.md`:
 
 No target, receipt, anchor hash, block number, or storage key was substituted.
 
-## Chain identity finding
+## Chain identity finding — corrected fixture identification
 
-The upstream Materios pin recorded by the previous B3-B setup is `076964a0c117640a83aa1f13ace681a89b428611` (commit dated 2026-10-03). In that source, `partnerchain/node/src/command.rs` resolves `--chain preprod` to `chain_spec_preprod::preprod_config()`.
+The recorded upstream Materios pin is `076964a0c117640a83aa1f13ace681a89b428611` (2026-10-03). Its `partnerchain/runtime/src/lib.rs` declares runtime `spec_version: 240`. In that revision, `partnerchain/node/src/command.rs` maps the built-in alias `--chain preprod` to `chain_spec_preprod::preprod_config()`; it also accepts a chain-spec file path via `ChainSpec::from_json_file`.
 
-The inspected upstream `main` at `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` (2026-10-21) is 90 commits ahead of that pin. Its `partnerchain/node/src/chain_spec_preprod.rs` defines `PREPROD_V6_GENESIS` as:
+**The key correction:** the pinned revision already contains the historical live-v6 raw chain spec:
 
-`0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`
+- File: `tools/launch-preflight/fixtures/preprod-v6-raw.json.gz`
+- Git blob SHA: `01ed435660aa8846fc0143894bdaa76d842a0d6a`
+- Test source: `tools/launch-preflight/test_launch_preflight.py`
+- Declared reference hash: `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`
+- Test: `test_genesis_hash_matches_the_live_preprod_genesis`, which asserts `lp.genesis_hash(spec.storage, 1).hex() == PREPROD_GENESIS`.
 
-The same source explicitly documents that live Preprod v6 starts from its dedicated raw chain spec, **not** from `preprod_config()`. The upstream change that introduced the live-v6 genesis handling is [33e5606f08a1839116b83f73e36afa8d67c0a938](https://github.com/Flux-Point-Studios/materios/commit/33e5606f08a1839116b83f73e36afa8d67c0a938), dated 2026-10-20.
+The pinned test module describes this as the raw chain spec published by the Preprod network and says the genesis hash was read from a live node. This is strong upstream fixture/test evidence; it is not a new live RPC observation made during this B3-B pass.
 
-**Consequence:** the old recipe “build the 2026-10-03 pin and start it with `--chain preprod`” has not been shown to load the live Preprod-v6 genesis. Do not run an expensive sync using that recipe until the generated genesis identity is compared with the live-v6 genesis and the target block history. This finding is a chain-identity HOLD, not proof that the B3-B target belongs to another chain.
+Keep the two chain-spec inputs distinct:
+
+1. `preprod-v6-raw.json.gz` is the historical live-v6 fixture.
+2. `preprod-spec240-raw.json` is a separate spec-240 builder-output fixture; the built-in `--chain preprod` route resolves to `preprod_config()`, not to the historical gzip fixture.
+
+The later upstream tip `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` is 90 commits ahead and has a separate spec-243 fixture `preprod-spec243-raw.json`. The current-main `PREPROD_V6_GENESIS` constant agrees with the historical fixture hash above, but the spec-243 builder fixture is not a substitute for the pinned historical v6 raw file. There is no reason to switch the build pin merely to locate the historic genesis input.
+
+**Corrected consequence:** the previous command `--chain preprod` remains unsafe for this historical recovery because it selects the generated builder spec. The pinned source already provides a candidate historical chain spec: decompress `preprod-v6-raw.json.gz` and pass the absolute JSON file path to `--chain`. Before sync, still perform an offline round-trip with the pinned node binary and confirm it accepts the raw file and preserves the live-v6 genesis hash.
+
+This corrects the earlier statement that the old pin lacked the historical raw fixture. It does **not** yet prove that the existing archive database or a node started from that fixture contains the B3-B target history. The anchor block must still be checked against the exact target hash below; B3-B remains OPEN until its historical storage proof is verified.
 
 References:
-- [Pinned upstream source](https://github.com/Flux-Point-Studios/materios/tree/076964a0c117640a83aa1f13ace681a89b428611/partnerchain/node/src)
-- [Inspected upstream tip](https://github.com/Flux-Point-Studios/materios/tree/7d5c36e7dcd60824d84353e93df5d4a03c9c6c30/partnerchain/node/src)
+- [Pinned historical raw fixture](https://github.com/Flux-Point-Studios/materios/blob/076964a0c117640a83aa1f13ace681a89b428611/tools/launch-preflight/fixtures/preprod-v6-raw.json.gz)
+- [Pinned genesis-hash test](https://github.com/Flux-Point-Studios/materios/blob/076964a0c117640a83aa1f13ace681a89b428611/tools/launch-preflight/test_launch_preflight.py)
+- [Pinned chain-spec CLI dispatch](https://github.com/Flux-Point-Studios/materios/blob/076964a0c117640a83aa1f13ace681a89b428611/partnerchain/node/src/command.rs)
+- [Pinned runtime version](https://github.com/Flux-Point-Studios/materios/blob/076964a0c117640a83aa1f13ace681a89b428611/partnerchain/runtime/src/lib.rs)
+- [Later spec-243 fixture](https://github.com/Flux-Point-Studios/materios/blob/7d5c36e7dcd60824d84353e93df5d4a03c9c6c30/tools/launch-preflight/fixtures/preprod-spec243-raw.json)
 - [Live-v6 genesis handling change](https://github.com/Flux-Point-Studios/materios/commit/33e5606f08a1839116b83f73e36afa8d67c0a938)
 
 ## Public RPC diagnostic — 2026-11-04
@@ -79,10 +95,10 @@ The capture script previously wrote the full `MATERIOS_ARCHIVE_RPC` URL into `rp
 
 Continue only in the existing branch and persistent Codespace workflow described in `AGENTS.md`:
 
-1. Inspect Codespace CPU, RAM and disk before a full archive sync.
-2. Resolve and pin the correct Materios source revision and exact raw Preprod-v6 chain spec. Do not silently replace the recorded pin or assume `--chain preprod` means live v6.
-3. Offline, reproduce the genesis hash of the proposed node/spec and compare it with the live-v6 genesis `0x0e46…f7bf`. The target history must then independently establish that block number 1,856,408 maps to the exact pinned anchor hash.
-4. Keep archive database and node state outside the repository; use archive pruning and loopback RPC in the persistent Codespace.
+1. From the pinned upstream revision, decompress `tools/launch-preflight/fixtures/preprod-v6-raw.json.gz` and run `test_genesis_hash_matches_the_live_preprod_genesis`; preserve the fixture's exact blob identity.
+2. Build the node at the same pin and offline-load the decompressed raw JSON by absolute file path (`--chain <raw-file>`), never via the generated alias `--chain preprod`. Round-trip with `build-spec --raw` and confirm the genesis hash is still `0x0e46…f7bf`.
+3. Inspect Codespace CPU, RAM and disk before any full archive sync. If adequate, start the node with the exact raw-v6 file path, archive pruning and loopback RPC.
+4. Independently establish that block number 1,856,408 maps to the exact pinned anchor hash before attempting the storage capture.
 5. Run the existing `archive-rpc-preflight.mjs` against the exact target block hash and storage key. Require non-null historical storage and a proof whose `at` is exactly the target hash.
 6. Run the existing Rust verifier against the exact target header StateRoot, key, value and proof. Materialize the existing verified witness artifact.
 
