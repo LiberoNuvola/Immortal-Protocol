@@ -54,7 +54,7 @@ jobs:
           const fs = require('node:fs');
           const html = fs.readFileSync('dist/web/ecosystem.html', 'utf8');
           const checks = {
-            arbAgent: /Arb\\s+Agent/i.test(html),
+            arbAgent: html.includes('Arb Agent'),
             preRich: /PRE-RICH/i.test(html)
           };
           console.log('Rendered application catalogue checks:', checks);
