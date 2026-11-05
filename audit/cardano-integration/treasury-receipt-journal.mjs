@@ -83,7 +83,7 @@ function parseTransaction(tx, expected) {
     const address = normalizedAddress(output)
     const credential = normalizedCredential(output)
     if (!address || !credential) fail('TREASURY_JOURNAL_OUTPUT_ADDRESS_MISSING_' + ref)
-    if (!Array.isArray(output.asset_list)) fail('TREASURY_JOURNAL_OUTPUT_ASSET_LIST_MISSING_' + ref)
+    if (output.asset_list === undefined) fail('TREASURY_JOURNAL_OUTPUT_ASSET_LIST_MISSING_' + ref)
     const valueLovelace = integerString(output.value, 'TREASURY_JOURNAL_OUTPUT_VALUE_INVALID_' + ref)
     if (BigInt(valueLovelace) < 0n) fail('TREASURY_JOURNAL_OUTPUT_VALUE_NEGATIVE_' + ref)
     return {
@@ -104,7 +104,7 @@ function parseTransaction(tx, expected) {
     const address = normalizedAddress(input)
     const credential = normalizedCredential(input)
     if (!address || !credential) fail('TREASURY_JOURNAL_INPUT_ADDRESS_MISSING_' + ref)
-    if (!Array.isArray(input.asset_list)) fail('TREASURY_JOURNAL_INPUT_ASSET_LIST_MISSING_' + ref)
+    if (input.asset_list === undefined) fail('TREASURY_JOURNAL_INPUT_ASSET_LIST_MISSING_' + ref)
     const valueLovelace = integerString(input.value, 'TREASURY_JOURNAL_INPUT_VALUE_INVALID_' + ref)
     if (BigInt(valueLovelace) < 0n) fail('TREASURY_JOURNAL_INPUT_VALUE_NEGATIVE_' + ref)
     return {
