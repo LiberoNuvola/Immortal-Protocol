@@ -229,6 +229,9 @@ export function buildTicketSaleReceiptJournal({
     if (receiptLocation.blockHeight !== tx.blockHeight) {
       fail('TREASURY_JOURNAL_TREASURY_OUTPUT_BLOCK_MISMATCH_' + treasuryOutput.ref)
     }
+    if (receiptLocation.blockTime !== tx.txTimestamp) {
+      fail('TREASURY_JOURNAL_TREASURY_OUTPUT_BLOCK_TIME_MISMATCH_' + treasuryOutput.ref)
+    }
     if (receiptLocation.paymentCredential && receiptLocation.paymentCredential !== expected.treasuryPaymentCredential) {
       fail('TREASURY_JOURNAL_TREASURY_OUTPUT_CREDENTIAL_MISMATCH_' + treasuryOutput.ref)
     }
