@@ -476,7 +476,7 @@ Each receipt has an idempotent event key equal to its transaction output referen
 
 #### 11.15.3 Spend lineage and limitations
 
-A receipt marked spent is linked to the unique valid transaction whose inputs consume its exact output reference. The journal records whether that transaction retains value under the canonical Treasury address, moves it elsewhere, or cannot yet be reconstructed from the queried history. Multiple consumers and inconsistent spent flags fail closed.
+A receipt marked spent is linked to the unique valid transaction whose inputs consume its exact output reference. The consumer record preserves every output's exact destination, lovelace and native asset quantities, and flags outputs under the canonical Treasury and B1 PrizePool identities. A transaction containing a B1 output is classified only as `SPENT_WITH_B1_PRIZEPOOL_OUTPUT`; this does **not** assert that the full receipt amount was transferred to PrizePool. Exact category debit and custody credit still require a separate asset-delta reconciliation and authorized transition. Multiple consumers and inconsistent spent flags fail closed.
 
 The journal records **raw asset quantities only**. It does not:
 - convert ADA or another asset into USDM;
@@ -493,7 +493,7 @@ A current UTxO snapshot alone is not the full history: spent receipt links requi
 Current implementation files:
 
 - \`audit/cardano-integration/treasury-receipt-journal.mjs\` — deterministic receipt classification and spend-lineage reconstruction;
-- \`audit/cardano-integration/treasury-receipt-journal.test.mjs\` — fixture coverage for valid receipt, non-sale inflow, wrong Treasury address, duplicate/missing outputs, invalid mint quantity/contract, spent lineage, unresolved consumer, multiple consumers and history cross-check;
+- \`audit/cardano-integration/treasury-receipt-journal.test.mjs\` — fixture coverage for valid receipt, non-sale inflow, wrong Treasury address, duplicate/missing outputs, invalid mint quantity/contract, spent lineage, B1-output presence without over-attribution, unresolved consumer, multiple consumers, non-positive output asset quantity and history cross-check;
 - \`audit/cardano-integration/observe-preprod-treasury-receipts.mjs\` — read-only Koios observer and deployment-topology pins;
 - \`.github/workflows/adapter-sale-conformance.yml\` — runs the journal fixture suite on the current branch push path.
 
