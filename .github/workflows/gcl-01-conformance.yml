@@ -1,0 +1,36 @@
+name: GCL-01 Design Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "verification/gcl-01/**"
+      - "src/__tests__/gcl01-conformance.test.ts"
+      - ".github/workflows/gcl-01-conformance.yml"
+  pull_request:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "verification/gcl-01/**"
+      - "src/__tests__/gcl01-conformance.test.ts"
+      - ".github/workflows/gcl-01-conformance.yml"
+
+jobs:
+  gcl-01:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run GCL-01 design-only conformance
+        run: npx vitest run src/__tests__/gcl01-conformance.test.ts

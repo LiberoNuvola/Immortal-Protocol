@@ -1,0 +1,766 @@
+{
+  "fixtureVersion": "GCL-01-CONFORMANCE-V0.1",
+  "status": "DESIGN_ONLY_NOT_NORMATIVE",
+  "note": "Synthetic fixtures only. They test candidate boundaries and do not define PRE-RICH, insurance, Cormia, game or Carob policy.",
+  "families": [
+    {
+      "familyRef": {
+        "namespace": "pre-rich",
+        "familyId": "ticket-price-access",
+        "version": "1"
+      },
+      "ownerDomain": "PRE-RICH",
+      "dimension": "ticket-price-access",
+      "ordering": {
+        "kind": "nominal"
+      },
+      "categoryRefs": [
+        "price-1-usdm",
+        "price-2-usdm",
+        "price-3-usdm",
+        "price-5-usdm",
+        "price-10-usdm",
+        "price-25-usdm",
+        "price-50-usdm",
+        "price-100-usdm"
+      ],
+      "supportedAssignmentModes": [
+        "explicit-selection",
+        "state-derived"
+      ]
+    },
+    {
+      "familyRef": {
+        "namespace": "pre-rich",
+        "familyId": "ticket-price-access",
+        "version": "2"
+      },
+      "ownerDomain": "PRE-RICH",
+      "dimension": "ticket-price-access",
+      "ordering": {
+        "kind": "nominal"
+      },
+      "categoryRefs": [
+        "price-1-usdm",
+        "price-2-usdm",
+        "price-3-usdm",
+        "price-5-usdm",
+        "price-10-usdm",
+        "price-25-usdm",
+        "price-50-usdm",
+        "price-100-usdm",
+        "future-profile-category"
+      ],
+      "supportedAssignmentModes": [
+        "explicit-selection",
+        "state-derived"
+      ]
+    },
+    {
+      "familyRef": {
+        "namespace": "pre-rich",
+        "familyId": "row-outcome-payout",
+        "version": "1"
+      },
+      "ownerDomain": "PRE-RICH",
+      "dimension": "row-outcome-payout",
+      "ordering": {
+        "kind": "ordinal"
+      },
+      "categoryRefs": [
+        "no-win",
+        "tier-1",
+        "tier-2",
+        "tier-3",
+        "tier-4",
+        "tier-5"
+      ],
+      "supportedAssignmentModes": [
+        "deterministic-rule"
+      ]
+    },
+    {
+      "familyRef": {
+        "namespace": "insurance-demo",
+        "familyId": "merit-assessment",
+        "version": "1"
+      },
+      "ownerDomain": "INSURANCE-DEMO",
+      "dimension": "underwriting-merit",
+      "ordering": {
+        "kind": "ordinal"
+      },
+      "categoryRefs": [
+        "merit-a",
+        "merit-b",
+        "merit-c"
+      ],
+      "supportedAssignmentModes": [
+        "evidence-assessment",
+        "model-assisted"
+      ]
+    },
+    {
+      "familyRef": {
+        "namespace": "cormia-demo",
+        "familyId": "action-risk-band",
+        "version": "1"
+      },
+      "ownerDomain": "CORMIA-DEMO",
+      "dimension": "contextual-action-risk",
+      "ordering": {
+        "kind": "ordinal"
+      },
+      "categoryRefs": [
+        "low",
+        "elevated",
+        "high",
+        "critical"
+      ],
+      "supportedAssignmentModes": [
+        "evidence-assessment",
+        "model-assisted"
+      ]
+    },
+    {
+      "familyRef": {
+        "namespace": "game-demo",
+        "familyId": "difficulty-level",
+        "version": "1"
+      },
+      "ownerDomain": "GAME-DEMO",
+      "dimension": "game-difficulty",
+      "ordering": {
+        "kind": "ordinal"
+      },
+      "categoryRefs": [
+        "easy",
+        "standard",
+        "hard",
+        "expert"
+      ],
+      "supportedAssignmentModes": [
+        "explicit-selection"
+      ]
+    },
+    {
+      "familyRef": {
+        "namespace": "carob-demo",
+        "familyId": "evidence-quality",
+        "version": "1"
+      },
+      "ownerDomain": "CAROB-DEMO",
+      "dimension": "observation-evidence-quality",
+      "ordering": {
+        "kind": "nominal"
+      },
+      "categoryRefs": [
+        "VALID",
+        "DEGRADED",
+        "STALE",
+        "MISSING",
+        "CONFLICTING",
+        "UNVERIFIED"
+      ],
+      "supportedAssignmentModes": [
+        "deterministic-rule",
+        "evidence-assessment"
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "profileRef": "pre-rich-price-effects@1",
+      "effectDomain": "economic",
+      "authorityRef": "IMMORTAL.EconomicGate"
+    },
+    {
+      "profileRef": "pre-rich-row-payout@1",
+      "effectDomain": "economic",
+      "authorityRef": "IMMORTAL.EconomicGate"
+    },
+    {
+      "profileRef": "insurer-merit-terms@1",
+      "effectDomain": "coverage",
+      "authorityRef": "INSURER.UnderwritingAuthority"
+    },
+    {
+      "profileRef": "bot-operational-risk@1",
+      "effectDomain": "operational",
+      "authorityRef": "CORMIA.RuntimePolicy"
+    },
+    {
+      "profileRef": "game-difficulty-config@1",
+      "effectDomain": "experience",
+      "authorityRef": "GAME.EnginePolicy"
+    },
+    {
+      "profileRef": "carob-evidence-handling@1",
+      "effectDomain": "evidence-quality",
+      "authorityRef": "CAROB.PolicyAuthority"
+    }
+  ],
+  "assignments": [
+    {
+      "assignmentId": "A-PRE-PRICE-001",
+      "familyRef": {
+        "namespace": "pre-rich",
+        "familyId": "ticket-price-access",
+        "version": "1"
+      },
+      "subjectRef": "ticket-request-001",
+      "scopeRef": "sale-attempt-001",
+      "mode": "explicit-selection",
+      "values": [
+        {
+          "axisRef": "price",
+          "categoryRef": "price-5-usdm"
+        }
+      ],
+      "methodRef": null,
+      "evidenceRefs": []
+    },
+    {
+      "assignmentId": "A-PRE-ROW-001",
+      "familyRef": {
+        "namespace": "pre-rich",
+        "familyId": "row-outcome-payout",
+        "version": "1"
+      },
+      "subjectRef": "ticket-001",
+      "scopeRef": "row-1-reveal",
+      "mode": "deterministic-rule",
+      "values": [
+        {
+          "axisRef": "row-outcome",
+          "categoryRef": "tier-2"
+        }
+      ],
+      "methodRef": "pre-rich-classic6-row-tier@frozen",
+      "evidenceRefs": [
+        "ev:pre-rich:row-result"
+      ]
+    },
+    {
+      "assignmentId": "A-INS-001",
+      "familyRef": {
+        "namespace": "insurance-demo",
+        "familyId": "merit-assessment",
+        "version": "1"
+      },
+      "subjectRef": "policyholder-record-001",
+      "scopeRef": "quote-001",
+      "mode": "evidence-assessment",
+      "values": [
+        {
+          "axisRef": "merit",
+          "categoryRef": "merit-b"
+        }
+      ],
+      "methodRef": "insurer-merit-assessment@1",
+      "evidenceRefs": [
+        "ev:ins:application"
+      ]
+    },
+    {
+      "assignmentId": "A-BOT-001",
+      "familyRef": {
+        "namespace": "cormia-demo",
+        "familyId": "action-risk-band",
+        "version": "1"
+      },
+      "subjectRef": "agent-session-001",
+      "scopeRef": "action:transfer-001",
+      "mode": "model-assisted",
+      "values": [
+        {
+          "axisRef": "action-risk",
+          "categoryRef": "high"
+        }
+      ],
+      "methodRef": "bot-risk-model@1",
+      "evidenceRefs": [
+        "ev:bot:action-context"
+      ]
+    },
+    {
+      "assignmentId": "A-GAME-001",
+      "familyRef": {
+        "namespace": "game-demo",
+        "familyId": "difficulty-level",
+        "version": "1"
+      },
+      "subjectRef": "player-session-001",
+      "scopeRef": "session-001",
+      "mode": "explicit-selection",
+      "values": [
+        {
+          "axisRef": "difficulty",
+          "categoryRef": "hard"
+        }
+      ],
+      "methodRef": null,
+      "evidenceRefs": []
+    },
+    {
+      "assignmentId": "A-CAROB-001",
+      "familyRef": {
+        "namespace": "carob-demo",
+        "familyId": "evidence-quality",
+        "version": "1"
+      },
+      "subjectRef": "plot-a",
+      "scopeRef": "sensor-evidence-001",
+      "mode": "deterministic-rule",
+      "values": [
+        {
+          "axisRef": "quality",
+          "categoryRef": "STALE"
+        }
+      ],
+      "methodRef": "carob-freshness-rule@1",
+      "evidenceRefs": [
+        "ev:carob:observation"
+      ]
+    }
+  ],
+  "effectBindings": [
+    {
+      "effectBindingId": "E-PRE-PRICE-001",
+      "assignmentRef": "A-PRE-PRICE-001",
+      "effectProfileRef": "pre-rich-price-effects@1",
+      "effectDomain": "economic",
+      "effectSetRef": "fixture:pre-rich-price-effect-set",
+      "subjectRef": "ticket-request-001",
+      "scopeRef": "sale-attempt-001",
+      "actionRef": "PRE-RICH.SALE"
+    },
+    {
+      "effectBindingId": "E-PRE-ROW-001",
+      "assignmentRef": "A-PRE-ROW-001",
+      "effectProfileRef": "pre-rich-row-payout@1",
+      "effectDomain": "economic",
+      "effectSetRef": "fixture:pre-rich-row-payout-effect",
+      "subjectRef": "ticket-001",
+      "scopeRef": "row-1-reveal",
+      "actionRef": "PRE-RICH.CRYSTALLIZE_ROW_PAYOUT"
+    },
+    {
+      "effectBindingId": "E-INS-001",
+      "assignmentRef": "A-INS-001",
+      "effectProfileRef": "insurer-merit-terms@1",
+      "effectDomain": "coverage",
+      "effectSetRef": "fixture:insurance-terms",
+      "subjectRef": "policyholder-record-001",
+      "scopeRef": "quote-001",
+      "actionRef": "INSURANCE.ISSUE_QUOTE"
+    },
+    {
+      "effectBindingId": "E-BOT-001",
+      "assignmentRef": "A-BOT-001",
+      "effectProfileRef": "bot-operational-risk@1",
+      "effectDomain": "operational",
+      "effectSetRef": "fixture:bot-operational-controls",
+      "subjectRef": "agent-session-001",
+      "scopeRef": "action:transfer-001",
+      "actionRef": "CORMIA.EXECUTE_ACTION"
+    },
+    {
+      "effectBindingId": "E-GAME-001",
+      "assignmentRef": "A-GAME-001",
+      "effectProfileRef": "game-difficulty-config@1",
+      "effectDomain": "experience",
+      "effectSetRef": "fixture:game-difficulty-config",
+      "subjectRef": "player-session-001",
+      "scopeRef": "session-001",
+      "actionRef": "GAME.START_SESSION"
+    },
+    {
+      "effectBindingId": "E-CAROB-001",
+      "assignmentRef": "A-CAROB-001",
+      "effectProfileRef": "carob-evidence-handling@1",
+      "effectDomain": "evidence-quality",
+      "effectSetRef": "fixture:carob-evidence-handling",
+      "subjectRef": "plot-a",
+      "scopeRef": "sensor-evidence-001",
+      "actionRef": "CAROB.CLASSIFY_EVIDENCE_QUALITY"
+    }
+  ],
+  "decisions": [
+    {
+      "decisionId": "D-E-PRE-PRICE-001",
+      "subjectRef": "ticket-request-001",
+      "scopeRef": "sale-attempt-001",
+      "actionRef": "PRE-RICH.SALE",
+      "assignmentRefs": [
+        "A-PRE-PRICE-001"
+      ],
+      "effectBindingRefs": [
+        "E-PRE-PRICE-001"
+      ],
+      "authorityRef": "IMMORTAL.EconomicGate",
+      "result": "ACCEPT"
+    },
+    {
+      "decisionId": "D-E-PRE-ROW-001",
+      "subjectRef": "ticket-001",
+      "scopeRef": "row-1-reveal",
+      "actionRef": "PRE-RICH.CRYSTALLIZE_ROW_PAYOUT",
+      "assignmentRefs": [
+        "A-PRE-ROW-001"
+      ],
+      "effectBindingRefs": [
+        "E-PRE-ROW-001"
+      ],
+      "authorityRef": "IMMORTAL.EconomicGate",
+      "result": "ACCEPT"
+    },
+    {
+      "decisionId": "D-E-INS-001",
+      "subjectRef": "policyholder-record-001",
+      "scopeRef": "quote-001",
+      "actionRef": "INSURANCE.ISSUE_QUOTE",
+      "assignmentRefs": [
+        "A-INS-001"
+      ],
+      "effectBindingRefs": [
+        "E-INS-001"
+      ],
+      "authorityRef": "INSURER.UnderwritingAuthority",
+      "result": "ACCEPT"
+    },
+    {
+      "decisionId": "D-E-BOT-001",
+      "subjectRef": "agent-session-001",
+      "scopeRef": "action:transfer-001",
+      "actionRef": "CORMIA.EXECUTE_ACTION",
+      "assignmentRefs": [
+        "A-BOT-001"
+      ],
+      "effectBindingRefs": [
+        "E-BOT-001"
+      ],
+      "authorityRef": "CORMIA.RuntimePolicy",
+      "result": "ACCEPT"
+    },
+    {
+      "decisionId": "D-E-GAME-001",
+      "subjectRef": "player-session-001",
+      "scopeRef": "session-001",
+      "actionRef": "GAME.START_SESSION",
+      "assignmentRefs": [
+        "A-GAME-001"
+      ],
+      "effectBindingRefs": [
+        "E-GAME-001"
+      ],
+      "authorityRef": "GAME.EnginePolicy",
+      "result": "ACCEPT"
+    },
+    {
+      "decisionId": "D-E-CAROB-001",
+      "subjectRef": "plot-a",
+      "scopeRef": "sensor-evidence-001",
+      "actionRef": "CAROB.CLASSIFY_EVIDENCE_QUALITY",
+      "assignmentRefs": [
+        "A-CAROB-001"
+      ],
+      "effectBindingRefs": [
+        "E-CAROB-001"
+      ],
+      "authorityRef": "CAROB.PolicyAuthority",
+      "result": "ACCEPT"
+    }
+  ],
+  "transitionPolicies": [
+    {
+      "policyRef": "pre-rich-price-transition@1",
+      "familyRef": {
+        "namespace": "pre-rich",
+        "familyId": "ticket-price-access",
+        "version": "1"
+      },
+      "changeMode": "prospective-reassessment",
+      "retroactiveMutation": "prohibited",
+      "historyMode": "preserve-superseded-assignments"
+    },
+    {
+      "policyRef": "pre-rich-row-tier-transition@1",
+      "familyRef": {
+        "namespace": "pre-rich",
+        "familyId": "row-outcome-payout",
+        "version": "1"
+      },
+      "changeMode": "immutable-after-commitment",
+      "retroactiveMutation": "prohibited",
+      "historyMode": "preserve-original-assignment-and-effect-snapshot"
+    },
+    {
+      "policyRef": "insurance-merit-transition@1",
+      "familyRef": {
+        "namespace": "insurance-demo",
+        "familyId": "merit-assessment",
+        "version": "1"
+      },
+      "changeMode": "prospective-reassessment",
+      "retroactiveMutation": "prohibited",
+      "historyMode": "preserve-superseded-assignments"
+    },
+    {
+      "policyRef": "bot-risk-transition@1",
+      "familyRef": {
+        "namespace": "cormia-demo",
+        "familyId": "action-risk-band",
+        "version": "1"
+      },
+      "changeMode": "prospective-reassessment",
+      "retroactiveMutation": "prohibited",
+      "historyMode": "preserve-superseded-assignments"
+    },
+    {
+      "policyRef": "game-difficulty-transition@1",
+      "familyRef": {
+        "namespace": "game-demo",
+        "familyId": "difficulty-level",
+        "version": "1"
+      },
+      "changeMode": "explicit-user-selection",
+      "retroactiveMutation": "prohibited",
+      "historyMode": "preserve-selection-history"
+    },
+    {
+      "policyRef": "carob-quality-transition@1",
+      "familyRef": {
+        "namespace": "carob-demo",
+        "familyId": "evidence-quality",
+        "version": "1"
+      },
+      "changeMode": "expiring-reissuable",
+      "retroactiveMutation": "prohibited",
+      "historyMode": "preserve-observation-lineage"
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceRef": "ev:pre-rich:row-result",
+      "artifactDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "producerRef": "pre-rich-game-result",
+      "eventRef": "ticket-001:row-1-result",
+      "subjectRef": "ticket-001",
+      "scopeRef": "row-1-reveal",
+      "observedAt": "2026-11-05T10:00:00Z",
+      "methodRef": "pre-rich-row-result@frozen",
+      "lineageRefs": [],
+      "correlationGroupRefs": []
+    },
+    {
+      "evidenceRef": "ev:ins:application",
+      "artifactDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "producerRef": "insurer-document-ingress",
+      "eventRef": "policyholder-001:application-001",
+      "subjectRef": "policyholder-record-001",
+      "scopeRef": "quote-001",
+      "observedAt": "2026-11-05T10:00:00Z",
+      "methodRef": null,
+      "lineageRefs": [],
+      "correlationGroupRefs": []
+    },
+    {
+      "evidenceRef": "ev:bot:action-context",
+      "artifactDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "producerRef": "runtime-action-observer",
+      "eventRef": "agent-session-001:action-001",
+      "subjectRef": "agent-session-001",
+      "scopeRef": "action:transfer-001",
+      "observedAt": "2026-11-05T10:00:00Z",
+      "methodRef": "runtime-context-capture@1",
+      "lineageRefs": [],
+      "correlationGroupRefs": []
+    },
+    {
+      "evidenceRef": "ev:carob:observation",
+      "artifactDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "producerRef": "carob-sensor-17",
+      "eventRef": "site-a:sensor-17:obs-001",
+      "subjectRef": "plot-a",
+      "scopeRef": "sensor-evidence-001",
+      "observedAt": "2026-11-05T10:00:00Z",
+      "methodRef": "sensor-ingress@1",
+      "lineageRefs": [],
+      "correlationGroupRefs": []
+    }
+  ],
+  "lineageScenarios": [
+    {
+      "id": "same-source-distinct-events",
+      "expectedRelation": "same-source",
+      "expectedIntegrity": "valid",
+      "records": [
+        {
+          "evidenceRef": "same-source-a",
+          "artifactDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+          "producerRef": "sensor-17",
+          "eventRef": "event-001",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [],
+          "correlationGroupRefs": []
+        },
+        {
+          "evidenceRef": "same-source-b",
+          "artifactDigest": "2222222222222222222222222222222222222222222222222222222222222222",
+          "producerRef": "sensor-17",
+          "eventRef": "event-002",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [],
+          "correlationGroupRefs": []
+        }
+      ]
+    },
+    {
+      "id": "model-outputs-share-source-observation",
+      "expectedRelation": "shared-ancestor",
+      "expectedIntegrity": "valid",
+      "records": [
+        {
+          "evidenceRef": "root-observation",
+          "artifactDigest": "3333333333333333333333333333333333333333333333333333333333333333",
+          "producerRef": "sensor-17",
+          "eventRef": "event-root",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [],
+          "correlationGroupRefs": []
+        },
+        {
+          "evidenceRef": "model-output-a",
+          "artifactDigest": "4444444444444444444444444444444444444444444444444444444444444444",
+          "producerRef": "model-a",
+          "eventRef": "analysis-a",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [
+            {
+              "relatedEvidenceRef": "root-observation",
+              "relation": "derived-from"
+            }
+          ],
+          "correlationGroupRefs": []
+        },
+        {
+          "evidenceRef": "model-output-b",
+          "artifactDigest": "5555555555555555555555555555555555555555555555555555555555555555",
+          "producerRef": "model-b",
+          "eventRef": "analysis-b",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [
+            {
+              "relatedEvidenceRef": "root-observation",
+              "relation": "derived-from"
+            }
+          ],
+          "correlationGroupRefs": []
+        }
+      ]
+    },
+    {
+      "id": "declared-correlation-group",
+      "expectedRelation": "correlated-with",
+      "expectedIntegrity": "valid",
+      "records": [
+        {
+          "evidenceRef": "correlated-a",
+          "artifactDigest": "6666666666666666666666666666666666666666666666666666666666666666",
+          "producerRef": "source-a",
+          "eventRef": "event-a",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [],
+          "correlationGroupRefs": [
+            "meteo-cell-42"
+          ]
+        },
+        {
+          "evidenceRef": "correlated-b",
+          "artifactDigest": "7777777777777777777777777777777777777777777777777777777777777777",
+          "producerRef": "source-b",
+          "eventRef": "event-b",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [],
+          "correlationGroupRefs": [
+            "meteo-cell-42"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unknown-independence",
+      "expectedRelation": "unknown",
+      "expectedIntegrity": "valid",
+      "records": [
+        {
+          "evidenceRef": "unknown-a",
+          "artifactDigest": "8888888888888888888888888888888888888888888888888888888888888888",
+          "producerRef": "producer-a",
+          "eventRef": "event-a",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [],
+          "correlationGroupRefs": []
+        },
+        {
+          "evidenceRef": "unknown-b",
+          "artifactDigest": "9999999999999999999999999999999999999999999999999999999999999999",
+          "producerRef": "producer-b",
+          "eventRef": "event-b",
+          "subjectRef": "subject-x",
+          "scopeRef": "scope-x",
+          "observedAt": "2026-11-05T10:00:00Z",
+          "methodRef": null,
+          "lineageRefs": [],
+          "correlationGroupRefs": []
+        }
+      ]
+    }
+  ],
+  "negativeExpectationIds": [
+    "family.unknown-version",
+    "family.same-version-conflict",
+    "assignment.unsupported-mode",
+    "assignment.derived-without-method",
+    "assignment.unknown-category",
+    "assignment.duplicate-evidence-ref",
+    "assignment.authority-escalation",
+    "assignment.eligibility-conflation",
+    "transition.retroactive-mutation",
+    "effect.domain-mismatch",
+    "effect.subject-substitution",
+    "effect.version-substitution",
+    "admission.action-substitution",
+    "admission.authority-impersonation",
+    "lineage.duplicate-artifact-contribution",
+    "lineage.duplicate-event-contribution",
+    "lineage.scope-substitution",
+    "lineage.cycle",
+    "lineage.missing-parent"
+  ]
+}
