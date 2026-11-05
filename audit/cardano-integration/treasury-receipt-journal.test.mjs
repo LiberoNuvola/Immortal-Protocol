@@ -378,7 +378,7 @@ test('classifies a receipt consumed by a Treasury-to-PrizePool transfer and pres
     transactions: [saleTx(), consumer],
   })
   const receipt = journal.receiptEvents[0]
-  assert.equal(receipt.lifecycle.state, 'SPENT_TO_B1_PRIZEPOOL')
+  assert.equal(receipt.lifecycle.state, 'SPENT_WITH_B1_PRIZEPOOL_OUTPUT')
   assert.deepEqual(receipt.lifecycle.b1PrizePoolOutputRefs, [CONSUMER_TX + '#0'])
   const consumerRecord = journal.consumingTransactions[0]
   assert.equal(consumerRecord.outputs[0].address, POOL)
