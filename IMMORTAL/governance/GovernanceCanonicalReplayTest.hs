@@ -257,6 +257,18 @@ main = do
 
   putStrLn "GOV-28 CANONICAL LIFECYCLE ADMISSION CHECKS PASSED"
   let finalizationState = GovernanceState 1 [finalizationProposal] 0
+      collapsedRejectedEvent = withCommitment
+        (CanonicalEvent "evt-rejected-shortcut" 7 1 EStatusChanged System 259400
+          (PayloadStatusChanged 7 Rejected 259400)
+          "payload-rejected-shortcut" Nothing
+          [EvidenceRef "rejected-shortcut-evidence"] AcceptedEvent)
+  assert (canonicalGovernanceEventValid ruleset Nothing collapsedRejectedEvent)
+    "generic Rejected shortcut has a valid envelope before lifecycle admission"
+  assert (not (canonicalLifecycleAdmission finalizationState collapsedRejectedEvent))
+    "canonical lifecycle admission rejects generic Rejected shortcut"
+  case applyCanonicalEvent ruleset finalizationState Nothing collapsedRejectedEvent of
+    Left _ -> putStrLn "PASS: generic Rejected shortcut rejected before state mutation"
+    Right _ -> error "FAIL: generic Rejected shortcut bypassed DECISION_FINALIZED"
   case applyCanonicalEvent ruleset finalizationState Nothing (withCommitment finalizedEvent) of
     Left err -> error ("FAIL: decision finalization rejected: " ++ err)
     Right st -> do

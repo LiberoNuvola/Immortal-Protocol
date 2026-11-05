@@ -26,8 +26,39 @@ main = do
       committed e = e { payloadCommitment = commitmentDigestHex e }
       e1c = committed e1
       e2c = committed e2
+      proposalFieldVariants =
+        [ p { proposalStatus = Proposed }
+        , p { communityReviewOpenedAt = Just 1 }
+        , p { votingOpenedAt = Just 1 }
+        , p { votingClosedAt = Just 1 }
+        , p { finalizationAt = Just 1 }
+        , p { emergencyActivatedAt = Just 1 }
+        , p { proposalVotes = [Vote 1 1 For 0] }
+        , p { proposalDelegations = [Delegation 1 2] }
+        , p { proposalGates = GateResult False False False False }
+        ]
+      oldCommitmentStillMatches candidate =
+        commitmentMatches (e1c { eventPayload = PayloadProposalSubmitted candidate })
 
   assert "canonical event schema" (eventSchemaValid e1c)
+  assert "proposal commitment binds every state-bearing Proposal field"
+    (all (not . oldCommitmentStillMatches) proposalFieldVariants)
+  assert "proposal creation rejects preloaded terminal lifecycle state"
+    (not (eventSchemaValid
+      (e1c { eventPayload = PayloadProposalSubmitted (p { proposalStatus = Accepted }) })))
+  assert "proposal creation rejects preloaded lifecycle timestamps"
+    (not (eventSchemaValid
+      (e1c { eventPayload = PayloadProposalSubmitted (p { votingOpenedAt = Just 1 }) })))
+  assert "proposal creation rejects preloaded votes"
+    (not (eventSchemaValid
+      (e1c { eventPayload = PayloadProposalSubmitted (p { proposalVotes = [Vote 1 1 For 0] }) })))
+  assert "proposal creation rejects preloaded delegations"
+    (not (eventSchemaValid
+      (e1c { eventPayload = PayloadProposalSubmitted (p { proposalDelegations = [Delegation 1 2] }) })))
+  assert "legacy ProposalSubmitted projection rejects a preloaded lifecycle state"
+    (case applyEvent emptyState (ProposalSubmitted (p { proposalStatus = Accepted })) of
+       Left _ -> True
+       Right _ -> False)
   assert "canonical commitment matches" (commitmentMatches e1c)
   assert "ruleset version is registered" (rulesetVersionRegistered 1 rs)
   assert "canonical predecessor" (predecessorValid (Just e1c) e2c)

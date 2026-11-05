@@ -59,7 +59,16 @@ canonicalPayloadText p = case p of
     ";snapshot_id=" ++ show (snapshotId (proposalSnapshot x)) ++
     ";snapshot_at=" ++ show (snapshotAt (proposalSnapshot x)) ++
     ";snapshot_weights=" ++ show (snapshotWeights (proposalSnapshot x)) ++
-    ";created_at=" ++ show (proposalCreatedAt x)
+    ";created_at=" ++ show (proposalCreatedAt x) ++
+    ";community_review_opened_at=" ++ show (communityReviewOpenedAt x) ++
+    ";voting_opened_at=" ++ show (votingOpenedAt x) ++
+    ";voting_closed_at=" ++ show (votingClosedAt x) ++
+    ";finalization_at=" ++ show (finalizationAt x) ++
+    ";emergency_activated_at=" ++ show (emergencyActivatedAt x) ++
+    ";votes=" ++ show (proposalVotes x) ++
+    ";delegations=" ++ show (proposalDelegations x) ++
+    ";gates=" ++ show (proposalGates x) ++
+    ";status=" ++ show (proposalStatus x)
   PayloadProposalClassified pid cls at ->
     "type=ProposalClassified;proposal_id=" ++ show pid ++ ";class=" ++ show cls ++ ";timestamp=" ++ show at
   PayloadStatusChanged pid st at ->
@@ -132,11 +141,17 @@ eventSchemaValid e =
   eventTimestamp e >= 0 &&
   payloadProposalId (eventPayload e) == eventProposalId e &&
   eventTypeMatchesPayload (eventType e) (eventPayload e) &&
+  payloadStateValid (eventPayload e) &&
   payloadTimestampCompatible e &&
   payloadRulesetVersionCompatible e &&
   not (null (payloadCommitment e)) &&
   not (null (evidenceRefs e)) &&
   unique (evidenceRefs e)
+
+payloadStateValid :: CanonicalPayload -> Bool
+payloadStateValid p = case p of
+  PayloadProposalSubmitted proposal -> proposalSubmissionValid proposal
+  _ -> True
 
 payloadRulesetVersionCompatible :: CanonicalEvent -> Bool
 payloadRulesetVersionCompatible e = case eventPayload e of

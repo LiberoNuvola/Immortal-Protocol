@@ -4,7 +4,7 @@ module Governance
   , Delegation(..), GateResult(..), Proposal(..)
   , GovernanceState(..), GovernanceEvent(..), emptyState
   , communityReviewSeconds, votingSeconds, finalitySeconds, emergencySeconds
-  , snapshotValid, snapshotWeight, eligibleWeight, voteWeight
+  , snapshotValid, proposalSubmissionValid, snapshotWeight, eligibleWeight, voteWeight
   , effectiveVoteWeight, participatingWeight, quorumReached
   , approvalReached, gatesPassed, delegationValid, delegatedWeight
   , delegationConserves, transition, communityReviewOpen, voteWindowOpen
@@ -99,6 +99,21 @@ emergencySeconds = 72 * 60 * 60
 snapshotValid :: Snapshot -> Bool
 snapshotValid (Snapshot _ at ws) =
   at >= 0 && all (\(_,w) -> w > 0) ws && distinct [e | (e,_) <- ws]
+
+-- A submitted proposal may be in its pre-publication Draft state or in the
+-- submitted Proposed state. Later lifecycle state, timestamps, votes and
+-- delegations must be introduced by their own admitted events.
+proposalSubmissionValid :: Proposal -> Bool
+proposalSubmissionValid p =
+  snapshotValid (proposalSnapshot p) &&
+  (proposalStatus p == Draft || proposalStatus p == Proposed) &&
+  communityReviewOpenedAt p == Nothing &&
+  votingOpenedAt p == Nothing &&
+  votingClosedAt p == Nothing &&
+  finalizationAt p == Nothing &&
+  emergencyActivatedAt p == Nothing &&
+  null (proposalVotes p) &&
+  null (proposalDelegations p)
 
 snapshotWeight :: Snapshot -> EntityId -> Weight
 snapshotWeight (Snapshot _ _ ws) e =
@@ -249,7 +264,7 @@ applyEvent :: GovernanceState -> GovernanceEvent
            -> Either String GovernanceState
 applyEvent st ev = case ev of
   ProposalSubmitted p ->
-    if snapshotValid (proposalSnapshot p) &&
+    if proposalSubmissionValid p &&
        not (any ((== proposalId p) . proposalId) (proposals st))
     then Right st { proposals = proposals st ++ [p]
                   , eventsApplied = eventsApplied st + 1 }

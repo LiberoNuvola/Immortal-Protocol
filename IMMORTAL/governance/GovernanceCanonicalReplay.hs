@@ -26,14 +26,14 @@ canonicalPayloadToGovernanceEvent p = case p of
   PayloadCanonicalized _ -> Nothing
 
 -- Canonical replay must not silently collapse the GOV-18 lifecycle
--- into the legacy DecisionRecorded -> Accepted -> Adopted -> Canonical
--- state chain. Until distinct canonical lifecycle constructors exist,
--- those collapsed terminal states are inadmissible at this boundary.
+-- into the legacy DecisionRecorded -> Accepted/Rejected -> Adopted -> Canonical
+-- state chain. Accepted and Rejected outcomes require EDecisionFinalized;
+-- Adopted and Canonical require their own dedicated lifecycle events.
 canonicalLifecycleAdmission :: GovernanceState -> CanonicalEvent -> Bool
 canonicalLifecycleAdmission st ce =
   case eventPayload ce of
     PayloadStatusChanged pid next at ->
-      not (next == Accepted || next == Adopted || next == Canonical) &&
+      not (next == Accepted || next == Rejected || next == Adopted || next == Canonical) &&
       lifecycleEventAdmissible st pid next at
     _ -> True
 
