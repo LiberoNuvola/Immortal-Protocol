@@ -290,6 +290,8 @@ export function buildTicketSaleReceiptJournal({
         paymentCredential: expected.b1PrizePoolPaymentCredential,
         inputRef: b1Inputs[0].ref,
         continuationRef: b1Outputs[0].ref,
+        // Derived from the observed tx_info input/output values; not a claim
+        // that TicketIssued itself enforces physical Value equality.
         physicalValuePreservedInObservedTransaction: true,
         physicalValueEvidence: 'OBSERVED_INPUT_OUTPUT_EQUALITY',
       },
