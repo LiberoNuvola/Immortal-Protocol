@@ -466,11 +466,12 @@ export function deriveTreasuryAddressOutputs({
   return outputs
 }
 
-export function assertTreasuryAddressOutputCrossCheck(providerRows, derivedRows) {
+export function assertTreasuryAddressOutputCrossCheck({ providerRows, derivedRows, treasuryAddress }) {
+  if (typeof treasuryAddress !== 'string' || treasuryAddress.length === 0) fail('TREASURY_JOURNAL_TREASURY_ADDRESS_REQUIRED')
   if (!Array.isArray(providerRows) || !Array.isArray(derivedRows)) fail('TREASURY_JOURNAL_CROSSCHECK_ARRAYS_REQUIRED')
-  const derived = mapUnique(derivedRows.map((row) => normalizeAddressOutput(row, row.address)),
+  const derived = mapUnique(derivedRows.map((row) => normalizeAddressOutput(row, treasuryAddress)),
     (row) => row.ref, 'TREASURY_JOURNAL_CROSSCHECK_DERIVED_DUPLICATE')
-  const observed = mapUnique(providerRows.map((row) => normalizeAddressOutput(row, row.address)),
+  const observed = mapUnique(providerRows.map((row) => normalizeAddressOutput(row, treasuryAddress)),
     (row) => row.ref, 'TREASURY_JOURNAL_CROSSCHECK_PROVIDER_DUPLICATE')
 
   for (const [ref, row] of observed) {
