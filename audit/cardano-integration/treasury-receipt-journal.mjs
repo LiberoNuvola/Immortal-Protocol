@@ -35,7 +35,7 @@ function outputReference(txHash, txIndex) {
   return hash + '#' + index
 }
 
-function normalizeAssetList(assets, codePrefix) {
+function normalizeAssetList(assets, codePrefix, { allowNegative = false } = {}) {
   if (assets == null) return []
   if (!Array.isArray(assets)) fail(codePrefix + '_ASSET_LIST_INVALID')
   const seen = new Set()
@@ -48,11 +48,13 @@ function normalizeAssetList(assets, codePrefix) {
     const unit = policyId + assetNameHex
     if (seen.has(unit)) fail(codePrefix + '_DUPLICATE_ASSET_UNIT')
     seen.add(unit)
+    const quantity = integerString(asset.quantity, codePrefix + '_ASSET_QUANTITY_INVALID')
+    if (!allowNegative && BigInt(quantity) <= 0n) fail(codePrefix + '_ASSET_QUANTITY_NOT_POSITIVE')
     return {
       policyId,
       assetNameHex,
       unit,
-      quantity: integerString(asset.quantity, codePrefix + '_ASSET_QUANTITY_INVALID'),
+      quantity,
     }
   })
   normalized.sort((a, b) => a.unit.localeCompare(b.unit))
@@ -104,7 +106,7 @@ function parseTransaction(tx, expected) {
     return { ref, address, paymentCredential: credential }
   })
 
-  const minted = normalizeAssetList(tx.assets_minted ?? [], 'TREASURY_JOURNAL_MINT_' + txHash)
+  const minted = normalizeAssetList(tx.assets_minted ?? [], 'TREASURY_JOURNAL_MINT_' + txHash, { allowNegative: true })
   const ticketMints = minted.filter((asset) => asset.policyId === expected.ticketPolicyId)
   return {
     txHash,
@@ -316,9 +318,16 @@ export function buildTicketSaleReceiptJournal({
         .map((output) => output.ref)
       event.lifecycle = {
         isSpent: true,
-        state: retained.length > 0 ? 'SPENT_RETAINED_IN_TREASURY_CUSTODY' : 'SPENT_OUTSIDE_TREASURY_CUSTODY',
+        state: retained.length > 0
+          ? 'SPENT_RETAINED_IN_TREASURY_CUSTODY'
+          : consumerTx.outputs.some((output) => output.paymentCredential === expected.b1PrizePoolPaymentCredential && output.address === b1PrizePoolAddress)
+            ? 'SPENT_TO_B1_PRIZEPOOL'
+            : 'SPENT_OUTSIDE_TREASURY_CUSTODY',
         consumingTransactionHash: consumerHash,
         retainedTreasuryOutputRefs: retained,
+        b1PrizePoolOutputRefs: consumerTx.outputs
+          .filter((output) => output.paymentCredential === expected.b1PrizePoolPaymentCredential && output.address === b1PrizePoolAddress)
+          .map((output) => output.ref),
       }
     } else if (event.lifecycle.isSpent) {
       event.lifecycle.state = 'SPENT_CONSUMER_NOT_RECONSTRUCTED'
@@ -352,9 +361,20 @@ export function buildTicketSaleReceiptJournal({
         transactionHash,
         consumedReceiptRefs: consumedReceiptRefs.sort(),
         retainedTreasuryOutputRefs: tx.outputs
-          .filter((output) => output.paymentCredential === expected.treasuryPaymentCredential)
+          .filter((output) => output.paymentCredential === expected.treasuryPaymentCredential && output.address === treasuryAddress)
           .map((output) => output.ref)
           .sort(),
+        b1PrizePoolOutputRefs: tx.outputs
+          .filter((output) => output.paymentCredential === expected.b1PrizePoolPaymentCredential && output.address === b1PrizePoolAddress)
+          .map((output) => output.ref)
+          .sort(),
+        outputs: tx.outputs.map((output) => ({
+          outputRef: output.ref,
+          address: output.address,
+          paymentCredential: output.paymentCredential,
+          lovelace: output.lovelace,
+          nativeAssets: output.assets,
+        })),
       }
     })
     .sort((a, b) => a.transactionHash.localeCompare(b.transactionHash))
