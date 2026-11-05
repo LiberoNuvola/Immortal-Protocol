@@ -1,40 +1,50 @@
-Relayer (reference)
-====================
+Relayer (legacy reference scaffold)
+===================================
 
-This is a minimal reference relayer that watches a `treasury` script address and triggers distribution
-when the configured threshold is reached. It uses `lucid-cardano` and Blockfrost for chain queries.
+**Treasury distribution is currently DISABLED / FAIL-CLOSED.** This README preserves the historical reference behavior for audit only; it is not an operational instruction to distribute Treasury funds.
 
-Setup
------
+The service still contains the BeaconRegistry publication surface. The Treasury worker now observes the configured Treasury UTxOs and returns without building, signing or submitting a distribution transaction. Distribution requires a separately defined canonical EconomicAdmission path and current PRE-RICH policy/conformance.
 
-- Copy `.env.example` to `.env` and set `BLOCKFROST_PROJECT_ID`, `NETWORK` (`Preprod`), and the relayer wallet.
+## Setup
+
+- Copy `.env.example` to `.env` and configure the values required by the service.
 - Install dependencies with `npm install` in the project root.
-- Configure treasury addresses and thresholds to match the deployed treasury policy.
+- The configured Treasury address must match the validator-derived deployment identity.
 
-Run
----
+## Run
 
 ```bash
 npm run relayer
 ```
 
-Default policy
---------------
+Running the service does **not** enable Treasury distribution.
 
-- threshold: 25 ADA
-- split after relayer fee: 50% prize, 30% stake, 19.5% reserve
-- relayer reward: 0.5% of treasury, minimum 0.2 ADA
+## Historical threshold and split — non-authoritative
 
-Notes
------
-- This relayer is a reference implementation and should be treated as an operational scaffold before production hardening.
-- The browser never owns treasury authority; the relayer is only an automated facilitator that receives a policy-defined reward.
-- The relayer never decides the ticket result. It only observes treasury state and submits a distribution transaction once the threshold and split policy are satisfied.
-- Claim validation must be independent from the relayer: the reveal and receipt proof must be validated before any user payout is accepted on-chain.
+The former reference implementation recorded:
 
-Result and attestation gate
---------------------------
-- the reveal is not considered valid until the commitment is checked against the stored seed / salt / ticket identity
-- the receipt is stored with Materios and tied to the same `ticketId`
-- Orynq provides an audit proof bundle for dispute resolution and transparency
-- the relayer may distribute treasury funds, but it must not rewrite or infer a ticket outcome from a browser-provided value
+- threshold: 25 ADA (`25_000_000` lovelace);
+- after a historical relayer reward, distribution: 50% Prize, 30% Stake, 19.5% Reserve;
+- historical relayer reward: 0.5% of Treasury, minimum 0.2 ADA.
+
+These values are **LEGACY / NON-CANONICAL**. In particular:
+
+- 25 ADA is not verified as the currently adopted PRE-RICH batch target;
+- the percentage split is not a current allocation policy;
+- the values must not be combined with the older historical 75/10/10/5 proposal;
+- neither the threshold nor the split grants a relayer spending authority.
+
+The current Treasury worker is intentionally fail-closed pending canonical EconomicAdmission. Do not re-enable direct signing/submission or revive the percentage calculator.
+
+## Architectural boundary
+
+PRE-RICH uses one protocol-controlled Treasury with internal accounting categories. Internal category reclassification is not a physical asset transfer. The batch target, when adopted, is relevant to eligible physical settlements/outflows; it does not delay receipt recognition, due claims, mandatory payments or safety-required PrizePool funding.
+
+The current category-ledger and target boundary are documented in [PRE-RICH Treasury Category Ledger Operational Specification, §11.14](../docs/research/PRE-RICH-TREASURY-CATEGORY-LEDGER-OPERATIONAL-SPEC-2026-11-04.md).
+
+## Beacon and claim boundaries
+
+- The relayer does not decide ticket results, prize tiers, payouts or beacon values.
+- Claim validation remains independent from the relayer.
+- External observations and receipt/journal data are evidence inputs, not spending authority.
+- The relayer must not infer a ticket outcome from a browser-provided value.
