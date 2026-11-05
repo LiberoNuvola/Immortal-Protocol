@@ -77,13 +77,13 @@ jobs:
       - name: Update Cabal index
         run: cabal update
 
-      - name: Beacon commitment cross-language conformance
-        working-directory: plutus
-        run: cabal test beacon-commitment-cross-language-tests --test-show-details=direct
-
       - name: Compiled MintPolicy B1 Value-preservation conformance
         working-directory: plutus
         run: cabal test mint-policy-b1-value-preservation-tests --test-show-details=direct
+
+      - name: Beacon commitment cross-language conformance
+        working-directory: plutus
+        run: cabal test beacon-commitment-cross-language-tests --test-show-details=direct
 
       - name: Historical PRE policy UPLC decode
         working-directory: plutus
