@@ -438,3 +438,69 @@ A target-triggered batch may combine several authorized settlements, but each ou
 The current relayer/relayer.js retains DEFAULT_THRESHOLD = 25_000_000n (25 ADA) and an environment override TREASURY_THRESHOLD. The same worker now returns after observation and explicitly fails closed because canonical EconomicAdmission is required. The old value belongs to the legacy percentage-distribution surface; the repository's FRONT-IMMORTAL-TREASURY-FEE.md classifies that surface as legacy/application policy and non-authoritative. Therefore 25 ADA is evidence of a historical operational threshold, **not proof that it is the currently adopted PRE-RICH batch target**. Do not reactivate it or combine it with the historical 75/10/10/5 split without an explicit decision record.
 
 **Disposition:** architecture clarification only. Internal category accounting is separated from physical distribution; the batch target is retained for batchable outflows, not required for virtual category bookkeeping. The exact current target value/formula, the receipt classification function, the preferred carrier topology and all corresponding validator changes remain unadopted until their evidence/decision gates are closed. No category percentage, initial balance, new category, on-chain marker, validator, R7 delta, wallet action or transaction is introduced by this clarification.
+
+### 11.15 Read-only TicketSale receipt journal — implementation contract
+
+The first read-only receipt-journal implementation is tracked in [Issue #41 — Treasury receipt journal and batch-settlement carrier](https://github.com/LiberoNuvola/Immortal-Protocol/issues/41). It is deliberately an evidence/reconstruction component, not a category-ledger writer or settlement authority.
+
+#### 11.15.1 Evidence acquisition
+
+The observer derives the canonical Treasury address and script credential from the repository's unparameterized Treasury validator and derives the B1 PrizePool address/credential and Ticket mint policy from the same application topology. Deployment pins are compared exactly; a caller-provided alternate address or Ticket policy is not accepted.
+
+The read-only Koios acquisition path is:
+
+1. \`tip\` — capture one provider snapshot tip;
+2. \`address_txs\` — enumerate transactions associated with the exact Treasury address, including transaction hashes that created outputs at that address and transaction hashes that consumed those outputs;
+3. \`tx_info\` in bounded batches with inputs and assets enabled — retrieve transaction inputs, outputs, exact minted asset units, validity flag, block height, slot, timestamp and transaction identity;
+4. \`address_outputs\` — an independent cross-check for output references, block/time, payment credential and provider spent flag;
+5. \`tx_status\` — record provider-reported confirmation counts for recognized TicketSale transactions.
+
+The journal derives the Treasury output set from the address transaction history and transaction facts, then cross-checks the dedicated address-output endpoint. This protects against a provider cursor-boundary omission without silently dropping a transaction output. A provider row not reconcilable to the transaction facts, a duplicate reference, an address/payment-credential mismatch, or inconsistent block/time/spend state is a hard failure.
+
+The snapshot tip and raw response digests are retained. Confirmation counts are observations from Koios only; this implementation does not choose or claim a finality threshold.
+
+#### 11.15.2 TicketSale recognition
+
+An observed transaction is recognized as a TicketSale receipt only when all of the following hold:
+
+- \`valid_contract = true\`;
+- the exact validator-derived Ticket mint policy appears once in the minted asset list with quantity exactly \`+1\`;
+- exactly one output is paid to the exact canonical Treasury payment credential **and** exact canonical Treasury address;
+- exactly one B1 PrizePool input and one B1 continuation output are present under the expected PrizePool credential and exact PrizePool address;
+- the receipt output reference is present in the reconstructed Treasury output history;
+- the output block height and timestamp match the transaction's block facts.
+
+A Treasury inflow without the exact Ticket mint linkage is retained as a separate **unclassified Treasury output**; it is not assigned to a TicketSale event and receives no category credit. A transaction that pays an alternate address with the same Treasury payment credential fails closed rather than being silently attributed to the canonical Treasury.
+
+Each receipt has an idempotent event key equal to its transaction output reference (\`txHash#outputIndex\`). It records the Ticket asset unit, exact native settlement asset units and integer quantities, block/slot/time, Treasury output reference, B1 input/continuation references, datum metadata, provider evidence and lifecycle state.
+
+#### 11.15.3 Spend lineage and limitations
+
+A receipt marked spent is linked to the unique valid transaction whose inputs consume its exact output reference. The journal records whether that transaction retains value under the canonical Treasury address, moves it elsewhere, or cannot yet be reconstructed from the queried history. Multiple consumers and inconsistent spent flags fail closed.
+
+The journal records **raw asset quantities only**. It does not:
+- convert ADA or another asset into USDM;
+- infer an EEV value, executable liquidation value or spendable balance;
+- classify a receipt as Prize, Reserve, Maintenance, PRE-holder staking or another category;
+- post an internal allocation or authorize a physical transfer;
+- infer that a Treasury→PrizePool movement is a new inflow or outflow of aggregate EEV;
+- trigger a batch target or submit/sign a transaction.
+
+A current UTxO snapshot alone is not the full history: spent receipt links require the corresponding consumer transactions. A spent receipt without a consumer in the supplied history remains explicitly \`SPENT_CONSUMER_NOT_RECONSTRUCTED\`, not presumed settled.
+
+#### 11.15.4 Code and conformance boundary
+
+Current implementation files:
+
+- \`audit/cardano-integration/treasury-receipt-journal.mjs\` — deterministic receipt classification and spend-lineage reconstruction;
+- \`audit/cardano-integration/treasury-receipt-journal.test.mjs\` — fixture coverage for valid receipt, non-sale inflow, wrong Treasury address, duplicate/missing outputs, invalid mint quantity/contract, spent lineage, unresolved consumer, multiple consumers and history cross-check;
+- \`audit/cardano-integration/observe-preprod-treasury-receipts.mjs\` — read-only Koios observer and deployment-topology pins;
+- \`.github/workflows/adapter-sale-conformance.yml\` — runs the journal fixture suite on the current branch push path.
+
+Run command when the required deployment pins are available:
+
+\`node --import=tsx audit/cardano-integration/observe-preprod-treasury-receipts.mjs\`
+
+The observer is not a deployment workflow and does not need a wallet, signing key or submit capability. It should only be run with verified Preprod topology values. No live observer result or current Treasury receipt count is asserted by this specification update.
+
+**Disposition:** the deterministic fixture-level read-only journal contract and observer path are implemented in source. Runtime execution against the live Preprod history and CI results on the exact resulting branch commit remain separate evidence gates. No category posting rule, target value, category balance, spend authorization, marker, validator, R7 delta or on-chain transaction has been introduced.
