@@ -81,6 +81,10 @@ jobs:
         working-directory: plutus
         run: cabal test beacon-commitment-cross-language-tests --test-show-details=direct
 
+      - name: Compiled MintPolicy B1 Value-preservation conformance
+        working-directory: plutus
+        run: cabal test mint-policy-b1-value-preservation-tests --test-show-details=direct
+
       - name: Historical PRE policy UPLC decode
         working-directory: plutus
         run: cabal run inspect-historical-pre-policy

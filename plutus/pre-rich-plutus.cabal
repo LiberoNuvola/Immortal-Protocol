@@ -419,3 +419,19 @@ executable reveal-schema-fixtures
         pre-rich-plutus
     default-language: Haskell2010
     ghc-options: -Wall
+
+
+test-suite mint-policy-b1-value-preservation-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: MintPolicyB1ValuePreservationTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        plutus-core ^>=1.67.0.0,
+        plutus-ledger-api ^>=1.67.0.0,
+        plutus-tx ^>=1.67.0.0,
+        plutus-tx-plugin ^>=1.67.0.0,
+        plutus-tx:plutus-tx-testlib,
+        pre-rich-plutus
+    default-language: Haskell2010
+    ghc-options: -Wall
