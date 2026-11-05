@@ -100,20 +100,22 @@ snapshotValid :: Snapshot -> Bool
 snapshotValid (Snapshot _ at ws) =
   at >= 0 && all (\(_,w) -> w > 0) ws && distinct [e | (e,_) <- ws]
 
--- A submitted proposal may be in its pre-publication Draft state or in the
--- submitted Proposed state. Later lifecycle state, timestamps, votes and
--- delegations must be introduced by their own admitted events.
+-- PROPOSAL_CREATED records the DRAFT/pre-activation object. PROPOSED is a
+-- later lifecycle transition and mutable gate/timing/voting state must only
+-- enter through its own admitted event.
 proposalSubmissionValid :: Proposal -> Bool
 proposalSubmissionValid p =
   snapshotValid (proposalSnapshot p) &&
-  (proposalStatus p == Draft || proposalStatus p == Proposed) &&
+  proposalCreatedAt p >= 0 &&
+  proposalStatus p == Draft &&
   communityReviewOpenedAt p == Nothing &&
   votingOpenedAt p == Nothing &&
   votingClosedAt p == Nothing &&
   finalizationAt p == Nothing &&
   emergencyActivatedAt p == Nothing &&
   null (proposalVotes p) &&
-  null (proposalDelegations p)
+  null (proposalDelegations p) &&
+  proposalGates p == GateResult False False False False
 
 snapshotWeight :: Snapshot -> EntityId -> Weight
 snapshotWeight (Snapshot _ _ ws) e =

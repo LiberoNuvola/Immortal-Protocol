@@ -16,7 +16,8 @@ main :: IO ()
 main = do
   let s = Snapshot 1 0 [(1,60),(2,40)]
       g = GateResult True True True True
-      p = Proposal 1 DocumentationOnly s 0 Nothing Nothing Nothing Nothing Nothing [] [] g Draft
+      initialGates = GateResult False False False False
+      p = Proposal 1 DocumentationOnly s 0 Nothing Nothing Nothing Nothing Nothing [] [] initialGates Draft
       e1 = CanonicalEvent "evt-1" 1 1 EProposalSubmitted Proposer 0
              (PayloadProposalSubmitted p) "r1" Nothing [EvidenceRef "e1"] AcceptedEvent
       e2 = CanonicalEvent "evt-2" 1 1 EStatusChanged System 1
@@ -35,14 +36,17 @@ main = do
         , p { emergencyActivatedAt = Just 1 }
         , p { proposalVotes = [Vote 1 1 For 0] }
         , p { proposalDelegations = [Delegation 1 2] }
-        , p { proposalGates = GateResult False False False False }
+        , p { proposalGates = g }
         ]
-      oldCommitmentStillMatches candidate =
-        commitmentMatches (e1c { eventPayload = PayloadProposalSubmitted candidate })
+      proposalSubmissionAccepted candidate =
+        eventSchemaValid (e1c { eventPayload = PayloadProposalSubmitted candidate })
 
   assert "canonical event schema" (eventSchemaValid e1c)
-  assert "proposal commitment binds every state-bearing Proposal field"
-    (all (not . oldCommitmentStillMatches) proposalFieldVariants)
+  assert "proposal submission rejects state omitted from the frozen payload bytes"
+    (all (not . proposalSubmissionAccepted) proposalFieldVariants)
+  assert "proposal-created payload retains the GOV-25 canonical byte representation"
+    (canonicalPayloadText (eventPayload e1c) ==
+      "type=ProposalSubmitted;proposal_id=1;class=DocumentationOnly;snapshot_id=1;snapshot_at=0;snapshot_weights=[(1,60),(2,40)];created_at=0")
   assert "proposal creation rejects preloaded terminal lifecycle state"
     (not (eventSchemaValid
       (e1c { eventPayload = PayloadProposalSubmitted (p { proposalStatus = Accepted }) })))
@@ -55,8 +59,12 @@ main = do
   assert "proposal creation rejects preloaded delegations"
     (not (eventSchemaValid
       (e1c { eventPayload = PayloadProposalSubmitted (p { proposalDelegations = [Delegation 1 2] }) })))
-  assert "legacy ProposalSubmitted projection rejects a preloaded lifecycle state"
-    (case applyEvent emptyState (ProposalSubmitted (p { proposalStatus = Accepted })) of
+  assert "legacy ProposalSubmitted projection rejects preloaded Proposed state"
+    (case applyEvent emptyState (ProposalSubmitted (p { proposalStatus = Proposed })) of
+       Left _ -> True
+       Right _ -> False)
+  assert "legacy ProposalSubmitted projection rejects preloaded gates"
+    (case applyEvent emptyState (ProposalSubmitted (p { proposalGates = g })) of
        Left _ -> True
        Right _ -> False)
   assert "canonical commitment matches" (commitmentMatches e1c)

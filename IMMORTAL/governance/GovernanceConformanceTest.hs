@@ -8,13 +8,15 @@ main :: IO ()
 main = do
   let snap = Snapshot 1 0 [(1,60),(2,40)]
   let mk = GateResult True True True True
-  let p = Proposal 1 DocumentationOnly snap 0 Nothing Nothing Nothing Nothing Nothing [] [] mk Draft
+  let initialGates = GateResult False False False False
+  let p = Proposal 1 DocumentationOnly snap 0 Nothing Nothing Nothing Nothing Nothing [] [] initialGates Draft
   let Right s1 = applyEvent emptyState (ProposalSubmitted p)
   let Right s2 = replay s1
         [ StatusChanged 1 Proposed 1
         , ProposalClassified 1 DocumentationOnly
         , StatusChanged 1 ImpactReview 2
         , StatusChanged 1 EvidenceReview 3
+        , GatesSet 1 mk
         , StatusChanged 1 CommunityReview 4
         , StatusChanged 1 Voting (4 + communityReviewSeconds)
         ]

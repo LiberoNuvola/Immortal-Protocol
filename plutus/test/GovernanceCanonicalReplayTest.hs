@@ -36,8 +36,8 @@ sampleProposal =
     , emergencyActivatedAt = Nothing
     , proposalVotes = []
     , proposalDelegations = []
-    , proposalGates = GateResult True True True True
-    , proposalStatus = Proposed
+    , proposalGates = GateResult False False False False
+    , proposalStatus = Draft
     }
 
 event1 :: CanonicalEvent
@@ -60,13 +60,23 @@ collapsedAcceptedEvent =
     [EvidenceRef "shortcut-evidence"]
     AcceptedEvent
 
+proposedEvent :: CanonicalEvent
+proposedEvent =
+  CanonicalEvent
+    "evt-proposed" 1 1 EStatusChanged System 1
+    (PayloadStatusChanged 1 Proposed 1)
+    "payload-proposed"
+    (Just "evt-1")
+    [EvidenceRef "proposal-activation-evidence"]
+    AcceptedEvent
+
 event2 :: CanonicalEvent
 event2 =
   CanonicalEvent
-    "evt-2" 1 1 EStatusChanged System 1
-    (PayloadStatusChanged 1 Classified 1)
+    "evt-2" 1 1 EStatusChanged System 2
+    (PayloadStatusChanged 1 Classified 2)
     "payload-commitment-2"
-    (Just "evt-1")
+    (Just "evt-proposed")
     [EvidenceRef "classification-evidence"]
     AcceptedEvent
 
@@ -159,13 +169,15 @@ main = do
   assert (eventSchemaValid event1) "canonical payload matches event type"
   assert (eventSchemaValid event2) "status payload validates"
   assert (predecessorValid Nothing event1) "genesis predecessor"
-  assert (predecessorValid (Just event1) event2) "predecessor chain"
+  assert (predecessorValid (Just event1) proposedEvent) "proposal activation predecessor"
+  assert (predecessorValid (Just proposedEvent) event2) "classification predecessor"
   assert (eventSchemaValid classifiedEvent) "classified payload timestamp matches event timestamp"
   assert (eventSchemaValid gatesEvent) "gates payload timestamp matches event timestamp"
-  case replayCanonical ruleset emptyState [withCommitment event1, withCommitment event2] of
+  case replayCanonical ruleset emptyState
+         [withCommitment event1, withCommitment proposedEvent, withCommitment event2] of
     Left err -> error ("FAIL: replay rejected: " ++ err)
     Right st -> do
-      assert (eventsApplied st == 2) "two canonical events applied"
+      assert (eventsApplied st == 3) "three canonical events applied"
       assert (length (proposals st) == 1) "proposal created from canonical payload"
       assert (proposalStatus (head (proposals st)) == Classified)
         "state derives directly from canonical events"

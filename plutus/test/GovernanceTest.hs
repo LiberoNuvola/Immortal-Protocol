@@ -21,7 +21,7 @@ baseProposal =
     , emergencyActivatedAt = Nothing
     , proposalVotes = []
     , proposalDelegations = []
-    , proposalGates = GateResult True True True True
+    , proposalGates = GateResult False False False False
     , proposalStatus = Draft
     }
 
