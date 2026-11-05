@@ -63,7 +63,7 @@ function parseTransaction(tx, expected) {
   if (!tx || typeof tx !== 'object') fail('TREASURY_JOURNAL_TX_INFO_INVALID')
   const txHash = normalizedHash(tx.tx_hash)
   if (typeof tx.valid_contract !== 'boolean') fail('TREASURY_JOURNAL_TX_VALIDITY_MISSING_' + txHash)
-  if (!Array.isArray(tx.inputs) || !Array.isArray(tx.outputs) || !Array.isArray(tx.assets_minted)) {
+  if (!Array.isArray(tx.inputs) || !Array.isArray(tx.outputs) || (tx.assets_minted != null && !Array.isArray(tx.assets_minted))) {
     fail('TREASURY_JOURNAL_TX_COMPONENTS_MISSING_' + txHash)
   }
 
@@ -104,7 +104,7 @@ function parseTransaction(tx, expected) {
     return { ref, address, paymentCredential: credential }
   })
 
-  const minted = normalizeAssetList(tx.assets_minted, 'TREASURY_JOURNAL_MINT_' + txHash)
+  const minted = normalizeAssetList(tx.assets_minted ?? [], 'TREASURY_JOURNAL_MINT_' + txHash)
   const ticketMints = minted.filter((asset) => asset.policyId === expected.ticketPolicyId)
   return {
     txHash,
