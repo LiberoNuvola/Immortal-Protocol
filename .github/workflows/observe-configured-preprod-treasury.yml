@@ -1,0 +1,40 @@
+name: Observe Configured Preprod Treasury
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: DEMETER
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      PREPROD_TREASURY_ADDRESS: ${{ vars.VITE_TREASURY_ADDRESS }}
+      PREPROD_TREASURY_SCRIPT_HASH: ${{ vars.PREPROD_TREASURY_SCRIPT_HASH }}
+      TREASURY_OBSERVATION_OUTPUT: audit/preprod-evidence/configured-treasury-observation.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Check observer and pagination helper syntax
+        run: |
+          node --check audit/cardano-integration/observe-configured-preprod-treasury.mjs
+          node --check audit/cardano-integration/koios-address-utxos.mjs
+      - name: Test Koios UTxO pagination and fail-closed behavior
+        run: node audit/cardano-integration/koios-address-utxos.test.mjs
+      - name: Observe Treasury derived from the committed validator artifact
+        run: node audit/cardano-integration/observe-configured-preprod-treasury.mjs
+      - name: Upload read-only observation
+        if: always() && hashFiles('audit/preprod-evidence/configured-treasury-observation.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: configured-preprod-treasury-observation
+          path: audit/preprod-evidence/configured-treasury-observation.json
+          if-no-files-found: error
