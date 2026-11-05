@@ -195,8 +195,7 @@ export function buildTicketSaleReceiptJournal({
   for (const tx of txMap.values()) {
     // A valid mint under the exact current Ticket policy is the transaction
     // discriminator. Treasury payments without this mint remain unclassified.
-    if (tx.ticketMints.length === 0) continue
-    if (!tx.validContract) fail('TREASURY_JOURNAL_TICKET_MINT_INVALID_CONTRACT_' + tx.txHash)
+    if (tx.ticketMints.length === 0 || !tx.validContract) continue
     if (tx.ticketMints.length !== 1) fail('TREASURY_JOURNAL_MULTIPLE_TICKETS_IN_ONE_TX_' + tx.txHash)
     const ticketMint = tx.ticketMints[0]
     if (BigInt(ticketMint.quantity) !== 1n) fail('TREASURY_JOURNAL_TICKET_MINT_QUANTITY_INVALID_' + tx.txHash)
