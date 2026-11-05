@@ -257,3 +257,100 @@ test('rejects a Sale transaction if the Treasury output is missing from address 
     /TREASURY_OUTPUT_NOT_IN_ADDRESS_HISTORY/,
   )
 })
+
+
+test('reconstructs canonical Treasury outputs from address transaction history', async () => {
+  const { deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
+  const rows = deriveTreasuryAddressOutputs({
+    treasuryAddress: TREASURY,
+    treasuryPaymentCredential: TREASURY_CREDENTIAL,
+    transactions: [saleTx()],
+  })
+  assert.equal(rows.length, 1)
+  assert.equal(rows[0].tx_hash, TX)
+  assert.equal(rows[0].tx_index, RECEIPT_INDEX)
+  assert.equal(rows[0].block_height, 100)
+  assert.equal(rows[0].block_time, 1_700_000_000)
+  assert.equal(rows[0].is_spent, false)
+})
+
+test('derives spent state by following valid consuming transaction inputs', async () => {
+  const { deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [txInput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL)],
+    outputs: [
+      txOutput(CONSUMER_TX, 0, TREASURY, TREASURY_CREDENTIAL, '2200000'),
+    ],
+    assets_minted: [],
+  }
+  const rows = deriveTreasuryAddressOutputs({
+    treasuryAddress: TREASURY,
+    treasuryPaymentCredential: TREASURY_CREDENTIAL,
+    transactions: [saleTx(), consumer],
+  })
+  assert.equal(rows.length, 2)
+  const receipt = rows.find((row) => row.tx_hash === TX)
+  assert.equal(receipt.is_spent, true)
+  const continuation = rows.find((row) => row.tx_hash === CONSUMER_TX)
+  assert.equal(continuation.is_spent, false)
+})
+
+test('fails closed on an output with Treasury credential but non-canonical address', async () => {
+  const { deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
+  const tx = saleTx({
+    outputs: [
+      txOutput(TX, 0, POOL, POOL_CREDENTIAL, '5000000'),
+      txOutput(TX, RECEIPT_INDEX, TREASURY_ALT, TREASURY_CREDENTIAL, '2200000'),
+    ],
+  })
+  assert.throws(
+    () => deriveTreasuryAddressOutputs({
+      treasuryAddress: TREASURY,
+      treasuryPaymentCredential: TREASURY_CREDENTIAL,
+      transactions: [tx],
+    }),
+    /DERIVED_OUTPUT_IDENTITY_MISMATCH/,
+  )
+})
+
+test('cross-check accepts a provider omission at a history cursor boundary while retaining the tx-info row', async () => {
+  const { assertTreasuryAddressOutputCrossCheck, deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
+  const derivedRows = deriveTreasuryAddressOutputs({
+    treasuryAddress: TREASURY,
+    treasuryPaymentCredential: TREASURY_CREDENTIAL,
+    transactions: [saleTx()],
+  })
+  const result = assertTreasuryAddressOutputCrossCheck({
+    treasuryAddress: TREASURY,
+    providerRows: [],
+    derivedRows,
+  })
+  assert.equal(result.providerRows, 0)
+  assert.equal(result.derivedRows, 1)
+  assert.equal(result.providerRowsMissingFromEndpoint, 1)
+  assert.equal(result.exactMatches, 0)
+})
+
+test('cross-check rejects output history returned for a different address', async () => {
+  const { assertTreasuryAddressOutputCrossCheck, deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
+  const derivedRows = deriveTreasuryAddressOutputs({
+    treasuryAddress: TREASURY,
+    treasuryPaymentCredential: TREASURY_CREDENTIAL,
+    transactions: [saleTx()],
+  })
+  assert.throws(
+    () => assertTreasuryAddressOutputCrossCheck({
+      treasuryAddress: TREASURY,
+      providerRows: [addressOutput({ address: TREASURY_ALT })],
+      derivedRows,
+    }),
+    /ADDRESS_OUTPUT_ADDRESS_MISMATCH/,
+  )
+})
