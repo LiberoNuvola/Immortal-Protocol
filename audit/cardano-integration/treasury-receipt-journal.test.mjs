@@ -180,6 +180,22 @@ test('rejects a B1 continuation with a changed native-asset quantity', () => {
   assert.throws(() => fixture({ transactions: [{ ...tx, inputs, outputs }] }), /B1_PHYSICAL_VALUE_NOT_PRESERVED/)
 })
 
+test('fails closed when Koios omits the B1 input asset list', () => {
+  const tx = saleTx()
+  const inputs = tx.inputs.map((input, index) => index === 0
+    ? { ...input, asset_list: null }
+    : input)
+  assert.throws(() => fixture({ transactions: [{ ...tx, inputs }] }), /INPUT_ASSET_LIST_MISSING/)
+})
+
+test('fails closed when Koios omits the B1 continuation asset list', () => {
+  const tx = saleTx()
+  const outputs = tx.outputs.map((output) => output.payment_addr.cred === POOL_CREDENTIAL
+    ? { ...output, asset_list: null }
+    : output)
+  assert.throws(() => fixture({ transactions: [{ ...tx, outputs }] }), /OUTPUT_ASSET_LIST_MISSING/)
+})
+
 test('rejects TicketSale evidence without exactly one B1 input and continuation', () => {
   const tx = saleTx({
     inputs: saleTx().inputs.filter((input) => input.payment_addr.cred !== POOL_CREDENTIAL),
