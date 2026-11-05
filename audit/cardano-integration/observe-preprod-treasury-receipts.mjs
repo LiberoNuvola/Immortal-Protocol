@@ -290,6 +290,11 @@ if (allTxHashes.some((hash) => !/^[0-9a-f]{64}$/.test(hash))) {
 allTxHashes.sort()
 
 const transactionInfoResult = await fetchTransactionInfo(allTxHashes)
+for (const tx of transactionInfoResult.rows) {
+  if (Number(tx.block_height) === tipHeight && String(tx.block_hash).toLowerCase() !== String(tip.hash).toLowerCase()) {
+    throw new Error('TREASURY_RECEIPT_TIP_BLOCK_HASH_MISMATCH_' + tx.tx_hash)
+  }
+}
 const observedAt = new Date().toISOString()
 const derivedTreasuryOutputs = deriveTreasuryAddressOutputs({
   treasuryAddress,
