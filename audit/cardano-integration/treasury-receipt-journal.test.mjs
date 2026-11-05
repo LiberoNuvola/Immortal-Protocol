@@ -156,7 +156,7 @@ test('accepts a B1 continuation only when its full native-asset basket is preser
     : output)
   const journal = fixture({ transactions: [{ ...tx, inputs, outputs }] })
   assert.equal(journal.receiptEvents.length, 1)
-  assert.equal(journal.receiptEvents[0].prizePool.physicalValuePreservedByValidator, true)
+  assert.equal(journal.receiptEvents[0].prizePool.physicalValuePreservedInObservedTransaction, true)
 })
 
 test('rejects a B1 continuation with a different lovelace value', () => {
@@ -190,7 +190,7 @@ test('accepts explicit null asset lists as ADA-only values', () => {
     : output)
   const journal = fixture({ transactions: [{ ...tx, inputs, outputs }] })
   assert.equal(journal.receiptEvents.length, 1)
-  assert.equal(journal.receiptEvents[0].prizePool.physicalValuePreservedByValidator, true)
+  assert.equal(journal.receiptEvents[0].prizePool.physicalValuePreservedInObservedTransaction, true)
 })
 
 test('fails closed when Koios omits the B1 input asset list', () => {
