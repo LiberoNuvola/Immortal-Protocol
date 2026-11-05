@@ -13,7 +13,7 @@ import PlutusLedgerApi.V2.Contexts
 import qualified PlutusLedgerApi.V1.Interval as Interval
 import PlutusLedgerApi.V1.Value (lovelaceValueOf, singleton)
 
-import PlutusTx (liftCode, unsafeApplyCode)
+import PlutusTx (CompiledCode, ToData, liftCode, unsafeApplyCode)
 import PlutusTx.Prelude
   ( consByteString
   , emptyByteString
@@ -161,7 +161,7 @@ registryDatum =
 scriptAddress :: ScriptHash -> Address
 scriptAddress hash = Address (ScriptCredential hash) Nothing
 
-inlineDatum :: PlutusTx.ToData a => a -> OutputDatum
+inlineDatum :: ToData a => a -> OutputDatum
 inlineDatum value = OutputDatum (Datum (toBuiltinData value))
 
 output :: ScriptHash -> Value -> OutputDatum -> TxOut
