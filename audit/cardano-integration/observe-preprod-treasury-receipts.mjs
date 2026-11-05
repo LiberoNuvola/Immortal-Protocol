@@ -7,7 +7,11 @@ import path from 'node:path'
 import { Emulator, Lucid } from 'lucid-cardano'
 import { buildScriptsFromLucid, treasuryValidator } from '../../src/loadValidator.ts'
 import { defaultPrizeTable } from '../../src/gameRules.ts'
-import { buildTicketSaleReceiptJournal } from './treasury-receipt-journal.mjs'
+import {
+  assertTreasuryAddressOutputCrossCheck,
+  buildTicketSaleReceiptJournal,
+  deriveTreasuryAddressOutputs,
+} from './treasury-receipt-journal.mjs'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
 const PAGE_SIZE = 1000
@@ -287,13 +291,23 @@ allTxHashes.sort()
 
 const transactionInfoResult = await fetchTransactionInfo(allTxHashes)
 const observedAt = new Date().toISOString()
+const derivedTreasuryOutputs = deriveTreasuryAddressOutputs({
+  treasuryAddress,
+  treasuryPaymentCredential,
+  transactions: transactionInfoResult.rows,
+})
+const addressOutputCrossCheck = assertTreasuryAddressOutputCrossCheck({
+  treasuryAddress,
+  providerRows: filteredTreasuryOutputs,
+  derivedRows: derivedTreasuryOutputs,
+})
 const journal = buildTicketSaleReceiptJournal({
   treasuryAddress,
   treasuryPaymentCredential,
   ticketPolicyId,
   b1PrizePoolAddress,
   b1PrizePoolPaymentCredential,
-  addressOutputs: filteredTreasuryOutputs,
+  addressOutputs: derivedTreasuryOutputs,
   transactions: transactionInfoResult.rows,
   observedAt,
   network: 'cardano-preprod',
@@ -318,7 +332,8 @@ journal.observation = {
   },
   fromBlockHeightInclusive: FROM_BLOCK_HEIGHT,
   history: {
-    treasuryAddressOutputRows: filteredTreasuryOutputs.length,
+    treasuryAddressOutputRows: derivedTreasuryOutputs.length,
+    addressOutputsEndpointCrossCheck: addressOutputCrossCheck,
     treasuryAddressOutputPages: addressOutputResult.pages,
     treasuryAddressTransactionRows: filteredAddressTransactions.length,
     treasuryAddressTransactionPages: addressTxResult.pages,
