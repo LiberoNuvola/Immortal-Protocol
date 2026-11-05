@@ -321,7 +321,7 @@ export function buildTicketSaleReceiptJournal({
         state: retained.length > 0
           ? 'SPENT_RETAINED_IN_TREASURY_CUSTODY'
           : consumerTx.outputs.some((output) => output.paymentCredential === expected.b1PrizePoolPaymentCredential && output.address === b1PrizePoolAddress)
-            ? 'SPENT_TO_B1_PRIZEPOOL'
+            ? 'SPENT_WITH_B1_PRIZEPOOL_OUTPUT'
             : 'SPENT_OUTSIDE_TREASURY_CUSTODY',
         consumingTransactionHash: consumerHash,
         retainedTreasuryOutputRefs: retained,
