@@ -15,7 +15,8 @@ import PlutusLedgerApi.V1.Value (lovelaceValueOf, singleton)
 
 import PlutusTx (CompiledCode, ToData, liftCodeDef, unsafeApplyCode)
 import PlutusTx.Prelude
-  ( consByteString
+  ( BuiltinUnit
+  , consByteString
   , emptyByteString
   , toBuiltinData
   )
