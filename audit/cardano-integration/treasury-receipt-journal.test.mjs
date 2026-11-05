@@ -161,11 +161,13 @@ test('rejects a ticket-policy mint quantity other than one', () => {
   assert.throws(() => fixture({ transactions: [tx] }), /TICKET_MINT_QUANTITY_INVALID/)
 })
 
-test('rejects transaction records that are not ledger-valid', () => {
-  assert.throws(
-    () => fixture({ transactions: [saleTx({ valid_contract: false })] }),
-    /TX_INVALID_CONTRACT/,
-  )
+test('does not recognize an invalid on-chain transaction as a TicketSale', () => {
+  const journal = fixture({
+    transactions: [saleTx({ valid_contract: false })],
+    treasuryOutputs: [],
+  })
+  assert.equal(journal.receiptEvents.length, 0)
+  assert.equal(journal.summary.categoryCredits, 0)
 })
 
 test('rejects duplicate treasury output references from provider pagination', () => {
