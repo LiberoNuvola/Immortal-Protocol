@@ -298,6 +298,9 @@ export function buildTicketSaleReceiptJournal({
     if (!tx.validContract) continue
     for (const input of tx.inputs) {
       if (!receiptMap.has(input.ref)) continue
+      if (input.address !== treasuryAddress || input.paymentCredential !== expected.treasuryPaymentCredential) {
+        fail('TREASURY_JOURNAL_CONSUMER_INPUT_IDENTITY_MISMATCH_' + input.ref)
+      }
       const prior = spendingTxByReceipt.get(input.ref) ?? []
       prior.push(tx.txHash)
       spendingTxByReceipt.set(input.ref, prior)
@@ -471,6 +474,20 @@ export function deriveTreasuryAddressOutputs({
         payment_cred: credential,
         is_spent: spentRefs.has(output.ref),
       })
+    }
+  }
+
+  // A consuming input must preserve the identity of the referenced canonical
+  // Treasury output. A matching out-ref with contradictory provider metadata
+  // is not accepted as spend-lineage evidence.
+  const canonicalOutputRefs = new Set(outputs.map((row) => row.tx_hash + '#' + row.tx_index))
+  for (const tx of txRows) {
+    if (!tx.validContract) continue
+    for (const input of tx.inputs) {
+      if (!canonicalOutputRefs.has(input.ref)) continue
+      if (input.address !== treasuryAddress || input.paymentCredential !== credential) {
+        fail('TREASURY_JOURNAL_SPENT_INPUT_IDENTITY_MISMATCH_' + input.ref)
+      }
     }
   }
 
