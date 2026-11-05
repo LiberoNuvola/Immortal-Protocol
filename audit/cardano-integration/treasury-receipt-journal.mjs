@@ -103,7 +103,15 @@ function parseTransaction(tx, expected) {
     const address = normalizedAddress(input)
     const credential = normalizedCredential(input)
     if (!address || !credential) fail('TREASURY_JOURNAL_INPUT_ADDRESS_MISSING_' + ref)
-    return { ref, address, paymentCredential: credential }
+    const valueLovelace = integerString(input.value, 'TREASURY_JOURNAL_INPUT_VALUE_INVALID_' + ref)
+    if (BigInt(valueLovelace) < 0n) fail('TREASURY_JOURNAL_INPUT_VALUE_NEGATIVE_' + ref)
+    return {
+      ref,
+      address,
+      paymentCredential: credential,
+      lovelace: valueLovelace,
+      assets: normalizeAssetList(input.asset_list, 'TREASURY_JOURNAL_INPUT_' + ref),
+    }
   })
 
   const minted = normalizeAssetList(tx.assets_minted ?? [], 'TREASURY_JOURNAL_MINT_' + txHash, { allowNegative: true })
@@ -224,6 +232,15 @@ export function buildTicketSaleReceiptJournal({
     }
     if (b1Inputs[0].address !== b1PrizePoolAddress || b1Outputs[0].address !== b1PrizePoolAddress) {
       fail('TREASURY_JOURNAL_B1_NON_CANONICAL_ADDRESS_' + tx.txHash)
+    }
+    const poolInput = b1Inputs[0]
+    const poolOutput = b1Outputs[0]
+    const sameAssetList = poolInput.assets.length === poolOutput.assets.length
+      && poolInput.assets.every((asset, index) =>
+        asset.unit === poolOutput.assets[index].unit && asset.quantity === poolOutput.assets[index].quantity
+      )
+    if (poolInput.lovelace !== poolOutput.lovelace || !sameAssetList) {
+      fail('TREASURY_JOURNAL_B1_PHYSICAL_VALUE_NOT_PRESERVED_' + tx.txHash)
     }
 
     const receiptLocation = treasuryOutputMap.get(treasuryOutput.ref)
