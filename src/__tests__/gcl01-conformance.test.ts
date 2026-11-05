@@ -248,7 +248,7 @@ describe('GCL-01 design-only conformance fixtures v0.1', () => {
     const a = { ...root,evidenceRef:'cycle-a',lineageRefs:[{relatedEvidenceRef:'cycle-b',relation:'derived-from'}] }
     const b = { ...root,evidenceRef:'cycle-b',lineageRefs:[{relatedEvidenceRef:'cycle-a',relation:'derived-from'}] }
     expect(validateLineageGraph([a,b])).toBe('lineage-cycle')
-    expect(validateLineageGraph([root,{ ...root,evidenceRef:'scope-other',scopeRef:'other-scope' }])).toBe('scope-substitution')
+    expect(validateLineageGraph([root,{ ...root,evidenceRef:'scope-other',scopeRef:'other-scope' }],root.subjectRef,root.scopeRef)).toBe('scope-substitution')
   })
   it('keeps the negative expectation catalogue versioned with the fixture corpus', () => {
     expect(fixture.negativeExpectationIds).toHaveLength(19)
