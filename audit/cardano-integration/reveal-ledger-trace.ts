@@ -153,15 +153,57 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 const provider = new Blockfrost(API, '')
-const lucid = await Lucid.new(provider, 'Preprod')
+// Read and print raw Yaci protocol parameters before Lucid initializes its
+// evaluator. This distinguishes provider payload problems from evaluator
+// initialization failures without changing validator or Reveal semantics.
 const protocolParameters = await provider.getProtocolParameters()
 const jsonReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value
 console.log(JSON.stringify({
-  protocolParametersCostModelLengths: Object.fromEntries(
-    Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v.length : typeof v]),
+  protocolParametersCostModels: Object.fromEntries(
+    Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [
+      k,
+      Array.isArray(v)
+        ? { representation: 'array', length: v.length }
+        : v !== null && typeof v === 'object'
+          ? {
+              representation: 'object',
+              keyCount: Object.keys(v as Record<string, unknown>).length,
+              firstKeys: Object.keys(v as Record<string, unknown>).slice(0, 12),
+              lastKeys: Object.keys(v as Record<string, unknown>).slice(-12),
+              sampleEntries: Object.entries(v as Record<string, unknown>).slice(0, 6),
+              keyShape: (() => {
+                const keys = Object.keys(v as Record<string, unknown>)
+                const numericKeys = keys.filter((key) => /^\d+$/.test(key))
+                const values = Object.values(v as Record<string, unknown>)
+                return {
+                  numericKeyCount: numericKeys.length,
+                  nonNumericKeyCount: keys.length - numericKeys.length,
+                  minNumericKey: numericKeys.length ? Math.min(...numericKeys.map(Number)) : null,
+                  maxNumericKey: numericKeys.length ? Math.max(...numericKeys.map(Number)) : null,
+                  allValuesNumeric: values.every((value) => typeof value === 'number' || (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)))),
+                  valueTypes: [...new Set(values.slice(0, 20).map((value) => value === null ? 'null' : typeof value))],
+                }
+              })(),
+            }
+          : { representation: typeof v },
+    ]),
   ),
+  maxTxSize: protocolParameters.maxTxSize ?? null,
 }, null, 2))
+let lucid: any
+try {
+  lucid = await Lucid.new(provider, 'Preprod')
+} catch (error) {
+  console.error(JSON.stringify({
+    lucidInitializationError: error instanceof Error ? error.message : String(error),
+    lucidInitializationStack: error && typeof error === 'object' && 'stack' in error ? String((error as { stack?: unknown }).stack ?? '') : null,
+    lucidInitializationErrorType: error === null ? 'null' : typeof error,
+    lucidInitializationErrorConstructor: error && typeof error === 'object' && 'constructor' in error ? String((error as { constructor?: { name?: string } }).constructor?.name ?? '') : null,
+    lucidInitializationErrorJson: (() => { try { return JSON.stringify(error) } catch { return '[unserializable]' } })(),
+  }, null, 2))
+  throw error
+}
 lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()

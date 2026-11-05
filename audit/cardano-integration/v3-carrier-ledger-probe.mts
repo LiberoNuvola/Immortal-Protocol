@@ -10,7 +10,15 @@ const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
 const TOKEN_NAME_HEX = '45434f4e4f4d49435354415445' // ECONOMICSTATE
 
 const wallet = JSON.parse(readFileSync(WALLET_FILE, 'utf8'))
-const lucid = await Lucid(new Blockfrost(API, ''), 'Preprod')
+const provider = new Blockfrost(API, '')
+// Yaci Store's evaluator response is not compatible with Lucid 0.6.5's Blockfrost
+// response parser, and Lucid's local evaluator rejects this valid Value encoding
+// before submission. Supply a bounded transaction-level budget for this diagnostic
+// probe; the native Cardano ledger still evaluates the actual script on submission.
+;(provider as unknown as { evaluateTx: () => Promise<unknown> }).evaluateTx = async () => [
+  { redeemer_tag: 'mint', redeemer_index: 0, ex_units: { mem: 10_000_000, steps: 5_000_000_000 } },
+]
+const lucid = await Lucid(provider, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
 
 const address = await lucid.wallet().address()
@@ -28,8 +36,11 @@ if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') 
 const policy: Script = {
   type: 'PlutusV2',
   script: applyParamsToScript(artifact.cborHex, [
+    // Match the parameter encoding already used by deployV3Carrier.mts:
+    // TxOutRef = Constr 0 [Constr 0 [txId-bytes], output-index].
     new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)]),
-    new Constr(0, [TOKEN_NAME_HEX]),
+    // TokenName is Plutus bytestring Data; pass the bytes directly.
+    TOKEN_NAME_HEX,
   ]),
 }
 const policyId = mintingPolicyToId(policy)
@@ -41,6 +52,7 @@ const tx = await lucid
   .mintAssets({ [unit]: 1n }, Data.void())
   .attach.MintingPolicy(policy)
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
+  // Use the bounded evaluation budget above; ledger validation remains authoritative.
   .complete({ localUPLCEval: false })
 
 const signed = await tx.sign.withWallet().complete()
