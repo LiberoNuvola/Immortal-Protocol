@@ -243,7 +243,7 @@ describe('GCL-01 design-only conformance fixtures v0.1', () => {
   })
   it('rejects missing parents, cycles and subject/scope substitution in lineage', () => {
     const root = { ...evidence[0] }
-    const missing = { ...root,lineageRefs:[{relatedEvidenceRef:'not-present',relation:'derived-from'}] }
+    const missing = { ...root,evidenceRef:'missing-parent-child',lineageRefs:[{relatedEvidenceRef:'not-present',relation:'derived-from'}] }
     expect(validateLineageGraph([root,missing])).toBe('missing-lineage-parent')
     const a = { ...root,evidenceRef:'cycle-a',lineageRefs:[{relatedEvidenceRef:'cycle-b',relation:'derived-from'}] }
     const b = { ...root,evidenceRef:'cycle-b',lineageRefs:[{relatedEvidenceRef:'cycle-a',relation:'derived-from'}] }
