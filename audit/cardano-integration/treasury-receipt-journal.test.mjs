@@ -145,6 +145,41 @@ test('rejects duplicate Treasury script outputs in one sale transaction', () => 
   assert.throws(() => fixture({ transactions: [tx] }), /TREASURY_OUTPUT_CREDENTIAL_COUNT_INVALID/)
 })
 
+test('accepts a B1 continuation only when its full native-asset basket is preserved', () => {
+  const token = { policy_id: PAYMENT_POLICY, asset_name: '424f4f4b', quantity: '7' }
+  const tx = saleTx()
+  const inputs = tx.inputs.map((input, index) => index === 0
+    ? { ...input, asset_list: [token] }
+    : input)
+  const outputs = tx.outputs.map((output) => output.payment_addr.cred === POOL_CREDENTIAL
+    ? { ...output, asset_list: [token] }
+    : output)
+  const journal = fixture({ transactions: [{ ...tx, inputs, outputs }] })
+  assert.equal(journal.receiptEvents.length, 1)
+  assert.equal(journal.receiptEvents[0].prizePool.physicalValuePreservedByValidator, true)
+})
+
+test('rejects a B1 continuation with a different lovelace value', () => {
+  const tx = saleTx()
+  const outputs = tx.outputs.map((output) => output.payment_addr.cred === POOL_CREDENTIAL
+    ? { ...output, value: '5000001' }
+    : output)
+  assert.throws(() => fixture({ transactions: [{ ...tx, outputs }] }), /B1_PHYSICAL_VALUE_NOT_PRESERVED/)
+})
+
+test('rejects a B1 continuation with a changed native-asset quantity', () => {
+  const inputAsset = { policy_id: PAYMENT_POLICY, asset_name: '424f4f4b', quantity: '7' }
+  const outputAsset = { ...inputAsset, quantity: '6' }
+  const tx = saleTx()
+  const inputs = tx.inputs.map((input, index) => index === 0
+    ? { ...input, asset_list: [inputAsset] }
+    : input)
+  const outputs = tx.outputs.map((output) => output.payment_addr.cred === POOL_CREDENTIAL
+    ? { ...output, asset_list: [outputAsset] }
+    : output)
+  assert.throws(() => fixture({ transactions: [{ ...tx, inputs, outputs }] }), /B1_PHYSICAL_VALUE_NOT_PRESERVED/)
+})
+
 test('rejects TicketSale evidence without exactly one B1 input and continuation', () => {
   const tx = saleTx({
     inputs: saleTx().inputs.filter((input) => input.payment_addr.cred !== POOL_CREDENTIAL),
