@@ -176,3 +176,15 @@ Two additional high-priority defects were confirmed on source SHA `b49d0c7dea33a
 The audit also confirms that challenge open/resolve are helper-returned values rather than canonical history events; emergency activation/renewal/expiry are not represented in the active replay, and `EmergencyAuthority` remains reserved under GOV-27. EDelegationSet/EGatesSet exist as active-only extras outside the normative 20-name inventory.
 
 These are source findings, not implemented fixes. The single authoritative GOV-22 event stream must be retained; GOV-28 remains OPEN.
+
+
+## 2026-11-05 — replay-integrity remediation source status
+
+Commit [98da1f892fd40b0d9a1b73745622e41c16f1d8e7](https://github.com/LiberoNuvola/Immortal-Protocol/commit/98da1f892fd40b0d9a1b73745622e41c16f1d8e7) applies the two high-priority replay fixes:
+
+- GOV28-EV-01: preserve the existing GOV-24/GOV-25 ProposalSubmitted canonical payload bytes; restrict the submitted object to the normative DRAFT/pre-activation state with fixed initial gate/timestamp/vote/delegation fields. The DRAFT → PROPOSED transition is now represented as its own subsequent event. Tests verify frozen payload bytes and reject every state-field mutation not represented in the payload.
+- GOV28-EV-02: generic EStatusChanged → Rejected remains blocked at the canonical replay boundary; the rejected outcome is admitted through EDecisionFinalized and its existing witness/finality path only.
+
+Exact-HEAD core validation on 98da1f8 is pending at last observation: Governance Standalone #41973239788 IN PROGRESS; Haskell Semantic #41973239636 QUEUED; Kernel Invalid-Class #41973239774 IN PROGRESS. Portability #41973239542, Algorithmic Governability #41973239703 and Documentation Link Check #41973239608 are SUCCESS.
+
+Status: the two source fixes are implemented; CI evidence is pending; GOV-28 remains OPEN. The full GOV-18 vocabulary migration, challenge history events and emergency lifecycle remain open as documented above.

@@ -7290,3 +7290,12 @@ This source clarification does not change the GREEN status of the four-act repla
 - Exact source SHA `b49d0c7dea33a4adb251604e8eae4e958d789552` passed the core Governance Standalone #41899743535, Haskell Semantic #41899743733 and Kernel Invalid-Class #41899744010 runs; kernel artifact #13358492259 (SHA-256 `36b9adb72d80f7d5bbee19f10cc2cc555108ccd4b9e1fb8ac37fc7a72eb2ba62`). This establishes only the current bounded tests, not closure of these findings.
 - No source semantics changed in this audit. The four dedicated lifecycle replay acts remain GREEN; full GOV-18 migration and GOV28-EV-01/02 remain OPEN/HIGH priority. Do not revive `CanonicalEvent.hs` as a second replay stream or infer missing actor/evidence/emergency rules.
 
+
+
+## 10.93 GOV28-EV-01/02 source remediation (2026-11-05)
+
+- Commit [98da1f892fd40b0d9a1b73745622e41c16f1d8e7](https://github.com/LiberoNuvola/Immortal-Protocol/commit/98da1f892fd40b0d9a1b73745622e41c16f1d8e7) implements both replay-integrity fixes.
+- EV-01: preserve the original GOV-24/GOV-25 ProposalSubmitted byte representation. Instead of changing the digest format, make uncommitted creation fields deterministic: DRAFT, non-negative creation time, no later lifecycle timestamps, empty votes/delegations, and closed initial gates. Schema and underlying applyEvent both enforce this. PROPOSED is a subsequent event; gate setup uses existing GatesSet during EvidenceReview.
+- EV-02: generic EStatusChanged → Rejected remains blocked. The Rejected outcome is still supported by dedicated EDecisionFinalized with its existing decision/finality/challenge validation.
+- Regression coverage is added to standalone Governance and Plutus Haskell suites; proposal-created payload bytes are asserted equal to the pre-fix GOV-25 representation. Core CI on the exact new SHA: Standalone #41973239788 IN PROGRESS, Haskell Semantic #41973239636 QUEUED, Kernel Invalid-Class #41973239774 IN PROGRESS. Companion Portability #41973239542, Algorithmic Governability #41973239703 and Documentation Link Check #41973239608 are SUCCESS.
+- Disposition: source remediation implemented / exact-HEAD core CI pending. Overall GOV-28 and the 20-event vocabulary migration remain OPEN. No governance parameters, actor permissions, new event types, serialization version, economic semantics, V3 or Reveal semantics were changed by this patch.

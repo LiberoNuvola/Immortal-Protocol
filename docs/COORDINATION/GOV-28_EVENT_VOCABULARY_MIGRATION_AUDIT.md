@@ -171,3 +171,34 @@ All three core gates completed SUCCESS on the audited source SHA `b49d0c7dea33a4
 These runs establish that the existing bounded tests pass on the audited source. They do not establish the missing event identities, close the two newly identified negative cases, authenticate production actors/evidence, or certify deployment.
 
 **Final disposition:** the four dedicated replay acts remain GREEN at the audited SHA; full GOV-18 event migration remains OPEN; GOV28-EV-01 and GOV28-EV-02 are HIGH-PRIORITY implementation blockers for a full canonical replay conformance claim. No code, governance semantics, economic constants, V3, Reveal, wallet or on-chain state was changed by this audit.
+
+
+## 2026-11-05 — GOV28-EV-01/02 remediation committed; exact-HEAD CI pending
+
+Remediation commit: [98da1f892fd40b0d9a1b73745622e41c16f1d8e7](https://github.com/LiberoNuvola/Immortal-Protocol/commit/98da1f892fd40b0d9a1b73745622e41c16f1d8e7), based on the source audited above.
+
+### GOV28-EV-01 — proposal creation projection is now deterministic without changing GOV-25 bytes
+
+- The canonical payload serializer for ProposalSubmitted was restored to its existing canonical byte representation. No new proposal fields were added to the preimage; no event encoding/version migration was introduced.
+- The authoritative proposalSubmissionValid predicate now requires the normative DRAFT pre-activation state, non-negative creation time, no lifecycle timestamps, no votes/delegations, and the fixed closed initial GateResult.
+- Both canonical schema validation and the underlying applyEvent(ProposalSubmitted) enforce the same predicate. Fields omitted from the frozen canonical payload are therefore fixed rather than mutable at creation.
+- PROPOSED is exercised as its own subsequent EStatusChanged event. Gate changes in test sequences use the existing GatesSet operation during EvidenceReview.
+- Regression tests prove the old payload bytes remain unchanged and that each uncommitted state-bearing field variation is rejected. Standalone, Haskell and Phase-6 fixtures were realigned to the DRAFT → PROPOSED sequence and the initial closed-gate state.
+
+### GOV28-EV-02 — generic Rejected shortcut blocked
+
+- The earlier replay-boundary change remains in force: generic EStatusChanged → Rejected is inadmissible.
+- Rejected remains a valid decisionFinalOutcome only through EDecisionFinalized and its existing DecisionRecord, finality-window, challenge-set and witness checks.
+- Both standalone and Plutus replay suites contain the generic-shortcut negative twin. The dedicated finalization path still has its positive rejected-outcome test.
+
+### Exact-HEAD validation
+
+The following workflows were created for exact SHA 98da1f892fd40b0d9a1b73745622e41c16f1d8e7:
+- Governance Standalone #41973239788 — IN PROGRESS at last observation (toolchain setup);
+- Haskell Semantic #41973239636 — QUEUED at last observation;
+- Kernel Invalid-Class #41973239774 — IN PROGRESS at last observation (Haskell setup);
+- Emulator Reveal #41973239587 — IN PROGRESS (unrelated integration workflow).
+
+Companion exact-HEAD results already observed: Portability #41973239542 SUCCESS, Algorithmic Governability #41973239703 SUCCESS, Documentation Link Check #41973239608 SUCCESS.
+
+These are source changes, not a closure certificate. GOV28-EV-01/02 remediation is IMPLEMENTED / CI PENDING; overall GOV-28 and the wider 20-event migration remain OPEN. No new actor class, authorization, gate policy, event type, economic parameter, or serialization version was introduced.
