@@ -13,7 +13,7 @@ import PlutusLedgerApi.V2.Contexts
 import qualified PlutusLedgerApi.V1.Interval as Interval
 import PlutusLedgerApi.V1.Value (lovelaceValueOf, singleton)
 
-import PlutusTx (CompiledCode, ToData, liftCode, unsafeApplyCode)
+import PlutusTx (CompiledCode, ToData, liftCodeDef, unsafeApplyCode)
 import PlutusTx.Prelude
   ( consByteString
   , emptyByteString
@@ -212,16 +212,16 @@ compiledPolicyFor poolInputValue poolOutputValue =
         (mkTxInfo poolInputValue poolOutputValue)
         (Minting ticketPolicy)
 
-    p1 = unsafeApplyCode compiledPolicyFactory (liftCode counterHash)
-    p2 = unsafeApplyCode p1 (liftCode prizeHash)
-    p3 = unsafeApplyCode p2 (liftCode registryHash)
-    p4 = unsafeApplyCode p3 (liftCode treasuryHash)
-    p5 = unsafeApplyCode p4 (liftCode poolHash)
-    p6 = unsafeApplyCode p5 (liftCode (toBuiltinData oracleState))
-    p7 = unsafeApplyCode p6 (liftCode (toBuiltinData oraclePublisher))
-    p8 = unsafeApplyCode p7 (liftCode (toBuiltinData ()))
+    p1 = unsafeApplyCode compiledPolicyFactory (liftCodeDef counterHash)
+    p2 = unsafeApplyCode p1 (liftCodeDef prizeHash)
+    p3 = unsafeApplyCode p2 (liftCodeDef registryHash)
+    p4 = unsafeApplyCode p3 (liftCodeDef treasuryHash)
+    p5 = unsafeApplyCode p4 (liftCodeDef poolHash)
+    p6 = unsafeApplyCode p5 (liftCodeDef (toBuiltinData oracleState))
+    p7 = unsafeApplyCode p6 (liftCodeDef (toBuiltinData oraclePublisher))
+    p8 = unsafeApplyCode p7 (liftCodeDef (toBuiltinData ()))
   in
-    unsafeApplyCode p8 (liftCode (toBuiltinData context))
+    unsafeApplyCode p8 (liftCodeDef (toBuiltinData context))
 
 main :: IO ()
 main = do
