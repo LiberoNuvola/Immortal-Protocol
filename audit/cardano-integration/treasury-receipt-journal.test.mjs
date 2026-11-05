@@ -354,3 +354,51 @@ test('cross-check rejects output history returned for a different address', asyn
     /ADDRESS_OUTPUT_ADDRESS_MISMATCH/,
   )
 })
+
+
+test('classifies a receipt consumed by a Treasury-to-PrizePool transfer and preserves exact consumer outputs', () => {
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [txInput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL)],
+    outputs: [
+      txOutput(CONSUMER_TX, 0, POOL, POOL_CREDENTIAL, '2200000', [
+        { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '1500000' },
+      ]),
+    ],
+    assets_minted: [],
+  }
+  const journal = fixture({
+    treasuryOutputs: [addressOutput({ is_spent: true })],
+    transactions: [saleTx(), consumer],
+  })
+  const receipt = journal.receiptEvents[0]
+  assert.equal(receipt.lifecycle.state, 'SPENT_TO_B1_PRIZEPOOL')
+  assert.deepEqual(receipt.lifecycle.b1PrizePoolOutputRefs, [CONSUMER_TX + '#0'])
+  const consumerRecord = journal.consumingTransactions[0]
+  assert.equal(consumerRecord.outputs[0].address, POOL)
+  assert.equal(consumerRecord.outputs[0].lovelace, '2200000')
+  assert.deepEqual(consumerRecord.outputs[0].nativeAssets, [{
+    policyId: PAYMENT_POLICY,
+    assetNameHex: '5553444d',
+    unit: PAYMENT_POLICY + '5553444d',
+    quantity: '1500000',
+  }])
+})
+
+test('rejects non-positive asset quantities in a Treasury output', () => {
+  const tx = saleTx({
+    outputs: [
+      txOutput(TX, 0, POOL, POOL_CREDENTIAL, '5000000'),
+      txOutput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL, '2200000', [
+        { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '-1' },
+      ]),
+    ],
+  })
+  assert.throws(() => fixture({ transactions: [tx] }), /ASSET_QUANTITY_NOT_POSITIVE/)
+})
