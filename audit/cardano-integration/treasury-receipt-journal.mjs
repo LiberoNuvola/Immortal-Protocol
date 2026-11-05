@@ -62,7 +62,7 @@ function normalizeAssetList(assets, codePrefix) {
 function parseTransaction(tx, expected) {
   if (!tx || typeof tx !== 'object') fail('TREASURY_JOURNAL_TX_INFO_INVALID')
   const txHash = normalizedHash(tx.tx_hash)
-  if (tx.valid_contract !== true) fail('TREASURY_JOURNAL_TX_INVALID_CONTRACT_' + txHash)
+  if (typeof tx.valid_contract !== 'boolean') fail('TREASURY_JOURNAL_TX_VALIDITY_MISSING_' + txHash)
   if (!Array.isArray(tx.inputs) || !Array.isArray(tx.outputs) || !Array.isArray(tx.assets_minted)) {
     fail('TREASURY_JOURNAL_TX_COMPONENTS_MISSING_' + txHash)
   }
@@ -196,6 +196,7 @@ export function buildTicketSaleReceiptJournal({
     // A valid mint under the exact current Ticket policy is the transaction
     // discriminator. Treasury payments without this mint remain unclassified.
     if (tx.ticketMints.length === 0) continue
+    if (!tx.validContract) fail('TREASURY_JOURNAL_TICKET_MINT_INVALID_CONTRACT_' + tx.txHash)
     if (tx.ticketMints.length !== 1) fail('TREASURY_JOURNAL_MULTIPLE_TICKETS_IN_ONE_TX_' + tx.txHash)
     const ticketMint = tx.ticketMints[0]
     if (BigInt(ticketMint.quantity) !== 1n) fail('TREASURY_JOURNAL_TICKET_MINT_QUANTITY_INVALID_' + tx.txHash)
@@ -290,6 +291,7 @@ export function buildTicketSaleReceiptJournal({
   const receiptMap = mapUnique(receiptEvents, (event) => event.receiptRef, 'TREASURY_JOURNAL_DUPLICATE_RECEIPT')
   const spendingTxByReceipt = new Map()
   for (const tx of txMap.values()) {
+    if (!tx.validContract) continue
     for (const input of tx.inputs) {
       if (!receiptMap.has(input.ref)) continue
       const prior = spendingTxByReceipt.get(input.ref) ?? []
