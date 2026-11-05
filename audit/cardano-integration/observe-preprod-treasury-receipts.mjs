@@ -264,16 +264,21 @@ if (!Number.isSafeInteger(tipHeight) || tipHeight < 0 || typeof tip.hash !== 'st
 
 const addressPayload = {
   _addresses: [treasuryAddress],
-  _after_block_height: FROM_BLOCK_HEIGHT,
+  // Koios address_outputs computes its lower cursor from the first tx in
+  // the selected block and uses a strict greater-than comparison. Start one
+  // block earlier, then apply the exact inclusive lower bound locally.
+  _after_block_height: Math.max(-1, FROM_BLOCK_HEIGHT - 1),
 }
 const [addressOutputResult, addressTxResult] = await Promise.all([
   postPagedRows('address_outputs', addressPayload, tipHeight),
   postPagedRows('address_txs', addressPayload, tipHeight),
 ])
 
+const filteredTreasuryOutputs = addressOutputResult.rows.filter((row) => Number(row?.block_height) >= FROM_BLOCK_HEIGHT)
+const filteredAddressTransactions = addressTxResult.rows.filter((row) => Number(row?.block_height) >= FROM_BLOCK_HEIGHT)
 const allTxHashes = [...new Set([
-  ...addressOutputResult.rows.map((row) => String(row?.tx_hash ?? '').toLowerCase()),
-  ...addressTxResult.rows.map((row) => String(row?.tx_hash ?? '').toLowerCase()),
+  ...filteredTreasuryOutputs.map((row) => String(row?.tx_hash ?? '').toLowerCase()),
+  ...filteredAddressTransactions.map((row) => String(row?.tx_hash ?? '').toLowerCase()),
 ])]
 if (allTxHashes.some((hash) => !/^[0-9a-f]{64}$/.test(hash))) {
   throw new Error('TREASURY_RECEIPT_ADDRESS_HISTORY_TX_HASH_INVALID')
@@ -288,7 +293,7 @@ const journal = buildTicketSaleReceiptJournal({
   ticketPolicyId,
   b1PrizePoolAddress,
   b1PrizePoolPaymentCredential,
-  addressOutputs: addressOutputResult.rows,
+  addressOutputs: filteredTreasuryOutputs,
   transactions: transactionInfoResult.rows,
   observedAt,
   network: 'cardano-preprod',
@@ -313,9 +318,9 @@ journal.observation = {
   },
   fromBlockHeightInclusive: FROM_BLOCK_HEIGHT,
   history: {
-    treasuryAddressOutputRows: addressOutputResult.rows.length,
+    treasuryAddressOutputRows: filteredTreasuryOutputs.length,
     treasuryAddressOutputPages: addressOutputResult.pages,
-    treasuryAddressTransactionRows: addressTxResult.rows.length,
+    treasuryAddressTransactionRows: filteredAddressTransactions.length,
     treasuryAddressTransactionPages: addressTxResult.pages,
     uniqueTransactionHashes: allTxHashes.length,
     transactionInfoBatches: transactionInfoResult.batches,
