@@ -457,7 +457,7 @@ The read-only Koios acquisition path is:
 
 The journal derives the Treasury output set from the address transaction history and transaction facts, then cross-checks the dedicated address-output endpoint. This protects against a provider cursor-boundary omission without silently dropping a transaction output. A provider row not reconcilable to the transaction facts, a duplicate reference, an address/payment-credential mismatch, or inconsistent block/time/spend state is a hard failure.
 
-The snapshot tip and raw response digests are retained. Confirmation counts are observations from Koios only; this implementation does not choose or claim a finality threshold.
+The snapshot tip and raw response digests are retained. Transactions at the captured tip height must have the exact captured tip block hash; otherwise the observer fails closed rather than mixing competing tip snapshots. Confirmation counts are observations from Koios only; this implementation does not choose or claim a finality threshold.
 
 #### 11.15.2 TicketSale recognition
 
