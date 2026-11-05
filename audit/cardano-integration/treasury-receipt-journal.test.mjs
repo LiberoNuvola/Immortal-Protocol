@@ -157,6 +157,7 @@ test('accepts a B1 continuation only when its full native-asset basket is preser
   const journal = fixture({ transactions: [{ ...tx, inputs, outputs }] })
   assert.equal(journal.receiptEvents.length, 1)
   assert.equal(journal.receiptEvents[0].prizePool.physicalValuePreservedInObservedTransaction, true)
+  assert.equal(journal.receiptEvents[0].prizePool.physicalValueEvidence, 'OBSERVED_INPUT_OUTPUT_EQUALITY')
 })
 
 test('rejects a B1 continuation with a different lovelace value', () => {
