@@ -397,3 +397,95 @@ export function buildTicketSaleReceiptJournal({
     },
   }
 }
+
+
+/**
+ * Reconstruct all canonical Treasury outputs from the complete address_txs
+ * transaction set and tx_info outputs. address_outputs remains an independent
+ * cross-check; this derived list avoids relying on its historical cursor edge.
+ */
+export function deriveTreasuryAddressOutputs({
+  treasuryAddress,
+  treasuryPaymentCredential,
+  transactions,
+}) {
+  if (typeof treasuryAddress !== 'string' || treasuryAddress.length === 0) fail('TREASURY_JOURNAL_TREASURY_ADDRESS_REQUIRED')
+  if (!HASH_28.test(String(treasuryPaymentCredential ?? ''))) fail('TREASURY_JOURNAL_TREASURY_CREDENTIAL_INVALID')
+  if (!Array.isArray(transactions)) fail('TREASURY_JOURNAL_TX_ARRAY_REQUIRED')
+
+  const credential = treasuryPaymentCredential.toLowerCase()
+  const txRows = transactions.map((tx) => parseTransaction(tx, { ticketPolicyId: '00'.repeat(28) }))
+  const spentRefs = new Set()
+
+  for (const tx of txRows) {
+    if (!tx.validContract) continue
+    for (const input of tx.inputs) {
+      // Any input consuming a canonical Treasury output marks it spent.
+      // The tx_info transaction set is discovered through address_txs, which
+      // includes both creation and consumption transactions for the address.
+      spentRefs.add(input.ref)
+    }
+  }
+
+  const outputs = []
+  const seen = new Set()
+  const sourceTxByHash = new Map(txRows.map((tx) => [tx.txHash, tx]))
+
+  for (const tx of txRows) {
+    if (!tx.validContract) continue
+    for (const output of tx.outputs) {
+      const byAddress = output.address === treasuryAddress
+      const byCredential = output.paymentCredential === credential
+      if (!byAddress && !byCredential) continue
+      if (!byAddress || !byCredential) {
+        fail('TREASURY_JOURNAL_DERIVED_OUTPUT_IDENTITY_MISMATCH_' + output.ref)
+      }
+      if (seen.has(output.ref)) fail('TREASURY_JOURNAL_DERIVED_OUTPUT_DUPLICATE_' + output.ref)
+      seen.add(output.ref)
+      outputs.push({
+        address: treasuryAddress,
+        tx_hash: tx.txHash,
+        tx_index: output.txIndex,
+        block_height: tx.blockHeight,
+        block_time: tx.txTimestamp,
+        payment_cred: credential,
+        is_spent: spentRefs.has(output.ref),
+      })
+    }
+  }
+
+  // Sanity check that each derived ref belongs to the exact transaction
+  // that supplied its output, not just a matching address/credential string.
+  for (const row of outputs) {
+    if (!sourceTxByHash.has(row.tx_hash)) fail('TREASURY_JOURNAL_DERIVED_OUTPUT_SOURCE_TX_MISSING_' + row.tx_hash)
+  }
+
+  outputs.sort((a, b) => Number(a.block_height) - Number(b.block_height)
+    || String(a.tx_hash).localeCompare(String(b.tx_hash))
+    || Number(a.tx_index) - Number(b.tx_index))
+  return outputs
+}
+
+export function assertTreasuryAddressOutputCrossCheck(providerRows, derivedRows) {
+  if (!Array.isArray(providerRows) || !Array.isArray(derivedRows)) fail('TREASURY_JOURNAL_CROSSCHECK_ARRAYS_REQUIRED')
+  const derived = mapUnique(derivedRows.map((row) => normalizeAddressOutput(row, row.address)),
+    (row) => row.ref, 'TREASURY_JOURNAL_CROSSCHECK_DERIVED_DUPLICATE')
+  const observed = mapUnique(providerRows.map((row) => normalizeAddressOutput(row, row.address)),
+    (row) => row.ref, 'TREASURY_JOURNAL_CROSSCHECK_PROVIDER_DUPLICATE')
+
+  for (const [ref, row] of observed) {
+    const expected = derived.get(ref)
+    if (!expected) fail('TREASURY_JOURNAL_ADDRESS_OUTPUT_NOT_IN_TX_INFO_HISTORY_' + ref)
+    if (row.blockHeight !== expected.blockHeight || row.blockTime !== expected.blockTime ||
+        row.paymentCredential !== expected.paymentCredential || row.isSpent !== expected.isSpent) {
+      fail('TREASURY_JOURNAL_ADDRESS_OUTPUT_TX_INFO_MISMATCH_' + ref)
+    }
+  }
+
+  return {
+    providerRows: observed.size,
+    derivedRows: derived.size,
+    providerRowsMissingFromEndpoint: Math.max(0, derived.size - observed.size),
+    exactMatches: observed.size,
+  }
+}
