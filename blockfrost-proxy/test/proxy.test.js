@@ -20,12 +20,20 @@ test('requires server credential and explicit origins', () => {
   assert.throws(() => createApp({ allowedOrigins: new Set([ORIGIN]) }), /BLOCKFROST_API_KEY/)
   assert.throws(() => createApp({ apiKey: KEY, allowedOrigins: new Set() }), /ALLOWED_ORIGINS/)
 })
-test('CBOR transaction must be one complete four-item top-level array', () => {
+test('CBOR envelope requires one complete four-item top-level array and bounded nested items', () => {
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03])), true)
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01])), false)
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x01])), false)
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x81, 0x00])), false)
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03, 0x04])), false)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x9f, 0x00, 0x01, 0x02, 0x03, 0xff])), false)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x9f, 0xff, 0x00, 0x01, 0x02])), true)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0xbf, 0xff, 0x00, 0x01, 0x02])), true)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x5f, 0x41, 0xaa, 0xff, 0x00, 0x01, 0x02])), true)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x7f, 0x61, 0x61, 0xff, 0x00, 0x01, 0x02])), true)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x5f, 0x41])), false)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0xbf, 0x00, 0xff, 0x01, 0x02])), false)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x5f, 0x61, 0x61, 0xff, 0x00, 0x01, 0x02])), false)
 })
 test('route allowlist is exact and method-bound', () => {
   assert.equal(validateRoute('GET', '/blockfrost/epochs/latest/parameters', new URLSearchParams()), '/epochs/latest/parameters')
@@ -67,7 +75,8 @@ test('forwards only fixed upstream GET with server credential and preserves resp
     assert.equal(captured.init.method, 'GET')
   })
 })
-test('relays already-signed CBOR bytes unchanged', async () => {
+test('relays a synthetic four-item CBOR envelope byte-for-byte without validating signature semantics', async () => {
+  // This fixture tests transparent transport only; it is not a signed ledger transaction.
   const bytes = Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03])
   let captured
   const app = makeApp(async (url, init) => {
