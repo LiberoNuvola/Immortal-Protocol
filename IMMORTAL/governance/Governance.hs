@@ -327,7 +327,12 @@ applyEvent st ev = case ev of
              then p { proposalGates = g }
              else p)
       (proposals st)
-    case [p | p <- ps, proposalId p == pid, proposalGates p == g] of
+    case [ p
+         | p <- ps
+         , proposalId p == pid
+         , proposalStatus p `elem` [EvidenceReview, CommunityReview]
+         , proposalGates p == g
+         ] of
       [_] -> Right st { proposals = ps, eventsApplied = eventsApplied st + 1 }
       _ -> Left "gate update rejected outside evidence/community review"
 
