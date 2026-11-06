@@ -23,6 +23,96 @@ function requireTokenNameHex(value, field) {
   return value.toLowerCase()
 }
 
+
+
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
+const BECH32_GENERATORS = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+
+function bech32Polymod(values) {
+  let checksum = 1
+  for (const value of values) {
+    const top = checksum >>> 25
+    checksum = ((checksum & 0x1ffffff) << 5) ^ value
+    for (let i = 0; i < BECH32_GENERATORS.length; i += 1) {
+      if (((top >>> i) & 1) !== 0) checksum ^= BECH32_GENERATORS[i]
+    }
+  }
+  return checksum >>> 0
+}
+
+function bech32HrpExpand(hrp) {
+  return [
+    ...Array.from(hrp, character => character.charCodeAt(0) >>> 5),
+    0,
+    ...Array.from(hrp, character => character.charCodeAt(0) & 31),
+  ]
+}
+
+function decodeAddressPayload(address, field) {
+  const value = requireString(address, field)
+  if (value !== value.toLowerCase() && value !== value.toUpperCase()) {
+    throw new Error(field + '_BECH32_MIXED_CASE')
+  }
+  const normalized = value.toLowerCase()
+  const separator = normalized.lastIndexOf('1')
+  if (separator < 1 || separator + 7 > normalized.length) {
+    throw new Error(field + '_BECH32_FORMAT_INVALID')
+  }
+  const hrp = normalized.slice(0, separator)
+  if (hrp !== 'addr_test') throw new Error(field + '_NOT_CARDANO_PREPROD_ADDRESS')
+  const encoded = normalized.slice(separator + 1)
+  const values = []
+  for (const character of encoded) {
+    const index = BECH32_CHARSET.indexOf(character)
+    if (index < 0) throw new Error(field + '_BECH32_CHARACTER_INVALID')
+    values.push(index)
+  }
+  if (bech32Polymod([...bech32HrpExpand(hrp), ...values]) !== 1) {
+    throw new Error(field + '_BECH32_CHECKSUM_INVALID')
+  }
+
+  const data = values.slice(0, -6)
+  const bytes = []
+  let accumulator = 0
+  let bits = 0
+  for (const item of data) {
+    accumulator = (accumulator << 5) | item
+    bits += 5
+    while (bits >= 8) {
+      bits -= 8
+      bytes.push((accumulator >>> bits) & 0xff)
+    }
+  }
+  if (bits >= 5 || ((accumulator << (8 - bits)) & 0xff) !== 0) {
+    throw new Error(field + '_BECH32_PADDING_INVALID')
+  }
+  if (bytes.length < 29) throw new Error(field + '_SHELLEY_PAYLOAD_TOO_SHORT')
+
+  const header = bytes[0]
+  const addressType = header >>> 4
+  const networkId = header & 0x0f
+  if (networkId !== 0) throw new Error(field + '_NETWORK_ID_NOT_PREPROD')
+  return {
+    addressType,
+    networkId,
+    paymentCredentialHash: Buffer.from(bytes.slice(1, 29)).toString('hex'),
+  }
+}
+
+function assertPaymentCredential(address, expectedHash, credentialKind, field) {
+  const decoded = decodeAddressPayload(address, field)
+  const scriptTypes = [1, 3, 5, 7]
+  const keyTypes = [0, 2, 4, 6]
+  const allowed = credentialKind === 'script' ? scriptTypes : keyTypes
+  if (!allowed.includes(decoded.addressType)) {
+    throw new Error(field + '_PAYMENT_CREDENTIAL_KIND_MISMATCH')
+  }
+  if (decoded.paymentCredentialHash !== expectedHash) {
+    throw new Error(field + '_PAYMENT_CREDENTIAL_HASH_MISMATCH')
+  }
+  return decoded
+}
+
 function assertNetworkAndStatus(manifest, label, schema, status) {
   if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
     throw new Error(label + '_MANIFEST_MUST_BE_OBJECT')
@@ -148,6 +238,28 @@ export async function loadProtectedCapitalDeploymentIdentity({
   const poolHash = requireHex(topology.b1PrizePoolHash, 28, 'B1_PRIZE_POOL_SCRIPT_HASH')
   const ticketPolicyId = requireHex(topology.ticketPolicyId, 28, 'TICKET_POLICY_ID')
 
+  // Bind configured Preprod addresses to the exact payment credentials in the
+  // historical deployment manifests. This checks address/hash consistency;
+  // it does not authenticate the manifest or re-derive the Plutus bytecode.
+  const prizeAddressBinding = assertPaymentCredential(
+    requiredTopology.prizeAddress,
+    prizeHash,
+    'script',
+    'PREPROD_PRIZE_VALIDATOR_ADDRESS',
+  )
+  const poolAddressBinding = assertPaymentCredential(
+    requiredTopology.b1PrizePoolAddress,
+    poolHash,
+    'script',
+    'PREPROD_B1_POOL_ADDRESS',
+  )
+  const oraclePublisherAddressBinding = assertPaymentCredential(
+    oracleAddress,
+    oraclePublisherPkh,
+    'key',
+    'PREPROD_ORACLE_PUBLISHER_ADDRESS',
+  )
+
   const directUsdmUnit = requireString(assets.directUsdmUnit, 'DIRECT_USDM_UNIT').toLowerCase()
   if (!/^[0-9a-f]{56}(?:[0-9a-f]{2}){0,32}$/.test(directUsdmUnit)) {
     throw new Error('DIRECT_USDM_UNIT_INVALID')
@@ -181,6 +293,25 @@ export async function loadProtectedCapitalDeploymentIdentity({
       ticketPolicyId,
       prizeAddress: requiredTopology.prizeAddress,
       b1PrizePoolAddress: requiredTopology.b1PrizePoolAddress,
+    },
+    addressBindings: {
+      network: 'cardano-preprod',
+      prizeValidator: {
+        addressType: prizeAddressBinding.addressType,
+        paymentCredentialHash: prizeAddressBinding.paymentCredentialHash,
+        matchesDeploymentHash: true,
+      },
+      b1PrizePool: {
+        addressType: poolAddressBinding.addressType,
+        paymentCredentialHash: poolAddressBinding.paymentCredentialHash,
+        matchesDeploymentHash: true,
+      },
+      oraclePublisher: {
+        addressType: oraclePublisherAddressBinding.addressType,
+        paymentCredentialHash: oraclePublisherAddressBinding.paymentCredentialHash,
+        matchesConfiguredPublisherPkh: true,
+      },
+      scope: 'BECH32_ADDRESS_PAYMENT_CREDENTIAL_BINDING_ONLY_NOT_BYTECODE_REDERIVATION_OR_MANIFEST_AUTHENTICATION',
     },
   }
 }
