@@ -435,22 +435,34 @@ function validateCoverage(
   }
 
   if (coverage.mode === 'none') {
-    if (
-      coverage.segments.length !== 1 ||
-      coverage.terminalCondition !== 'not-applicable' ||
-      coverage.requestedInterval !== undefined
-    ) {
-      throw new Error('non-paginated coverage requires one segment and not-applicable terminal condition')
+    if (coverage.requestedInterval !== undefined) {
+      throw new Error('non-paginated coverage cannot declare a requested interval')
     }
-    const segment = coverage.segments[0]
-    if (
-      segment.page !== undefined ||
-      segment.cursorInDigest !== undefined ||
-      segment.cursorOutDigest !== undefined ||
-      segment.rangeFrom !== undefined ||
-      segment.rangeTo !== undefined
-    ) {
-      throw new Error('non-paginated coverage cannot carry page, cursor, or range markers')
+    if (coverage.segments.length === 0) {
+      if (
+        !['unavailable', 'unsupported'].includes(resultClass) ||
+        coverage.itemCount !== 0 ||
+        coverage.terminalCondition !== 'not-reached'
+      ) {
+        throw new Error('coverage without a response is valid only for unavailable or unsupported results')
+      }
+    } else {
+      if (
+        coverage.segments.length !== 1 ||
+        coverage.terminalCondition !== 'not-applicable'
+      ) {
+        throw new Error('non-paginated coverage requires one segment and not-applicable terminal condition')
+      }
+      const segment = coverage.segments[0]
+      if (
+        segment.page !== undefined ||
+        segment.cursorInDigest !== undefined ||
+        segment.cursorOutDigest !== undefined ||
+        segment.rangeFrom !== undefined ||
+        segment.rangeTo !== undefined
+      ) {
+        throw new Error('non-paginated coverage cannot carry page, cursor, or range markers')
+      }
     }
   } else if (coverage.mode === 'page') {
     if (!coverage.segments.length) throw new Error('page coverage requires at least one page')
@@ -478,7 +490,7 @@ function validateCoverage(
     if (!['provider-end', 'not-reached'].includes(coverage.terminalCondition)) {
       throw new Error('cursor coverage requires provider-end or not-reached terminal condition')
     }
-    const seen = new Set<string>()
+    const seenOutputs = new Set<string>()
     for (let index = 0; index < coverage.segments.length; index += 1) {
       const segment = coverage.segments[index]
       if (segment.page !== undefined || segment.rangeFrom !== undefined || segment.rangeTo !== undefined) {
@@ -489,15 +501,11 @@ function validateCoverage(
       if (index === 0 ? input !== null : input !== coverage.segments[index - 1].cursorOutDigest) {
         throw new Error('cursor coverage has a missing or mismatched cursor link')
       }
-      if (input !== null) {
-        if (!input) throw new Error('cursor input digest cannot be empty')
-        if (seen.has(input)) throw new Error('cursor coverage contains a duplicate cursor')
-        seen.add(input)
-      }
+      if (input !== null && !input) throw new Error('cursor input digest cannot be empty')
       if (output !== null) {
         if (!output) throw new Error('cursor output digest cannot be empty')
-        if (seen.has(output)) throw new Error('cursor coverage contains a cursor cycle')
-        seen.add(output)
+        if (seenOutputs.has(output)) throw new Error('cursor coverage contains a cursor cycle')
+        seenOutputs.add(output)
       }
     }
     const finalCursor = coverage.segments[coverage.segments.length - 1].cursorOutDigest
