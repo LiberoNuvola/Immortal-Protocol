@@ -65,6 +65,28 @@ function validateIssuanceState(state: PreRichExpiryIssuanceState): void {
   if (state.unresolvedTicketCount < 0n) throw new Error('unresolvedTicketCount must be non-negative')
 }
 
+export function assertExpiryIssuanceStateMatchesAuthoritative(
+  supplied: PreRichExpiryIssuanceState,
+  authoritative: PreRichExpiryIssuanceState,
+): void {
+  validateIssuanceState(supplied)
+  validateIssuanceState(authoritative)
+  const fields: (keyof PreRichExpiryIssuanceState)[] = [
+    'issuanceStateHash',
+    'economicEpoch',
+    'currentActiveClass',
+    'highestClassEverActivated',
+    'eev',
+    'unresolvedReserve',
+    'unresolvedTicketCount',
+  ]
+  for (const field of fields) {
+    if (supplied[field] !== authoritative[field]) {
+      throw new Error(`expiry issuance state does not match authoritative admission/carrier field: ${field}`)
+    }
+  }
+}
+
 export function crystallizeTicketExpiry(
   policy: PreRichExpiryPolicy,
   state: PreRichExpiryIssuanceState,
