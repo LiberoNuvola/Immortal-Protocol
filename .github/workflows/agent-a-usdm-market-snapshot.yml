@@ -1,0 +1,87 @@
+name: Agent A — USDM / ADA and ADA / USD Live Market Snapshot (Read-Only)
+
+run-name: Agent A live USDM market snapshot — ${{ github.sha }}
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "scripts/observeMinswapV2UsdmUtxosReadOnly.mjs"
+      - "scripts/collectMinswapUsdmReadOnly.mjs"
+      - "scripts/collectSuperCardanoUsdmReadOnly.mjs"
+      - "scripts/collectAdaUsdPublicReferencesReadOnly.mjs"
+      - "scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs"
+      - ".github/workflows/agent-a-usdm-market-snapshot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-a-usdm-market-snapshot
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Capture exact Mainnet Moneta USDM pools and ADA/USD public references
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      KOIOS_MAINNET_URL: https://api.koios.rest/api/v1
+    steps:
+      - name: Checkout exact read-only observation source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify observer and reconciler syntax
+        run: |
+          node --check scripts/observeMinswapV2UsdmUtxosReadOnly.mjs
+          node --check scripts/collectMinswapUsdmReadOnly.mjs
+          node --check scripts/collectSuperCardanoUsdmReadOnly.mjs
+          node --check scripts/collectAdaUsdPublicReferencesReadOnly.mjs
+          node --check scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs
+
+      - name: Observe exact Moneta USDM Minswap V2 UTxOs, PoolDatum and transaction contexts
+        continue-on-error: true
+        run: |
+          mkdir -p audit/live-market-snapshot
+          node scripts/observeMinswapV2UsdmUtxosReadOnly.mjs --out audit/live-market-snapshot/minswap-v2-usdm-utxos.json
+
+      - name: Collect Minswap exact-asset API market data
+        continue-on-error: true
+        run: node scripts/collectMinswapUsdmReadOnly.mjs --out audit/live-market-snapshot/minswap-usdm-api.json
+
+      - name: Collect SuperCardano exact-asset indexer and trade observations
+        continue-on-error: true
+        run: node scripts/collectSuperCardanoUsdmReadOnly.mjs --out audit/live-market-snapshot/supercardano-usdm.json
+
+      - name: Collect ADA/USD public CEX, aggregator and test-only API references
+        continue-on-error: true
+        run: node scripts/collectAdaUsdPublicReferencesReadOnly.mjs --out audit/live-market-snapshot/ada-usd-references.json
+
+      - name: Reconcile exact Minswap V2 pool identity across Koios, Minswap API and SuperCardano
+        if: always()
+        continue-on-error: true
+        run: |
+          node scripts/reconcileMinswapV2UsdmApiOnchainReadOnly.mjs             --onchain audit/live-market-snapshot/minswap-v2-usdm-utxos.json             --api audit/live-market-snapshot/minswap-usdm-api.json             --supercardano audit/live-market-snapshot/supercardano-usdm.json             --out audit/live-market-snapshot/minswap-v2-cross-indexer-reconciliation.json
+
+      - name: Record evidence file digests
+        if: always()
+        run: |
+          find audit/live-market-snapshot -maxdepth 1 -type f -print0 | sort -z | xargs -0 -r sha256sum
+
+      - name: Upload same-run raw observations and reconciliation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-a-usdm-market-snapshot-${{ github.sha }}
+          path: audit/live-market-snapshot/
+          if-no-files-found: warn
+          retention-days: 30
