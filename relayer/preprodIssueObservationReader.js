@@ -119,6 +119,70 @@ async function decodeCarrierDatum(utxo) {
   }
 }
 
+const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
+
+function poolSubunitsToReferenceUnits(value, field) {
+  if (value % USDM_SUBUNITS_PER_REFERENCE_UNIT !== 0n) {
+    throw new Error(
+      'B1PrizePool ' + field +
+      ' is not exactly representable in IMMORTAL reference units (100 USDM sub-units per reference unit)',
+    )
+  }
+  return value / USDM_SUBUNITS_PER_REFERENCE_UNIT
+}
+
+/**
+ * Reconcile the accounting aggregates independently represented by the
+ * physical B1PrizePool datum and the authenticated V3 economic carrier.
+ *
+ * B1 monetary fields are USDM sub-units; V3 monetary fields are IMMORTAL
+ * reference units. Exact division is required. Ticket count is unitless and
+ * compared directly. Unresolved face reserve is deliberately NOT compared
+ * with V3 worst-case exposure (500x): they are different quantities.
+ */
+function reconcileB1PoolWithV3(poolState, v3State) {
+  const monetaryChecks = [
+    [
+      'pendingLiabilities',
+      poolSubunitsToReferenceUnits(poolState.pendingLiabilities, 'pendingLiabilities'),
+      v3State.crystallizedLiabilities,
+    ],
+    [
+      'unresolvedReserve',
+      poolSubunitsToReferenceUnits(poolState.unresolvedReserve, 'unresolvedReserve'),
+      v3State.unresolvedReserve,
+    ],
+    [
+      'lockedJackpot',
+      poolSubunitsToReferenceUnits(poolState.lockedJackpot, 'lockedJackpot'),
+      v3State.jackpot.lockedAmount,
+    ],
+    [
+      'jackpotThreshold',
+      poolSubunitsToReferenceUnits(poolState.jackpotThreshold, 'jackpotThreshold'),
+      v3State.jackpot.threshold,
+    ],
+  ]
+
+  for (const [field, poolReferenceUnits, carrierReferenceUnits] of monetaryChecks) {
+    if (poolReferenceUnits !== carrierReferenceUnits) {
+      throw new Error(
+        'B1PrizePool/V3 ' + field + ' mismatch: B1=' +
+        poolReferenceUnits + ' reference units, V3=' +
+        carrierReferenceUnits + ' reference units',
+      )
+    }
+  }
+
+  if (poolState.unresolvedTicketCount !== v3State.unresolvedTicketCount) {
+    throw new Error(
+      'B1PrizePool/V3 unresolvedTicketCount mismatch: B1=' +
+      poolState.unresolvedTicketCount + ', V3=' +
+      v3State.unresolvedTicketCount,
+    )
+  }
+}
+
 function requireBoolean(value, field) {
   if (typeof value !== 'boolean') {
     throw new Error(field + ' must be boolean')
@@ -342,6 +406,11 @@ async function readPreprodIssueObservation({
     carrierPolicyId,
     carrierTokenNameHex,
   })
+
+  // Do not ask the external authority to sign/decide over independently read
+  // B1 and V3 accounting views until their shared aggregates reconcile.
+  reconcileB1PoolWithV3(poolState, carrier.state)
+
   const control = await observeB2Control({
     lucid,
     controlAddress,
