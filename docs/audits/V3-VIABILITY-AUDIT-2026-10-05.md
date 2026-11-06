@@ -422,3 +422,34 @@ Separately:
 This audit therefore does not justify adding NoOp, weakening Safe, narrowing Omega, assuming constant EEV, or treating SAFE STALL/rejection as an economic action.
 
 The next step is an explicit architectural decision on the lifecycle action and its full IMMORTAL semantics. No production patch is warranted before that decision.
+
+
+## 18. IMPLEMENTATION EVIDENCE ADDENDUM — REPRESENTABLE NO-ACTION STATE (2026-11-06)
+
+A test-only addition in `plutus/test/EconomicAdmissionTest.hs`, commit
+`c35b447fc943e06338f25c49802fa191130830c7`, now constructs the following PRE-RICH V3 state:
+
+- all aggregate obligations/reserves/capital equal zero;
+- zero unresolved tickets and zero crystallised liabilities;
+- the single configured class has zero issued/unresolved/exposure and is explicitly non-saleable;
+- Jackpot is inactive with zero locked amount.
+
+The test requires `projectPreRichState` to accept this state and the universal solvency predicate to hold at EEV zero. It then checks that each of the four currently implemented actions — `Issue`, `Reveal`, `Claim`, and `Expire` — fails `transitionValid` from that state.
+
+### What this establishes
+
+If the concrete PRE-RICH representation predicate `Rep` includes this state, then no witness selector over the current four-action V3 surface can satisfy QNE at this state: there is no valid action to select.
+
+### What this does not establish
+
+- It does not prove that every possible restricted `K_c` is empty. A future certified profile may explicitly exclude this state from `Rep`, but must justify that restriction and still include its declared initial state.
+- It does not produce a QNE witness, an initial-state non-vacuity witness, a complete authoritative `Omega`, or a CK1–CK8/`K_c` certificate.
+- It does not add a fifth V3 action, a NoOp/RETAIN transition, or change any economic/contract semantics.
+
+### Validation status
+
+The exact-head Haskell workflow is [run 42176338793](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42176338793) on commit `c35b447fc943e06338f25c49802fa191130830c7`. At the time this addendum was written, GitHub still reports the run `in_progress` with `Setup Haskell` as the active step and no test step completed. The new case is therefore **added but not CI-verified**.
+
+The separate B2 carrier conformance workflow [42176338883](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42176338883) likewise remains in progress at Plutus toolchain setup; it is a non-deploying build/conformance workflow and does not establish live Preprod deployment.
+
+No production code was changed by this addendum. The previous architectural conclusion remains unchanged: a concrete lifecycle action and its complete `Accept / Omega / T / Safe / QNE / refinement` semantics require an explicit normative/architectural decision before production implementation.
