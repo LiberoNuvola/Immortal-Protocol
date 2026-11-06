@@ -891,3 +891,31 @@ Important semantic correction: Minswap V2 deliberately maintains two reserve vie
 This closes the raw pool identity/replay subtask only. It does not provide the missing independently qualified ADA/USD leg, TWAP/history, executable depth or a manipulation-resistance bound. The pool cannot yet be consumed as a liability-bearing USD/USDM price; no 1:1 peg is assumed. The result is for the Mainnet Moneta USDM asset only and does not qualify the Preprod tUSDM source used by B1. No wallet, signing, transaction construction/submission, protocol economics, MintPolicy, Oracle schema, V3/Reveal, approval, or ledger write was performed.
 
 Sources: [Minswap V2 PoolDatum / validation source](https://github.com/minswap/minswap-dex-v2/blob/main/lib/amm_dex_v2/pool_validation.ak) · [Minswap V2 swap accounting source](https://github.com/minswap/minswap-dex-v2/blob/main/lib/amm_dex_v2/order_validation.ak) · [Minswap V2 PoolDatum types](https://github.com/minswap/minswap-dex-v2/blob/main/lib/amm_dex_v2/types.ak) · [Moneta Mainnet token identity](https://moneta.global/developers/).
+
+
+## 45. Agent A — Minswap V2 theoretical ±1% marginal-price depth computed from exact PoolDatum and official swap formula — 2026-11-06
+
+Using the exact Mainnet PoolDatum snapshot already reconciled in §42 (ADA reserve x0=1,969,235.300584, USDM reserve y0=363,045.499637, base fee fn/fd=75/10,000=0.75%), a read-only arithmetic check estimates the one-sided trade size required to move the pool's marginal reserve price by 1% in either direction.
+
+This uses the official Minswap V2 constant-product swap rule: k=x0*y0=(x0+(1-f)*grossInput)*(y0-output), with the fee deducted from the input before applying the invariant. The integer implementation is documented in lib/amm_dex_v2/math.ak::calculate_amount_out; the protocol specification is amm-v2-docs/formula.md.
+
+### Results — theoretical curve only
+
+| Direction | Gross input | Output | Marginal price movement |
+|---|---:|---:|---|
+| ADA → USDM | **9,895.902645 ADA** | **1,801.725760 USDM** | ADA per USDM rises 1% |
+| USDM → ADA | **1,842.776985 USDM** | **9,870.915796 ADA** | ADA per USDM falls 1% |
+
+For the ADA-input side only, applying the four CEX ADA/USD midpoint range from §42 gives an indicative input notional of approximately **$1,825.25–$1,825.99**. The reverse side remains expressed as USDM units; it is deliberately not converted into USD because that would assume the very USDM/USD relationship Option B is intended to qualify. The two sides are not summed into a USD depth figure.
+
+### Interpretation and limitations
+
+- This is a formula-derived one-sided amount to move the **marginal spot ratio** by 1%, not the amount that can execute with an average fill within ±1%, and not a bid/ask book depth.
+- The fee is included using the exact 0.75% PoolDatum base fee. The model does not include batcher fee, order minimums, batching delay, competing orders, dynamic fee if future governance changes it, or route alternatives.
+- The result is conditional on the §42 PoolDatum snapshot at block 14,165,077 / 2026-11-06T09:21:54Z; it is not a current quote at a later time.
+- Cardanoscan's displayed depth ±1% (~$4k in its page snapshot) is of a similar order to a two-sided valuation of these one-sided curve amounts under a near-parity assumption, but that comparison is not an independent validation and must not be used to assume USDM = USD.
+- No historical TWAP, manipulation-cost bound over an attack horizon, external venue execution, or independent USD/USDM quote is established.
+
+**Disposition:** EXACT POOLDATUM + OFFICIAL SWAP FORMULA SUPPORT A REPRODUCIBLE THEORETICAL 1%-MARGINAL-MOVE SIZE / EXECUTABLE ±1% DEPTH AND MANIPULATION RESISTANCE NOT QUALIFIED / USD/USDM NOT QUALIFIED.
+
+Source references: [Minswap V2 formula specification](https://github.com/minswap/minswap-dex-v2/blob/c3293ad435792ba502f5a2b1691c6736e5f167e6/amm-v2-docs/formula.md) · [Minswap V2 integer swap implementation](https://github.com/minswap/minswap-dex-v2/blob/c3293ad435792ba502f5a2b1691c6736e5f167e6/lib/amm_dex_v2/math.ak) · [Exact Minswap V2 observation and artifact in §42](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196843453).
