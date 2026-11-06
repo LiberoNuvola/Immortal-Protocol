@@ -66,11 +66,29 @@ jobs:
           PC_CENSUS_OUTPUT: .immortal-evidence/protected-capital/preprod-protected-capital-census.json
         run: node --import=tsx audit/cardano-integration/preprod-protected-capital-census.mjs
 
+      - name: Prepare isolated Oracle State identity copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_dir=".immortal-evidence/oracle-state-liveness"
+          mkdir -p "$target_dir"
+          cp .immortal-evidence/protected-capital/identity/preprod-direct-usdm-deployment.json "$target_dir/"
+          cp .immortal-evidence/protected-capital/identity/preprod-oracle-state-deployment.json "$target_dir/"
+
+      - name: Revalidate exact live Oracle State singleton and quote freshness
+        env:
+          KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+          PREPROD_DEPLOYMENT_MANIFEST: .immortal-evidence/oracle-state-liveness/preprod-direct-usdm-deployment.json
+          PREPROD_ORACLE_STATE_MANIFEST: .immortal-evidence/oracle-state-liveness/preprod-oracle-state-deployment.json
+        run: node audit/cardano-integration/preprod-oracle-state-liveness.mjs
+
       - name: Upload read-only source census artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pre-rich-protected-capital-live-census-${{ github.run_id }}
-          path: .immortal-evidence/protected-capital/preprod-protected-capital-census.json
+          path: |
+            .immortal-evidence/protected-capital/preprod-protected-capital-census.json
+            .immortal-evidence/oracle-state-liveness/preprod-oracle-state-deployment.json
           if-no-files-found: warn
           retention-days: 30
