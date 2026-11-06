@@ -19,8 +19,8 @@ After a real HTTPS deployment and route exercise, configure the public browser v
 - Fixed upstream: Cardano Preprod Blockfrost API. Callers cannot choose an upstream host, URL, project ID, or path prefix.
 - Exact method/path/query allowlist for the Lucid 0.10.11 provider surface.
 - Exact Origin allowlist; absent and unrecognized origins are rejected. CORS is not authentication.
-- GET requests are read-only provider queries. POST is limited to `/tx/submit`, `application/cbor`, and a bounded structurally valid Cardano four-item transaction CBOR envelope.
-- The submit body is relayed byte-for-byte. This service does not hold wallet keys, sign transactions, or construct transactions on behalf of a user.
+- GET requests are read-only provider queries. POST is limited to `/tx/submit`, `application/cbor`, and a bounded CBOR envelope with a definite four-item top-level array; nested definite and indefinite CBOR items are accepted only within the configured size/depth/node limits.
+- The CBOR check is a transport/shape guard, not a Cardano ledger-schema, witness-signature, or transaction-validity verifier. Blockfrost remains the upstream transaction validator. The submit body is relayed byte-for-byte: this service does not hold wallet keys, sign transactions, or construct transactions on behalf of a user.
 - Request body, route/query length, response stream size, timeout, and a per-process request rate are bounded.
 
 ## Production deployment requirements
