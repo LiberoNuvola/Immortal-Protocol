@@ -310,6 +310,10 @@ jobs:
           address="$(node audit/cardano-integration/create-test-wallet.mjs)"
           echo "address=$address" >> "$GITHUB_OUTPUT"
 
+      - name: Execute B0 BeaconRegistry adversarial Yaci ledger characterization
+        id: beacon_registry_b0_yaci
+        run: node --import tsx/esm audit/cardano-integration/beacon-registry-adversarial-ledger-trace.ts
+
       - name: Record devnet information
         run: |
           {
