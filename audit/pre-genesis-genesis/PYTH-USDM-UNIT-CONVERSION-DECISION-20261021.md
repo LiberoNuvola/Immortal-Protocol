@@ -704,3 +704,19 @@ This is strong **same-venue pool identity / structure / indexer reconciliation**
 The Cardanoscan / DEX Screener pool-page snapshots in Section 37 remain indicative market-data displays only. Their $1 vs ~$0.9838 valuation labels must not be promoted to independent USD marks or read as proof of depeg. The missing gates remain historical trades/TWAP and executable depth/manipulation analysis, plus a fresh and independently qualified USD reference.
 
 No production oracle, PriceReference, MintPolicy, economics, V3/Reveal, wallet, deployment approval, transaction or ledger state was modified by these observations.
+
+
+## 41. Agent A — direct-USDM EV1–EV7 qualification repeated on memo HEAD; blockers unchanged — 2026-11-06
+
+After the new source-observation sections were committed, [PRE-RICH Preprod EEV — Source Qualification Only #42196127786](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196127786) completed successfully on the exact memo HEAD `9bc4878297664632cf24efe6bcb383947c1d1237`.
+
+- Profile status: `qualified`; qualified properties EV1–EV7.
+- Exact B1 Pool physical source remains 1,000,000,000 atomic tUSDM → 100,000 USDM subunits.
+- New qualification evidence hash: `18c7da77af578ca5376706b42e22b15eb483de3b95430209a0d80f3f1f6e7f63`.
+- Deployment approval: `NOT_CREATED`.
+- Oracle State remains `STALE`; observed datum age `2476562858` ms, well beyond 3,600,000 ms.
+- ProtectedCapital census remains `INTERNAL_RECONCILIATION_ONLY`; PrizeValidator UTxO count 0, source completeness authority false, provider attestation false.
+
+This is the third successful EV1–EV7 exact-head requalification across successive documentation/research commits, confirming reproducibility of the direct physical-source profile. It does not qualify the USD/USDM market reference, does not establish PA1–PA7 or full ProtectedCapital completeness, and does not close R1/Kc/QNE/Ω or authorize the first Issue.
+
+On the same SHA, five general conformance workflows passed: Security Credential Boundary, Portability, Governance Adversarial Lab, Protocol Declaration and Cardano Adapter Sale. Documentation Link Check remains the single failure because of the already-known broken relative link in the Agent C B3 archive mission document; Agent A has not edited that file. No wallet, signature, transaction, deployment, approval or ledger mutation occurred.
