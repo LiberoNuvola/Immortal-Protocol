@@ -24,7 +24,7 @@ const fakeLucid = {
           [deployment.poolTokenUnit]: 1n,
           [deployment.directUsdmUnit]: 1_000_000_000n,
         },
-        datum: { fields: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n] },
+        datum: { fields: [100_000n, 0n, 0n, 0n, 0n, 0n, 0n, 0n] },
       }]
     }
     return []
@@ -77,7 +77,7 @@ const fullPoolUtxo = {
     [deployment.poolTokenUnit]: 1n,
     [deployment.directUsdmUnit]: 1_000_000_000n,
   },
-  datum: { fields: Array.from({ length: 8 }, () => 0n) },
+  datum: { fields: [100_000n, ...Array.from({ length: 7 }, () => 0n)] },
 }
 const fullCounterUtxo = {
   txHash: 'a'.repeat(64),
