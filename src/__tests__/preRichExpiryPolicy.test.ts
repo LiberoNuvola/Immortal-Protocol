@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertExpiryIssuanceStateMatchesAuthoritative,
   crystallizeTicketExpiry,
+  deriveCardanoIssueTimeAnchor,
   preRichExpiryPolicyV1,
   PRE_RICH_EXPIRY_MIN_HORIZON_MS,
   PRE_RICH_EXPIRY_MAX_HORIZON_MS,
@@ -216,6 +217,47 @@ describe('PRE-RICH expiry policy boundary', () => {
         assertExpiryIssuanceStateMatchesAuthoritative(mismatched, authoritative),
       ).toThrow(`expiry issuance state does not match authoritative admission/carrier field: ${field}`)
     }
+  })
+
+  it('uses the selected Cardano slot start as the conservative expiry anchor', () => {
+    const anchor = deriveCardanoIssueTimeAnchor(
+      10_750n,
+      20,
+      {
+        unixTimeToSlot: (unixTimeMs) => Math.floor(unixTimeMs / 1_000),
+        slotToUnixTime: (slot) => slot * 1_000,
+      },
+    )
+
+    expect(anchor.validityStartSlot).toBe(10)
+    expect(anchor.issuedAt).toBe(10_000n)
+    expect(anchor.issuedAt).toBeLessThanOrEqual(10_750n)
+  })
+
+  it('rejects an issuance slot at or beyond the authenticated upper bound', () => {
+    expect(() =>
+      deriveCardanoIssueTimeAnchor(
+        10_750n,
+        10,
+        {
+          unixTimeToSlot: (unixTimeMs) => Math.floor(unixTimeMs / 1_000),
+          slotToUnixTime: (slot) => slot * 1_000,
+        },
+      ),
+    ).toThrow('Issue validity-start slot must precede the authenticated validity upper bound')
+  })
+
+  it('rejects a non-reversible Lucid slot/time conversion', () => {
+    expect(() =>
+      deriveCardanoIssueTimeAnchor(
+        10_750n,
+        20,
+        {
+          unixTimeToSlot: (unixTimeMs) => Math.floor(unixTimeMs / 1_000),
+          slotToUnixTime: (slot) => slot * 1_000 + 1,
+        },
+      ),
+    ).toThrow('Lucid Issue slot/time conversion is not reversible at the selected slot')
   })
 
 })
