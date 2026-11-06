@@ -20,6 +20,7 @@ import {
   Blockfrost,
   Constr,
   Data,
+  getAddressDetails,
   Lucid,
   validatorToAddress,
   validatorToScriptHash,
@@ -221,8 +222,7 @@ async function main(): Promise<void> {
   const address = await lucid.wallet().address()
   if (address !== wallet.address) throw new Error('local Yaci wallet address does not match wallet manifest')
 
-  const keyHash = (await import('@lucid-evolution/lucid')).getAddressDetails(address)
-    .paymentCredential?.hash
+  const keyHash = getAddressDetails(address).paymentCredential?.hash
   if (!keyHash || keyHash.length !== 56) throw new Error('could not derive test wallet payment key hash')
 
   const artifact = JSON.parse(readFileSync('plutus/out/beaconRegistry.plutus.json', 'utf8')) as {
