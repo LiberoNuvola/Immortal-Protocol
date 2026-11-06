@@ -98,6 +98,15 @@ The relevant implementation details are:
 - `PreRichEconomicAdmission`: accepts pre/candidate EEV, available/required executable liquidity and evidence booleans; it has no explicit statistical-risk observation/model input.
 - `V3EconomicStateCarrier`: validates the nominal face-reserve aggregate; it does not validate a statistical-risk amount or its derivation.
 
+### On-chain and Gate cross-check
+
+The Cardano implementation independently confirms the same distinction:
+- `plutus/B1PrizePool.hs` documents `ppUnresolvedReserve` as the deterministic ticket-price reservation, explicitly “not the full worst-case payout exposure”; its `effectivePool` deducts pending liabilities, this nominal face reserve and locked Jackpot.
+- The same validator derives worst-case exposure separately from the legacy accounting datum and runs post-state `solvencyInvariant` for Issue, Reveal, Claim and Expire.
+- `IMMORTAL/kernel/EconomicGate.hs` receives truth/freshness/obligation-completeness flags, EEV, and available/required immediate liquidity. It has no `μ`, `σ`, `Z`, statistical reserve or statistical threshold input.
+
+Thus the absence is not just a missing V3 field name: the currently inspected Cardano/Economic Gate admission interface also has no explicit statistical-risk decision. This is an implementation/evidence mapping gap relative to the algorithm document's instruction to evaluate statistical reserve; it does not authorize altering the deterministic on-chain solvency predicate.
+
 ## 4. Lifecycle equations already represented
 
 For one unresolved ticket of class price `P), the represented V3 lifecycle is:
@@ -232,7 +241,7 @@ where `μ₀ = 0.64996875` and `σ₀ = 6.689612535418134...`. These equations d
 - PRE-RICH documents `Nμ + Zσ√N` as a statistical risk model and keeps deterministic worst-case protection separately.
 - V3 `v3UnresolvedReserve` is the nominal face-price sum, not the statistical formula.
 - V3 ProtectedCapital uses deterministic WCE plus separately carried protected components.
-- The current Issue admission function has no explicit `μ`/`σ`/`Z` model input.
+- The current Issue admission function and the Cardano Economic Gate have no explicit `μ`/`σ`/`Z` model input or statistical threshold.
 - Existing PA3/PA4 evidence does not qualify `ReserveProtection` as the statistical reserve or prove its source/disjointness.
 
 **Not established in this audit**
