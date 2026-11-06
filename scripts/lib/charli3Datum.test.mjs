@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decodeCharli3Datum } from './charli3Datum.mjs'
+import { Data } from '@lucid-evolution/lucid'
 
 const c = (constructor, fields = []) => ({ constructor, fields })
 const i = (n) => ({ int: String(n) })
@@ -52,5 +53,41 @@ describe('Charli3 standard oracle datum decoder', () => {
     expect(() => decodeCharli3Datum(c(0, [c(3, [])]))).toThrow('CHARLI3_ORACLE_FIELD_CONSTRUCTOR_UNSUPPORTED')
     expect(() => decodeCharli3Datum(c(0, [c(2, [{ map: [] }])]))).toThrow('CHARLI3_PRICE_MAP_REQUIRED_FIELD_MISSING:0')
     expect(() => decodeCharli3Datum(c(0, [c(2, [map([[0, i(1)]])])]))).toThrow('CHARLI3_PRICE_MAP_REQUIRED_FIELD_MISSING')
+  })
+})
+
+
+
+describe('Charli3 live Preprod minimal datum fixtures', () => {
+  it('decodes the observed official USDM/USD minimal datum without inventing optional fields', () => {
+    const decoded = decodeCharli3Datum(Data.from(
+      'd8799fd87b9fa3001a354d2c10011b0000018dc99b7e7a021b0000018dc9d26cfaffff',
+    ))
+    expect(decoded.prices).toHaveLength(1)
+    expect(decoded.prices[0]).toMatchObject({
+      priceRaw: '894250000',
+      timestampMs: '1708484427386',
+      expiryMs: '1708488027386',
+      precision: null,
+      baseSymbol: null,
+      quoteSymbol: null,
+    })
+    expect(decoded.extendedData).toBeNull()
+  })
+
+  it('decodes the observed official ADA/USD minimal datum without inventing optional fields', () => {
+    const decoded = decodeCharli3Datum(Data.from(
+      'd8799fd87b9fa3001a000638bc011b0000019b1c5dabb6021b0000019b1c7922f6ffff',
+    ))
+    expect(decoded.prices).toHaveLength(1)
+    expect(decoded.prices[0]).toMatchObject({
+      priceRaw: '407740',
+      timestampMs: '1765707459510',
+      expiryMs: '1765709259510',
+      precision: null,
+      baseSymbol: null,
+      quoteSymbol: null,
+    })
+    expect(decoded.extendedData).toBeNull()
   })
 })
