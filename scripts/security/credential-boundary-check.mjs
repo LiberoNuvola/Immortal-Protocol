@@ -16,7 +16,7 @@ const patterns = [
   { name: 'provider key header literal', re: /(?:dmtr-api-key|project_id)\s*[:=]\s*[`'\"][A-Za-z0-9._-]{24,}[`'\"]/i },
 ]
 
-const violations = []
+const violations = []\n\n// Guard against Vite's dynamic environment-object access and browser provider-key wiring.\nconst configSource = fs.readFileSync('src/config.ts', 'utf8')\nconst walletSource = fs.readFileSync('src/wallet.ts', 'utf8')\nif (/import\\.meta\\s+as\\s+any|import\\.meta\\.env\\s*\\[[^]]+\\]/.test(configSource)) violations.push('src/config.ts: dynamic Vite environment access')\nif (/BLOCKFROST_PROJECT_ID|BLOCKFROST_PREPROD_URL/.test(walletSource)) violations.push('src/wallet.ts: browser credential or direct provider URL reference')
 for (const file of tracked) {
   if (!isTextCandidate(file)) continue
   if ([...ignoredRoots].some((root) => file.startsWith(root))) continue
