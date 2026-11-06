@@ -100,6 +100,51 @@ type HaskellDecisionEnvelope = {
   }
 }
 
+const BIGINT_JSON_NUMBER_PREFIX = '__IMMORTAL_BIGINT_JSON_NUMBER__:'
+
+function assertNoBigIntJsonNumberMarker(
+  value: unknown,
+  seen: Set<object> = new Set(),
+): void {
+  if (typeof value === 'string') {
+    if (value.includes(BIGINT_JSON_NUMBER_PREFIX)) {
+      throw new Error('Haskell Issue input contains a reserved BigInt JSON marker')
+    }
+    return
+  }
+  if (value === null || typeof value !== 'object') return
+  if (seen.has(value)) return
+  seen.add(value)
+  for (const key of Object.keys(value)) {
+    if (key.includes(BIGINT_JSON_NUMBER_PREFIX)) {
+      throw new Error('Haskell Issue input contains a reserved BigInt JSON marker key')
+    }
+    assertNoBigIntJsonNumberMarker((value as Record<string, unknown>)[key], seen)
+  }
+}
+
+/**
+ * Serialize Haskell Issue inputs without losing BigInt precision.
+ * Aeson parses the economic Integer fields from JSON number tokens, so quoting
+ * BigInts as strings is not compatible and converting them to Number is lossy.
+ */
+export function stringifyHaskellIssueInput(input: Record<string, unknown>): string {
+  assertNoBigIntJsonNumberMarker(input)
+  const encoded = JSON.stringify(input, (_key, value: unknown) =>
+    typeof value === 'bigint'
+      ? BIGINT_JSON_NUMBER_PREFIX + value.toString()
+      : value,
+  )
+  if (typeof encoded !== 'string') {
+    throw new Error('Haskell Issue input could not be serialized as JSON')
+  }
+  const markerPattern = new RegExp(
+    '"' + BIGINT_JSON_NUMBER_PREFIX + '(-?(?:0|[1-9][0-9]*))"',
+    'g',
+  )
+  return encoded.replace(markerPattern, '$1')
+}
+
 function runProducer(
   command: string,
   args: readonly string[],
@@ -148,7 +193,7 @@ function runProducer(
       resolve(parsed)
     })
 
-    child.stdin.end(JSON.stringify(input))
+    child.stdin.end(stringifyHaskellIssueInput(input))
   })
 }
 
