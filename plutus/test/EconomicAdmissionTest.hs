@@ -12,6 +12,7 @@ import Prelude
   , putStrLn
   , (==)
   , (++)
+  , (<)
   )
 
 import EconomicProfile
@@ -20,6 +21,7 @@ import EconomicTransitionV3
 import PreRichEconomicAdmission
 import PreRichEconomicProfile
 import PreRichEconomicProjection (projectPreRichState)
+import qualified EconomicKernel as V3Kernel
 import UniversalEconomicKernel
 import UniversalEconomicState (UniversalEconomicState (..))
 
@@ -44,6 +46,31 @@ quiescentNoObligationState =
     [TicketClassState 0 0 0 0 1 False]
     (EconomicControlState 0 0)
     (JackpotState 0 0 JackpotInactive 0)
+
+-- Exact shape of the declared Preprod initial V3 profile:
+-- eight canonical classes, cap ten, only class 0 saleable, empty obligations.
+-- EEV values in the QNE calculation below are synthetic unit fixtures only.
+preprodDeclaredInitialState :: V3EconomicState
+preprodDeclaredInitialState =
+  V3EconomicState
+    0 0 0 0 0 0
+    [ TicketClassState 0 0 0 0 10 True
+    , TicketClassState 1 0 0 0 10 False
+    , TicketClassState 2 0 0 0 10 False
+    , TicketClassState 3 0 0 0 10 False
+    , TicketClassState 4 0 0 0 10 False
+    , TicketClassState 5 0 0 0 10 False
+    , TicketClassState 6 0 0 0 10 False
+    , TicketClassState 7 0 0 0 10 False
+    ]
+    (EconomicControlState 0 0)
+    (JackpotState 0 0 JackpotInactive 0)
+
+initialIssueState :: V3EconomicState
+initialIssueState =
+  case transition profile preprodDeclaredInitialState (Issue 0 1) of
+    Just s -> s
+    Nothing -> error "fixture: declared initial class-0 Issue did not construct"
 
 issuedState :: V3EconomicState
 issuedState =
@@ -194,4 +221,25 @@ main = do
   assert
     (not (transitionValid profile quiescentNoObligationState (Expire 0)))
     "no-obligation state has no valid Expire action"
+
+  assert
+    (transitionValid profile preprodDeclaredInitialState (Issue 0 1))
+    "declared Preprod S0 admits the only available initial V3 action: class-0 Issue"
+
+  assert
+    (not (transitionValid profile preprodDeclaredInitialState (Reveal 0 0)))
+    "declared Preprod S0 has no Reveal action before any ticket exists"
+  assert
+    (not (transitionValid profile preprodDeclaredInitialState (Claim 1)))
+    "declared Preprod S0 has no Claim action before any liability exists"
+  assert
+    (not (transitionValid profile preprodDeclaredInitialState (Expire 0)))
+    "declared Preprod S0 has no Expire action before any ticket exists"
+
+  let initialBuffer = V3Kernel.rawSurplus profile 500 preprodDeclaredInitialState
+      postIssueBuffer = V3Kernel.rawSurplus profile 501 initialIssueState
+  assert (initialBuffer == 500) "declared Preprod S0 synthetic fixture begins with a 500-unit protection buffer"
+  assert (postIssueBuffer == 1) "one-unit Issue receipt is dominated by the existing 500x exposure bound"
+  assert (postIssueBuffer < initialBuffer) "initial class-0 Issue erodes the synthetic protection buffer by 499 units"
+
   putStrLn "ALL ECONOMIC ADMISSION TESTS PASSED"
