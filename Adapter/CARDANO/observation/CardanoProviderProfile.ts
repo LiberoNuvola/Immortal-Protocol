@@ -501,6 +501,9 @@ function validateCoverage(
       }
       const input = segment.cursorInDigest
       const output = segment.cursorOutDigest
+      if (input === undefined || output === undefined) {
+        throw new Error('cursor coverage must explicitly bind input and output cursor digests')
+      }
       if (index === 0 ? input !== null : input !== coverage.segments[index - 1].cursorOutDigest) {
         throw new Error('cursor coverage has a missing or mismatched cursor link')
       }
