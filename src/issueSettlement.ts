@@ -676,6 +676,33 @@ export function assertCompletedIssueValidityUpperBound(
 }
 
 /**
+ * Require the completed Issue body to carry the exact finite validity-start
+ * slot used as the ticket's conservative pdIssuedAt anchor.
+ */
+export function assertCompletedIssueValidityLowerBound(
+  completedTx: any,
+  expectedStartSlot: number,
+): void {
+  if (!Number.isSafeInteger(expectedStartSlot) || expectedStartSlot < 0) {
+    throw new Error('Expected Issue validity-start slot must be a non-negative safe integer')
+  }
+  const body = completedTx?.txComplete?.body?.()
+  if (!body || typeof body.validity_start_interval !== 'function') {
+    throw new Error('Completed Issue transaction validity start is unavailable')
+  }
+  const start = unwrapOption<any>(body.validity_start_interval())
+  if (start == null) {
+    throw new Error('Completed Issue transaction is missing a finite validity lower bound')
+  }
+  const actualStartSlot = cmlInteger(start, 'validity lower-bound slot')
+  if (actualStartSlot !== BigInt(expectedStartSlot)) {
+    throw new Error(
+      `Completed Issue validity-start mismatch: expected slot ${expectedStartSlot}, got ${actualStartSlot}`,
+    )
+  }
+}
+
+/**
  * Pure boundary helper used by tests and by the completed-output checker.
  * The minimum passed here is computed for the exact serialized output using
  * Cardano's pinned min_ada_required(output, coinsPerUtxoByte) primitive.
