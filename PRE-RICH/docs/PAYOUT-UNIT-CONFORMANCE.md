@@ -48,7 +48,40 @@ The earlier OPEN finding was a unit-interpretation error, not a code defect.
 
 No code change is required.
 
-## Remaining evidence
+#
+## Economic Admission Unit Boundary — Direct-USDM EEV
+
+The signed `PRE-RICH-EEV-USDM-DIRECT-V1` source reports physical USDM amounts
+in **USDM sub-units**. The authority signature authenticates those raw values;
+the provider checks both `preEEV` and `candidateEEV` against the exact
+direct-USDM observation for the same B1 PrizePool UTxO before normalization.
+
+Before invoking the canonical Haskell Issue producer, the observation reader
+preserves the signed source amounts and converts EEV to IMMORTAL reference
+units using exact integer division:
+
+`EEV_reference_units = EEV_USDM_subunits / 100`
+
+The conversion fails closed when the signed amount is not divisible by 100.
+No floor, ceiling, rounding, oracle price or additional valuation is introduced
+at this boundary.
+
+Immediate executable liquidity is a separate quantity. For the PRE-RICH V1
+direct-USDM profile, `availableExecutableLiquidity` and
+`requiredImmediateLiquidity` remain in **USDM sub-units** and are compared
+without dividing either value by 100. The two unit domains are therefore:
+
+| Admission input | Unit basis |
+|---|---|
+| `preEEV` / `candidateEEV` used by the Haskell economic kernel | IMMORTAL reference units |
+| `availableExecutableLiquidity` / `requiredImmediateLiquidity` | USDM sub-units |
+
+This is an adapter unit conversion only; it changes no economic formula,
+ProtectedCapital component, payout parameter, EEV source perimeter or
+immediate-liquidity rule.
+
+
+# Remaining evidence
 
 The unit boundary should still be covered by executable conformance vectors:
 
