@@ -1,6 +1,7 @@
 name: PRE-RICH ProtectedCapital source census tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - work/immortal-green-closure
