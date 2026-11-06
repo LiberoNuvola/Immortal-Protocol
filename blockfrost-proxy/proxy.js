@@ -44,7 +44,7 @@ function validateRoute(method, pathname, searchParams) {
   const queryMode = match[2]
   const entries = [...searchParams.entries()]
   if (queryMode === 'none' && entries.length) return null
-  if (queryMode === 'page' && (entries.some(([key]) => key !== 'page') || (searchParams.has('page') && !/^[1-9][0-9]{0,3}$/.test(searchParams.get('page'))))) return null
+  if (queryMode === 'page' && (entries.length > 1 || entries.some(([key]) => key !== 'page') || (searchParams.has('page') && !/^[1-9][0-9]{0,3}$/.test(searchParams.get('page'))))) return null
   if (queryMode === 'count' && (entries.length !== 1 || searchParams.get('count') !== '2')) return null
   return '/' + path + (searchParams.size ? '?' + searchParams.toString() : '')
 }
@@ -86,7 +86,7 @@ function isCardanoTransactionCbor(buffer) {
     if (major === 6) { read(depth + 1); return major }
     throw new Error('unsupported CBOR type')
   }
-  try { return read() === 4 && offset === buffer.length } catch { return false }
+  try { return read() === 4 && rootArrayLength === 4 && offset === buffer.length } catch { return false }
 }
 
 async function readBounded(response, limit) {
