@@ -243,27 +243,33 @@ prizeRef = TxOutRef (TxId (bytes [228 .. 255])) 0
 
 syncContext :: BeaconRegistryDatum -> Address -> ScriptContext
 syncContext regDatum regAddress =
+  syncContextWithReferences [(regDatum, regAddress)]
+
+syncContextWithReferences :: [(BeaconRegistryDatum, Address)] -> ScriptContext
+syncContextWithReferences registryReferences =
   let
     prizeAddress = scriptAddress prizeHash
     inputDatum = basePrizeDatum
     outputDatum =
       inputDatum
         { pdBeaconStatus = BeaconReady
-        , pdBeaconValue = brBeaconValue regDatum
-        , pdMcHash = brMcHash regDatum
-        , pdMateriosContext = brMateriosContext regDatum
+        , pdBeaconValue = brBeaconValue (fst (head registryReferences))
+        , pdMcHash = brMcHash (fst (head registryReferences))
+        , pdMateriosContext = brMateriosContext (fst (head registryReferences))
         }
     prizeInput =
       TxInInfo prizeRef
         (outputAt prizeAddress prizeValue (inlineDatum inputDatum))
-    registryInput =
-      TxInInfo
-        (TxOutRef (TxId (bytes [10, 11, 12, 13])) 0)
-        (outputAt regAddress mempty (inlineDatum regDatum))
+    registryInputs =
+      [ TxInInfo
+          (TxOutRef (TxId (bytes [10, 11, 12, 13])) index)
+          (outputAt registryAddress mempty (inlineDatum registryDatum))
+      | (index, (registryDatum, registryAddress)) <- zip [0 ..] registryReferences
+      ]
     info =
       TxInfo
         [prizeInput]
-        [registryInput]
+        registryInputs
         [outputAt prizeAddress prizeValue (inlineDatum outputDatum)]
         mempty
         mempty
@@ -546,5 +552,14 @@ main = do
   assertEvaluatesSuccessfully
     (applySyncBeacon (syncContext fakeReady lookalikeRegistryAddress))
   putStrLn "CHARACTERIZATION: SyncBeacon accepts same-payment-ScriptHash Registry lookalike with a different staking credential"
+
+  let secondFakeReady = fakeReadyRegistry (bytes [9, 8, 7, 6])
+  assertEvaluatesSuccessfully
+    (applySyncBeacon
+      (syncContextWithReferences
+        [ (fakeReady, canonicalRegistryAddress)
+        , (secondFakeReady, canonicalRegistryAddress)
+        ]))
+  putStrLn "CHARACTERIZATION: SyncBeacon accepts multiple matching Registry references and selects the first"
 
   putStrLn "B0 CEK characterization suite completed; CHARACTERIZATION passes are documented gaps, not security approvals."
