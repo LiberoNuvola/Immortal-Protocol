@@ -133,7 +133,7 @@ jobs:
           TREASURY_RECEIPT_FROM_BLOCK_HEIGHT: "0"
           KOIOS_REQUEST_DELAY_MS: "120"
           TREASURY_RECEIPT_JOURNAL_OUTPUT: audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
-        run: node --import=tsx/esm audit/cardano-integration/observe-preprod-treasury-receipts.mjs
+        run: node audit/cardano-integration/observe-preprod-treasury-receipts.mjs
 
       - name: Upload read-only Treasury and identity evidence
         if: always()
