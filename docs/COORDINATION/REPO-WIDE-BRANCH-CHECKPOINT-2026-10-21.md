@@ -12,7 +12,7 @@
 **Status:** READ-ONLY BASELINE RECORDED; review and analytic follow-through open.
 
 New baseline:
-- `docs/COORDINATION/AGENT-A-R1-DYNAMIC-MARGIN-STATISTICAL-RESERVE-BASELINE-2026-11-06.md` (updated with exact moment reproduction and symbolic lifecycle vectors (latest report commit `9c6b47aec26e28a8b10d57d8064b1270baedb244`))
+- `docs/COORDINATION/AGENT-A-R1-DYNAMIC-MARGIN-STATISTICAL-RESERVE-BASELINE-2026-11-06.md` (updated with exact moment reproduction and symbolic lifecycle vectors (latest report commit `aa7ac0160fb06fbe3ecfb11eb7324b7e6d9d44a8`))
 - Commit introducing the baseline: `75f3dbb81a3740878b566528a37e5e8456de83bb`
 
 The audit distinguishes:
@@ -31,7 +31,7 @@ No statistical addend has been inserted into ProtectedCapital. No 500×, KA/KC/K
 
 ### Agent B review request
 - Review `EconomicKernel.hs`, `EconomicTransitionV3.hs`, `PreRichEconomicProjection.hs`, `PreRichEconomicAdmission.hs`, and `V3EconomicStateCarrier.hs` against the new A-R1 crosswalk.
-- Confirm the current carrier's unresolved reserve is nominal face value, not the statistical quantity.
+- Confirm the current carrier's unresolved reserve is nominal face value, not the statistical quantity — source review supports this; B1 explicitly calls it the deterministic ticket-price reserve and EconomicGate has no μ/σ/Z input.
 - Check any candidate mapping to `ReserveProtection` against the PA3/PA4 source-provenance and non-overlap requirements.
 - Do not change V3/Reveal semantics or introduce a new ProtectedCapital addend during review.
 
