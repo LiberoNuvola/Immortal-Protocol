@@ -605,7 +605,7 @@ export function validateCardanoProviderObservation(
     observation.request.route.startsWith('//') ||
     observation.request.route.includes('?') ||
     observation.request.route.includes('#') ||
-    observation.request.route.includes('\') ||
+    observation.request.route.includes('\\') ||
     decodedRoute.split('/').some(segment => segment === '..' || segment === '.')
   ) {
     throw new Error('request route must be a safe relative path without query or traversal')
