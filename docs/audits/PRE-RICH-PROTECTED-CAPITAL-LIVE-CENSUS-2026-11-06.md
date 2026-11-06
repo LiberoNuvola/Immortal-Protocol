@@ -115,7 +115,37 @@ This establishes that the singleton/out-reference is still present and structura
 
 Artifact: `pre-rich-protected-capital-live-census-42172705850` (artifact ID `13481587687`).
 
-## 6. What the evidence establishes
+## 6. Direct-USDM EV1–EV7 requalification — current exact source, no approval
+
+[PRE-RICH Preprod EEV — Source Qualification Only, run 42173808916](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42173808916) completed **SUCCESS** on commit `5c66893db29ab62c16cdf0514e73afa210627e46`.
+
+The existing read-only EEV workflow restored only the deployment/Oracle-State identity manifests, discarded the historical source-set, qualification and approved-qualification artifacts, then:
+1. re-observed the exact Oracle State singleton and timestamp;
+2. re-ran the live PrizeValidator/Pool census;
+3. re-observed the exact live B1 Pool source UTxO;
+4. regenerated the direct-USDM source-set;
+5. regenerated the EV1–EV7 qualification against the exact current repository bytes;
+6. verified artifact digests and that no deployment approval was created.
+
+The resulting source-set is `OBSERVED_NOT_QUALIFIED`, with the expected direct-tUSDM asset and the same Pool out-reference `b84f...#0`. Its deterministic `direct-usdm-v1` derivation is:
+- physical asset amount: `1,000,000,000` atomic units;
+- ledger decimals: 6;
+- conversion: `floor(atomicQuantity * 100 / 1,000,000)`;
+- resulting amount: `100,000` IMMORTAL USDM subunits.
+
+The regenerated qualification artifact reports:
+- `status=qualified`;
+- profile `PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1`;
+- all `EV1` through `EV7` mechanically verified against the current source references/digests;
+- `deploymentApproval=null`;
+- `deploymentApprovalStatus=PENDING`;
+- evidence hash `febad35042d0c71c556f6225e3fdd0c00a4718809fb5e28750dfd096f8fed908`.
+
+This is an exact-source, read-only qualification of the **direct physical tUSDM EEV profile only**. It does not authorize deployment or Issue, does not certify ProtectedCapital PA1–PA7, and does not qualify a USD/USDM market price. The same run again observed the Oracle State quote as `STALE` and `externalPriceSourceVerified=false`.
+
+Artifact: `preprod-eev-qualified-source-5c66893db29ab62c16cdf0514e73afa210627e46` (artifact ID `13482152037`).
+
+## 7. What the evidence establishes
 
 At the observed times, two different Cardano query paths returned a concordant view for the exact queried addresses:
 - no live UTxO at the configured/derived PrizeValidator address;
@@ -125,7 +155,7 @@ At the observed times, two different Cardano query paths returned a concordant v
 
 This is a bounded current-state observation. It does not prove historical emptiness or the completeness of every source that could contribute to ProtectedCapital.
 
-## 7. Non-claims and remaining blockers
+## 8. Non-claims and remaining blockers
 
 The following fields intentionally remain false in the Koios output:
 - `deploymentManifestAuthorityCryptographicallyVerified=false`;
