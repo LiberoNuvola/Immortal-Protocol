@@ -40,6 +40,8 @@ jobs:
         run: node scripts/check-rf8-production-boundary.mjs
       - name: Run legacy Treasury distribution isolation audit
         run: node audit/algorithmic-governability/treasury-legacy-isolation.mjs
+      - name: Run Cardano provider provenance and qualification contract fixtures
+        run: npx vitest run Adapter/CARDANO/observation/CardanoProviderProfile.test.ts
 
   frontend-build:
     runs-on: ubuntu-24.04
