@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
-
 const canary = process.env.VITE_BLOCKFROST_PROJECT_ID
 if (!canary || canary.length < 20) {
   console.error('VITE_BLOCKFROST_PROJECT_ID canary must be set to a distinctive value')
@@ -17,10 +16,7 @@ function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const file = path.join(dir, entry.name)
     if (entry.isDirectory()) walk(file)
-    else if (entry.isFile()) {
-      const data = fs.readFileSync(file)
-      if (data.includes(Buffer.from(canary))) matches.push(path.relative(root, file))
-    }
+    else if (entry.isFile() && fs.readFileSync(file).includes(Buffer.from(canary))) matches.push(path.relative(root, file))
   }
 }
 walk(root)
