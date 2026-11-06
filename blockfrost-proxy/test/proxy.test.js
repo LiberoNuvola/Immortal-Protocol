@@ -2,7 +2,7 @@
 
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const { createApp, validateRoute, MAX_SUBMIT_BYTES } = require('../proxy')
+const { createApp, validateRoute, isCardanoTransactionCbor, MAX_SUBMIT_BYTES } = require('../proxy')
 
 const ORIGIN = 'https://dapp.example'
 const KEY = 'server-only-test-key'
@@ -27,7 +27,7 @@ test('requires server credential and explicit origins', () => {
   assert.throws(() => createApp({ apiKey: KEY, allowedOrigins: new Set() }), /ALLOWED_ORIGINS/)
 })
 
-test('route allowlist is exact and method-bound', () => {
+test('Cardano transaction CBOR must be one complete top-level array', () => {\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03])), true)\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01])), false)\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x01])), false)\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03, 0x04])), false)\n})\n\ntest('route allowlist is exact and method-bound', () => {
   assert.equal(validateRoute('GET', '/blockfrost/epochs/latest/parameters', new URLSearchParams()), '/epochs/latest/parameters')
   assert.equal(validateRoute('GET', '/blockfrost/txs/' + TX + '/utxos', new URLSearchParams()), '/txs/' + TX + '/utxos')
   assert.equal(validateRoute('GET', '/blockfrost/scripts/' + SCRIPT + '/cbor', new URLSearchParams()), '/scripts/' + SCRIPT + '/cbor')
@@ -96,7 +96,7 @@ test('rejects wrong submit content type and over-limit body', async () => {
   })
 })
 
-test('upstream failure and timeout are bounded and sanitized', async () => {
+test('rejects malformed transaction CBOR before upstream relay', async () => {\n  let called = false\n  const app = makeApp(async () => { called = true; return new Response('', { status: 202 }) })\n  await withServer(app, async (base) => {\n    const response = await fetch(base + '/blockfrost/tx/submit', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/cbor' }, body: Buffer.from([0x84, 0x00]) })\n    assert.equal(response.status, 400)\n    assert.equal(called, false)\n  })\n})\n\ntest('upstream failure and timeout are bounded and sanitized', async () => {
   const failed = makeApp(async () => { throw new Error('secret upstream detail') })
   await withServer(failed, async (base) => {
     const response = await fetch(base + '/blockfrost/epochs/latest/parameters', { headers: { Origin: ORIGIN } })
