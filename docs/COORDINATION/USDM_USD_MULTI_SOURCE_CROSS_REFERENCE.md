@@ -302,3 +302,39 @@ DIA returned exact native Cardano ADA identity, provider timestamp 2026-10-31T20
 CEX bid/ask midpoint range (five venues): 0.19236500–0.19244500 USD/ADA. Last-price range across all nine successful references: 0.19235000–0.19270000 USD/ADA. Do not interpret these ranges as a consensus or as USDM/USD.
 
 Artifact ID 13057825466, ZIP SHA-256 02df44c55b1dba7acf19a69f80c516fb242f90b722830a2bbbbdbb4f9faa289d, extracted JSON SHA-256 10dfb2e90ed8092bdfff3c5558a331aeec97d9a6e2139dbdd7190ec6dbda288f.
+
+
+## Live oracle freshness recheck — 2026-11-06
+
+### Charli3 exact-feed observations on Mainnet and Preprod
+
+The combined read-only observer [run 42195466659](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42195466659) completed successfully on exact source SHA `5ba800fd59f3952f53c23bea372d978c0e7eea79`. It re-observed the official Mainnet ADA/USD feed NFT and both official Preprod ADA/USD and USDM/USD feed NFTs. All three identities are present and unique at their configured addresses, but all three latest datums are stale/expired and all three omit precision. No exact decimal price is inferred. Artifact #13492175704, ZIP SHA-256 `fab759cb5e563b73dd37fe5dcf9143b0289da749c04b427e365f0bfa268c1806`.
+
+- Mainnet ADA/USD timestamp: `2026-05-27T05:21:30.404Z`; expired, precision absent.
+- Preprod ADA/USD timestamp: `2025-12-14T10:17:39.510Z`; expired, precision absent.
+- Preprod USDM/USD timestamp: `2024-02-21T03:00:27.386Z`; expired, precision absent.
+
+### Orcfax exact on-chain ADA-USD / ADA-USDM statements
+
+The new Mainnet observer [run 42195769567](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42195769567) resolved the unique FSP singleton and FS script hash, then decoded the exact FS-token statements. The read-only capture found 111 FS-token UTxOs, decoded all 111, found no malformed datums, and recorded five structurally valid statements for each target feed.
+
+Official registry snapshot fetched during the same run:
+- `ADA-USD`: CEX source, median calculation, 3600-second heartbeat, 1% deviation, sponsored.
+- `ADA-USDM`: DEX source, weighted-mean calculation, 3600-second heartbeat, 2% deviation, sponsored.
+
+Latest on-chain statement:
+- `CER/ADA-USD/3`: exact rational `163333/1000000` = 0.163333 USD per ADA, created `2026-06-18T21:02:22.882Z`, age ~140.52 days at capture.
+- `CER/ADA-USDM/3`: exact rational `325734549/2000000000` = 0.1628672745 USDM per ADA, created `2026-06-18T21:20:32.150Z`, age ~140.51 days.
+
+Both statements are structurally valid and on-chain, but **STALE** against the declared one-hour heartbeat. No cross-rate is derived from them. The data source types are CEX median and DEX weighted mean; the latter is a market-derived input, not an issuer redemption quote or independent DEX venue. Artifact #13492225756, ZIP SHA-256 `95ce9ef8bfa14caa9f0ae728b526131d36d8fab86956fddb991340cac840430e`, extracted JSON SHA-256 `635f370bafd3d214282a2b2599d7765f57ec5ea4b6ea957eae6f98732ad1e287`.
+
+### Minswap Mainnet UTxO reconciliation status correction
+
+The exact raw Minswap V2 structural observation was already completed in the existing source pipeline:
+- [run 41204050705](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204050705): 31/31 exact-Moneta-USDM UTxOs structurally matched.
+- [run 41204297344](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204297344): repeated 31/31 matches.
+- [run 41204657669](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204657669): same-run Minswap API and Koios exact LP-asset and unordered-pair reconciliation 31/31.
+
+These are same-venue structure/indexer corroborations, not 31 independent markets or 31 USD price sources. They do not establish the current market price, independent venue depth, a TWAP, or an eligible USD/USDM oracle statement.
+
+**Current disposition:** no fresh Charli3 or Orcfax ADA/USD / USDM/USD statement was observed on 2026-11-06. The feed identities and on-chain publications are now more completely mapped, but USD/USDM remains NOT QUALIFIED. No stale cross-rate, USD peg, or source quorum is inferred.
