@@ -21,6 +21,15 @@ import PreRichEconomicProfile (preRichEconomicProfileV1)
 
 -- | All economic inputs required to turn an observed PRE-RICH state into an
 -- authoritative Issue decision. None are invented here.
+--
+-- Unit contract at this PRE-RICH V1 boundary:
+-- * idiPreEEV / idiCandidateEEV are IMMORTAL reference units, normalized
+--   exactly from signed direct-USDM sub-units (100 sub-units per RU) before
+--   this producer is invoked.
+-- * idiAvailableExecutableLiquidity / idiRequiredImmediateLiquidity remain
+--   USDM sub-units and must stay in that same scale as one another.
+-- The two pairs represent different economic quantities and are not converted
+-- together.
 data IssueDecisionInput = IssueDecisionInput
   { idiPreState :: V3EconomicState
   , idiClass :: Integer
