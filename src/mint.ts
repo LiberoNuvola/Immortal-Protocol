@@ -97,6 +97,7 @@ import {
 import {
   assertExpiryIssuanceStateMatchesAuthoritative,
   crystallizeTicketExpiry,
+  deriveCardanoIssueTimeAnchor,
   type PreRichExpiryIssuanceState,
   type PreRichExpiryPolicy,
 } from '../PRE-RICH/src/PreRichExpiryPolicy'
@@ -113,6 +114,7 @@ import {
   deriveAdaIssueSettlementLovelace,
   assertCompletedTreasurySettlement,
   assertCompletedTreasuryMinimumAda,
+  assertCompletedIssueValidityLowerBound,
   assertCompletedIssueValidityUpperBound,
   deriveIssueSettlementValidityUpperBoundMs,
 } from './issueSettlement'
@@ -1280,7 +1282,12 @@ async function mintSerialNFTInternal(
     throw new Error('Economic admission coordinates do not match the requested Issue intent')
   }
 
-  const issuedAtMs = BigInt(Date.now())
+  const issueTimeAnchor = deriveCardanoIssueTimeAnchor(
+    BigInt(Date.now()),
+    settlementTtlSlot,
+    lucid.utils,
+  )
+  const issuedAtMs = issueTimeAnchor.issuedAt
 
   if (!opts.expiryPolicy) {
     throw new Error(
@@ -1415,6 +1422,7 @@ async function mintSerialNFTInternal(
   let tx =
     lucid
       .newTx()
+      .validFrom(issuedAtMs)
       .validTo(settlementValidToMs)
 
       // ------------------------------------------------------
@@ -1599,6 +1607,7 @@ async function mintSerialNFTInternal(
     treasuryAddress,
     treasuryPaymentAssets,
   )
+  assertCompletedIssueValidityLowerBound(tx, issueTimeAnchor.validityStartSlot)
   assertCompletedIssueValidityUpperBound(tx, settlementTtlSlot)
 
   // Cardano min-ADA is output-size-dependent. Validate the actual completed
