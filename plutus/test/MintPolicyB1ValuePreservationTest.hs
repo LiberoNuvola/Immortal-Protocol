@@ -11,7 +11,7 @@ import Prelude
 import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import qualified PlutusLedgerApi.V1.Interval as Interval
-import PlutusLedgerApi.V1.Value (lovelaceValueOf, singleton)
+import PlutusLedgerApi.V1.Value (adaSymbol, adaToken, singleton)
 
 import PlutusTx (CompiledCode, ToData, liftCodeDef, unsafeApplyCode)
 import PlutusTx.Prelude
@@ -69,7 +69,7 @@ poolAssetName  = TokenName (bytes [80, 79, 79, 76])
 addedAssetName = TokenName (bytes [65, 68, 68, 69, 68])
 
 poolAda :: Value
-poolAda = lovelaceValueOf 4000000
+poolAda = singleton adaSymbol adaToken 4000000
 
 poolValue :: Value
 poolValue = poolAda <> singleton poolAssetPolicy poolAssetName 7
@@ -231,7 +231,7 @@ main = do
   putStrLn "PASS: unchanged ADA + complete native-asset basket is accepted"
 
   assertEvaluatesWithError
-    (compiledPolicyFor poolValue (poolValue <> lovelaceValueOf 1))
+    (compiledPolicyFor poolValue (poolValue <> singleton adaSymbol adaToken 1))
   putStrLn "PASS: changed lovelace quantity is rejected"
 
   assertEvaluatesWithError
