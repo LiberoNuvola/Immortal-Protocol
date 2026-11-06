@@ -1,0 +1,46 @@
+name: Agent A — Minswap V2 USDM/ADA Raw Pool Observation
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - audit/cardano-integration/observe-minswap-v2-usdm-pool.mjs
+      - .github/workflows/mainnet-minswap-v2-usdm-pool-observation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minswap-v2-usdm-pool-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Replay exact Minswap V2 USDM/ADA pool UTxO and datum
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KOIOS_MAINNET_URL: https://api.koios.rest/api/v1
+      MINSWAP_EVIDENCE_OUTPUT: audit/cardano-integration/evidence/minswap-v2-usdm-ada-pool-observation.json
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned repository dependencies
+        run: npm ci
+      - name: Validate observer syntax
+        run: node --check audit/cardano-integration/observe-minswap-v2-usdm-pool.mjs
+      - name: Query exact LP asset UTxOs and replay current pool output
+        run: node audit/cardano-integration/observe-minswap-v2-usdm-pool.mjs
+      - name: Upload raw pool observation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: minswap-v2-usdm-ada-pool-observation-${{ github.sha }}
+          path: audit/cardano-integration/evidence/minswap-v2-usdm-ada-pool-observation.json
+          if-no-files-found: error
+          retention-days: 30
