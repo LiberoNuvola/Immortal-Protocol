@@ -338,3 +338,8 @@ The exact raw Minswap V2 structural observation was already completed in the exi
 These are same-venue structure/indexer corroborations, not 31 independent markets or 31 USD price sources. They do not establish the current market price, independent venue depth, a TWAP, or an eligible USD/USDM oracle statement.
 
 **Current disposition:** no fresh Charli3 or Orcfax ADA/USD / USDM/USD statement was observed on 2026-11-06. The feed identities and on-chain publications are now more completely mapped, but USD/USDM remains NOT QUALIFIED. No stale cross-rate, USD peg, or source quorum is inferred.
+
+
+## Multi-source evidence refresh trigger — 2026-11-06
+
+The existing [Agent A Minswap V2 observer workflow](https://github.com/LiberoNuvola/Immortal-Protocol/blob/23db8634f88141f36d6ace4fb849d89f77da3cf2/.github/workflows/minswap-v2-observer-tests.yml) now includes this cross-reference document in its push path filters. Updating this matrix will therefore re-run the existing read-only source pipeline: exact Moneta USDM UTxOs and PoolDatum validation, Minswap API, SuperCardano, venue-specific pool observers, Float, public ADA/USD references, and the existing indicative cross-reference calculator. No new market formula, averaging, source quorum or activation policy is introduced by the trigger change.
