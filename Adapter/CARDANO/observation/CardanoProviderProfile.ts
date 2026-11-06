@@ -504,9 +504,9 @@ function validateCoverage(
       if (index === 0 ? input !== null : input !== coverage.segments[index - 1].cursorOutDigest) {
         throw new Error('cursor coverage has a missing or mismatched cursor link')
       }
-      if (input !== null && !input) throw new Error('cursor input digest cannot be empty')
+      if (input !== null) digest(input, 'cursorInDigest')
       if (output !== null) {
-        if (!output) throw new Error('cursor output digest cannot be empty')
+        digest(output, 'cursorOutDigest')
         if (seenOutputs.has(output)) throw new Error('cursor coverage contains a cursor cycle')
         seenOutputs.add(output)
       }
@@ -605,7 +605,7 @@ export function validateCardanoProviderObservation(
     observation.request.route.startsWith('//') ||
     observation.request.route.includes('?') ||
     observation.request.route.includes('#') ||
-    observation.request.route.includes('\\\\') ||
+    observation.request.route.includes('\\') ||
     decodedRoute.split('/').some(segment => segment === '..' || segment === '.')
   ) {
     throw new Error('request route must be a safe relative path without query or traversal')
@@ -739,6 +739,9 @@ export function validateCardanoProviderObservation(
     throw new Error('stale result has an incompatible failure classification')
   }
   if (observation.failure) {
+    if (!['timeout', 'rate-limit', 'transport', 'provider-error', 'malformed-response', 'incomplete-collection', 'page-gap', 'cursor-gap', 'cursor-cycle', 'stale-response', 'provider-disagreement'].includes(observation.failure.kind)) {
+      throw new Error('unknown provider failure classification')
+    }
     if (!['safe', 'unsafe', 'unknown'].includes(observation.failure.retrySafety)) {
       throw new Error('failure retrySafety must be explicit')
     }
