@@ -8,7 +8,6 @@ on:
     paths:
       - ".github/workflows/preprod-eev-qualification.yml"
       - ".github/workflows/pre-rich-protected-capital-live-census.yml"
-      - "docs/audits/PRE-RICH-PROTECTED-CAPITAL-LIVE-CENSUS-2026-11-06.md"
       - "audit/cardano-integration/preprod-direct-usdm-source-set.mjs"
       - "audit/cardano-integration/preprod-protected-capital-census.mjs"
       - "audit/cardano-integration/preprod-protected-capital-deployment-identity.mjs"
