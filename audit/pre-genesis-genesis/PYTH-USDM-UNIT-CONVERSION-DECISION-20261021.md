@@ -622,3 +622,22 @@ A separate Cardano stablecoin tracker reads pools from its own db-sync node, but
 **Disposition:** MAINNET USDM/ADA MARKET OBSERVED / RAW POOL UNIT+DATUM NOT YET REPLAYED / ADA-USD SECOND LEG NOT QUALIFIED / PREPROD TEST-ASSET MARKET NOT ESTABLISHED / NOT QUALIFIED.
 
 Next bounded evidence is a raw Mainnet pool UTxO replay (exact Moneta asset unit, pool NFT, reserves/datum, DEX contract and pool type), cross-DEX and historical swap/TWAP analysis, quantified executable depth and manipulation cost, plus an independently qualified ADA/USD feed. A separate Preprod observation is required for any Preprod use. No protocol code, Oracle schema, MintPolicy, economic rule, V3/Reveal, wallet, approval or ledger state was changed by this research.
+
+
+## 37. Agent A — Minswap V2 USDM/ADA pair cross-identified by independent indexers; no raw UTxO replay yet — 2026-11-06
+
+The Mainnet USDM/ADA market candidate has stronger pair-identity evidence than the earlier pool-page-only note:
+
+- Cardanoscan and DEX Screener return the same Minswap V2 pool identifier:
+  `f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171`.
+- Cardanoscan identifies its LP asset as policy `f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c`, asset name `7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171`, fingerprint `asset1kqcnr902hecg8zsxlk9knclr5yqvgazvchgh2c`. This is the pool's LP asset, not proof of the pool validator UTxO/datum itself.
+- DEX Screener reports the USDM token identity with prefix `c48cb…444d`, consistent with the issuer's canonical Mainnet Moneta asset policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad` and asset name `0014df105553444d`. It therefore provides independent indexed metadata cross-identification of the asset pair. It is not yet a raw chain replay of the pool UTxO's native asset units.
+- Latest-crawl Cardanoscan snapshot: approx. 363.7k USDM and 1.97m ADA reserves, pool rate 5.4029 ADA/USDM, TVL ~$727k, 24h volume ~$87k, 201 trades / 62 unique wallets, and depth ±1% ~$4k.
+- Latest-crawl DEX Screener snapshot of the same pool: approx. 362.5k USDM and 1.971m ADA, liquidity ~$716k, quoted USDM price ~$0.9838 and pool rate 5.3970 ADA/USDM. This differs from Cardanoscan's reserve valuation label of ~$1.00 per USDM by about 1.62%. The snapshots, price-source conventions and indexing windows differ; this discrepancy is NOT by itself proof of a USDM depeg. It does show that a displayed $1 stablecoin mark is not an independent USD quote.
+- Current search results identify real pool activity, but Cardanoscan and DEX Screener do not provide sufficient direct evidence to certify the exact on-chain datum, output reference, reserve accounting or pricing curve in this pass.
+
+Sources: [Cardanoscan USDM/ADA pool snapshot](https://cardanoscan.io/liquidityPool/f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171) · [Cardanoscan LP asset identity](https://cardanoscan.io/token/asset1kqcnr902hecg8zsxlk9knclr5yqvgazvchgh2c) · [DEX Screener same pool + USDM asset prefix](https://dexscreener.com/cardano/f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171) · [Moneta canonical USDM identity](https://moneta.global/developers/).
+
+**Disposition updated:** MAINNET USDM/ADA PAIR AND MONETA TOKEN IDENTITY CROSS-IDENTIFIED BY INDEXERS / RAW POOL UTxO+DATUM AND RESERVE VALIDATION STILL OPEN / USD MARKING DISAGREEMENT REQUIRES SOURCE RECONCILIATION / ±1% DEPTH LOW / ADA-USD SECOND LEG NOT QUALIFIED / NOT QUALIFIED.
+
+Next bounded work is to query the Minswap V2 pool address using an independent mainnet chain provider, locate the exact live UTxO by LP/pool asset identity, decode the datum and reserve units, replay the output reference and compare to both indexers; then inspect historical swaps/TWAP and executable depth. Even after this, USD/USDM requires an independently qualified ADA/USD leg with a governed same-snapshot composition rule. No source-set, Oracle, economics, MintPolicy, V3/Reveal, approval, wallet or ledger state was changed.
