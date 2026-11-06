@@ -1,116 +1,47 @@
-# Codex operating instructions — Materios B3-B archive node
+# IMMORTAL / PRE-RICH — Agent Operating Instructions
 
-## Mission
+**Updated:** 2026-11-06  
+**Role and branch baseline:** [Repo-wide Coordination Baseline 2026-11-06](docs/COORDINATION/REPO-WIDE-COORDINATION-BASELINE-2026-11-06.md).  
+**Historical checkpoint:** [Repository-Wide Branch & Evidence Checkpoint](docs/COORDINATION/REPO-WIDE-BRANCH-CHECKPOINT-2026-10-21.md).
 
-Work only on the existing branch `work/immortal-green-closure`.
+This file is the repository-wide routing and safety index. It does not assign protocol authority or replace normative specifications, GitHub Issues, or the current Control Center.
 
-Primary objective: obtain and independently verify the historical Materios storage witness required to close B3-B for the exact anchor already recorded by this repository.
+## Agent roles
 
-Do not invent economics, alter IMMORTAL economic semantics, or reopen V3/Reveal/B1/B2 semantics.
+- **Agent A — Economy / first Preprod Issue:** Issue #37 USD/USDM + EEV/source evidence + ProtectedCapital; Issue #20 authoritative expiry; Issue #41 read-only Treasury receipt journal/carrier evaluation; evidence-backed scientific paper in parallel. A owns only the paths enumerated in the current coordination baseline and task record.
+- **Agent B — Cardano security / Adapter / execution evidence:** Issue #43 BeaconRegistry adversarial characterization; Issue #42 B42-A credential boundary then B42-B provider qualification; Cardano integration and lifecycle evidence after admission prerequisites. B preserves V3/Reveal and frozen economics.
+- **Agent C — Materios B3:** C1 bootstrap/authority provenance, C2 exact historical storage proof, C3 independent verifier, C4 trust-model disposition. Sole lane: `work/b3-materios-provenance-evidence`. Detailed B3-B archive mission: [Agent C B3-B mission](docs/COORDINATION/AGENT-C-B3-B-ARCHIVE-NODE-MISSION-2026-11-06.md).
+- **Agent D — Local development-agent enablement:** Issue #39; read-only D0/D1 first, later writes only in an isolated worktree with explicit task/path/command allowlist.
+- **Agent E — Arb Agent:** exclusive sibling repository `LiberoNuvola/PRE-RICH-AEP-Arb-Agent`, existing branch `Immortal-Protocol`; synthetic/read-only S1 and contract evidence only. No write in IMMORTAL or Cormia.
 
-## Exact B3-B target
+Agent labels are coordination roles, not protocol actors, principals, signers or autonomous authorities. Agent F/G are not registered roles. Any future split of R1/Kc or admission work must be recorded as a bounded package with an owner, issue, dependencies, path allowlist and acceptance criteria; it does not create an implied agent.
 
-- receipt: `0x552e9e621ad05f0b824b24c36d71b87afbd65387316b7be7406df57d3a598871`
-- certification hash: `78c0bbd6a33dd38009858d540b70e02c756f352ffce30bb4feaa0251e161aa8a`
-- receipt block: `1856393`
-- checkpoint leaf/root: `0x807c464cc9064a73e22d07cbaba9f05a07eaa12a7fba68539d2654c704ba941c`
-- anchor block: `1856408`
-- anchor hash: `0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e`
-- anchor id: `0x01b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55`
-- storage key:
-  `0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55`
+## Branch lanes
 
-## Existing pipeline to use
+- `main`: release-only; no direct development.
+- `work/immortal-green-closure`: shared A/B integration lane. A and B have disjoint path ownership; pushes must be serialized. Agent B remains read-only until an explicit Agent A/coordination handoff records release SHA, exact paths, time/window and confirmation that A has paused those paths.
+- `work/b3-materios-provenance-evidence`: Agent C only.
+- Arb sibling repository branch `Immortal-Protocol`: Agent E only.
+- Agent D uses a separate local project/worktree; no default write access to A/B/C worktrees.
 
-Do not replace the existing B3-B pipeline. Use:
-- `audit/materios-b3/archive-rpc-preflight.mjs`
-- `poc/materios-checkpoint/src/capture-anchor.ts`
-- `.github/workflows/materios-b3-b-anchor-proof.yml`
-- Rust verifier in `poc/materios-execution-verifier`
+No new branch, bulk branch deletion/rename, rebase, merge, deployment, wallet signature, on-chain transaction or automatic promotion is authorized by this file.
 
-The preflight is authoritative for determining whether an RPC really serves the historical state required by B3-B.
+## Required task record
 
-## 2026-11-04 chain-identity gate — historical v6 fixture identified; sync still held
+Before work, every task must record: role/owner, repository, branch, exact starting SHA, allowed paths, objective, dependencies, commands/tests, required evidence, and stop conditions. Before each write, refetch branch HEAD and inspect the changed-path diff. After work, record ending SHA, exact CI/workflow runs, artifacts and digests, and unresolved limits.
 
-The upstream chain-identity review is now more precise:
+Do not write outside the task allowlist. `plutus/Types.hs` changes require cross-validator impact review. Shared workflow changes require explicit path-owner coordination. Do not alter frozen economic constants, formulae, price ladder, expiry semantics, V3, Reveal, BeaconRegistry ABI, or Materios trust assumptions without a separately authorized, evidence-backed task.
 
-- The recorded pin `076964a0c117640a83aa1f13ace681a89b428611` is dated 2026-10-03 and declares runtime `spec_version: 240`.
-- At that revision, `partnerchain/node/src/command.rs` maps the built-in alias `--chain preprod` to `chain_spec_preprod::preprod_config()`. Do **not** use that alias as the historical v6 identity check.
-- The same pinned revision contains `tools/launch-preflight/fixtures/preprod-v6-raw.json.gz` (Git blob SHA `01ed435660aa8846fc0143894bdaa76d842a0d6a`). Its `test_launch_preflight.py` describes it as the raw chain spec published by the Preprod network and says its genesis hash was read from a live node. The test `test_genesis_hash_matches_the_live_preprod_genesis` asserts the computed genesis hash equals `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`.
-- The same repository revision contains a separate generated fixture, `preprod-spec240-raw.json`; it is not the historical `preprod-v6-raw.json.gz`. Keep these artifacts distinct.
-- The pinned `command.rs` accepts a chain-spec file path through `ChainSpec::from_json_file`. The intended route is therefore to decompress the historical v6 fixture and pass its absolute path to `--chain`.
-- Upstream main `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` is 90 commits ahead and has a separate spec-243 builder fixture. Do not silently upgrade the source pin or substitute that fixture.
+## Evidence discipline
 
-**HOLD:** the historical raw v6 fixture and its source-level genesis test are now located, but the pinned node binary has not yet been run offline against that exact file in this environment. Before an archive sync, decompress the fixture, run the pinned genesis test, and make the pinned `materios-node` load the file by path in an offline `build-spec` round-trip. Confirm the resulting genesis hash remains the live-v6 value above. Only then inspect Codespace capacity and start archive sync using the explicit raw-file path—not `--chain preprod`. B3-B remains OPEN until block 1856408 is independently shown to map to the exact target hash below.
+Code presence, fixture counts, workflow wiring, successful build, endpoint availability, stale data, synthetic witnesses, or tests on another SHA are not proof of current-head readiness. Classify evidence as implementation, tested-on-exact-SHA, observed-at-tip/time, purpose-qualified, certified, historical, hypothesis or open. Missing evidence is UNKNOWN, not PASS. Keep bounded CEK, Yaci/devnet, Preprod observation, authoritative qualification and live user-signed ledger evidence distinct.
 
-This is a corrected chain-spec selection procedure, not proof that the B3-B target belongs to another chain or that the historical storage witness has been acquired.
+`READY_FOR_WALLET_REVIEW` is a human review gate only. Only the project owner may personally review and sign the actual purchase from their connected wallet. Agents never custody keys, sign, submit or perform financial/on-chain actions on the owner's behalf.
 
-The public Materios workflow probe on 2026-11-04 also found no GRANDPA justifications in 769 recent blocks and no exposed `grandpa_proveFinality` or `grandpa_subscribeJustifications` RPC method. This is a public RPC capability limitation, not proof that the chain lacks finality. Successful recent storage proofs for a different receipt do not close the exact B3-B historical target.
+## First Preprod Issue guard
 
-See [the 2026-11-04 chain-identity and RPC evidence record](docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md) for the upstream fixture/test references and the remaining gates.
+The first real ticket remains BLOCKED until the applicable B0 security disposition, qualified Option B USD/USDM source, current direct-USDM EV1–EV7 and bound deployment approval, complete PA1–PA7/source evidence, deployment-bound R1/Kc/QNE/viability, versioned expiry policy/issuance state, B2/Counter/control bindings, and authoritative Issue witness all refer to the same approved candidate/deployment snapshot. The Treasury receipt journal is observational and does not grant spending or posting authority.
 
-## Codespace / node setup
+## B3 mission preservation
 
-1. Inspect the available CPU, RAM and free disk first. Do not start an expensive sync on an obviously undersized Codespace.
-2. Use the Materios upstream repository `Flux-Point-Studios/materios`.
-3. Use the reproducible pinned upstream revision `076964a0c117640a83aa1f13ace681a89b428611`; verify the checkout and use its historical `preprod-v6-raw.json.gz` fixture, not the generated `--chain preprod` alias.
-4. Build `materios-node` from `partnerchain`, respecting the upstream `rust-toolchain.toml` and locked dependencies. If the upstream build needs a documented compatibility patch, follow the upstream build instructions rather than inventing a new patch.
-5. Do NOT run the Materios registration/deployment wizard. We only need a syncing node for historical read access; do not spend ADA or mutate Cardano state.
-6. After the offline fixture round-trip passes, start the partner-chain node with `--chain <absolute-path-to-preprod-v6-raw.json>` and enable archive state pruning. Never use the built-in `--chain preprod` alias for this historical chain. Prefer loopback RPC inside the Codespace while testing.
-7. Use a dedicated persistent Codespace directory for the node database, separate from the Immortal repository worktree, so the repository never receives chain data.
-8. Keep the node running while the historical target is acquired. Do not delete or purge the database once block 1856408 is reachable.
-
-A suitable starting shape is equivalent to:
-
-`materios-node --chain <absolute-path-to-preprod-v6-raw.json> --base-path <persistent-archive-path> --state-pruning archive --db rocksdb --rpc-port 9945 --rpc-methods safe`
-
-Do not add validator/registration flags unless the upstream preprod chain requires them for syncing.
-
-## Synchronization and proof
-
-1. Wait until the node can serve header block `0x7db6da...`.
-2. Then run the existing archive preflight against `http://127.0.0.1:9945` (or the actual local RPC port) and require PASS.
-3. Run the existing `capture:anchor` command with `MATERIOS_ARCHIVE_RPC` pointing to that local RPC.
-4. Run the Rust verifier and require:
-   - exact header StateRoot binding;
-   - exact storage key;
-   - exact returned storage value;
-   - valid read-proof reconstruction;
-   - no synthetic or hand-entered proof data.
-5. Materialize the verified JSON witness under the existing `poc/materios-checkpoint/out` path.
-6. Never commit the Materios chain database, RocksDB files, keystore, credentials, RPC secrets, or large node logs to Git.
-7. If historical state is unavailable, fail closed and report the exact RPC failure. Do not substitute a newer block, a current-state query, a public RPC without historical state, or a fabricated witness.
-
-## Acceptance criteria
-
-Declare B3-B evidence GREEN only when all of the following are true:
-- exact target block header is served;
-- exact historical storage is non-null at that block;
-- read proof is returned and bound to the same block hash;
-- independent Rust verification succeeds against the header StateRoot;
-- exact key/value extraction matches the proof;
-- verified witness file exists;
-- no repository semantics were changed.
-
-If the node cannot reach the historical target because the available snapshot/database does not retain that state, do not force it. Diagnose whether a true archive sync or an archive-capable snapshot is required and stop at the evidence boundary.
-
-## Git discipline
-
-- Stay on `work/immortal-green-closure`.
-- Do not create a new branch.
-- Do not rewrite history.
-- Do not modify V3, Reveal, B1 EEV, B2 semantics, or economic constants.
-- Keep commits small and purpose-specific.
-- Do not commit generated chain state.
-
-## Final report
-
-At the end, report:
-- Codespace resources observed;
-- upstream Materios revision used;
-- exact node command actually used;
-- sync status at block 1856408;
-- preflight result;
-- verifier result;
-- witness path and size;
-- any blocker, with the exact failing RPC call if blocked.
+The previous root-level Materios archive-node instructions have been preserved, with the working lane scoped to Agent C, in [AGENT-C-B3-B-ARCHIVE-NODE-MISSION-2026-11-06.md](docs/COORDINATION/AGENT-C-B3-B-ARCHIVE-NODE-MISSION-2026-11-06.md). They no longer define the mission of every worker using the shared green branch.
