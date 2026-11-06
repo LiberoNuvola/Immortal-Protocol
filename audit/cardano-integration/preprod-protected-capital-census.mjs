@@ -423,6 +423,9 @@ async function main() {
       oracleStateAddress: identity.oracleStateAddress ?? null,
       oracleStateUtxo: identity.oracleStateUtxo ?? null,
       directUsdmUnit: identity.directUsdmUnit,
+      // Preserve the independently decoded address/payment-credential binding
+      // used by the loader; this is not bytecode re-derivation or manifest authentication.
+      addressBindings: identity.addressBindings ?? null,
     },
     topology: {
       prizeValidatorAddress: topology.prizeAddress,
