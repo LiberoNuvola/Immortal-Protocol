@@ -130,6 +130,10 @@ jobs:
         working-directory: plutus
         run: cabal test protected-capital-conformance-tests
 
+      - name: B-R1 Risk Protection bridge scaffold conformance
+        working-directory: plutus
+        run: cabal test risk-protection-bridge-tests --test-show-details=direct
+
       - name: Governance ruleset conformance
         working-directory: plutus
         run: cabal test governance-ruleset-tests
