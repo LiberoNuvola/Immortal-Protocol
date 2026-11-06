@@ -1,7 +1,31 @@
 // src/config.ts
-// Network and addresses for Preprod — update before real tests.
+// Public browser configuration only. Keep every import.meta.env access static:
+// Vite must never receive a dynamic key lookup over its complete environment.
 function env(key: string): string {
-  try { return (import.meta as any).env?.[key] ?? '' } catch { return '' }
+  switch (key) {
+    case 'VITE_COUNTER_SCRIPT_ADDRESS': return import.meta.env.VITE_COUNTER_SCRIPT_ADDRESS ?? ''
+    case 'VITE_TREASURY_ADDRESS': return import.meta.env.VITE_TREASURY_ADDRESS ?? ''
+    case 'VITE_TICKET_POLICY_ID': return import.meta.env.VITE_TICKET_POLICY_ID ?? ''
+    case 'VITE_RELAYER_PKH': return import.meta.env.VITE_RELAYER_PKH ?? ''
+    case 'VITE_ORACLE_PUBLISHER_PKH': return import.meta.env.VITE_ORACLE_PUBLISHER_PKH ?? ''
+    case 'VITE_ORACLE_STATE_POLICY_ID': return import.meta.env.VITE_ORACLE_STATE_POLICY_ID ?? ''
+    case 'VITE_ORACLE_STATE_TOKEN_NAME_HEX': return import.meta.env.VITE_ORACLE_STATE_TOKEN_NAME_HEX ?? ''
+    case 'VITE_ORACLE_STATE_ADDRESS': return import.meta.env.VITE_ORACLE_STATE_ADDRESS ?? ''
+    case 'VITE_B1_POOL_TOKEN_POLICY_ID': return import.meta.env.VITE_B1_POOL_TOKEN_POLICY_ID ?? ''
+    case 'VITE_B1_POOL_TOKEN_NAME_HEX': return import.meta.env.VITE_B1_POOL_TOKEN_NAME_HEX ?? ''
+    case 'VITE_V3_CARRIER_ADDRESS': return import.meta.env.VITE_V3_CARRIER_ADDRESS ?? ''
+    case 'VITE_V3_CARRIER_POLICY_ID': return import.meta.env.VITE_V3_CARRIER_POLICY_ID ?? ''
+    case 'VITE_V3_CARRIER_TOKEN_NAME_HEX': return import.meta.env.VITE_V3_CARRIER_TOKEN_NAME_HEX ?? ''
+    case 'VITE_B2_CONTROL_ADDRESS': return import.meta.env.VITE_B2_CONTROL_ADDRESS ?? ''
+    case 'VITE_B2_CONTROL_POLICY_ID': return import.meta.env.VITE_B2_CONTROL_POLICY_ID ?? ''
+    case 'VITE_B2_CONTROL_TOKEN_NAME_HEX': return import.meta.env.VITE_B2_CONTROL_TOKEN_NAME_HEX ?? ''
+    case 'VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS': return import.meta.env.VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS ?? ''
+    case 'VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS': return import.meta.env.VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS ?? ''
+    case 'VITE_BLOCKFROST_PROXY_URL': return import.meta.env.VITE_BLOCKFROST_PROXY_URL ?? ''
+    case 'VITE_ISSUE_AUTHORITY_ENDPOINT': return import.meta.env.VITE_ISSUE_AUTHORITY_ENDPOINT ?? ''
+    case 'VITE_V3_CARRIER_FACTORY_URL': return import.meta.env.VITE_V3_CARRIER_FACTORY_URL ?? ''
+    default: return ''
+  }
 }
 export const NETWORK = 'Preprod' as const
 export const GENESIS_TICKET_PRICE_USDM = 100
@@ -17,26 +41,16 @@ export const ORACLE_PUBLISHER_PKH = env('VITE_ORACLE_PUBLISHER_PKH')
 export const ORACLE_STATE_POLICY_ID = env('VITE_ORACLE_STATE_POLICY_ID')
 export const ORACLE_STATE_TOKEN_NAME_HEX = env('VITE_ORACLE_STATE_TOKEN_NAME_HEX')
 export const ORACLE_STATE_ADDRESS = env('VITE_ORACLE_STATE_ADDRESS')
-
-// B1 singleton PrizePool authority NFT. Must be minted once at deployment.
 export const B1_POOL_TOKEN_POLICY_ID = env('VITE_B1_POOL_TOKEN_POLICY_ID')
 export const B1_POOL_TOKEN_NAME_HEX = env('VITE_B1_POOL_TOKEN_NAME_HEX')
-
-// Canonical PRE-RICH V3 economic-state carrier singleton. Deployment identity is externalized.
 export const V3_CARRIER_ADDRESS = env('VITE_V3_CARRIER_ADDRESS')
 export const V3_CARRIER_POLICY_ID = env('VITE_V3_CARRIER_POLICY_ID')
 export const V3_CARRIER_TOKEN_NAME_HEX = env('VITE_V3_CARRIER_TOKEN_NAME_HEX')
-
-// B2 authenticated PRE-RICH control carrier. Deployment identity is externalized.
 export const B2_CONTROL_ADDRESS = env('VITE_B2_CONTROL_ADDRESS')
 export const B2_CONTROL_POLICY_ID = env('VITE_B2_CONTROL_POLICY_ID')
 export const B2_CONTROL_TOKEN_NAME_HEX = env('VITE_B2_CONTROL_TOKEN_NAME_HEX')
-
-// Canonical Reveal reference-script holders. The Reveal path fails closed if absent.
 export const PRIZE_VALIDATOR_REFERENCE_ADDRESS = env('VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS')
 export const B1_PRIZE_POOL_REFERENCE_ADDRESS = env('VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS')
-
-export const BLOCKFROST_PREPROD_URL = env('VITE_BLOCKFROST_PREPROD_URL') || 'https://cardano-preprod.blockfrost.io/api/v0'
-export const BLOCKFROST_PROJECT_ID = env('VITE_BLOCKFROST_PROJECT_ID')
+export const BLOCKFROST_PROXY_URL = env('VITE_BLOCKFROST_PROXY_URL')
 export const ISSUE_AUTHORITY_ENDPOINT = env('VITE_ISSUE_AUTHORITY_ENDPOINT')
 export const V3_CARRIER_FACTORY_URL = env('VITE_V3_CARRIER_FACTORY_URL')
