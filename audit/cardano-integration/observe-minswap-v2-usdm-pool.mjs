@@ -343,10 +343,9 @@ function verifyPoolOutput(row, datumBytes) {
 function normalizeUtxo(row, label) {
   parseRef(row, label)
   if (typeof row?.address !== 'string' || !row.address) fail('UTXO_ADDRESS_MISSING', label)
-  if (String(row.payment_cred ?? '').toLowerCase() !== POOL_SCRIPT_HASH) {
-    fail('UTXO_PAYMENT_CREDENTIAL_MISMATCH', label)
-  }
-  return row
+  const paymentCred = String(row.payment_cred ?? '').toLowerCase()
+  if (!/^[0-9a-f]{56}$/.test(paymentCred)) fail('UTXO_PAYMENT_CREDENTIAL_INVALID', label)
+  return { ...row, payment_cred: paymentCred }
 }
 
 async function fetchAssetUtxos() {
