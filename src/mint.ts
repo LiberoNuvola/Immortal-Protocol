@@ -95,6 +95,7 @@ import {
 } from './gameRules'
 
 import {
+  assertExpiryIssuanceStateMatchesAuthoritative,
   crystallizeTicketExpiry,
   type PreRichExpiryIssuanceState,
   type PreRichExpiryPolicy,
@@ -1287,25 +1288,30 @@ async function mintSerialNFTInternal(
     )
   }
 
-  const expiryIssuanceState = opts.expiryIssuanceState ?? (
-    requireCarrierBinding && carrierObservation
-      ? {
-          issuanceStateHash: authoritativeAdmission.stateHash,
-          economicEpoch: carrierObservation.stateVersion,
-          currentActiveClass: carrierObservation.state.control.currentActiveClass,
-          highestClassEverActivated: carrierObservation.state.control.highestClassEverActivated,
-          eev: authoritativeAdmission.preEEV,
-          unresolvedReserve: carrierObservation.state.unresolvedReserve,
-          unresolvedTicketCount: carrierObservation.state.unresolvedTicketCount,
-        }
-      : undefined
-  )
-
-  if (!expiryIssuanceState) {
+  if (!requireCarrierBinding || !carrierObservation) {
     throw new Error(
-      'verified expiry issuance state is required unless the authoritative V3 Issue admission supplies the pre-transition snapshot',
+      'expiry issuance requires the authenticated V3 carrier observation and Issue admission',
     )
   }
+
+  const authoritativeExpiryIssuanceState: PreRichExpiryIssuanceState = {
+    issuanceStateHash: authoritativeAdmission.stateHash,
+    economicEpoch: carrierObservation.stateVersion,
+    currentActiveClass: carrierObservation.state.control.currentActiveClass,
+    highestClassEverActivated: carrierObservation.state.control.highestClassEverActivated,
+    eev: authoritativeAdmission.preEEV,
+    unresolvedReserve: carrierObservation.state.unresolvedReserve,
+    unresolvedTicketCount: carrierObservation.state.unresolvedTicketCount,
+  }
+
+  if (opts.expiryIssuanceState) {
+    assertExpiryIssuanceStateMatchesAuthoritative(
+      opts.expiryIssuanceState,
+      authoritativeExpiryIssuanceState,
+    )
+  }
+
+  const expiryIssuanceState = authoritativeExpiryIssuanceState
 
   const expiry = crystallizeTicketExpiry(
     opts.expiryPolicy,
