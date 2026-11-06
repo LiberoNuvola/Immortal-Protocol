@@ -46,6 +46,52 @@ export const preRichExpiryPolicyV1: PreRichExpiryPolicy = {
 }
 
 
+export type CardanoIssueTimeConversion = {
+  unixTimeToSlot: (unixTimeMs: number) => number
+  slotToUnixTime: (slot: number) => number
+}
+
+export type CardanoIssueTimeAnchor = {
+  validityStartSlot: number
+  issuedAt: bigint
+}
+
+/**
+ * Select a conservative issuance floor from the exact Lucid slot conversion.
+ * The returned time is the beginning of the selected slot, and the caller
+ * must put that same slot in the transaction validity-start interval.
+ */
+export function deriveCardanoIssueTimeAnchor(
+  candidateNowMs: bigint,
+  validityUpperBoundSlot: number,
+  conversion: CardanoIssueTimeConversion,
+): CardanoIssueTimeAnchor {
+  if (candidateNowMs < 0n || candidateNowMs > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('candidate issue time must be a non-negative safe millisecond value')
+  }
+  if (!Number.isSafeInteger(validityUpperBoundSlot) || validityUpperBoundSlot < 0) {
+    throw new Error('Issue validity upper-bound slot must be a non-negative safe integer')
+  }
+  const candidateSlot = conversion.unixTimeToSlot(Number(candidateNowMs))
+  if (!Number.isSafeInteger(candidateSlot) || candidateSlot < 0) {
+    throw new Error('Lucid returned an invalid Issue validity-start slot')
+  }
+  const issuedAt = conversion.slotToUnixTime(candidateSlot)
+  if (!Number.isSafeInteger(issuedAt) || issuedAt < 0) {
+    throw new Error('Lucid returned an invalid Issue slot-start time')
+  }
+  if (conversion.unixTimeToSlot(issuedAt) !== candidateSlot) {
+    throw new Error('Lucid Issue slot/time conversion is not reversible at the selected slot')
+  }
+  if (BigInt(issuedAt) > candidateNowMs) {
+    throw new Error('Issue slot-start time cannot be later than the candidate time')
+  }
+  if (candidateSlot >= validityUpperBoundSlot) {
+    throw new Error('Issue validity-start slot must precede the authenticated validity upper bound')
+  }
+  return { validityStartSlot: candidateSlot, issuedAt: BigInt(issuedAt) }
+}
+
 export type CrystallizedTicketExpiry = {
   issuedAt: bigint
   expiresAt: bigint
