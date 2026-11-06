@@ -143,6 +143,8 @@ The regenerated qualification artifact reports:
 
 This is an exact-source, read-only qualification of the **direct physical tUSDM EEV profile only**. It does not authorize deployment or Issue, does not certify ProtectedCapital PA1–PA7, and does not qualify a USD/USDM market price. The same run again observed the Oracle State quote as `STALE` and `externalPriceSourceVerified=false`.
 
+A second run repeated the same read-only qualification on the audit HEAD `94e0349619d2d3f7ad6b8509a82c0e3f9f586bbf`: [run 42174026556](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42174026556) completed **SUCCESS**. It again reported `OBSERVED_NOT_QUALIFIED` for the source-set, `qualified` for EV1–EV7, `deploymentApproval=NOT_CREATED`, physical quantity `1,000,000,000`, verified direct-USDM amount `100,000`, and Oracle `STALE` (`2,465,023,858 ms` age vs `3,600,000 ms` maximum). Its regenerated qualification digest is `1601cf93ecb23c1e10e3a948347c929e028852a22585df3c97c9b23654996af1`; artifact ID `13482555669`.
+
 Artifact: `preprod-eev-qualified-source-5c66893db29ab62c16cdf0514e73afa210627e46` (artifact ID `13482152037`).
 
 ## 7. What the evidence establishes
