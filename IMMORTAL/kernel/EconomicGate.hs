@@ -21,11 +21,15 @@ data EconomicGateInput = EconomicGateInput
   { egiAuthoritativeTruthVerified :: Bool
   , egiEEVFresh :: Bool
   , egiObligationsComplete :: Bool
+  -- | EEV in the canonical economic state's unit basis. For PRE-RICH V1,
+  -- this is IMMORTAL reference units after exact adapter normalization.
   , egiEEV :: Integer
   -- | Immediately executable economic liquidity available to the action.
   -- This is distinct from EEV: EEV may include value that is economically
   -- executable over a wider horizon, while the action may require a
   -- present-settlement capacity check.
+  -- It uses the same unit basis as egiRequiredImmediateLiquidity; PRE-RICH V1
+  -- uses USDM sub-units for both.
   , egiAvailableExecutableLiquidity :: Integer
   -- | Immediate liquidity that must be spendable by the candidate action.
   -- Zero means the action has no immediate settlement requirement.
