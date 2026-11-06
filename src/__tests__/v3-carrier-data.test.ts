@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Data } from '../node_modules/lucid-cardano/esm/mod.js'
+import { Data } from '../../node_modules/lucid-cardano/esm/mod.js'
 
 import {
   buildIssueCarrierAction,
