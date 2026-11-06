@@ -399,20 +399,17 @@ saleOracleReference =
       (inlineDatum (OracleDatum emptyByteString emptyByteString ticketPrice oracleNow oraclePublisher))
       Nothing)
 
-saleRegistryReference :: TxInInfo
-saleRegistryReference =
-  let fakePending = pendingRegistry { brRelayerPkh = buyerPkh }
-  in TxInInfo
-      (TxOutRef (TxId (bytes [78 .. 109])) 0)
-      (outputAt (scriptAddress registryHash) mempty (inlineDatum fakePending))
+saleRegistryReference :: BeaconRegistryDatum -> TxInInfo
+saleRegistryReference registryDatum =
+  TxInInfo
+    (TxOutRef (TxId (bytes [78 .. 109])) 0)
+    (outputAt (scriptAddress registryHash) mempty (inlineDatum registryDatum))
 
-saleTxInfo :: TxInfo
-saleTxInfo =
+saleTxInfo :: BeaconRegistryDatum -> TxInfo
+saleTxInfo registryDatum =
   let
     poolValue = singleton adaSymbol adaToken 10000000
-    ticketOutputValue =
-      singleton adaSymbol adaToken 3000000
-        <> singleton ticketPolicy ticketName 1
+    ticketOutputValue = singleton adaSymbol adaToken 3000000
     oracleReference = saleOracleReference
     treasuryOutput =
       outputAt (scriptAddress treasuryHash)
@@ -429,7 +426,7 @@ saleTxInfo =
           (outputAt (scriptAddress counterHash) mempty (inlineDatum (0 :: Integer)))
       , poolInput
       ]
-      [saleRegistryReference, oracleReference]
+      [saleRegistryReference registryDatum, oracleReference]
       [ outputAt (scriptAddress counterHash) mempty (inlineDatum (1 :: Integer))
       , outputAt (scriptAddress prizeHash) ticketOutputValue (inlineDatum salePrizeDatum)
       , treasuryOutput
@@ -448,10 +445,10 @@ saleTxInfo =
       AssocMap.empty
       (TxId (bytes [174 .. 205]))
 
-applyPositivePriceMint :: PlutusTx.CompiledCode BuiltinUnit
-applyPositivePriceMint =
+applyPositivePriceMint :: BeaconRegistryDatum -> PlutusTx.CompiledCode BuiltinUnit
+applyPositivePriceMint registryDatum =
   let
-    context = ScriptContext saleTxInfo (Minting ticketPolicy)
+    context = ScriptContext (saleTxInfo registryDatum) (Minting ticketPolicy)
     p1 = PlutusTx.unsafeApplyCode compiledPolicyFactory
       (Lift.liftCode plcVersion100 counterHash)
     p2 = PlutusTx.unsafeApplyCode p1
@@ -474,8 +471,13 @@ applyPositivePriceMint =
 
 main :: IO ()
 main = do
-  assertEvaluatesSuccessfully applyPositivePriceMint
-  putStrLn "CHARACTERIZATION: positive-price MintPolicy CEK accepts a Pending Registry reference whose brRelayerPkh is buyer-controlled; synthetic Oracle quote only"
+  assertEvaluatesSuccessfully
+    (applyPositivePriceMint (pendingRegistry { brRelayerPkh = buyerPkh }))
+  putStrLn "CHARACTERIZATION: positive-price MintPolicy CEK accepts a buyer-controlled Pending Registry reference without Registry spending or relayer authorization; synthetic Oracle quote only"
+
+  assertEvaluatesWithError
+    (applyPositivePriceMint (pendingRegistry { brRound = btRound target - 1 }))
+  putStrLn "PASS: positive-price MintPolicy rejects a Pending Registry with a mismatched round"
 
   let publish = RegistryPublish mcHash materiosContext
   assertEvaluatesSuccessfully
