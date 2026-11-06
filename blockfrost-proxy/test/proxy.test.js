@@ -40,7 +40,7 @@ test('route allowlist is exact and method-bound', () => {
   assert.equal(validateRoute('GET', '/blockfrost/addresses/a/utxos?page=1001', new URLSearchParams('page=1001')), null)
   assert.equal(validateRoute('GET', '/blockfrost/addresses/a/utxos?page=1&page=2', new URLSearchParams('page=1&page=2')), null)
   assert.equal(validateRoute('GET', '/blockfrost/epochs/latest/parameters?page=2', new URLSearchParams('page=2')), null)
-  assert.equal(validateRoute('GET', '/blockfrost/assets/' + 'd'.repeat(56) + '/addresses?count=2', new URLSearchParams('count=2')), '/assets/' + 'd'.repeat(56) + '/addresses?count=2')
+  assert.equal(validateRoute('GET', '/blockfrost/assets/' + 'd'.repeat(56) + '/addresses', new URLSearchParams('count=2')), '/assets/' + 'd'.repeat(56) + '/addresses?count=2')
 })
 test('rejects missing and foreign origins without wildcard CORS', async () => {
   const app = makeApp()
