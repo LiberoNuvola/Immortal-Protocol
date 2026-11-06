@@ -100,14 +100,15 @@ type HaskellDecisionEnvelope = {
   }
 }
 
-const BIGINT_JSON_NUMBER_PREFIX = '__IMMORTAL_BIGINT_JSON_NUMBER__:'
+const BIGINT_JSON_NUMBER_MARKER = '__IMMORTAL_BIGINT_JSON_NUMBER__'
+const BIGINT_JSON_NUMBER_PREFIX = BIGINT_JSON_NUMBER_MARKER + ':'
 
 function assertNoBigIntJsonNumberMarker(
   value: unknown,
   seen: Set<object> = new Set(),
 ): void {
   if (typeof value === 'string') {
-    if (value.includes(BIGINT_JSON_NUMBER_PREFIX)) {
+    if (value.includes(BIGINT_JSON_NUMBER_MARKER)) {
       throw new Error('Haskell Issue input contains a reserved BigInt JSON marker')
     }
     return
@@ -116,7 +117,7 @@ function assertNoBigIntJsonNumberMarker(
   if (seen.has(value)) return
   seen.add(value)
   for (const key of Object.keys(value)) {
-    if (key.includes(BIGINT_JSON_NUMBER_PREFIX)) {
+    if (key.includes(BIGINT_JSON_NUMBER_MARKER)) {
       throw new Error('Haskell Issue input contains a reserved BigInt JSON marker key')
     }
     assertNoBigIntJsonNumberMarker((value as Record<string, unknown>)[key], seen)
