@@ -19,6 +19,7 @@ on:
       - "scripts/collectSundaeSwapUsdmReadOnly.mjs"
       - "scripts/observeSundaeSwapV3UsdmUtxosReadOnly.mjs"
       - "scripts/observeMuesliSwapUsdmUtxosReadOnly.mjs"
+      - "docs/COORDINATION/USDM_USD_MULTI_SOURCE_CROSS_REFERENCE.md"
       - "scripts/lib/muesliPoolDatum.mjs"
       - "scripts/observeMuesliSwapUsdmUtxosReadOnly.test.mjs"
       - "scripts/fixtures/muesliswap-usdm-mainnet-2026-10-31.json"
