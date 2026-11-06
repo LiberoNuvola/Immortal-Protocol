@@ -46,8 +46,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    # Public runtime configuration is injected only from repository variables.
-    # Missing Issue configuration remains fail-closed; no endpoint is hardcoded.
     env:
       VITE_COUNTER_SCRIPT_ADDRESS: ${{ vars.VITE_COUNTER_SCRIPT_ADDRESS }}
       VITE_TREASURY_ADDRESS: ${{ vars.VITE_TREASURY_ADDRESS }}
@@ -70,78 +68,59 @@ jobs:
       VITE_BLOCKFROST_PROXY_URL: ${{ vars.VITE_BLOCKFROST_PROXY_URL }}
       VITE_ISSUE_AUTHORITY_ENDPOINT: ${{ vars.VITE_ISSUE_AUTHORITY_ENDPOINT }}
       VITE_V3_CARRIER_FACTORY_URL: ${{ vars.VITE_V3_CARRIER_FACTORY_URL }}
-    # Public protocol pages do not require DEMETER/Preprod secrets at build time.
-    # PRE-RICH runtime actions remain fail-closed when authoritative evidence is absent.
     steps:
       - name: Checkout exact main head
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-
-      - name: Validate public PRE-RICH runtime configuration
+      - name: Validate public runtime configuration
         run: |
           if [ -z "$VITE_ISSUE_AUTHORITY_ENDPOINT" ]; then
-            echo "::notice::VITE_ISSUE_AUTHORITY_ENDPOINT is not configured; public Pages will build, but ticket issuance stays disabled."
+            echo "::notice::Issue authority is not configured; ticket issuance remains disabled."
           else
             node --input-type=module <<'NODE'
             const endpoint = new URL(process.env.VITE_ISSUE_AUTHORITY_ENDPOINT)
-            if (endpoint.protocol !== 'https:') {
-              throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must use HTTPS')
+            if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password || !/\/issue-admission$/.test(endpoint.pathname)) {
+              throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must be an HTTPS /issue-admission endpoint without embedded credentials')
             }
-            if (endpoint.username || endpoint.password) {
-              throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must not embed credentials')
+            const proxyValue = process.env.VITE_BLOCKFROST_PROXY_URL?.trim()
+            if (!proxyValue) throw new Error('Issue endpoint configured, but VITE_BLOCKFROST_PROXY_URL is missing')
+            const proxy = new URL(proxyValue)
+            if (proxy.protocol !== 'https:' || proxy.username || proxy.password || !/\/blockfrost\/?$/.test(proxy.pathname)) {
+              throw new Error('VITE_BLOCKFROST_PROXY_URL must be an HTTPS /blockfrost endpoint without embedded credentials')
             }
-            if (!/\/issue-admission$/.test(endpoint.pathname)) {
-              throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must target the /issue-admission route')
-            }
-            const proxyValue = process.env.VITE_BLOCKFROST_PROXY_URL?.trim()\n            if (!proxyValue) throw new Error('Issue endpoint configured, but VITE_BLOCKFROST_PROXY_URL is missing')\n            const proxy = new URL(proxyValue)\n            if (proxy.protocol !== 'https:' || proxy.username || proxy.password || !/\\/blockfrost\\/?$/.test(proxy.pathname)) {\n              throw new Error('VITE_BLOCKFROST_PROXY_URL must be an HTTPS /blockfrost endpoint without embedded credentials')\n            }\n            const required = [
-              'VITE_COUNTER_SCRIPT_ADDRESS',
-              'VITE_TREASURY_ADDRESS',
-              'VITE_TICKET_POLICY_ID',
-              'VITE_RELAYER_PKH',
-              'VITE_ORACLE_PUBLISHER_PKH',
-              'VITE_ORACLE_STATE_POLICY_ID',
-              'VITE_ORACLE_STATE_TOKEN_NAME_HEX',
-              'VITE_ORACLE_STATE_ADDRESS',
-              'VITE_B1_POOL_TOKEN_POLICY_ID',
-              'VITE_B1_POOL_TOKEN_NAME_HEX',
-              'VITE_V3_CARRIER_ADDRESS',
-              'VITE_V3_CARRIER_POLICY_ID',
-              'VITE_V3_CARRIER_TOKEN_NAME_HEX',
-              'VITE_B2_CONTROL_ADDRESS',
-              'VITE_B2_CONTROL_POLICY_ID',
-              'VITE_B2_CONTROL_TOKEN_NAME_HEX',
-              'VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS',
-              'VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS',
-              'VITE_BLOCKFROST_PROJECT_ID',
+            const required = [
+              'VITE_COUNTER_SCRIPT_ADDRESS', 'VITE_TREASURY_ADDRESS', 'VITE_TICKET_POLICY_ID',
+              'VITE_RELAYER_PKH', 'VITE_ORACLE_PUBLISHER_PKH', 'VITE_ORACLE_STATE_POLICY_ID',
+              'VITE_ORACLE_STATE_TOKEN_NAME_HEX', 'VITE_ORACLE_STATE_ADDRESS',
+              'VITE_B1_POOL_TOKEN_POLICY_ID', 'VITE_B1_POOL_TOKEN_NAME_HEX',
+              'VITE_V3_CARRIER_ADDRESS', 'VITE_V3_CARRIER_POLICY_ID', 'VITE_V3_CARRIER_TOKEN_NAME_HEX',
+              'VITE_B2_CONTROL_ADDRESS', 'VITE_B2_CONTROL_POLICY_ID', 'VITE_B2_CONTROL_TOKEN_NAME_HEX',
+              'VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS', 'VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS',
               'VITE_V3_CARRIER_FACTORY_URL',
             ]
             const missing = required.filter((key) => !process.env[key]?.trim())
-            if (missing.length) {
-              throw new Error('Issue endpoint configured, but required public runtime variables are missing: ' + missing.join(', '))
-            }
-            console.log('Issue endpoint URL and required public runtime variable presence validated (values redacted).')
-          NODE
+            if (missing.length) throw new Error('Issue endpoint configured, but required public runtime variables are missing: ' + missing.join(', '))
+            console.log('Public runtime configuration validated (values redacted).')
+            NODE
           fi
-
-      - name: Build V5 + PRE-RICH DApp
-        run: npm run build
-
+      - name: Build with provider-key canary
+        env:
+          VITE_BLOCKFROST_PROJECT_ID: IMMORTAL_B42_BUILD_CANARY_DO_NOT_SHIP
+        run: |
+          npm run build
+          node scripts/security/assert-no-browser-provider-secret.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
-
   deploy:
     needs: build
     runs-on: ubuntu-24.04
