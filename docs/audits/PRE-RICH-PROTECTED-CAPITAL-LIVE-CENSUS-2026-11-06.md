@@ -89,7 +89,33 @@ Koios observed slot `138261586`; Ogmios observed slot `138261834`, 248 slots lat
 
 Artifact: `immortal-cardano-preprod-context` (run artifact `13481991400`).
 
-## 5. What the evidence establishes
+## 5. Oracle State liveness and freshness — same read-only campaign
+
+The same workflow was extended to run the existing `preprod-oracle-state-liveness.mjs` observer against a separate copy of the historical identity manifests, so its refreshed observation packet does not mutate the inputs used by the ProtectedCapital census.
+
+[Extended read-only Preprod census and Oracle liveness — run 42172705850](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42172705850) completed successfully on commit `b7f15034204b87c63c2400b969a9f11b8829110d`.
+
+The observer found the exact configured Oracle State singleton still live at:
+`fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`.
+
+It decoded the live inline datum and compared its timestamp to the current Koios Preprod chain-tip block time:
+- observation time (chain time): `2026-11-06T06:09:44.000Z`;
+- timestamp encoded in datum: `2026-10-08T17:38:50.142Z`;
+- quote age: `2,464,253,858 ms` (about 28.52 days);
+- configured maximum age: `3,600,000 ms` (1 hour);
+- freshness: **STALE**; `withinMaxAge=false`.
+
+The observer explicitly records:
+- `externalPriceSourceVerified=false`;
+- `configuredPublisherTrustIndependentlyEliminated=false`;
+- `sourceQualificationStatus=NOT_PROVEN_BY_DATUM_ALONE`;
+- the observed quote shape is a configured fixed compatibility quote, not evidence of a verified external market-price source.
+
+This establishes that the singleton/out-reference is still present and structurally decodable, but its quote timestamp is far outside its configured freshness window. The read-only job did not refresh or replace the Oracle datum, and it did not assert an external USD/USDM or ADA/USD source.
+
+Artifact: `pre-rich-protected-capital-live-census-42172705850` (artifact ID `13481587687`).
+
+## 6. What the evidence establishes
 
 At the observed times, two different Cardano query paths returned a concordant view for the exact queried addresses:
 - no live UTxO at the configured/derived PrizeValidator address;
@@ -99,7 +125,7 @@ At the observed times, two different Cardano query paths returned a concordant v
 
 This is a bounded current-state observation. It does not prove historical emptiness or the completeness of every source that could contribute to ProtectedCapital.
 
-## 6. Non-claims and remaining blockers
+## 7. Non-claims and remaining blockers
 
 The following fields intentionally remain false in the Koios output:
 - `deploymentManifestAuthorityCryptographicallyVerified=false`;
