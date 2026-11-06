@@ -1,4 +1,5 @@
 name: Pyth Signed Update — Preprod Ledger Probe
+run-name: Pyth Preprod preparation-only — ${{ github.sha }}
 
 on:
   push:
