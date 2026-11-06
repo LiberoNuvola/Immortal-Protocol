@@ -97,8 +97,8 @@ function baseIssueOptions(lucid, overrides = {}) {
     observedAt: 123n,
     authoritativeInputs: {
       poolUsdmValue: 200_000n,
-      preEEV: 1_000n,
-      candidateEEV: 1_000n,
+      preEEV: 200_000n,
+      candidateEEV: 200_000n,
       requiredImmediateLiquidity: 1n,
       truthVerified: true,
       eevFresh: true,
@@ -152,8 +152,8 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
     observedAt: 123n,
     authoritativeInputs: {
       poolUsdmValue: 200_000n,
-      preEEV: 1_000n,
-      candidateEEV: 1_000n,
+      preEEV: 200_000n,
+      candidateEEV: 200_000n,
       requiredImmediateLiquidity: 1n,
       truthVerified: true,
       eevFresh: true,
@@ -204,11 +204,29 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
   assert.equal(result.decisionInput.preState.control.currentActiveClass, 0n)
   assert.equal(result.decisionInput.classId, 0n)
   assert.equal(result.decisionInput.observationReference.includes(ref('c')), true)
+  // Signed EEV remains auditable in USDM sub-units, while Haskell receives RU.
+  assert.deepEqual(result.signedEevUsdmSubunits, {
+    preEEV: 200_000n,
+    candidateEEV: 200_000n,
+  })
+  assert.deepEqual(result.eevUnitConversion, {
+    sourceUnit: 'USDM_SUBUNITS',
+    sourceSubunitsPerReferenceUnit: 100n,
+    targetUnit: 'IMMORTAL_REFERENCE_UNITS',
+    conversion: 'EXACT_DIVIDE_BY_100',
+    preEEVReferenceUnits: 2_000n,
+    candidateEEVReferenceUnits: 2_000n,
+  })
+  assert.equal(result.decisionInput.preEEV, 2_000n)
+  assert.equal(result.decisionInput.candidateEEV, 2_000n)
+  // Immediate liquidity remains in raw USDM sub-units: no /100 here.
+  assert.equal(result.decisionInput.availableExecutableLiquidity, 200_000n)
+  assert.equal(result.decisionInput.requiredImmediateLiquidity, 1n)
 })
 
 test('passes the decoded B1 datum liquidity to the authenticated authority source', async () => {
   let observedPoolDatumLiquidity
-  await readPreprodIssueObservation({
+  const result = await readPreprodIssueObservation({
     lucid: fakeLucid(),
     counterAddress: 'counter',
     b1PrizePoolAddress: 'pool',
@@ -226,8 +244,8 @@ test('passes the decoded B1 datum liquidity to the authenticated authority sourc
       observedPoolDatumLiquidity = request.poolDatumTotalLiquidity
       return {
         poolUsdmValue: 200_000n,
-        preEEV: 1_000n,
-        candidateEEV: 1_000n,
+        preEEV: 200_000n,
+        candidateEEV: 200_000n,
         requiredImmediateLiquidity: 1n,
         truthVerified: true,
         eevFresh: true,
@@ -252,6 +270,9 @@ test('passes the decoded B1 datum liquidity to the authenticated authority sourc
     },
   })
   assert.equal(observedPoolDatumLiquidity, 200_000n)
+  assert.equal(result.decisionInput.preEEV, 2_000n)
+  assert.equal(result.decisionInput.candidateEEV, 2_000n)
+  assert.equal(result.decisionInput.availableExecutableLiquidity, 200_000n)
 })
 
 test('fails closed when the carrier singleton is ambiguous', async () => {
@@ -370,9 +391,9 @@ test('fails closed when authoritative boolean evidence is not actually boolean',
       price: 1,
       observedAt: 123n,
       authoritativeInputs: {
-        poolUsdmValue: 1n,
-        preEEV: 1n,
-        candidateEEV: 1n,
+        poolUsdmValue: 200_000n,
+        preEEV: 200_000n,
+        candidateEEV: 200_000n,
         requiredImmediateLiquidity: 1n,
         truthVerified: 'false',
         eevFresh: true,
@@ -435,6 +456,56 @@ test('rejects non-divisible B1 monetary sub-units rather than rounding into V3 u
   await assert.rejects(
     () => readPreprodIssueObservation(baseIssueOptions(lucid)),
     /pendingLiabilities is not exactly representable in IMMORTAL reference units/,
+  )
+})
+
+test('converts signed direct-USDM EEV to reference units only by exact division', async () => {
+  const cases = [
+    {
+      label: 'preEEV',
+      override: { preEEV: 200_001n, candidateEEV: 200_000n },
+      error: /signed preEEV does not match the direct-USDM Pool observation/,
+    },
+    {
+      label: 'candidateEEV',
+      override: { preEEV: 200_000n, candidateEEV: 200_001n },
+      error: /signed candidateEEV does not match the direct-USDM Pool observation/,
+    },
+  ]
+
+  for (const scenario of cases) {
+    const options = baseIssueOptions(fakeLucid())
+    Object.assign(options.authoritativeInputs, scenario.override)
+    await assert.rejects(
+      () => readPreprodIssueObservation(options),
+      scenario.error,
+      scenario.label,
+    )
+  }
+})
+
+test('rejects direct-USDM Pool value that differs from the B1 datum totalLiquidity', async () => {
+  const options = baseIssueOptions(fakeLucid())
+  options.authoritativeInputs.poolUsdmValue = 199_900n
+  options.authoritativeInputs.preEEV = 199_900n
+  options.authoritativeInputs.candidateEEV = 199_900n
+
+  await assert.rejects(
+    () => readPreprodIssueObservation(options),
+    /authenticated direct-USDM Pool value does not match B1PrizePool totalLiquidity/,
+  )
+})
+
+test('rejects non-divisible signed EEV sub-units instead of flooring into V3 units', async () => {
+  const lucid = mutatePoolField(fakeLucid(), 0, 200_001n)
+  const options = baseIssueOptions(lucid)
+  options.authoritativeInputs.poolUsdmValue = 200_001n
+  options.authoritativeInputs.preEEV = 200_001n
+  options.authoritativeInputs.candidateEEV = 200_001n
+
+  await assert.rejects(
+    () => readPreprodIssueObservation(options),
+    /preEEV is not exactly representable in IMMORTAL reference units/,
   )
 })
 
@@ -521,8 +592,8 @@ test('decodes Lucid CBOR string datums', async () => {
     observedAt: 123n,
     authoritativeInputs: {
       poolUsdmValue: 200_000n,
-      preEEV: 1_000n,
-      candidateEEV: 1_000n,
+      preEEV: 200_000n,
+      candidateEEV: 200_000n,
       requiredImmediateLiquidity: 1n,
       truthVerified: true,
       eevFresh: true,
