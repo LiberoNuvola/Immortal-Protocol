@@ -817,3 +817,20 @@ Its pre-fee reserve ratio is approximately **5.4101069997 ADA per USDM**. The Mi
 - CSwap artifact [#13492591337](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196712888/artifacts/13492591337), ZIP SHA-256 `2c55327669f65ffcc0d30dfd73673d21244682213441407e812415fd5b7bf2a3`: one exact-USDM candidate at the official payment credential and a datum-decoding discovery result. The observer explicitly classifies it as pool discovery, not full contract qualification; no price or executable depth is inferred.
 
 **Updated market-source view:** a second structurally valid ADA/USDM DEX pool is present on-chain (Sundae V3), but its latest pool update is several hours older than Minswap. Muesli candidate is old with no LP unit in the observed Value, and CSwap remains discovery-only. The only contemporaneous indicative cross-rate retained in Section 42 remains the Minswap V2 datum reserve ratio combined with four same-run CEX midpoints; it is pre-fee, time-skewed and not qualified. No price averaging, same-time multi-venue consensus, peg, source quorum, or settlement/EEV qualification is claimed.
+
+
+## 44. Agent A — exact-head EEV EV1–EV7 repeated on 6 Nov 2026; approval and full solvency gates remain open
+
+After the Agent A market matrix commit, the workflow [PRE-RICH Preprod EEV — Source Qualification Only #42197942891](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42197942891) completed successfully on the exact preceding HEAD `61ac5825c8cc6c594d260b78628bf3c20ea16637`.
+
+- Profile: `PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1`, status `qualified`.
+- EV1–EV7: all passed.
+- Direct tUSDM source: 1,000,000,000 atomic units → 100,000 USDM subunits.
+- Qualification evidence hash: `6618d9c82a8dc8ac2fec276cf236de038fb4c0955101309972502d346da432b5`.
+- Deployment approval: `NOT_CREATED`.
+- Oracle State datum age: `2477440858` ms against the configured `3600000` ms max age — `STALE`.
+- ProtectedCapital census: `INTERNAL_RECONCILIATION_ONLY`; PrizeValidator UTxO count 0; source completeness authority and provider attestation false.
+
+This is another exact-head repeat of the direct physical-source profile. It does not qualify the external USD/USDM reference, establish PA1–PA7, full ProtectedCapital completeness, R1/Kc/QNE/Ω, or authorize first Issue. The current branch subsequently advanced by documentation-only commit `3143969d...`; this EEV PASS is explicitly bound to SHA `61ac5825...`, not claimed as a new exact-head PASS on `3143969d...`.
+
+The same SHA's general conformance workflows passed for Declaration, Governance, Cardano Adapter Sale, Portability and Security Credential Boundary. Documentation Link Check remains a failure for the previously identified Agent C relative link to `docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md`; Agent A did not modify the Agent C file. No approval, transaction, signature, deployment, wallet action or ledger write occurred.
