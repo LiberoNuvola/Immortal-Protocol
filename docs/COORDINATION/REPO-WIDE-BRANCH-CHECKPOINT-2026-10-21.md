@@ -12,7 +12,7 @@
 **Status:** READ-ONLY BASELINE RECORDED; review and analytic follow-through open.
 
 New baseline:
-- `docs/COORDINATION/AGENT-A-R1-DYNAMIC-MARGIN-STATISTICAL-RESERVE-BASELINE-2026-11-06.md` (updated with exact moment reproduction and symbolic lifecycle vectors (latest report commit `f62b22c0ac80319810094d6d5a6cbe6a48d05e3c`))
+- `docs/COORDINATION/AGENT-A-R1-DYNAMIC-MARGIN-STATISTICAL-RESERVE-BASELINE-2026-11-06.md` (updated with exact moment reproduction and symbolic lifecycle vectors (latest report commit `9c6b47aec26e28a8b10d57d8064b1270baedb244`))
 - Commit introducing the baseline: `75f3dbb81a3740878b566528a37e5e8456de83bb`
 
 The audit distinguishes:
