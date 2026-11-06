@@ -1,6 +1,6 @@
 import './style.css'
 import wallet from './wallet'
-import { PRE_POLICY_ID, PRE_ASSET_NAME_HEX, TREASURY_ADDRESS, BLOCKFROST_PROJECT_ID } from './config'
+import { PRE_POLICY_ID, PRE_ASSET_NAME_HEX, TREASURY_ADDRESS, BLOCKFROST_PROXY_URL } from './config'
 import { treasuryValidator } from './loadValidator'
 import { resolveCanonicalTreasuryAddress } from './treasuryIdentity'
 
