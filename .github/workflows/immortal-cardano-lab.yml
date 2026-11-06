@@ -89,6 +89,10 @@ jobs:
         with:
           update-hackage: ${{ steps.plutus-cache.outputs.cache-matched-key == '' }}
 
+      # Generate validators from the exact source snapshot tested below.
+      - name: Generate fresh Plutus validator artifacts
+        run: cabal run exe:export-scripts
+
       - name: Run universal economic portability vectors against reference kernel
         run: |
           set -euo pipefail
@@ -96,10 +100,6 @@ jobs:
           # Run from repository root: cabal.project package paths (including ./plutus)
           # are resolved relative to the current working directory by this CI setup.
           cabal --project-file=cabal.project exec -- runghc -iIMMORTAL/kernel -iIMMORTAL/state Adapter/REFERENCE/export/ReferenceEconomicConformance.hs | tee audit/yaci-evidence/reference-conformance.txt
-
-      # Generate validators from the exact source snapshot tested below.
-      - name: Generate fresh Plutus validator artifacts
-        run: cabal run exe:export-scripts
 
       - name: Compile Claim validator source conformance
         working-directory: plutus
