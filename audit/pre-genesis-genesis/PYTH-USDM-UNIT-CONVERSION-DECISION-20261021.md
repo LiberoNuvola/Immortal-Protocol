@@ -720,3 +720,77 @@ After the new source-observation sections were committed, [PRE-RICH Preprod EEV 
 This is the third successful EV1–EV7 exact-head requalification across successive documentation/research commits, confirming reproducibility of the direct physical-source profile. It does not qualify the USD/USDM market reference, does not establish PA1–PA7 or full ProtectedCapital completeness, and does not close R1/Kc/QNE/Ω or authorize the first Issue.
 
 On the same SHA, five general conformance workflows passed: Security Credential Boundary, Portability, Governance Adversarial Lab, Protocol Declaration and Cardano Adapter Sale. Documentation Link Check remains the single failure because of the already-known broken relative link in the Agent C B3 archive mission document; Agent A has not edited that file. No wallet, signature, transaction, deployment, approval or ledger mutation occurred.
+
+
+## 42. Agent A — same-run Mainnet Minswap V2 / SuperCardano / ADA-USD market snapshot; indicative cross-rate only — 2026-11-06
+
+The new read-only workflow [Agent A — USDM / ADA and ADA / USD Live Market Snapshot #42196843453](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196843453) completed successfully on exact source SHA `d3c58b89cdb047afceb27264508b8809899a75ad`. Its single artifact contains the raw Koios Minswap V2 UTxO/datum census, Minswap API pools, SuperCardano exact-USDM indexer/trade data, ADA/USD public references and the reconciliation result.
+
+Artifact [13491269808](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196843453/artifacts/13491269808), ZIP SHA-256 `84c11e8678ae4253f888e062053e316a4db689f94b9cb8ff560136fa9da2f67c`.
+
+### Exact Mainnet Minswap V2 pool — raw UTxO and datum
+
+- Network: Cardano Mainnet; exact Moneta USDM asset policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`, asset name `0014df105553444d`, 6 decimals.
+- UTxO: `4c309cdae12fd7c020d3bb6e22335dce9d97d9766b76b51da4f00cba1e476618#2`.
+- Pool address: `addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a`.
+- Datum hash: `14a0aa6b985a70faf518c68810a7368a2b2a42d0416ca177b76ee105c935c94d`.
+- PoolDatum structural validation: `MATCH`; exact pool authentication NFT quantity 1; expected V2 payment credential and batching stake credential match; no decoder/identity/reserve-boundary reasons.
+- Datum reserves used by the V2 pricing curve: ADA `1,969,235.300584` and USDM `363,045.499637` (both assets have 6 decimal places). Raw Value contains additional surplus above the datum reserves; the surplus is not included in the spot-price calculation.
+- Fee fields: base fee numerator 75 / fee basis 10,000 (0.75%); dynamic fee disabled. No fee is subtracted from the indicative ratio below.
+- The pool output's transaction context is block height 14,165,077, absolute slot 202,390,623, block time `2026-11-06T09:21:54Z`. Koios asset/UTxO collection was captured 09:42:03–09:43:19Z.
+
+### Same-run cross-indexer reconciliation
+
+- Koios: 31 exact-Moneta-USDM UTxO candidates at the official V2 validator address; 31/31 validated structurally.
+- Minswap API: 43 pools across queried protocols, 31 Minswap V2 pools.
+- Minswap API ↔ Koios: **31/31** exact LP identity and pair matches; zero API-only, zero on-chain-only, zero pair mismatches, zero unqualified on-chain candidates.
+- SuperCardano: 81 exact-Moneta-USDM pool records across 9 venue labels; 31 Minswap V2 records. On the same pool set, exact pool identity + pair + reserve agreement is **31/31**, with zero pair mismatch and zero reserve mismatch.
+- SuperCardano source watermark: block 14,165,112 / `2026-11-06T09:36:55Z`. The target pool's source transaction time was 09:21:54Z, 901 seconds before that watermark.
+
+This is strong same-pool identity and datum/reserve reconciliation across the chain observer and two indexing/API views. These are not 31 independent DEX venues or 31 independent price observations.
+
+### Current ADA/USD direct CEX references from the same workflow
+
+The public collector returned 9/11 references: 5/7 CEX spot endpoints, 3/3 aggregators and 1/1 DIA Free test-only API. Gemini returned HTTP 404 and Bitfinex HTTP 500; both remain unavailable rather than being omitted.
+
+Four direct CEX venues returned bid and ask, so their observed midpoint range is **0.184445–0.184520 USD per ADA**:
+- Coinbase: 0.184450 (bid 0.184440 / ask 0.184460), source time 09:43:17.949Z.
+- Kraken: 0.1844855 (bid 0.184451 / ask 0.184520); provider timestamp not supplied, capture 09:43:20.973Z.
+- Bitstamp: 0.184445 (bid 0.184410 / ask 0.184480), provider epoch converted to 09:43:21Z.
+- Crypto.com Exchange: 0.184520 (bid 0.184510 / ask 0.184530), source time 09:43:20.746Z.
+- BTSE returned last price 0.184700 but no bid/ask, so it is not included in the midpoint range.
+
+Aggregator references are kept separate: CoinPaprika 0.18460336 (provider time 09:40:14Z), CoinLore 0.184871 (no provider time), CoinGecko 0.184569 (provider time 09:42:15Z). DIA Free API returned 0.18456631 at 09:41:59Z, but it is explicitly test/evaluation only; the returned signature string was not cryptographically verified. None of these aggregate/test references is counted as another CEX venue.
+
+### Indicative cross-rate arithmetic — not a qualified price
+
+The exact Minswap V2 datum reserve ratio is:
+- ADA per USDM = `1,969,235.300584 / 363,045.499637` = approximately **5.424210746457368**.
+- USDM per ADA is the inverse, approximately 0.18435861856088734.
+
+Combining that reserve ratio with each same-run direct CEX ADA/USD midpoint gives the following **pre-fee, zero-size indicative USD per USDM** values:
+
+| CEX midpoint source | ADA/USD midpoint | Indicative USD/USDM |
+| --- | ---: | ---: |
+| Bitstamp | 0.184445 | 1.00046855 |
+| Coinbase | 0.184450 | 1.00049567 |
+| Kraken | 0.1844855 | 1.00068823 |
+| Crypto.com | 0.184520 | 1.00087537 |
+
+The resulting indicative range is **1.00046855–1.00087537 USD per USDM**. This is an arithmetic cross-reference, not a price oracle, executable quote, peg finding, reserve/redemption valuation or EEV input.
+
+**Material limitations:**
+1. The Minswap pool reserve ratio is a pre-fee marginal spot from a single ADA/USDM pool. The on-chain base fee is 0.75%; fees, curve impact, order size, route selection and execution slippage are not included. No ±1% depth or manipulation-cost bound was qualified by this workflow.
+2. Pool transaction time is 09:21:54Z; CEX quotes are captured around 09:43:18–09:43:21Z. The approximately 21-minute time gap means the ratio is not a same-instant atomic market snapshot. The SuperCardano indexer watermark is 09:36:55Z and independently shows the pool datum reserves at that time, but not an atomic link to the later CEX midpoint.
+3. CEX quotes are public spot references, not a Cardano ledger-bound authenticated ADA/USD oracle. Aggregator and DIA test-only observations are correlated classes and are deliberately not folded into the four-venue midpoint range.
+4. The same-pool Minswap API and SuperCardano views corroborate one pool's identity and reserves; they are not independent trading venues. SuperCardano's broader token-level aggregate ADA price is not used in the calculation.
+5. The formula does not imply USDM parity with USD. It does not establish source governance, manipulation resistance, finality/snapshot atomicity, authorized consumer binding, or a transaction-bound quote witness.
+
+Artifact JSON SHA-256:
+- raw Minswap V2 UTxOs: `94de4332f544765a31de4a741f5c283dfce53d7a2999260c5db64a21dab41433`
+- Minswap API: `3e8b09a291d13c0ce4f9056d8670f2e77cb7e77f176a4da16527ade6ec2d0519`
+- SuperCardano: `a05b2844db5ecdcd95d6f8eb1ac42fa41ec78d74f78793065e7668b9698287be`
+- ADA/USD references: `35d9e3fcd618492d31825793ee589a5c4b8197aa64c13a456d3c39eee839a368`
+- same-run reconciliation: `5c9e0e50e23456da410a04e88624bff931a8d9cab7e39380d34511f080e20384`
+
+**Disposition:** CURRENT MAINNET ADA/USDM MARKET OBSERVED AND CROSS-INDEXER RECONCILED / INDICATIVE USD/USDM RANGE COMPUTED FROM FOUR CEX MIDPOINTS / PRE-FEE AND TIME-SKEWED / NOT QUALIFIED FOR SETTLEMENT OR EEV. The USD/USDM Option B qualification remains OPEN; no USD peg, oracle quorum, PA1–PA7, deployment approval or first-Issue authority is inferred. No wallet, signature, oracle refresh, transaction, deployment, or ledger mutation occurred.
