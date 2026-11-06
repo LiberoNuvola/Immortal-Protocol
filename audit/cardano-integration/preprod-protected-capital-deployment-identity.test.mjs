@@ -99,7 +99,7 @@ function baseManifests() {
       statePolicyId: 'a'.repeat(56),
       stateTokenNameHex: '01',
       publisherPkh: 'b'.repeat(56),
-      address: 'addr_test_oracle_wallet',
+      address: oraclePublisherAddress,
       unit: 'a'.repeat(56) + '01',
       utxo: 'c'.repeat(64) + '#0',
       authorityKind: 'DEPLOYMENT_WALLET_SIGNED',
