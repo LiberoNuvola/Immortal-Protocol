@@ -310,10 +310,6 @@ jobs:
           address="$(node audit/cardano-integration/create-test-wallet.mjs)"
           echo "address=$address" >> "$GITHUB_OUTPUT"
 
-      - name: Execute B0 BeaconRegistry adversarial Yaci ledger characterization
-        id: beacon_registry_b0_yaci
-        run: node --import tsx/esm audit/cardano-integration/beacon-registry-adversarial-ledger-trace.ts
-
       - name: Record devnet information
         run: |
           {
@@ -375,6 +371,10 @@ jobs:
 
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
+
+      - name: Execute B0 BeaconRegistry adversarial Yaci ledger characterization
+        id: beacon_registry_b0_yaci
+        run: node --import tsx/esm audit/cardano-integration/beacon-registry-adversarial-ledger-trace.ts
 
       - name: Probe current Yaci cost models with Lucid Evolution
         run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
