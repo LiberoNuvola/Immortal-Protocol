@@ -40,6 +40,8 @@ jobs:
         run: node scripts/check-rf8-production-boundary.mjs
       - name: Run legacy Treasury distribution isolation audit
         run: node audit/algorithmic-governability/treasury-legacy-isolation.mjs
+      - name: Type-check Cardano provider evidence contract
+        run: npx tsc --noEmit --target ES2020 --module ESNext --moduleResolution bundler --strict --skipLibCheck --verbatimModuleSyntax --noUnusedLocals --noUnusedParameters Adapter/CARDANO/observation/CardanoProviderProfile.ts Adapter/CARDANO/observation/CardanoProviderProfile.test.ts
       - name: Run Cardano provider provenance and qualification contract fixtures
         run: npx vitest run Adapter/CARDANO/observation/CardanoProviderProfile.test.ts
 
