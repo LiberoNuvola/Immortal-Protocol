@@ -42,6 +42,65 @@ async function observeDirectUsdmPool({ lucid, deployment, poolInputReference }) 
 
 const stripTxPrefix = (value) => String(value).trim().replace(/^cardano:tx\//, '')
 
+function assertDirectUsdmEevUnits(observed, directUsdmValue) {
+  const signed = observed?.signedEevUsdmSubunits
+  const conversion = observed?.eevUnitConversion
+  const decisionInput = observed?.decisionInput
+  if (!signed || !conversion || !decisionInput) {
+    throw new Error('authoritative Issue observation is missing signed EEV unit-conversion evidence')
+  }
+
+  const signedPreEEV = BigInt(requiredNonNegativeInteger(signed.preEEV, 'signed preEEV USDM sub-units'))
+  const signedCandidateEEV = BigInt(requiredNonNegativeInteger(
+    signed.candidateEEV,
+    'signed candidateEEV USDM sub-units',
+  ))
+  if (signedPreEEV !== directUsdmValue || signedCandidateEEV !== directUsdmValue) {
+    throw new Error('signed direct-USDM EEV values do not match the exact physical Pool observation')
+  }
+
+  if (
+    conversion.sourceUnit !== 'USDM_SUBUNITS' ||
+    conversion.targetUnit !== 'IMMORTAL_REFERENCE_UNITS' ||
+    conversion.conversion !== 'EXACT_DIVIDE_BY_100'
+  ) {
+    throw new Error('authoritative Issue EEV unit conversion profile is invalid')
+  }
+  const subunitsPerReferenceUnit = BigInt(requiredNonNegativeInteger(
+    conversion.sourceSubunitsPerReferenceUnit,
+    'EEV sourceSubunitsPerReferenceUnit',
+  ))
+  if (subunitsPerReferenceUnit !== 100n) {
+    throw new Error('authoritative Issue EEV conversion factor must be exactly 100')
+  }
+
+  const preEEVReferenceUnits = BigInt(requiredNonNegativeInteger(
+    conversion.preEEVReferenceUnits,
+    'converted preEEV reference units',
+  ))
+  const candidateEEVReferenceUnits = BigInt(requiredNonNegativeInteger(
+    conversion.candidateEEVReferenceUnits,
+    'converted candidateEEV reference units',
+  ))
+  const decisionPreEEV = BigInt(requiredNonNegativeInteger(
+    decisionInput.preEEV,
+    'IssueDecisionInput preEEV reference units',
+  ))
+  const decisionCandidateEEV = BigInt(requiredNonNegativeInteger(
+    decisionInput.candidateEEV,
+    'IssueDecisionInput candidateEEV reference units',
+  ))
+
+  if (
+    preEEVReferenceUnits !== decisionPreEEV ||
+    candidateEEVReferenceUnits !== decisionCandidateEEV ||
+    preEEVReferenceUnits * subunitsPerReferenceUnit !== signedPreEEV ||
+    candidateEEVReferenceUnits * subunitsPerReferenceUnit !== signedCandidateEEV
+  ) {
+    throw new Error('IssueDecisionInput EEV does not match the exact signed direct-USDM unit conversion')
+  }
+}
+
 function createPreprodIssueObservationProducerFromLucid({
   lucid,
   deployment,
@@ -133,14 +192,7 @@ function createPreprodIssueObservationProducerFromLucid({
       if (BigInt(String(observed.poolUsdmValue)) !== directUsdmValue) {
         throw new Error('Preprod reader Pool valuation does not match direct physical observation')
       }
-      if (
-        BigInt(String(observed.decisionInput.preEEV)) !== directUsdmValue ||
-        BigInt(String(observed.decisionInput.candidateEEV)) !== directUsdmValue
-      ) {
-        throw new Error(
-          'authoritative Issue EEV values do not match direct physical USDM observation',
-        )
-      }
+      assertDirectUsdmEevUnits(observed, directUsdmValue)
 
       const qualification = observed.eevQualification
       if (!qualification || typeof qualification !== 'object' || Array.isArray(qualification)) {
