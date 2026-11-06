@@ -126,6 +126,7 @@ export type AuthoritativeIssueAdmissionWitness =
     /** Exact authenticated B2 control singleton UTxO used for Issue admission. */
     controlStateReference: string
     /** Authoritative pre-transition EEV used by the canonical Haskell decision. */
+    /** Pre-transition EEV in IMMORTAL reference units after exact direct-USDM normalization. */
     preEEV: bigint
     /** Exact PRE-RICH Issue coordinates consumed by the canonical decision. */
     issueClassId: bigint
