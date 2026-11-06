@@ -21,6 +21,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
 import Data.Char (digitToInt)
 import PlutusTx (toBuiltin)
+import PlutusTx.Prelude (BuiltinByteString)
 import V3EconomicStateCarrier
   ( V3EconomicStateAction (..)
   , bindingEnvelopeValid
