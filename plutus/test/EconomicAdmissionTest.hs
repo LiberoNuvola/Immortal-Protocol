@@ -8,6 +8,7 @@ import Prelude
   , Maybe (Just, Nothing)
   , String
   , error
+  , not
   , putStrLn
   , (==)
   , (++)
@@ -18,6 +19,7 @@ import EconomicStateV3
 import EconomicTransitionV3
 import PreRichEconomicAdmission
 import PreRichEconomicProfile
+import PreRichEconomicProjection (projectPreRichState)
 import UniversalEconomicKernel
 import UniversalEconomicState (UniversalEconomicState (..))
 
@@ -29,6 +31,17 @@ baseState =
   V3EconomicState
     0 0 0 0 0 0
     [TicketClassState 0 0 0 0 1 True]
+    (EconomicControlState 0 0)
+    (JackpotState 0 0 JackpotInactive 0)
+
+-- A valid, solvent represented state with no unresolved tickets, liabilities,
+-- or saleable class. It is deliberately a QNE boundary case: no current
+-- V3Action has a valid transition from this state.
+quiescentNoObligationState :: V3EconomicState
+quiescentNoObligationState =
+  V3EconomicState
+    0 0 0 0 0 0
+    [TicketClassState 0 0 0 0 1 False]
     (EconomicControlState 0 0)
     (JackpotState 0 0 JackpotInactive 0)
 
@@ -135,7 +148,6 @@ main = do
       assert (uesUnresolvedTicketCount (peaCandidateUniversal admitted) == 0) "expire removes exactly one unresolved ticket from the candidate"
       assert (solvencyInvariant 1 (peaCandidateUniversal admitted)) "expired candidate remains universally solvent"
 
-
   let mixedClassStressState =
         V3EconomicState
           100 102 3 7 11 13
@@ -165,4 +177,21 @@ main = do
        Just _ -> False)
     "mixed-class stress rejects EEV one unit below complete ProtectedCapital"
 
+  case projectPreRichState profile quiescentNoObligationState of
+    Nothing -> error "FAIL: quiescent no-obligation fixture was not representable"
+    Just projected ->
+      assert (solvencyInvariant 0 projected) "no-obligation nonsaleable state is represented and solvent"
+
+  assert
+    (not (transitionValid profile quiescentNoObligationState (Issue 0 1)))
+    "no-obligation nonsaleable state has no valid Issue action"
+  assert
+    (not (transitionValid profile quiescentNoObligationState (Reveal 0 0)))
+    "no-obligation state has no valid Reveal action"
+  assert
+    (not (transitionValid profile quiescentNoObligationState (Claim 1)))
+    "no-obligation state has no valid Claim action"
+  assert
+    (not (transitionValid profile quiescentNoObligationState (Expire 0)))
+    "no-obligation state has no valid Expire action"
   putStrLn "ALL ECONOMIC ADMISSION TESTS PASSED"
