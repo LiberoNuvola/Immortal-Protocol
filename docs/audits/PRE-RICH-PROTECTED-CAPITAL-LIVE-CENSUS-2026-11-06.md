@@ -189,7 +189,69 @@ The currently measured and observed inputs map as follows:
 
 No single code-only change can legitimately bypass these source, authority, viability and deployment dependencies.
 
-## 9. Non-claims and remaining blockers
+## 9. Charli3 official Preprod feed observation — corrected standard decoder, both feeds stale
+
+[Charli3 Preprod read-only feed observation — run 42175386327](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42175386327) completed **SUCCESS** on commit `f6257451c17c1deeb0403380586df46c45fa815f`.
+
+### Decoder correction and regression coverage
+
+The first observer implementation duplicated the parser and incorrectly treated optional datum fields as required. The official Charli3 datum standard states that price-map keys 0–9 are optional, and that a feed may contain only generic price data. It likewise defines Extended Data as optional. The on-chain datum therefore need not embed precision, base/quote symbols, or provider/signatory metadata to be structurally valid.
+
+The shared `scripts/lib/charli3Datum.mjs` decoder already supported optional fields for synthetic fixtures, but did not accept the exact runtime representations returned by Lucid `Data.from` (`index`/constructor variants, native `Map`, and `bigint`). It has now been extended to normalize those representations while rejecting duplicate/unsafe map keys and invalid integer/byte values. The live observer now delegates to this shared decoder instead of maintaining a second parser.
+
+The workflow runs `npx vitest run scripts/lib/charli3Datum.test.mjs` before making live queries. **All 6 tests passed**, including two raw CBOR fixtures captured from the live Preprod USDM/USD and ADA/USD feeds. The observer's syntax check and live Koios step also passed. An earlier intermediate run on commit `685ca4f2...` correctly stopped before the live query because the new Lucid-object fixture tests exposed the representation mismatch; the subsequent test/helper corrections fixed it.
+
+### Live observation
+
+Observed at `2026-11-06T06:35:50.386Z`, Koios Preprod slot `138263711`, block height `5379395`, hash `a4c951c575952afce881505d2c36519229e90556631fa661212627fd3a6a6318`.
+
+Official references:
+- Preprod feed configuration: https://docs.charli3.io/oracles/resources/networks/preprod
+- Datum standard: https://docs.charli3.io/oracles/overview/datum-standard
+
+**USDM/USD**
+- Official feed address: `addr_test1wr0q3fr83cr0zv4gfdvzcquqzy242hgmvt7ey2d938rtwugyc76x9`.
+- Feed NFT policy: `424f268a65632944ddfe17967208178082058cbe9044f53aee28697d`; token name `OracleFeed`.
+- Exactly one feed-NFT UTxO was returned; out-reference `a71629ca1ef04971c27856830d5f4d5517462783df6c214357ca45e7be1777e5#1`.
+- Datum price integer `894250000`; no precision or pair-symbol fields are published; no Extended Data map.
+- Timestamp `2024-02-21T03:00:27.386Z`; expiry `2024-02-21T04:00:27.386Z`.
+- Age `85,462,483,614 ms` (~989.15 days) vs official maximum age/frequency of `3,600,000 ms` (1 hour).
+
+**ADA/USD**
+- Official feed address: `addr_test1wzn5ee2qaqvly3hx7e0nk3vhm240n5muq3plhjcnvx9ppjgf62u6a`.
+- Feed NFT policy: `1116903479e7320b8e4592207aaebf627898267fcd80e2d9646cbf07`; token name `OracleFeed`.
+- Exactly one feed-NFT UTxO was returned; out-reference `6f518a1d46d9bcb00ca0a62cf467e111fe27a66deaf294db4472b0fe46014f52#1`.
+- Datum price integer `407740`; no precision or pair-symbol fields are published; no Extended Data map.
+- Timestamp `2025-12-14T10:17:39.510Z`; expiry `2025-12-14T10:47:39.510Z`.
+- Age `28,239,451,490 ms` (~326.85 days) vs official maximum age/frequency of `1,800,000 ms` (30 minutes).
+
+For both feeds:
+- the exact official NFT is unique at the address listed in the official Preprod configuration;
+- because symbols are omitted, pair binding is reported as `OFFICIAL_NFT_CONFIG_ONLY_DATUM_PAIR_FIELDS_OMITTED`, not as a datum mismatch;
+- `precisionStatus=NOT_PUBLISHED_OR_UNSUPPORTED`; no decimal price is inferred from the raw integer;
+- both price records are stale and expired;
+- no extended provider/signatory metadata is present in the datum. The official network configuration documents Signatories Pool/Required Signatories as 2/1 for USDM/USD and 1/1 for ADA/USD, respectively; these network parameters are not proof of signers for the observed historical price updates.
+
+Observation status remains `OBSERVED_NOT_QUALIFIED`. Evidence hash: `fcbed0a24112afeb0f29a3dfa43bb890c37be31c1169201a241159254f69e70e`. Artifact `charli3-preprod-feed-observation-f6257451c17c1deeb0405051a5bf3` (workflow artifact ID `13482808052`).
+
+This establishes that the official configured Preprod feed NFT UTxOs are present, but the observed price records are long expired and do not publish enough fields to reconstruct an exact decimal price. No price, USD/USDM parity, or source qualification is inferred. The observer is read-only; no feed update, wallet signing, or transaction submission occurred.
+
+## 10. B-R1 risk-protection bridge scaffold — Haskell CI result and expanded edge suite
+
+The Haskell workflow was extended to invoke the existing Cabal suite `risk-protection-bridge-tests` after Protected Capital conformance.
+
+Run [42173278362](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42173278362) completed **SUCCESS** on commit `f4f53b18bee158a703bab89cc1731f7819c1a8df`, with all Haskell job steps green. Its B-R1 scaffold suite recorded nine PASS assertions, including:
+- exact equality between verified deterministic assessment and projected worst-case exposure;
+- rejection of lower/mismatching exposure;
+- trajectory/profile binding and missing evidence fail-closed behavior;
+- rejection of statistical-only and combined modes;
+- rejection of undeclared statistical/additive combination rules.
+
+A later test-only commit `b27cbbb1e2c91e2bf4252a788ea26b50e2440e80` expanded `RiskProtectionBridgeTest.hs` to 17 assertions, adding overstatement, invalid profile, negative trajectory IDs, invalid evidence, missing assessment, and negative exposure cases. The full Haskell run on that expanded test file is [42175554477](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42175554477); at the time of this report update it is still running Setup Haskell and **the expanded 17-case suite has not yet been verified**.
+
+These tests exercise the typed deterministic-only **scaffold**. They do not establish end-to-end B-R1 integration because `RiskProtectionBridge` remains explicitly unwired from `PreRichEconomicAdmission`, and they do not produce a concrete `K_c`/QNE certificate.
+
+## 11. Non-claims and remaining blockers
 
 The following fields intentionally remain false in the Koios output:
 - `deploymentManifestAuthorityCryptographicallyVerified=false`;
