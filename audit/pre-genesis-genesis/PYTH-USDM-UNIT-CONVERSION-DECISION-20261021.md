@@ -641,3 +641,66 @@ Sources: [Cardanoscan USDM/ADA pool snapshot](https://cardanoscan.io/liquidityPo
 **Disposition updated:** MAINNET USDM/ADA PAIR AND MONETA TOKEN IDENTITY CROSS-IDENTIFIED BY INDEXERS / RAW POOL UTxO+DATUM AND RESERVE VALIDATION STILL OPEN / USD MARKING DISAGREEMENT REQUIRES SOURCE RECONCILIATION / ±1% DEPTH LOW / ADA-USD SECOND LEG NOT QUALIFIED / NOT QUALIFIED.
 
 Next bounded work is to query the Minswap V2 pool address using an independent mainnet chain provider, locate the exact live UTxO by LP/pool asset identity, decode the datum and reserve units, replay the output reference and compare to both indexers; then inspect historical swaps/TWAP and executable depth. Even after this, USD/USDM requires an independently qualified ADA/USD leg with a governed same-snapshot composition rule. No source-set, Oracle, economics, MintPolicy, V3/Reveal, approval, wallet or ledger state was changed.
+
+
+## 38. Agent A — Charli3 Mainnet ADA/USD and Preprod ADA/USD + USDM/USD re-observed; all three stale — 2026-11-06
+
+The existing read-only Charli3 workflow was extended to execute both the Mainnet ADA/USD observer and the Preprod ADA/USD + USDM/USD observer in one exact-commit run. The workflow [#42195466659](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42195466659) completed successfully on source SHA `5ba800fd59f3952f53c23bea372d978c0e7eea79`; decoder tests, both observers and artifact upload passed.
+
+Artifact [13492175704](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42195466659/artifacts/13492175704), ZIP SHA-256 `fab759cb5e563b73dd37fe5dcf9143b0289da749c04b427e365f0bfa268c1806`.
+
+### Observed feed identities and state
+
+- **Mainnet ADA/USD:** exact configured address and OracleFeed NFT are present, unique, and the datum decodes. Latest statement timestamp `2026-05-27T05:21:30.404Z`, raw price `239761`, expiry six hours later, precision absent. At observation on 2026-11-06 the feed was expired/stale; `freshCount=0`, `staleOrExpiredCount=1`, no invalid datums.
+- **Preprod USDM/USD:** exact Feed NFT unit `424f268a65632944ddfe17967208178082058cbe9044f53aee28697d4f7261636c6546656564` is unique at the configured address. Datum hash `931fccc82a5a51752142a33fe3a672f3cc5bb8b1449c048a79eaf01f7a7d5b69`; timestamp `2024-02-21T03:00:27.386Z`; expiry `2024-02-21T04:00:27.386Z`. Precision and pair symbols are not published in the datum; exact decimal price is unavailable. Blockers: stale timestamp, expired record, missing/unsupported precision.
+- **Preprod ADA/USD:** exact Feed NFT unit `1116903479e7320b8e4592207aaebf627898267fcd80e2d9646cbf074f7261636c6546656564` is unique at its configured address. Datum hash `72ecfa0ff305b976cb769bf23ba782d18b1c6a89e4b15e092aeb047406280dae`; timestamp `2025-12-14T10:17:39.510Z`; expiry `2025-12-14T10:47:39.510Z`. Precision and pair symbols are absent; record is stale/expired.
+
+The documented Charli3 network configurations identify the feed NFTs and publisher/node parameters; they do not establish current operation or make an expired datum usable. The Mainnet ADA/USD and Preprod ADA/USD/USDM/USD candidates are therefore **DOCUMENTED / EXACT NFT OBSERVED / CURRENT DATUM STALE OR EXPIRED / PRICE PRECISION UNQUALIFIED**. No USDM price, parity or source quorum is accepted.
+
+Sources: [Charli3 Mainnet configuration](https://docs.charli3.io/oracles/resources/networks/mainnet) · [Charli3 Preprod configuration](https://docs.charli3.io/oracles/resources/networks/preprod) · [Charli3 datum standard](https://docs.charli3.io/oracles/overview/datum-standard).
+
+## 39. Agent A — Orcfax Mainnet ADA-USD and ADA-USDM statements observed on-chain; both stale — 2026-11-06
+
+Added a dedicated read-only workflow [Orcfax Mainnet CER Feeds — Read-Only Ledger Observation](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42195769567) using the existing exact-FSP/FS-token observer. Source SHA: `f70e758d8f4689ee31251f9d13a2c7d58cbc34be`. Syntax and decoder tests passed; the live observation and artifact upload completed.
+
+Artifact [13492225756](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42195769567/artifacts/13492225756), ZIP SHA-256 `95ce9ef8bfa14caa9f0ae728b526131d36d8fab86956fddb991340cac840430e`, extracted JSON SHA-256 `635f370bafd3d214282a2b2599d7765f57ec5ea4b6ea957eae6f98732ad1e287`.
+
+### On-chain publication identity / acquisition
+
+- The unique mainnet FSP state NFT was found and decoded: policy `8793893b5dda6a513ba63c80e9d7b2d4f108060c11979bfc7d863ff0`, asset name `000de140`.
+- FSP datum resolves the current FS payment script hash `193ee65211bb3b4e0ea5f751f415269355a650e2e3706f625cdf1a4b`.
+- Koios returned 111 FS-token UTxOs; all 111 datums decoded, 0 malformed. The observer found 5 statements for each of the requested feed prefixes, and 5/5 in each feed passed the recorded FS payment-credential / token-quantity checks. Ten transaction contexts were acquired (five current/older statements per feed).
+- The feed registry response was HTTP 200. Current configuration:
+  - ADA-USD: `CER/ADA-USD/3`, CEX source, median calculation, one-hour heartbeat, 1% deviation, sponsored.
+  - ADA-USDM: `CER/ADA-USDM/3`, DEX source, weighted-mean calculation, one-hour heartbeat, 2% deviation, sponsored.
+
+### Latest valid statements
+
+- **ADA-USD:** exact rational `163333 / 1000000` = 0.163333 USD per ADA; statement `2026-06-18T21:02:22.882Z`; age at capture `12,141,004,118 ms` (~140.52 days), against a 3,600,000 ms heartbeat. UTxO `a16b451afbb11198a0f179d79c5dc6ebe863e2c348783e088a3d8c0f5952b91f#0`.
+- **ADA-USDM:** exact rational `325734549 / 2000000000` = 0.1628672745 USDM per ADA; statement `2026-06-18T21:20:32.150Z`; age `12,139,914,850 ms` (~140.51 days), against the same one-hour heartbeat. UTxO `ca83fdb2fffbcee1841a2adfeabf612e640162d07451457deb727a2800932e5e#2`.
+
+Both statements are structurally valid, published under the expected versioned feed IDs and tied to current FS-token UTxOs. Both are nevertheless **STALE** by their own declared heartbeat. The observer classification is `READ_ONLY_ORCFAX_CER_FEEDS_STALE`.
+
+### Direction and independence boundary
+
+Orcfax CER feed naming is base currency followed by quote currency. Therefore ADA-USD denotes USD per ADA, while ADA-USDM denotes USDM per ADA. A mathematical composition would require dividing these exact ratios and then inverting to obtain USD per USDM. This review deliberately does **not** publish a cross-rate from two statements that are more than 140 days old. It does not use the feed label alone to claim asset redemption or an issuer peg.
+
+The registry describes ADA-USD as CEX median and ADA-USDM as DEX weighted mean. This is a useful Cardano-native statement publication path, but not an independent DEX venue: it republishes upstream CEX/DEX observations. The statements' immutability and FS-token identity establish the publication surface; they do not by themselves verify the upstream venue universe, weights, manipulation resistance, archive completeness or truth of the inputs. No feed is active/fresh for settlement in this snapshot; no oracle/EEV approval or consumer integration is authorized.
+
+Sources: [Orcfax CER feed overview and base/quote convention](https://docs.orcfax.io/feed-overview) · [Orcfax on-chain consumption and feed-id verification](https://docs.orcfax.io/consume) · [Orcfax ADA-USDM explorer record and stated direction](https://explorer.orcfax.io/feeds/CER/ADA-USDM/facts/5cbbb7ee-a232-4f36-844a-5c00ceaeb645) · [Mainnet feed registry](https://github.com/orcfax/cer-feeds/blob/main/feeds/mainnet/cer-feeds.json).
+
+**Disposition:** ORCFAX MAINNET ADA-USD + ADA-USDM = ON-CHAIN IDENTITY OBSERVED / 5 VALID STATEMENTS PER FEED / BOTH STALE VS 1H HEARTBEAT / NO CROSS-RATE ACCEPTED / NOT QUALIFIED.
+
+## 40. Agent A — correction: Minswap V2 raw Mainnet UTxO and datum structural reconciliation already exists
+
+Correction to Sections 36–37: the earlier wording that the Minswap pool raw UTxO/datum had not yet been replayed described the particular Cardanoscan/DEX Screener page snapshot, not the repository's broader Minswap V2 Mainnet work. The branch already contains the dedicated read-only exact-asset observer and reproducible evidence:
+
+- Run [41204050705](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204050705): 31 exact-Moneta-USDM current UTxOs at the official Minswap V2 pool address; all 31 passed the structural PoolDatum / Pool NFT / LP asset / reserve-vs-Value checks; decoder tests 12/12.
+- Repeat [41204297344](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204297344): 31/31 MATCH after qualification-label correction.
+- Same-run API ↔ Koios reconciliation [41204657669](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41204657669): 31/31 exact LP-asset identity and unordered pair matches between 31 Koios candidates and 31 Minswap V2 API pools; zero pair mismatches, zero API-only, zero on-chain-only.
+
+This is strong **same-venue pool identity / structure / indexer reconciliation** for the observed Minswap V2 pool set. It is not a separate market venue, USD/USDM price, executable depth qualification, oracle statement, peg proof, EEV approval or settlement source. Minswap API and Koios both describe the same Minswap venue / Cardano state.
+
+The Cardanoscan / DEX Screener pool-page snapshots in Section 37 remain indicative market-data displays only. Their $1 vs ~$0.9838 valuation labels must not be promoted to independent USD marks or read as proof of depeg. The missing gates remain historical trades/TWAP and executable depth/manipulation analysis, plus a fresh and independently qualified USD reference.
+
+No production oracle, PriceReference, MintPolicy, economics, V3/Reveal, wallet, deployment approval, transaction or ledger state was modified by these observations.
