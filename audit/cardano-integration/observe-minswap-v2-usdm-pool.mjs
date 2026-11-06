@@ -69,25 +69,69 @@ async function jsonRequest(endpoint, { method = 'GET', body, offset = null, page
     accept: 'application/json',
     'content-type': 'application/json',
     Prefer: 'count=exact',
+    ...(process.env.KOIOS_API_TOKEN ? { Authorization: 'Bearer ' + process.env.KOIOS_API_TOKEN } : {}),
   }
   if (offset !== null) headers.Range = offset + '-' + (offset + pageSize - 1)
   const url = KOIOS.replace(/\/$/, '') + endpoint
-  const response = await fetch(url, {
-    method,
-    headers,
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    redirect: 'error',
-    signal: AbortSignal.timeout(25_000),
-  })
-  const text = await response.text()
-  if (!response.ok) fail('KOIOS_HTTP_ERROR', endpoint + ':' + response.status + ':' + text.slice(0, 400))
-  let json
-  try {
-    json = JSON.parse(text)
-  } catch {
-    fail('KOIOS_RESPONSE_NOT_JSON', endpoint)
+  const bodyText = body === undefined ? undefined : JSON.stringify(body)
+  const maxAttempts = 4
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    let response
+    try {
+      response = await fetch(url, {
+        method,
+        headers,
+        ...(bodyText === undefined ? {} : { body: bodyText }),
+        redirect: 'error',
+        signal: AbortSignal.timeout(25_000),
+      })
+    } catch (error) {
+      if (attempt + 1 >= maxAttempts) {
+        fail('KOIOS_NETWORK_ERROR', endpoint + ':' + String(error).slice(0, 250))
+      }
+      await new Promise(resolve => setTimeout(resolve, 2_000 * (2 ** attempt)))
+      continue
+    }
+
+    const text = await response.text()
+    if (!response.ok) {
+      const retryable = response.status === 429 || [500, 502, 503, 504].includes(response.status)
+      if (retryable && attempt + 1 < maxAttempts) {
+        const retryAfter = response.headers.get('retry-after')
+        const retryAfterSeconds = retryAfter && /^\d+$/.test(retryAfter.trim())
+          ? Number(retryAfter.trim())
+          : retryAfter && Number.isFinite(Date.parse(retryAfter))
+            ? Math.max(0, (Date.parse(retryAfter) - Date.now()) / 1000)
+            : null
+        const fallbackMs = response.status === 429
+          ? Math.min(15_000 * (2 ** attempt), 60_000)
+          : Math.min(2_000 * (2 ** attempt), 15_000)
+        const delayMs = retryAfterSeconds === null
+          ? fallbackMs
+          : Math.max(fallbackMs, Math.min(120_000, retryAfterSeconds * 1000))
+        console.warn(JSON.stringify({
+          event: 'KOIOS_RETRY',
+          endpoint,
+          status: response.status,
+          attempt: attempt + 1,
+          delayMs,
+        }))
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+        continue
+      }
+      fail('KOIOS_HTTP_ERROR', endpoint + ':' + response.status + ':' + text.slice(0, 400))
+    }
+
+    let json
+    try {
+      json = JSON.parse(text)
+    } catch {
+      fail('KOIOS_RESPONSE_NOT_JSON', endpoint)
+    }
+    return { json, text, headers: response.headers, status: response.status, attempts: attempt + 1 }
   }
-  return { json, text, headers: response.headers, status: response.status }
+  fail('KOIOS_RETRY_LOOP_EXHAUSTED', endpoint)
 }
 
 function exactTip(value) {
