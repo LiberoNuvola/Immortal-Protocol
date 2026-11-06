@@ -1422,7 +1422,7 @@ async function mintSerialNFTInternal(
   let tx =
     lucid
       .newTx()
-      .validFrom(issuedAtMs)
+      .validFrom(Number(issuedAtMs))
       .validTo(settlementValidToMs)
 
       // ------------------------------------------------------
