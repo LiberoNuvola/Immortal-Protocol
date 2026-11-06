@@ -1,6 +1,6 @@
-name: Charli3 Preprod Oracle Feed — Read-Only Observation
+name: Charli3 Mainnet + Preprod Oracle Feeds — Read-Only Observation
 
-run-name: Charli3 Preprod read-only feed observation — ${{ github.sha }}
+run-name: Charli3 Mainnet ADA/USD + Preprod ADA/USD and USDM/USD — ${{ github.sha }}
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - work/immortal-green-closure
     paths:
       - "audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs"
+      - "scripts/observeCharli3AdaUsdReadOnly.mjs"
       - "scripts/lib/charli3Datum.mjs"
       - "scripts/lib/charli3Datum.test.mjs"
       - ".github/workflows/charli3-preprod-feed-observation.yml"
@@ -17,14 +18,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: charli3-preprod-feed-observation
+  group: charli3-multinetwork-feed-observation
   cancel-in-progress: false
 
 jobs:
   observe:
-    name: Re-observe exact official Charli3 Preprod ADA/USD and USDM/USD feed NFTs
+    name: Re-observe exact Charli3 Mainnet ADA/USD and Preprod feed NFTs
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Checkout exact observation source
         uses: actions/checkout@v4
@@ -41,22 +42,35 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Verify read-only observer syntax
-        run: node --check audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs
+        run: |
+          node --check audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs
+          node --check scripts/observeCharli3AdaUsdReadOnly.mjs
 
       - name: Run shared Charli3 datum decoder tests
         run: npx vitest run scripts/lib/charli3Datum.test.mjs
 
-      - name: Observe exact Preprod feed NFT UTxOs and inline datums
+      - name: Observe exact Mainnet ADA/USD feed NFT UTxO and datum
+        continue-on-error: true
+        env:
+          KOIOS_MAINNET_URL: https://api.koios.rest/api/v1
+        run: |
+          mkdir -p audit/mainnet-evidence
+          node scripts/observeCharli3AdaUsdReadOnly.mjs --out audit/mainnet-evidence/charli3-mainnet-ada-usd-readonly.json
+
+      - name: Observe exact Preprod ADA/USD and USDM/USD feed NFTs and datums
+        continue-on-error: true
         env:
           KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
           PREPROD_CHARLI3_OBSERVATION_PATH: audit/preprod-evidence/charli3-preprod-feed-observation.json
         run: node audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs
 
-      - name: Upload read-only feed observation evidence
+      - name: Upload read-only Mainnet and Preprod feed evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: charli3-preprod-feed-observation-${{ github.sha }}
-          path: audit/preprod-evidence/charli3-preprod-feed-observation.json
+          name: charli3-multinetwork-feed-observation-${{ github.sha }}
+          path: |
+            audit/mainnet-evidence/charli3-mainnet-ada-usd-readonly.json
+            audit/preprod-evidence/charli3-preprod-feed-observation.json
           if-no-files-found: warn
           retention-days: 30
