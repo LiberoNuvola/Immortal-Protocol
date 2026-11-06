@@ -1,15 +1,11 @@
 'use strict'
-
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { createApp, validateRoute, isCardanoTransactionCbor, MAX_SUBMIT_BYTES } = require('../proxy')
-
 const ORIGIN = 'https://dapp.example'
 const KEY = 'server-only-test-key'
 const TX = 'a'.repeat(64)
 const SCRIPT = 'b'.repeat(56)
-const DATUM = 'c'.repeat(64)
-
 async function withServer(app, run) {
   const server = app.listen(0)
   await new Promise((resolve) => server.once('listening', resolve))
@@ -17,17 +13,20 @@ async function withServer(app, run) {
   try { await run('http://127.0.0.1:' + address.port) }
   finally { await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())) }
 }
-
 function makeApp(fetchImpl = async () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }), options = {}) {
   return createApp({ apiKey: KEY, allowedOrigins: new Set([ORIGIN]), fetchImpl, ...options })
 }
-
 test('requires server credential and explicit origins', () => {
   assert.throws(() => createApp({ allowedOrigins: new Set([ORIGIN]) }), /BLOCKFROST_API_KEY/)
   assert.throws(() => createApp({ apiKey: KEY, allowedOrigins: new Set() }), /ALLOWED_ORIGINS/)
 })
-
-test('Cardano transaction CBOR must be one complete top-level array', () => {\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03])), true)\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01])), false)\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x01])), false)\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03, 0x04])), false)\n})\n\ntest('route allowlist is exact and method-bound', () => {
+test('CBOR transaction must be one complete top-level array', () => {
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03])), true)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01])), false)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x01])), false)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03, 0x04])), false)
+})
+test('route allowlist is exact and method-bound', () => {
   assert.equal(validateRoute('GET', '/blockfrost/epochs/latest/parameters', new URLSearchParams()), '/epochs/latest/parameters')
   assert.equal(validateRoute('GET', '/blockfrost/txs/' + TX + '/utxos', new URLSearchParams()), '/txs/' + TX + '/utxos')
   assert.equal(validateRoute('GET', '/blockfrost/scripts/' + SCRIPT + '/cbor', new URLSearchParams()), '/scripts/' + SCRIPT + '/cbor')
@@ -39,9 +38,9 @@ test('Cardano transaction CBOR must be one complete top-level array', () => {\n 
   assert.equal(validateRoute('GET', '/blockfrost/txs/' + TX + '//utxos', new URLSearchParams()), null)
   assert.equal(validateRoute('GET', '/blockfrost/addresses/a/utxos?page=1001', new URLSearchParams('page=1001')), null)
   assert.equal(validateRoute('GET', '/blockfrost/assets/' + 'd'.repeat(56) + '/addresses?count=2', new URLSearchParams('count=2')), '/assets/' + 'd'.repeat(56) + '/addresses?count=2')
+  assert.equal(validateRoute('GET', '/blockfrost/epochs/latest/parameters?page=2', new URLSearchParams('page=2')), null)
 })
-
-test('rejects missing and foreign origins; never emits wildcard CORS', async () => {
+test('rejects missing and foreign origins without wildcard CORS', async () => {
   const app = makeApp()
   await withServer(app, async (base) => {
     const missing = await fetch(base + '/blockfrost/epochs/latest/parameters')
@@ -51,7 +50,6 @@ test('rejects missing and foreign origins; never emits wildcard CORS', async () 
     assert.equal(foreign.headers.get('access-control-allow-origin'), null)
   })
 })
-
 test('forwards only fixed upstream GET with server credential and preserves response', async () => {
   let captured
   const app = makeApp(async (url, init) => {
@@ -67,8 +65,7 @@ test('forwards only fixed upstream GET with server credential and preserves resp
     assert.equal(captured.init.method, 'GET')
   })
 })
-
-test('relays opaque signed CBOR bytes unchanged and never signs', async () => {
+test('relays already-signed CBOR bytes unchanged', async () => {
   const bytes = Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03])
   let captured
   const app = makeApp(async (url, init) => {
@@ -76,27 +73,27 @@ test('relays opaque signed CBOR bytes unchanged and never signs', async () => {
     return new Response('', { status: 202 })
   })
   await withServer(app, async (base) => {
-    const response = await fetch(base + '/blockfrost/tx/submit', {
-      method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/cbor' }, body: bytes,
-    })
+    const response = await fetch(base + '/blockfrost/tx/submit', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/cbor' }, body: bytes })
     assert.equal(response.status, 202)
     assert.equal(captured.url, 'https://cardano-preprod.blockfrost.io/api/v0/tx/submit')
     assert.deepEqual(captured.body, bytes)
     assert.equal(captured.init.headers.project_id, KEY)
   })
 })
-
-test('rejects wrong submit content type and over-limit body', async () => {
-  const app = makeApp()
+test('rejects wrong submit content type, malformed CBOR and over-limit body', async () => {
+  let called = false
+  const app = makeApp(async () => { called = true; return new Response('', { status: 202 }) })
   await withServer(app, async (base) => {
     const wrong = await fetch(base + '/blockfrost/tx/submit', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' }, body: '{}' })
     assert.equal(wrong.status, 415)
+    const invalid = await fetch(base + '/blockfrost/tx/submit', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/cbor' }, body: Buffer.from([0x84, 0x00]) })
+    assert.equal(invalid.status, 400)
+    assert.equal(called, false)
     const large = await fetch(base + '/blockfrost/tx/submit', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/cbor' }, body: Buffer.alloc(MAX_SUBMIT_BYTES + 1) })
     assert.equal(large.status, 413)
   })
 })
-
-test('rejects malformed transaction CBOR before upstream relay', async () => {\n  let called = false\n  const app = makeApp(async () => { called = true; return new Response('', { status: 202 }) })\n  await withServer(app, async (base) => {\n    const response = await fetch(base + '/blockfrost/tx/submit', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/cbor' }, body: Buffer.from([0x84, 0x00]) })\n    assert.equal(response.status, 400)\n    assert.equal(called, false)\n  })\n})\n\ntest('upstream failure and timeout are bounded and sanitized', async () => {
+test('upstream failure and timeout are bounded and sanitized', async () => {
   const failed = makeApp(async () => { throw new Error('secret upstream detail') })
   await withServer(failed, async (base) => {
     const response = await fetch(base + '/blockfrost/epochs/latest/parameters', { headers: { Origin: ORIGIN } })
