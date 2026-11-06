@@ -113,6 +113,42 @@ With `0 ≤ R ≤ 500P`, the deterministic ProtectedCapital delta at Reveal is `
 
 This confirms that V3 already models **realized lifecycle dynamics**. What it does not model in this path is the separate **probabilistic reserve trajectory**.
 
+### A3 — symbolic mixed-class lifecycle vector (analysis only)
+
+For a class-aware unresolved portfolio, define:
+
+```text
+F = Σ_i (N_i × P_i)          -- nominal face reserve
+W = 500 × F                  -- deterministic PRE-RICH worst-case exposure
+Q = Σ_i (N_i × P_i²)         -- variance-weighted price mass
+R_stat = μ₀ × F + Z × σ₀ × sqrt(Q)
+```
+
+where `μ₀ = 0.64996875` and `σ₀ = 6.689612535418134...`. The `Q` expression is only a candidate portfolio extension under independent ticket-level outcomes with the same normalized payout distribution for each price class. It is not adopted semantics. If cross-ticket dependencies exist, covariance terms or a larger authoritative `Ω) are required.
+
+For an action on class `j`, with ticket price `P_j` and current `Q`:
+
+| Action | `F` delta | `W` delta | `Q` delta | `R_stat` delta under the candidate independence model |
+|---|---:|---:|---:|---|
+| Issue | `+P_j` | `+500P_j` | `+P_j²` | `μ₀P_j + Zσ₀(√(Q+P_j²)−√Q)` |
+| Reveal | `−P_j` | `−500P_j` | `−P_j²` | `−μ₀P_j + Zσ₀(√(Q−P_j²)−√Q)` |
+| Expire | `−P_j` | `−500P_j` | `−P_j²` | same unresolved-cohort reduction as Reveal |
+| Claim | `0` | `0` | `0` | `0` |
+
+Reveal additionally changes crystallized liabilities by the **actual** payout `+R`; Claim reduces them by the exact amount `−C`. Expiry does not create a new crystallized payout liability under the declared expiry lifecycle.
+
+The deterministic ProtectedCapital deltas remain:
+- Issue: `+500P_j`;
+- Reveal: `R − 500P_j`;
+- Expire: `−500P_j`;
+- Claim: `−C`.
+
+These deterministic deltas are the current V3/kernel behavior. `R_stat` deltas above are a separate estimator and do not become extra ProtectedCapital deltas by being calculated. In particular, after Reveal the estimator removes the unresolved ticket's expected/variance contribution while the deterministic kernel replaces worst-case exposure with the realized payout liability.
+
+### What this vector shows
+
+The dynamic part is not merely a statistical buffer that grows with `N`: the unresolved ticket cohort changes over time, and a reveal transfers one ticket from uncertain exposure to a known crystallized liability. V3 already implements that **realized liability transfer** exactly. The missing piece is a governed/evidenced statistical measure and its intended use in the sale/class-control path; the current model does not derive it.
+
 ## 5. No automatic statistical addend
 
 The audit matrix `IMMORTAL/docs/ECONOMIC-GATE-CARDANO-CONFORMANCE-MATRIX.md` explicitly lists “invent a statistical-reserve addend” and “change 500×” as non-goals. This is consistent with preserving the closed deterministic 500× protection boundary.
@@ -209,7 +245,7 @@ where `μ₀ = 0.64996875` and `σ₀ = 6.689612535418134...`. These equations d
 
 **Next safe sequence**
 1. Agent A reproduces the current payout moments independently from the canonical exact outcome table.
-2. Agent A builds same-price and mixed-class lifecycle vectors for Issue/Reveal/Claim/Expire, with deterministic and statistical measures shown in separate columns.
+2. Agent A has derived the same-price and mixed-class symbolic lifecycle vector for Issue/Reveal/Claim/Expire; next validate its portfolio assumptions and compare against action/refinement fixtures.
 3. Agent B reviews the source-to-datum mapping and confirms that no statistic is being conflated with face reserve or ReserveProtection.
 4. Only after that review, the protocol/specification authority can resolve the statistical model's role, `Z`, dependence assumptions, rounding and evidence authority.
 5. Only an explicit approved decision may be translated into code and a governed profile; no current 500×, V3, Reveal, deployment or ProtectedCapital formula is changed by A-R1.
