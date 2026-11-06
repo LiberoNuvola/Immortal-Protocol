@@ -343,3 +343,32 @@ These are same-venue structure/indexer corroborations, not 31 independent market
 ## Multi-source evidence refresh trigger — 2026-11-06
 
 The existing [Agent A Minswap V2 observer workflow](https://github.com/LiberoNuvola/Immortal-Protocol/blob/23db8634f88141f36d6ace4fb849d89f77da3cf2/.github/workflows/minswap-v2-observer-tests.yml) now includes this cross-reference document in its push path filters. Updating this matrix will therefore re-run the existing read-only source pipeline: exact Moneta USDM UTxOs and PoolDatum validation, Minswap API, SuperCardano, venue-specific pool observers, Float, public ADA/USD references, and the existing indicative cross-reference calculator. No new market formula, averaging, source quorum or activation policy is introduced by the trigger change.
+
+
+## Exact-asset live snapshot — 2026-11-06 09:41–09:43 UTC
+
+The dedicated read-only workflow [#42196843453](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196843453) captures raw Mainnet Minswap V2 PoolDatum/UTxO, Minswap API, SuperCardano and ADA/USD public references in one artifact. ZIP digest: `84c11e8678ae4253f888e062053e316a4db689f94b9cb8ff560136fa9da2f67c`. Detailed per-file digests and caveats are recorded in the [Agent A source memo, §42](https://github.com/LiberoNuvola/Immortal-Protocol/blob/61ac5825c8cc6c594d260b78628bf3c20ea16637/audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md#42-agent-a--same-run-mainnet-minswap-v2--supercardano--ada-usd-market-snapshot-indicative-cross-rate-only--2026-11-06).
+
+### Exact Minswap V2 raw pool result
+
+- Mainnet Moneta USDM identity is exact (policy `c48cbb…47ad`, asset name `0014df105553444d`, 6 decimals).
+- Current pool UTxO `4c309cdae12fd7c020d3bb6e22335dce9d97d9766b76b51da4f00cba1e476618#2`, PoolDatum hash `14a0aa6b985a70faf518c68810a7368a2b2a42d0416ca177b76ee105c935c94d`, structural status MATCH.
+- Datum reserves: 1,969,235.300584 ADA and 363,045.499637 USDM; fee numerator 75 / 10,000 (0.75%).
+- Koios / Minswap API / SuperCardano pool-set reconciliation: 31/31 exact Minswap V2 LP/pair/reserve matches; zero pair or reserve mismatch.
+- Same Minswap API pool metrics: liquidity about $727.4k, 24h volume about $96,114 and 7d volume about $440,368. API metrics are not executable depth.
+
+### Public ADA/USD references and purely indicative arithmetic
+
+Four direct CEX bid/ask midpoints from the same run span 0.184445–0.184520 USD/ADA (Bitstamp, Coinbase, Kraken, Crypto.com). Other public aggregators and the DIA free test-only API are kept as separate source classes, not counted as additional CEXs.
+
+Combining each CEX midpoint with the Minswap datum's pre-fee reserve ratio gives an indicative range of **1.00046855–1.00087537 USD/USDM**. The pool transaction time was 09:21:54Z and the CEX midpoints arrived at about 09:43:18–09:43:21Z; the ~21-minute skew is explicit. The calculation is pre-fee, zero-size, and excludes curve impact/slippage; it is not an executable quote, a peg decision, an oracle witness, or EEV valuation.
+
+### Secondary venue status from the wider read-only run
+
+The wider run [#42196712888](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196712888) had a transient Koios HTTP 504 for its Minswap raw observer, so its same-run API/on-chain reconciliation and cross-reference jobs were skipped. Separate venue jobs still returned:
+
+- SundaeSwap V3: 5/5 exact-USDM pool UTxOs with payment credential, datum and official API reconciliation MATCH. The ADA/USDM pool's reserves are 75,548.054946 ADA and 13,964.244136 USDM; fee 60/10,000 (0.60%). Its last pool transaction is 02:02:07Z, ~7h20 older than the Minswap pool. This is a second structural market observation, not a same-time price consensus.
+- MuesliSwap: 3 exact-USDM Pool NFT candidates; 2 structural matches and 1 unqualified. The ADA/USDM candidate is older than seven days and reports LP quantity 0; excluded from live pricing/depth.
+- CSwap: 1 exact-USDM candidate and official payment-credential match at discovery stage only; full contract qualification and executable price are not proved.
+
+**Disposition:** current Minswap pool + same-run CEX inputs support only a pre-fee indicative cross-reference. Sundae provides a second older structural pool observation; Muesli and CSwap are not admitted as current price sources. USD/USDM remains NOT QUALIFIED. No same-time multi-venue quorum, USD peg, feed authority, or settlement authorization is inferred.
