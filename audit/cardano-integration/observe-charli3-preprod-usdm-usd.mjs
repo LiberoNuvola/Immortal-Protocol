@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { Data } from '@lucid-evolution/lucid'
+import { decodeCharli3Datum } from '../../scripts/lib/charli3Datum.mjs'
 
 const KOIOS = (process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1').replace(/\/$/, '')
 const OUTPUT = process.env.PREPROD_CHARLI3_OBSERVATION_PATH ??
@@ -178,36 +179,19 @@ function timestampToMs(raw) {
   return { timestampMs: null, unit: 'AMBIGUOUS_MAGNITUDE' }
 }
 
-function findPriceMaps(normalized) {
-  const found = []
-  walk(normalized, node => {
-    if (node.kind === 'constructor' && node.index === 2 &&
-        node.fields?.length === 1 && node.fields[0]?.kind === 'map') {
-      found.push(node.fields[0])
-    }
-  })
-  return found
-}
-
-function findExtendedMaps(normalized) {
-  const found = []
-  walk(normalized, node => {
-    if (node.kind === 'constructor' && node.index === 1 &&
-        node.fields?.length === 1 && node.fields[0]?.kind === 'map') {
-      found.push(node.fields[0])
-    }
-  })
-  return found
-}
-
 function decodeFeed(datumHex, feed, tipMs) {
   if (typeof datumHex !== 'string' || !/^(?:[0-9a-fA-F]{2})+$/.test(datumHex)) {
     return { status: 'BLOCKED_DATUM_MISSING_OR_INVALID_CBOR', blockers: ['DATUM_MISSING_OR_INVALID_CBOR'] }
   }
 
   let decoded
+  let standard
   try {
     decoded = Data.from(datumHex)
+    // Use the same shared decoder exercised by the unit tests. The official
+    // Charli3 standard makes price precision, pair symbols and Extended Data
+    // optional; their absence must not be mislabeled as a malformed datum.
+    standard = decodeCharli3Datum(decoded)
   } catch (error) {
     return {
       status: 'BLOCKED_DATUM_DECODE_FAILED',
@@ -219,95 +203,110 @@ function decodeFeed(datumHex, feed, tipMs) {
   }
 
   const normalized = normalizeData(decoded)
-  const priceMaps = findPriceMaps(normalized)
-  const extendedMaps = findExtendedMaps(normalized)
-  const priceRecords = priceMaps.map((map, index) => {
-    const rawPrice = intValue(mapValue(map, 0))
-    const rawTimestamp = intValue(mapValue(map, 1))
-    const rawExpiry = intValue(mapValue(map, 2))
-    const precision = intValue(mapValue(map, 3))
-    const baseId = bytesHex(mapValue(map, 4))
-    const quoteId = bytesHex(mapValue(map, 5))
-    const baseSymbol = bytesText(mapValue(map, 6))
-    const quoteSymbol = bytesText(mapValue(map, 7))
-    const baseName = bytesText(mapValue(map, 8))
-    const quoteName = bytesText(mapValue(map, 9))
+  const priceRecords = standard.prices.map((source, index) => {
+    const rawPrice = BigInt(source.priceRaw)
+    const rawTimestamp = BigInt(source.timestampMs)
+    const rawExpiry = BigInt(source.expiryMs)
+    const precision = source.precision === null ? null : BigInt(source.precision)
     const timestamp = timestampToMs(rawTimestamp)
     const expiry = timestampToMs(rawExpiry)
     const ageMs = timestamp.timestampMs === null ? null : tipMs - timestamp.timestampMs
     const notFuture = ageMs !== null && ageMs >= 0n
     const fresh = notFuture && ageMs <= feed.documentedMaxAgeMs
     const notExpired = expiry.timestampMs !== null && expiry.timestampMs > tipMs
-    const pairMatches = baseSymbol === feed.baseSymbol && quoteSymbol === feed.quoteSymbol
-    const positivePrice = rawPrice !== null && rawPrice > 0n
+    const pairFieldsPresent = source.baseSymbol !== null || source.quoteSymbol !== null
+    const completePairFields = source.baseSymbol !== null && source.quoteSymbol !== null
+    const pairMatches = completePairFields
+      ? source.baseSymbol === feed.baseSymbol && source.quoteSymbol === feed.quoteSymbol
+      : null
+    const positivePrice = rawPrice > 0n
     const validPrecision = precision !== null && precision >= 0n && precision <= 18n
     const blockers = []
-    if (rawPrice === null) blockers.push('MISSING_OR_NON_INTEGER_PRICE')
-    else if (!positivePrice) blockers.push('NONPOSITIVE_PRICE')
-    if (rawTimestamp === null) blockers.push('MISSING_TIMESTAMP')
-    else if (timestamp.timestampMs === null) blockers.push('AMBIGUOUS_TIMESTAMP_MAGNITUDE')
+    if (!positivePrice) blockers.push('NONPOSITIVE_PRICE')
+    if (timestamp.timestampMs === null) blockers.push('AMBIGUOUS_TIMESTAMP_MAGNITUDE')
     else if (!notFuture) blockers.push('FUTURE_TIMESTAMP')
     else if (!fresh) blockers.push('STALE_TIMESTAMP')
-    if (rawExpiry === null) blockers.push('MISSING_EXPIRY')
-    else if (expiry.timestampMs === null) blockers.push('AMBIGUOUS_EXPIRY_MAGNITUDE')
+    if (expiry.timestampMs === null) blockers.push('AMBIGUOUS_EXPIRY_MAGNITUDE')
     else if (!notExpired) blockers.push('EXPIRED_PRICE_RECORD')
+    // Precision is optional in the datum standard but remains necessary for
+    // deterministic monetary conversion, so absence blocks price use.
     if (!validPrecision) blockers.push('MISSING_OR_UNSUPPORTED_PRECISION')
-    if (!pairMatches) blockers.push('EXPECTED_BASE_QUOTE_SYMBOLS_NOT_MATCHED')
+    if (pairFieldsPresent && !completePairFields) blockers.push('PARTIAL_BASE_QUOTE_IDENTITY_FIELDS')
+    if (pairMatches === false) blockers.push('EXPECTED_BASE_QUOTE_SYMBOLS_NOT_MATCHED')
     return {
       index,
-      rawPrice: rawPrice?.toString() ?? null,
+      rawPrice: rawPrice.toString(),
       precision: precision?.toString() ?? null,
+      precisionStatus: validPrecision ? 'PUBLISHED' : 'NOT_PUBLISHED_OR_UNSUPPORTED',
       exactDecimalText: validPrecision && positivePrice ? scaleDecimal(rawPrice, precision) : null,
-      baseId,
-      quoteId,
-      baseSymbol,
-      quoteSymbol,
-      baseName,
-      quoteName,
-      priceDirection: baseSymbol && quoteSymbol ? quoteSymbol + ' per ' + baseSymbol : null,
-      rawTimestamp: rawTimestamp?.toString() ?? null,
+      baseIdHex: source.baseIdHex,
+      quoteIdHex: source.quoteIdHex,
+      baseSymbol: source.baseSymbol,
+      quoteSymbol: source.quoteSymbol,
+      baseName: source.baseName,
+      quoteName: source.quoteName,
+      priceDirection: source.baseSymbol && source.quoteSymbol
+        ? source.quoteSymbol + ' per ' + source.baseSymbol
+        : null,
+      datumPairFieldsPresent: completePairFields,
+      pairIdentityMatchesOfficialFeed: pairMatches,
+      pairIdentityBinding: pairMatches === true
+        ? 'DATUM_PAIR_FIELDS_MATCH'
+        : pairMatches === false
+          ? 'DATUM_PAIR_FIELDS_MISMATCH'
+          : 'OFFICIAL_FEED_NFT_CONFIGURATION_ONLY',
+      rawTimestamp: rawTimestamp.toString(),
       timestampInterpretation: timestamp.unit,
       timestampMs: timestamp.timestampMs?.toString() ?? null,
       ageMs: ageMs?.toString() ?? null,
       freshWithinDocumentedWindow: Boolean(fresh),
-      rawExpiry: rawExpiry?.toString() ?? null,
+      rawExpiry: rawExpiry.toString(),
       expiryInterpretation: expiry.unit,
       expiryMs: expiry.timestampMs?.toString() ?? null,
       notExpiredAtChainTip: Boolean(notExpired),
-      pairIdentityMatchesOfficialFeed: pairMatches,
       positivePrice,
       blockers,
     }
   })
 
-  const matches = priceRecords.filter(record =>
-    record.baseSymbol === feed.baseSymbol && record.quoteSymbol === feed.quoteSymbol,
-  )
-  const allExtendedFields = extendedMaps.map(map => ({
-    providerId: intValue(mapValue(map, 0))?.toString() ?? null,
-    dataSourceCount: intValue(mapValue(map, 1))?.toString() ?? null,
-    dataSignatoriesCount: intValue(mapValue(map, 2))?.toString() ?? null,
-    providerSignature: bytesText(mapValue(map, 3)),
-  }))
-
+  const pairFieldsPublished = priceRecords.some(record => record.datumPairFieldsPresent)
+  const matches = priceRecords.filter(record => record.pairIdentityMatchesOfficialFeed === true)
+  const allExtendedFields = standard.extendedData ? [standard.extendedData] : []
   const blockers = []
   if (priceRecords.length === 0) blockers.push('NO_PRICE_RECORDS_FOUND')
   for (const record of priceRecords) blockers.push(...record.blockers)
-  if (matches.length !== 1) blockers.push(matches.length === 0 ? 'EXPECTED_PRICE_PAIR_NOT_FOUND' : 'DUPLICATE_EXPECTED_PRICE_PAIR')
+  if (pairFieldsPublished && matches.length !== 1) {
+    blockers.push(matches.length === 0
+      ? 'EXPECTED_PRICE_PAIR_NOT_FOUND'
+      : 'DUPLICATE_EXPECTED_PRICE_PAIR')
+  }
+  if (!pairFieldsPublished && priceRecords.length > 1) {
+    blockers.push('MULTIPLE_PRICE_RECORDS_WITHOUT_PAIR_IDENTIFIERS')
+  }
   if (allExtendedFields.length === 0) blockers.push('EXTENDED_PROVIDER_AND_SIGNATORY_METADATA_NOT_FOUND')
   return {
     status: 'OBSERVED_NOT_QUALIFIED',
     datumCborSha256: sha256(Buffer.from(datumHex, 'hex')),
     datumCborHex: datumHex.toLowerCase(),
     normalizedDatum: normalized,
+    decoder: 'scripts/lib/charli3Datum.mjs',
+    datumStandardOptionalFieldsHonored: true,
     priceRecords,
     extendedMetadata: allExtendedFields,
     expectedPair: { baseSymbol: feed.baseSymbol, quoteSymbol: feed.quoteSymbol, direction: feed.quoteSymbol + ' per ' + feed.baseSymbol },
-    expectedPairMatchCount: matches.length,
+    pairBinding: {
+      expectedPairBindingSource: 'EXACT_OFFICIAL_PREPROD_FEED_NFT_ADDRESS_AND_POLICY',
+      officialFeedNftUniqueAtConfiguredAddress: true,
+      datumPairFieldsPublished: pairFieldsPublished,
+      datumPairMatchCount: pairFieldsPublished ? matches.length : null,
+      status: pairFieldsPublished
+        ? matches.length === 1 ? 'DATUM_PAIR_FIELDS_MATCH' : 'DATUM_PAIR_FIELDS_NOT_MATCHED'
+        : 'OFFICIAL_NFT_CONFIG_ONLY_DATUM_PAIR_FIELDS_OMITTED',
+    },
     freshnessPolicy: {
       documentedMaxAgeMs: feed.documentedMaxAgeMs.toString(),
       documentedFrequencyMs: feed.documentedFrequencyMs.toString(),
-      timestampInterpretationRule: 'Magnitude normalization is reported explicitly; the datum remains unqualified until units are confirmed from the deployed validator/decoder contract.',
+      timestampInterpretationRule: 'Magnitude normalization is reported explicitly; POSIXTime values observed in the deployed datum are not assumed to be a fresh or qualified price.',
     },
     blockers,
   }
