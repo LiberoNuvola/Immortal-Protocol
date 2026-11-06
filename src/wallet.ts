@@ -1,5 +1,5 @@
 import { Blockfrost, Lucid, type Network } from 'lucid-cardano'
-import { BLOCKFROST_PREPROD_URL, BLOCKFROST_PROJECT_ID } from './config'
+import { BLOCKFROST_PROXY_URL } from './config'
 
 // Window.cardano is already declared by @lucid-evolution/core-types; a second
 // optional declaration conflicts with it (TS2687), so none is repeated here.
@@ -99,8 +99,8 @@ export function preferredWallet(): string | null {
 }
 
 export async function connect(walletId?: string, network: Network = 'Preprod'): Promise<WalletSession> {
-  if (!BLOCKFROST_PROJECT_ID) {
-    throw new Error('Preprod provider is not configured. Set VITE_BLOCKFROST_PROJECT_ID locally; never commit the key.')
+  if (!BLOCKFROST_PROXY_URL) {
+    throw new Error('Preprod provider is NOT CONFIGURED. Set the public VITE_BLOCKFROST_PROXY_URL; the provider credential is server-side only.')
   }
 
   const options = discover()
@@ -113,7 +113,7 @@ export async function connect(walletId?: string, network: Network = 'Preprod'): 
 
   const api = await provider(selected.id).enable()
   const lucid = await Lucid.new(
-    new Blockfrost(BLOCKFROST_PREPROD_URL, BLOCKFROST_PROJECT_ID),
+    new Blockfrost(BLOCKFROST_PROXY_URL.replace(/\/$/, ''), ''),
     network,
   )
   lucid.selectWallet(api)
