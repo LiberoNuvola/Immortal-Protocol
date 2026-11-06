@@ -1,0 +1,76 @@
+name: PRE-RICH ProtectedCapital — read-only Preprod census
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - .github/workflows/pre-rich-protected-capital-live-census.yml
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: pre-rich-protected-capital-live-census
+  cancel-in-progress: false
+
+jobs:
+  read-only-preprod-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact requested revision
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      # The archived deployment bundle is used only as a hash-checked script/
+      # address identity anchor. Its historical approval artifact is not read
+      # or promoted. The census script re-derives the topology from this
+      # checkout and queries current UTxOs from Koios Preprod.
+      - name: Download historical deployment identity bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: immortal-preprod-eev-approved
+          repository: ${{ github.repository }}
+          run-id: 39552468679
+          github-token: ${{ github.token }}
+          path: .tmp/preprod-deployment-bundle
+
+      - name: Select identity manifests only
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir=".tmp/preprod-deployment-bundle"
+          target_dir=".immortal-evidence/protected-capital/identity"
+          test -s "$source_dir/preprod-direct-usdm-deployment.json"
+          test -s "$source_dir/preprod-oracle-state-deployment.json"
+          mkdir -p "$target_dir"
+          cp "$source_dir/preprod-direct-usdm-deployment.json" "$target_dir/"
+          cp "$source_dir/preprod-oracle-state-deployment.json" "$target_dir/"
+          rm -rf .tmp
+
+      - name: Run current read-only Preprod ProtectedCapital census
+        env:
+          PC_CENSUS_DEPLOYMENT_MANIFEST: .immortal-evidence/protected-capital/identity/preprod-direct-usdm-deployment.json
+          PC_CENSUS_ORACLE_STATE_MANIFEST: .immortal-evidence/protected-capital/identity/preprod-oracle-state-deployment.json
+          PC_CENSUS_OUTPUT: .immortal-evidence/protected-capital/preprod-protected-capital-census.json
+        run: node --import=tsx audit/cardano-integration/preprod-protected-capital-census.mjs
+
+      - name: Upload read-only source census artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-rich-protected-capital-live-census-${{ github.run_id }}
+          path: .immortal-evidence/protected-capital/preprod-protected-capital-census.json
+          if-no-files-found: warn
+          retention-days: 30
