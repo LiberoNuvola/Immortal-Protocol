@@ -320,6 +320,9 @@ export function validateCardanoProviderProfile(profile: CardanoProviderProfile):
     digest(profile.network.genesisHash, 'network.genesisHash')
   }
 
+  if (!Array.isArray(profile.capabilities) || !Array.isArray(profile.capabilitySources)) {
+    throw new Error('provider capabilities and capabilitySources must be arrays')
+  }
   const declarations = new Map<CardanoProviderCapability, CardanoProviderCapabilityDeclaration>()
   for (const declaration of profile.capabilities) {
     if (!CARDANO_PROVIDER_CAPABILITIES.includes(declaration.capability)) {
@@ -583,13 +586,27 @@ export function validateCardanoProviderObservation(
   }
 
   const declaration = supportedDeclaration(profile, observation.capability)
+  if (!['complete', 'empty', 'partial', 'unavailable', 'malformed', 'stale', 'unsupported', 'disagreement'].includes(observation.resultClass)) {
+    throw new Error('unknown provider result class')
+  }
+  if (!['GET', 'POST'].includes(observation.request.method)) {
+    throw new Error('provider request method is invalid')
+  }
   nonEmpty(observation.request.scope, 'request.scope')
   nonEmpty(observation.request.route, 'request.route')
+  let decodedRoute: string
+  try {
+    decodedRoute = decodeURIComponent(observation.request.route)
+  } catch {
+    throw new Error('request route contains malformed percent encoding')
+  }
   if (
     !observation.request.route.startsWith('/') ||
+    observation.request.route.startsWith('//') ||
     observation.request.route.includes('?') ||
     observation.request.route.includes('#') ||
-    observation.request.route.split('/').some(segment => segment === '..')
+    observation.request.route.includes('\\\\') ||
+    decodedRoute.split('/').some(segment => segment === '..' || segment === '.')
   ) {
     throw new Error('request route must be a safe relative path without query or traversal')
   }
@@ -642,6 +659,9 @@ export function validateCardanoProviderObservation(
 
   validateCoverage(observation.coverage, observation.resultClass)
 
+  if (!['stable', 'advanced', 'rollback', 'reorg', 'unknown'].includes(observation.chainChange)) {
+    throw new Error('unknown chain change classification')
+  }
   if ((observation.chainTipBefore == null) !== (observation.chainTipAfter == null)) {
     throw new Error('chain tip before/after must both be present or both be absent')
   }
@@ -677,6 +697,10 @@ export function validateCardanoProviderObservation(
 
   if (observation.indexerWatermark) {
     const watermark = observation.indexerWatermark
+    if (!['slot', 'block', 'timestamp'].includes(watermark.kind) ||
+        !['current', 'stale', 'unknown'].includes(watermark.freshness)) {
+      throw new Error('indexer watermark kind/freshness is invalid')
+    }
     nonEmpty(watermark.value, 'indexerWatermark.value')
     timestamp(watermark.observedAt, 'indexerWatermark.observedAt')
     if (watermark.freshness === 'stale' && observation.resultClass !== 'stale') {
@@ -748,6 +772,9 @@ export function validateCardanoProviderObservation(
 export function validateProviderQualificationDecision(
   decision: ProviderQualificationDecision,
 ): void {
+  if (!['qualified', 'not-qualified', 'insufficient-evidence', 'disputed', 'expired'].includes(decision.status)) {
+    throw new Error('provider qualification status is invalid')
+  }
   nonEmpty(decision.decisionId, 'decisionId')
   nonEmpty(decision.profileId, 'profileId')
   nonEmpty(decision.purposeId, 'purposeId')
