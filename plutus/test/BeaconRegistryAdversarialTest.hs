@@ -22,6 +22,8 @@ import PlutusLedgerApi.V1.Time (POSIXTime (..))
 import PlutusLedgerApi.V1.Tx (TxId (..), TxOutRef (..))
 import PlutusLedgerApi.V1.Value
   ( Value
+  , CurrencySymbol (..)
+  , TokenName (..)
   , adaSymbol
   , adaToken
   , singleton
@@ -232,8 +234,8 @@ prizeValue :: Value
 prizeValue =
   singleton adaSymbol adaToken 5000000
     <> singleton
-         (PlutusLedgerApi.V1.Value.CurrencySymbol (bytes [10 .. 37]))
-         (PlutusLedgerApi.V1.Value.TokenName (bytes [48]))
+         (CurrencySymbol (bytes [10 .. 37]))
+         (TokenName (bytes [48]))
          1
 
 prizeRef :: TxOutRef
