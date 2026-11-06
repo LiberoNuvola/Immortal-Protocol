@@ -1,32 +1,57 @@
+function constructorIndex(value) {
+  if (!value || typeof value !== 'object') return null
+  if (Number.isInteger(value.index)) return value.index
+  if (Number.isInteger(value.constr)) return value.constr
+  if (Number.isInteger(value.constructor)) return value.constructor
+  return null
+}
+
 export function plutusConstr(value, label) {
-  if (!value || typeof value !== 'object' || !Number.isInteger(value.constructor) || !Array.isArray(value.fields)) {
+  const index = constructorIndex(value)
+  if (index === null || !Array.isArray(value.fields)) {
     throw new Error('CHARLI3_INVALID_CONSTR:' + label)
   }
-  return value
+  return { constructor: index, fields: value.fields }
+}
+
+function rawInteger(value) {
+  if (typeof value === 'bigint') return value.toString()
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return String(value)
+  if (value && typeof value === 'object' && value.int !== undefined) return String(value.int)
+  return null
 }
 
 function plutusMap(value, label) {
-  if (!value || typeof value !== 'object' || !Array.isArray(value.map)) {
+  let entries
+  if (value instanceof Map) {
+    entries = [...value.entries()].map(([k, v]) => ({ k, v }))
+  } else if (value && typeof value === 'object' && Array.isArray(value.map)) {
+    entries = value.map
+  } else {
     throw new Error('CHARLI3_INVALID_MAP:' + label)
   }
+
   const result = new Map()
-  for (const entry of value.map) {
-    const key = entry?.k?.int
-    if (key === undefined || !/^-?\d+$/.test(String(key))) throw new Error('CHARLI3_MAP_KEY_INVALID:' + label)
+  for (const entry of entries) {
+    const key = rawInteger(Array.isArray(entry) ? entry[0] : entry?.k)
+    if (key === null || !/^-?\\d+$/.test(key)) throw new Error('CHARLI3_MAP_KEY_INVALID:' + label)
     const numericKey = Number(key)
-    if (!Number.isSafeInteger(numericKey) || result.has(numericKey)) throw new Error('CHARLI3_MAP_KEY_DUPLICATE_OR_UNSAFE:' + label)
-    result.set(numericKey, entry.v)
+    if (!Number.isSafeInteger(numericKey) || result.has(numericKey)) {
+      throw new Error('CHARLI3_MAP_KEY_DUPLICATE_OR_UNSAFE:' + label)
+    }
+    result.set(numericKey, Array.isArray(entry) ? entry[1] : entry.v)
   }
   return result
 }
 
 function integer(value, label) {
-  const raw = value && typeof value === 'object' ? value.int : undefined
-  if (raw === undefined || !/^-?\d+$/.test(String(raw))) throw new Error('CHARLI3_INTEGER_INVALID:' + label)
+  const raw = rawInteger(value)
+  if (raw === null || !/^-?\\d+$/.test(raw)) throw new Error('CHARLI3_INTEGER_INVALID:' + label)
   return BigInt(raw)
 }
 
 function bytes(value, label) {
+  if (value instanceof Uint8Array) return Buffer.from(value).toString('hex').toLowerCase()
   if (!value || typeof value !== 'object' || typeof value.bytes !== 'string' || !/^(?:[0-9a-f]{2})*$/i.test(value.bytes)) {
     throw new Error('CHARLI3_BYTES_INVALID:' + label)
   }
