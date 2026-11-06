@@ -1,5 +1,7 @@
 name: Charli3 Preprod Oracle Feed — Read-Only Observation
 
+run-name: Charli3 Preprod read-only feed observation — ${{ github.sha }}
+
 on:
   push:
     branches:
