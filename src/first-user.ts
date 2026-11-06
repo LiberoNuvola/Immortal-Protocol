@@ -46,7 +46,7 @@ async function checkReadiness() {
     } else {
       mark('treasury', false, 'OBSERVATION UNAVAILABLE')
     }
-    set('first-user-status', `Runtime observation completed · Issue admission producer remains OPEN · provider ${BLOCKFROST_PROJECT_ID ? 'configured' : 'not configured'} · ${new Date().toISOString()}`)
+    set('first-user-status', `Runtime observation completed · Issue admission producer remains OPEN · provider ${BLOCKFROST_PROXY_URL ? 'configured' : 'not configured'} · ${new Date().toISOString()}`)
   } catch (error) {
     set('first-user-status', error instanceof Error ? error.message : String(error))
     mark('wallet', false, 'OPEN')
