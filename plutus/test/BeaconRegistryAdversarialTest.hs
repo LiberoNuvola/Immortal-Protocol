@@ -51,15 +51,18 @@ import PlutusTx.Test.Run.Code
   , assertEvaluatesWithError
   )
 
-import Beacon (deriveBeacon)
+import Beacon (deriveBeacon, encodeBeaconTarget, ticketCommitment)
 import BeaconRegistry (compiledValidator)
 import GameRules (defaultPrizeTable)
+import MintPolicy (compiledPolicyFactory)
+import OracleTypes (OracleDatum (..), OracleStateId (..))
 import PrizeValidator (compiledValidatorFactory)
 import Types
   ( BeaconRegistryDatum (..)
   , BeaconRegistryAction (..)
   , BeaconStatus (..)
   , BeaconTarget (..)
+  , B1PrizePoolDatum (..)
   , PrizeAction (..)
   , PrizeDatum (..)
   , PrizeStatus (..)
@@ -68,9 +71,12 @@ import Types
 bytes :: [Integer] -> BuiltinByteString
 bytes = foldr consByteString emptyByteString
 
-registryHash, prizeHash :: ScriptHash
+registryHash, prizeHash, counterHash, treasuryHash, poolHash :: ScriptHash
 registryHash = ScriptHash (bytes [71 .. 98])
 prizeHash = ScriptHash (bytes [101 .. 128])
+counterHash = ScriptHash (bytes [11 .. 38])
+treasuryHash = ScriptHash (bytes [41 .. 68])
+poolHash = ScriptHash (bytes [131 .. 158])
 
 relayerPkh, buyerPkh, lookalikeStakePkh :: PubKeyHash
 relayerPkh = PubKeyHash (bytes [131 .. 158])
@@ -188,12 +194,6 @@ applyRegistry datum action context =
     PlutusTx.unsafeApplyCode p2
       (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
 
-registryCase :: String -> BeaconRegistryDatum -> BeaconRegistryDatum
-  -> [PubKeyHash] -> Int -> Int -> Bool
-  -> PlutusTx.CompiledCode BuiltinUnit
-registryCase _ inputDatum outputDatum signatories extraInputs outputCount preserveValue =
-  applyRegistry inputDatum (RegistryPublish mcHash materiosContext)
-    (registryContext inputDatum outputDatum signatories extraInputs outputCount preserveValue)
 
 basePrizeDatum :: PrizeDatum
 basePrizeDatum =
@@ -298,13 +298,189 @@ applySyncBeacon context =
     PlutusTx.unsafeApplyCode p6
       (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
 
+
+-- T00 positive-price MintPolicy wrapper fixture. The Registry is a reference
+-- input only: it has not been spent through BeaconRegistry, and its nominated
+-- relayer is the buyer. The quote is synthetic and exists only to make the
+-- real Economic.totalUsdmValue path evaluate to exactly 100 sub-units.
+ticketPolicyBytes :: BuiltinByteString
+ticketPolicyBytes = bytes [161 .. 188]
+
+ticketPolicy :: CurrencySymbol
+ticketPolicy = CurrencySymbol ticketPolicyBytes
+
+ticketNameBytes :: BuiltinByteString
+ticketNameBytes = bytes [48] -- canonical integerToBytes 0 = UTF-8 "0"
+
+ticketName :: TokenName
+ticketName = TokenName ticketNameBytes
+
+oraclePolicy, oracleName :: BuiltinByteString
+oraclePolicy = bytes [37 .. 64]
+oracleName = bytes [65 .. 92]
+
+oraclePublisher :: PubKeyHash
+oraclePublisher = relayerPkh
+
+oracleState :: OracleStateId
+oracleState = OracleStateId oraclePolicy oracleName
+
+oracleNow :: Integer
+oracleNow = 10000000
+
+ticketPlayerCommitment :: BuiltinByteString
+ticketPlayerCommitment = bytes [17, 18, 19, 20]
+
+ticketPrice :: Integer
+ticketPrice = 100
+
+salePrizeDatum :: PrizeDatum
+salePrizeDatum =
+  PrizeDatum
+    { pdTicketPolicy = ticketPolicyBytes
+    , pdTicketName = ticketNameBytes
+    , pdPlayerCommitment = ticketPlayerCommitment
+    , pdPriceUsdm = ticketPrice
+    , pdCommitment =
+        ticketCommitment
+          ticketNameBytes
+          ticketPlayerCommitment
+          "V1"
+          0
+          ticketPrice
+          (encodeBeaconTarget target)
+    , pdGameVersion = "V1"
+    , pdTicketNonce = 0
+    , pdPrizeAmount = 0
+    , pdPaymentPolicy = emptyByteString
+    , pdPaymentName = emptyByteString
+    , pdStatus = Pending
+    , pdResult = emptyByteString
+    , pdPrizeTier = 0
+    , pdBeaconTarget = target
+    , pdBeaconStatus = BeaconPending
+    , pdBeaconValue = emptyByteString
+    , pdMcHash = emptyByteString
+    , pdMateriosContext = emptyByteString
+    , pdPrizePoolHash = bytes [131 .. 158]
+    , pdIssuedAt = 1000
+    , pdExpiresAt = 9000
+    , pdRow1Tier = 0
+    , pdRow2Tier = 0
+    }
+
+salePoolBefore :: B1PrizePoolDatum
+salePoolBefore =
+  B1PrizePoolDatum
+    { ppTotalLiquidity = 100000
+    , ppPendingLiabilities = 1000
+    , ppUnresolvedReserve = 0
+    , ppUnresolvedTicketCount = 0
+    , ppLockedJackpot = 2000
+    , ppJackpotThreshold = 5000
+    , ppSuspendedClasses = 0
+    , ppPrizeHash = prizeHash
+    }
+
+salePoolAfter :: B1PrizePoolDatum
+salePoolAfter =
+  salePoolBefore
+    { ppUnresolvedReserve = ticketPrice
+    , ppUnresolvedTicketCount = 1
+    }
+
+saleOracleReference :: TxInInfo
+saleOracleReference =
+  TxInInfo
+    (TxOutRef (TxId (bytes [46 .. 77])) 0)
+    (TxOut
+      (Address (PubKeyCredential oraclePublisher) Nothing)
+      (singleton (CurrencySymbol oraclePolicy) (TokenName oracleName) 1)
+      (inlineDatum (OracleDatum emptyByteString emptyByteString ticketPrice oracleNow oraclePublisher))
+      Nothing)
+
+saleRegistryReference :: TxInInfo
+saleRegistryReference =
+  let fakePending = pendingRegistry { brRelayerPkh = buyerPkh }
+  in TxInInfo
+      (TxOutRef (TxId (bytes [78 .. 109])) 0)
+      (outputAt (scriptAddress registryHash) mempty (inlineDatum fakePending))
+
+saleTxInfo :: TxInfo
+saleTxInfo =
+  let
+    poolValue = singleton adaSymbol adaToken 10000000
+    ticketOutputValue =
+      singleton adaSymbol adaToken 3000000
+        <> singleton ticketPolicy ticketName 1
+    oracleReference = saleOracleReference
+    treasuryOutput =
+      outputAt (scriptAddress treasuryHash)
+        (singleton adaSymbol adaToken 2600000)
+        (inlineDatum ())
+    poolInput =
+      TxInInfo
+        (TxOutRef (TxId (bytes [110 .. 141])) 0)
+        (outputAt (scriptAddress poolHash) poolValue (inlineDatum salePoolBefore))
+  in
+    TxInfo
+      [ TxInInfo
+          (TxOutRef (TxId (bytes [142 .. 173])) 0)
+          (outputAt (scriptAddress counterHash) mempty (inlineDatum (0 :: Integer)))
+      , poolInput
+      ]
+      [saleRegistryReference, oracleReference]
+      [ outputAt (scriptAddress counterHash) mempty (inlineDatum (1 :: Integer))
+      , outputAt (scriptAddress prizeHash) ticketOutputValue (inlineDatum salePrizeDatum)
+      , treasuryOutput
+      , outputAt (scriptAddress poolHash) poolValue (inlineDatum salePoolAfter)
+      , outputAt (Address (PubKeyCredential buyerPkh) Nothing)
+          (singleton ticketPolicy ticketName 1)
+          (inlineDatum ())
+      ]
+      mempty
+      (singleton ticketPolicy ticketName 1)
+      []
+      AssocMap.empty
+      (interval (POSIXTime oracleNow) (POSIXTime oracleNow))
+      [buyerPkh]
+      AssocMap.empty
+      AssocMap.empty
+      (TxId (bytes [174 .. 205]))
+
+applyPositivePriceMint :: PlutusTx.CompiledCode BuiltinUnit
+applyPositivePriceMint =
+  let
+    context = ScriptContext saleTxInfo (Minting ticketPolicy)
+    p1 = PlutusTx.unsafeApplyCode compiledPolicyFactory
+      (Lift.liftCode plcVersion100 counterHash)
+    p2 = PlutusTx.unsafeApplyCode p1
+      (Lift.liftCode plcVersion100 prizeHash)
+    p3 = PlutusTx.unsafeApplyCode p2
+      (Lift.liftCode plcVersion100 registryHash)
+    p4 = PlutusTx.unsafeApplyCode p3
+      (Lift.liftCode plcVersion100 treasuryHash)
+    p5 = PlutusTx.unsafeApplyCode p4
+      (Lift.liftCode plcVersion100 poolHash)
+    p6 = PlutusTx.unsafeApplyCode p5
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData oracleState))
+    p7 = PlutusTx.unsafeApplyCode p6
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData oraclePublisher))
+    p8 = PlutusTx.unsafeApplyCode p7
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData ()))
+  in
+    PlutusTx.unsafeApplyCode p8
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
+
 main :: IO ()
 main = do
-  let publish = RegistryPublish mcHash materiosContext
-      valid = registryCase "valid_publish" pendingRegistry readyRegistry
-        [relayerPkh] 0 1 True
+  assertEvaluatesSuccessfully applyPositivePriceMint
+  putStrLn "CHARACTERIZATION: positive-price MintPolicy CEK accepts a Pending Registry reference whose brRelayerPkh is buyer-controlled; synthetic Oracle quote only"
 
-  assertEvaluatesSuccessfully valid
+  let publish = RegistryPublish mcHash materiosContext
+  assertEvaluatesSuccessfully
+    (applyRegistry pendingRegistry publish
+      (registryContext pendingRegistry readyRegistry [relayerPkh] 0 1 True))
   putStrLn "PASS: RegistryPublish accepts derived Beacon with designated signer"
 
   assertEvaluatesWithError
