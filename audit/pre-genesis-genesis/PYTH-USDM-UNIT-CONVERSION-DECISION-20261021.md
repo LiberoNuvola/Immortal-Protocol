@@ -919,3 +919,22 @@ For the ADA-input side only, applying the four CEX ADA/USD midpoint range from �
 **Disposition:** EXACT POOLDATUM + OFFICIAL SWAP FORMULA SUPPORT A REPRODUCIBLE THEORETICAL 1%-MARGINAL-MOVE SIZE / EXECUTABLE ±1% DEPTH AND MANIPULATION RESISTANCE NOT QUALIFIED / USD/USDM NOT QUALIFIED.
 
 Source references: [Minswap V2 formula specification](https://github.com/minswap/minswap-dex-v2/blob/c3293ad435792ba502f5a2b1691c6736e5f167e6/amm-v2-docs/formula.md) · [Minswap V2 integer swap implementation](https://github.com/minswap/minswap-dex-v2/blob/c3293ad435792ba502f5a2b1691c6736e5f167e6/lib/amm_dex_v2/math.ak) · [Exact Minswap V2 observation and artifact in §42](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196843453).
+
+
+## 46. Agent A — exact-head EEV EV1–EV7 repeated after §45 curve-depth arithmetic correction — 2026-11-06
+
+The workflow [PRE-RICH Preprod EEV — Source Qualification Only #42209117257](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42209117257) completed **SUCCESS** on the exact memo HEAD `c2c3a177fc0c2dcfbff5b78d0aee81c1a9220eb9`. The documentation-only curve-depth arithmetic correction did not affect the direct-tUSDM qualification.
+
+- Profile: `PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1`, status `qualified`.
+- EV1–EV7: all passed.
+- Exact B1 Pool out-ref: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- Physical source: 1,000,000,000 atomic tUSDM → 100,000 USDM subunits.
+- Qualification evidence hash: `7b18fca1bf57129b64ca0af7ee76de441e51dc0ad22f11ed82e439d96b4dc1e2`.
+- Artifact [13497946999](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42209117257/artifacts/13497946999), ZIP SHA-256 `274187eefbcc096acf4f45f5566d7122b71e7dea50c223cf363882268d132a33`.
+- Deployment approval: `NOT_CREATED`.
+
+The same run re-observed the existing Oracle State singleton: timestamp age `2482714858` ms against the configured `3600000` ms maximum — **STALE**. The direct source-set remains `OBSERVED_NOT_QUALIFIED`; the ProtectedCapital census remains `INTERNAL_RECONCILIATION_ONLY`, with zero PrizeValidator UTxOs and source completeness/provider attestation false. No PA1–PA7 or full ProtectedCapital qualification is implied.
+
+On this exact HEAD, Security Credential Boundary, Governance Adversarial Lab, Portability, Protocol Declaration and Cardano Adapter Sale all passed; Documentation Link Check is the only failed general workflow, still for the pre-existing Agent C relative link. No transaction, wallet signature, deployment approval, oracle refresh, or ledger write occurred.
+
+**Disposition:** REPEATED EXACT-HEAD EV1–EV7 PASS / DIRECT PHYSICAL CAPITAL PROFILE REPRODUCIBLE / ORACLE STALE / SOURCE-SET NOT QUALIFIED / PROTECTEDCAPITAL INTERNAL ONLY / APPROVAL NOT CREATED / FIRST ISSUE BLOCKED.
