@@ -67,8 +67,7 @@ jobs:
       VITE_B2_CONTROL_TOKEN_NAME_HEX: ${{ vars.VITE_B2_CONTROL_TOKEN_NAME_HEX }}
       VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS: ${{ vars.VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS }}
       VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS: ${{ vars.VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS }}
-      VITE_BLOCKFROST_PREPROD_URL: ${{ vars.VITE_BLOCKFROST_PREPROD_URL }}
-      VITE_BLOCKFROST_PROJECT_ID: ${{ vars.VITE_BLOCKFROST_PROJECT_ID }}
+      VITE_BLOCKFROST_PROXY_URL: ${{ vars.VITE_BLOCKFROST_PROXY_URL }}
       VITE_ISSUE_AUTHORITY_ENDPOINT: ${{ vars.VITE_ISSUE_AUTHORITY_ENDPOINT }}
       VITE_V3_CARRIER_FACTORY_URL: ${{ vars.VITE_V3_CARRIER_FACTORY_URL }}
     # Public protocol pages do not require DEMETER/Preprod secrets at build time.
@@ -102,7 +101,7 @@ jobs:
             if (!/\/issue-admission$/.test(endpoint.pathname)) {
               throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must target the /issue-admission route')
             }
-            const required = [
+            const proxyValue = process.env.VITE_BLOCKFROST_PROXY_URL?.trim()\n            if (!proxyValue) throw new Error('Issue endpoint configured, but VITE_BLOCKFROST_PROXY_URL is missing')\n            const proxy = new URL(proxyValue)\n            if (proxy.protocol !== 'https:' || proxy.username || proxy.password || !/\\/blockfrost\\/?$/.test(proxy.pathname)) {\n              throw new Error('VITE_BLOCKFROST_PROXY_URL must be an HTTPS /blockfrost endpoint without embedded credentials')\n            }\n            const required = [
               'VITE_COUNTER_SCRIPT_ADDRESS',
               'VITE_TREASURY_ADDRESS',
               'VITE_TICKET_POLICY_ID',
