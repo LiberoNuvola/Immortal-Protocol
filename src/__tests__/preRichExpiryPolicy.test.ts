@@ -140,6 +140,33 @@ describe('PRE-RICH expiry policy boundary', () => {
     expect(result.horizonMs).toBeGreaterThanOrEqual(PRE_RICH_EXPIRY_MIN_HORIZON_MS)
   })
 
+  it('uses the PRE-RICH V1 reserve-pressure ratio with integer division', () => {
+    const state = {
+      ...issuanceState,
+      eev: 10_000n,
+      unresolvedReserve: 1_000n,
+    }
+
+    const result = crystallizeTicketExpiry(preRichExpiryPolicyV1, state, 0n)
+
+    expect(result.horizonMs).toBe(
+      PRE_RICH_EXPIRY_MAX_HORIZON_MS / 11n,
+    )
+    expect(result.horizonMs).toBeGreaterThanOrEqual(PRE_RICH_EXPIRY_MIN_HORIZON_MS)
+  })
+
+  it('clamps a highly stressed reserve-pressure result to the declared 2-hour floor', () => {
+    const state = {
+      ...issuanceState,
+      eev: 1n,
+      unresolvedReserve: 10_000n,
+    }
+
+    const result = crystallizeTicketExpiry(preRichExpiryPolicyV1, state, 0n)
+
+    expect(result.horizonMs).toBe(PRE_RICH_EXPIRY_MIN_HORIZON_MS)
+  })
+
   it('preserves a zero horizon as an exact policy result', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'zero-fixture',
