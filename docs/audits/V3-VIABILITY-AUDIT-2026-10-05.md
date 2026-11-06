@@ -550,3 +550,25 @@ No answer is inferred here. Do not add a no-op/RETAIN economic transition, senti
 Section 19's 500 → 1 result is a synthetic EEV fixture showing that the initial class-0 Issue is not itself a QNE action under the assumed one-unit receipt. Section 20 identifies an existing policy concept (HALT) worth evaluating as the conservative alternative, but **does not establish that HALT is available at S0 or that it is non-eroding under Ω**.
 
 The exact-head test commit is `570fd8e9627acdb8170fefbab6d420581748d363`; its Haskell workflow `42177503315` was still reported `in_progress` at `Setup Haskell` when checked. Section 19 remains **added, not CI-verified** until a terminal exact-head result is observed.
+
+
+### 20.1 Hysteresis production-consumer check
+
+A repository code-search and direct read of `PRE-RICH/src/PreRichHysteresisBinding.ts`,
+`src/preRichHysteresis.ts`, and `PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts`
+found the deterministic derivation/assertion in the implementation module and its conformance
+tests, but no production caller that supplies an authoritative capacity observation and commits
+the derived result into the canonical V3/Cardano state.
+
+The existing Hysteresis conformance workflow runs the TypeScript unit/conformance tests. That
+proves the pure controller and binding checks against their fixtures; it does not prove a live
+capacity producer, authenticated application of `RETAIN/CONTRACT/HALT`, or an on-chain control
+state update.
+
+Therefore the operational chain still has an unfilled edge:
+
+`authoritative capacity + exact X(P) → derivePreRichControl → authenticated state binding → V3/Cardano commit`
+
+The current repository evidence establishes the first derivation function and test seam, not the
+production chain. This finding is scoped to the repository search at this HEAD; it is not a claim
+that no external/off-repository consumer exists.
