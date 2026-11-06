@@ -8,7 +8,7 @@ describe('Cardano provider credential boundary', () => {
   it('uses only statically enumerated public Vite environment properties', () => {
     const config = read('src/config.ts')
     expect(config).not.toMatch(/import\.meta\s+as\s+any|import\.meta\.env\s*\[/)
-    expect(config).toContain('import.meta.env.VITE_BLOCKFROST_PROXY_URL')
+    expect(config).toMatch(/import\\.meta\\.env\\?\\.VITE_BLOCKFROST_PROXY_URL/)
     expect(config).not.toContain('VITE_BLOCKFROST_PROJECT_ID')
     expect(config).not.toContain('VITE_BLOCKFROST_PREPROD_URL')
   })
