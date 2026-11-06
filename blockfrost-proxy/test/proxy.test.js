@@ -23,7 +23,7 @@ test('requires server credential and explicit origins', () => {
 test('CBOR transaction must be one complete top-level array', () => {
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03])), true)
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01])), false)
-  assert.equal(isCardanoTransactionCbor(Buffer.from([0x01])), false)
+  assert.equal(isCardanoTransactionCbor(Buffer.from([0x01])), false)\n  assert.equal(isCardanoTransactionCbor(Buffer.from([0x81, 0x00])), false)
   assert.equal(isCardanoTransactionCbor(Buffer.from([0x84, 0x00, 0x01, 0x02, 0x03, 0x04])), false)
 })
 test('route allowlist is exact and method-bound', () => {
@@ -93,7 +93,7 @@ test('rejects wrong submit content type, malformed CBOR and over-limit body', as
     assert.equal(large.status, 413)
   })
 })
-test('upstream failure and timeout are bounded and sanitized', async () => {
+test('bounds upstream response bytes and per-process request rate', async () => {\n  const large = makeApp(async () => new Response(Buffer.alloc(5 * 1024 * 1024 + 1), { status: 200 }))\n  await withServer(large, async (base) => {\n    const response = await fetch(base + '/blockfrost/epochs/latest/parameters', { headers: { Origin: ORIGIN } })\n    assert.equal(response.status, 502)\n    assert.deepEqual(await response.json(), { error: 'upstream_response_too_large' })\n  })\n  const limited = makeApp(undefined, { rateMax: 1 })\n  await withServer(limited, async (base) => {\n    const request = () => fetch(base + '/blockfrost/epochs/latest/parameters', { headers: { Origin: ORIGIN } })\n    const first = await request()\n    const second = await request()\n    assert.equal(first.status, 200)\n    assert.equal(second.status, 429)\n  })\n})\n\ntest('upstream failure and timeout are bounded and sanitized', async () => {
   const failed = makeApp(async () => { throw new Error('secret upstream detail') })
   await withServer(failed, async (base) => {
     const response = await fetch(base + '/blockfrost/epochs/latest/parameters', { headers: { Origin: ORIGIN } })
