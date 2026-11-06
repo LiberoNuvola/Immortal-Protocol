@@ -834,3 +834,60 @@ After the Agent A market matrix commit, the workflow [PRE-RICH Preprod EEV — S
 This is another exact-head repeat of the direct physical-source profile. It does not qualify the external USD/USDM reference, establish PA1–PA7, full ProtectedCapital completeness, R1/Kc/QNE/Ω, or authorize first Issue. The current branch subsequently advanced by documentation-only commit `3143969d...`; this EEV PASS is explicitly bound to SHA `61ac5825...`, not claimed as a new exact-head PASS on `3143969d...`.
 
 The same SHA's general conformance workflows passed for Declaration, Governance, Cardano Adapter Sale, Portability and Security Credential Boundary. Documentation Link Check remains a failure for the previously identified Agent C relative link to `docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md`; Agent A did not modify the Agent C file. No approval, transaction, signature, deployment, wallet action or ledger write occurred.
+
+
+## 38. Agent A — Minswap V2 Mainnet USDM/ADA pool raw UTxO + datum replay PASS — 2026-11-06
+
+The read-only observer [run #42207819141](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42207819141) completed **SUCCESS** on exact source SHA `10a49b61a156265555b6dbfb3573521e4bba7576`. It queried the exact LP asset UTxOs through Koios, selected the unique output at the Minswap V2 pool script credential carrying the singleton `MSP` Pool Validity token and the target LP unit, refreshed that exact out-reference with `utxo_info`, retrieved the datum CBOR, decoded it, and reconciled the output with the official Minswap V2 source invariants.
+
+### Exact live identity and snapshot
+
+- Network: Cardano Mainnet.
+- Snapshot tip before and after all queries unchanged: block 14,165,353; absolute slot 202,396,914; hash `a52f89f8e37507f718350e889000786081fcccab0ee4f5d7acba236743ae7ad2`.
+- Pool output: `1024f243033412f3969d8b6d07d19ecb9bdd51e9c26c2f45d2cd43ce7f483113#1`, at block 14,165,256.
+- Pool address: `addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a`.
+- Payment credential / script hash: `ea07b733d932129c378af627436e7cbc2ef0bf96e0036bb51b3bde6b`.
+- Pool auth token: exact Minswap V2 policy `f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c`, name `4d5350` (`MSP`), quantity 1.
+- Exact datum assets: ADA (empty policy/name) and Moneta USDM (policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`, asset name `0014df105553444d`). This is the Mainnet issuer asset, not the distinct Preprod tUSDM.
+
+### Datum / Value reconciliation
+
+The datum is 132 bytes (264 hex characters). Its BLAKE2b-256 hash matches the output's datum hash exactly: `07898890d719b73759a394beac5a277040ec48ba37d52aea5552243b7969c19f`.
+
+Decoded PoolDatum:
+- `totalLiquidity`: `642143897673`.
+- Datum curve reserve A (ADA): `1964964463827` lovelace = 1,964,964.463827 ADA.
+- Datum curve reserve B (USDM): `363838353372` atomic units = 363,838.353372 USDM.
+- Base fee numerators A/B: 75 / 75.
+- Fee-sharing numerator: `Some(3666)`.
+- Dynamic fee: false.
+
+Physical output Value:
+- Total lovelace: `1965012653333`; after the official 4,500,000 lovelace minimum pool ADA, physical ADA reserve = 1,965,008.153333 ADA.
+- Physical USDM reserve: 363,847.270586 USDM.
+- Value-minus-Datum surplus: **43.689506 ADA** and **8.917214 USDM**.
+- Locked LP asset quantity: `9223371394710878144`; it matches the official Minswap V2 formula `MAX_INT64 - (totalLiquidity - 10)`.
+- LP name recomputed from the exact datum asset pair using the official SHA3-256 derivation: `7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171`, exactly matching the canonical target LP unit.
+
+Important semantic correction: Minswap V2 deliberately maintains two reserve views. The datum reserves are used by the swap curve; the physical output Value can exceed them by earned fee/profit-sharing amounts. The official `pool_validation.ak` passes both separately into `BatchingPool`; `validate_withdraw_fee_sharing` explicitly defines earned profit-sharing as `Reserve in Value - Reserve in Datum` and computes the exact withdrawal delta as `Datum - Value`. The prior observer version incorrectly required datum reserves to equal physical Value reserves. That equality check was removed and replaced with a bounded invariant that datum reserves do not exceed physical Value reserves. The observed positive deltas are now recorded separately rather than hidden or called an error.
+
+### Spot reserve ratios — explicitly not an oracle quote
+
+- Swap-curve ratio from PoolDatum: **5.400652365579 ADA per USDM** (inverse 0.185162815954 USDM per ADA).
+- Physical Value ratio including Value-minus-Datum surplus: 5.400640082219 ADA per USDM (inverse 0.185163237093).
+- These ratios are a current pool reserve snapshot, not executable depth, TWAP, a market-wide price, or a USD/USDM quote.
+
+### Integrity and qualification boundary
+
+- Observer status: `RAW_POOL_UTXO_AND_DATUM_MATCHED`; provider used: Koios.
+- The Koios tip did not change during observation.
+- All exact checks passed: exact datum assets, recomputed LP-name derivation, Pool Auth singleton, pool-held LP formula, minimum ADA, physical ADA/USDM asset quantities, non-negative Value-minus-Datum reserve deltas, and exact native-asset set.
+- Artifact [13496094744](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42207819141/artifacts/13496094744), ZIP SHA-256 `bddb9fe0eeeac4ec4b3251dfd31ac9ac88c5eb50368f57a0d876448ba26d8815`.
+- Evidence JSON digest: `3ac3f3f503b680d066cb6a3a7b690461d44784c57c08428f0a886716bbb6c758`; independently recomputed from the downloaded artifact and matched.
+- This remains a single-indexer (Koios) observation; provider attestation and independent-node consensus proof are false. It is not an independent ledger consensus certificate.
+
+**Disposition:** EXACT MAINNET MONETA USDM/ADA POOL UTxO + DATUM + VALUE RECONCILED / CURRENT SWAP-CURVE RESERVE RATIO OBSERVED / USD/USDM NOT QUALIFIED.
+
+This closes the raw pool identity/replay subtask only. It does not provide the missing independently qualified ADA/USD leg, TWAP/history, executable depth or a manipulation-resistance bound. The pool cannot yet be consumed as a liability-bearing USD/USDM price; no 1:1 peg is assumed. The result is for the Mainnet Moneta USDM asset only and does not qualify the Preprod tUSDM source used by B1. No wallet, signing, transaction construction/submission, protocol economics, MintPolicy, Oracle schema, V3/Reveal, approval, or ledger write was performed.
+
+Sources: [Minswap V2 PoolDatum / validation source](https://github.com/minswap/minswap-dex-v2/blob/main/lib/amm_dex_v2/pool_validation.ak) · [Minswap V2 swap accounting source](https://github.com/minswap/minswap-dex-v2/blob/main/lib/amm_dex_v2/order_validation.ak) · [Minswap V2 PoolDatum types](https://github.com/minswap/minswap-dex-v2/blob/main/lib/amm_dex_v2/types.ak) · [Moneta Mainnet token identity](https://moneta.global/developers/).
