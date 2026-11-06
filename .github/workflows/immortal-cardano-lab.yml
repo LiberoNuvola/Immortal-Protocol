@@ -545,6 +545,7 @@ jobs:
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           V3_CARRIER_OUTCOME: ${{ steps.jev_v3_carrier.outcome || 'unknown' }}
+          BEACON_REGISTRY_B0_YACI_OUTCOME: ${{ steps.beacon_registry_b0_yaci.outcome || 'unknown' }}
           REVEAL_OUTCOME: ${{ steps.jev_reveal.outcome || 'unknown' }}
           HASKELL_PENDING_EXPIRE_OUTCOME: ${{ steps.haskell_pending_expire.outcome || 'unknown' }}
           AIKEN_SETUP_OUTCOME: ${{ steps.aiken-setup.outcome || 'unknown' }}
@@ -599,6 +600,17 @@ jobs:
               stepOutcome: outcome(process.env.V3_CARRIER_OUTCOME),
               evidenceRefs,
               limitations: ['This result applies only to this step, commit, run attempt, and devnet context. It is not a Preprod or mainnet qualification.'],
+            },
+            {
+              checkId: 'B0.BEACON_REGISTRY.YACI.CHARACTERIZATION',
+              requirementRef: 'Agent B B0 / Verify current BeaconRegistry initialization, nominated-relayer and value/round behavior on local Yaci',
+              stepOutcome: outcome(process.env.BEACON_REGISTRY_B0_YACI_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This is an adversarial characterization using an ephemeral CI test wallet and synthetic local-devnet data, not a Preprod or mainnet qualification.',
+                'A successful characterization confirms current acceptance of permissionless Pending creation, creator-nominated relayer publication, Registry continuation Value delta and brRound/target-round mismatch; it is not a security approval.',
+                'The trace does not prove external Materios source authenticity, B3 canonicality, or production Registry identity.',
+              ],
             },
             {
               checkId: 'REVEAL.TRACE',
