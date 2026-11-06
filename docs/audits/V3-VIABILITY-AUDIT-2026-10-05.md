@@ -497,3 +497,56 @@ https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42177503315
 At the time of this addendum, the run is still in_progress at Setup Haskell; the Economic Admission suite has not started. The assertions are **added, not yet CI-verified**.
 
 No production transition, Economic Gate, EconomicProfile, MintPolicy, B1PrizePool, V3 carrier, or Reveal semantics changed.
+
+
+## 20. HALT / QUIESCENT — EXISTING POLICY CROSSWALK, QNE CANDIDATE NOT YET BOUND (2026-11-06)
+
+This section records the implementation boundary for the existing PRE-RICH HALT policy. It does not add a new policy or authorize a new transition.
+
+### Normative/application evidence already present
+
+The PRE-RICH application specification and Constitution already state the contraction ladder:
+
+`100 → 50 → 25 → 10 → 5 → 3 → 2 → 1 → HALT`
+
+They also state that suspension affects **new sales only** and does not invalidate existing tickets or crystallized liabilities. The current Hysteresis implementation `src/preRichHysteresis.ts` returns `action = HALT` and `currentActiveClass = null` only when the previously active class is no longer maintainable and no lower class remains maintainable. It preserves `highestClassEverActivated`. `PRE-RICH/src/PreRichHysteresisBinding.ts` deterministically derives and checks this result against the observed application control.
+
+### Representation mismatch / missing ledger transition
+
+The HALT result is not yet losslessly represented in the V3/Plutus state path:
+
+1. `EconomicStateV3.EconomicControlState.ecsCurrentActiveClass` is a non-null `TicketClass`. `controlStateValid` also requires it to be a member of the profile class set. It cannot encode the Hysteresis result `currentActiveClass = null`.
+2. Setting every `TicketClassState.tcsSaleable = False` while retaining a numeric active class is a plausible encoding of "no new sales", but it is **not yet an approved, tested semantic mapping** from the canonical HALT result. Do not silently substitute it.
+3. `PreRichRegimeState` declares `Quiescent`, but its implemented predicate only defines `PreGenesis → Genesis`; it supplies no Active → Quiescent or Quiescent maintenance transition.
+4. `GenesisRegimeCarrier` currently has only `ActivateGenesis` and only validates the PRE_GENESIS → GENESIS edge. It is not a deployed Active/HALT lifecycle authority.
+
+Therefore the words HALT/QUIESCENT and the TypeScript result are existing policy/controller surfaces, not yet a Cardano-bound economic action or a QNE witness.
+
+### Candidate QNE refinement — conditions, not a decision
+
+An authenticated HALT transition is a plausible candidate for the conservative action because it could stop new obligations while preserving existing rights. To qualify it under the normative QNE condition, the deployment would still need to prove:
+
+- **Availability:** an authorized/deterministic HALT action is available at every state in the certified `Rep`, not merely when the hysteresis algorithm happens to find no maintainable class.
+- **Atomic binding:** the regime transition, V3 control/saleability representation, and canonical V3 carrier version are consumed/produced atomically; stale or concurrent actions fail closed.
+- **No accounting erasure:** all unresolved tickets, crystallized liabilities, their reserves/exposures, SafetyCapital, ReserveProtection, MandatoryFutureCosts, locked Jackpot and HighestClassEverActivated are preserved exactly unless an already-specified lifecycle transition proves the corresponding delta.
+- **No new sales:** every Issue path is disabled after HALT; no UI/relayer-only check is sufficient.
+- **Existing rights remain live:** Reveal/Claim/Expire remain available under their existing rules; suspension cannot invalidate outstanding tickets or crystallized liabilities.
+- **Buffer non-erosion:** for every event in a published, Ω-complete perimeter, `EEV(T) − ProtectedCapital(T) >= EEV(S) − ProtectedCapital(S)`, and the successor remains in `Rep`. This must include claims/settlement, expiry, funding/spend paths, fees/costs, ledger timing and any value/Oracle changes that actually affect the selected EEV profile.
+- **Quiescent continuation:** once HALT is active, the selected conservative action remains available and preserves the economic buffer for every admitted Ω successor; a one-time toggle without a stable continuation does not discharge QNE.
+
+The current Hysteresis rule alone does not establish availability at every represented state: it emits HALT only after maintenance fails. A permissionless or otherwise authorized early-stop rule, the exact relationship between the HALT controller result and the on-chain V3 state, and the Quiescent continuation semantics must be reconciled with the existing PRE-RICH authority model before implementation.
+
+### Decision items to resolve before production wiring
+
+1. Is HALT merely the deterministic endpoint when no class is maintainable, or is it also an always-available conservative action for QNE?
+2. What is the canonical on-chain encoding of `currentActiveClass = null` without weakening the V3 invariant or confusing historical active class with current saleability?
+3. Which carrier owns the atomic lifecycle transition, and how is it bound to the V3 state carrier and the existing Hysteresis observation?
+4. What exact event perimeter remains active after HALT, and how are the non-erosion and `Rep` preservation claims discharged for every Ω successor?
+
+No answer is inferred here. Do not add a no-op/RETAIN economic transition, sentinel value, privileged operator, or new threshold as a shortcut. This is a PRE-RICH application-policy/adapter refinement boundary and requires the corresponding explicit decision plus conformance evidence.
+
+### Relation to the S0 buffer test
+
+Section 19's 500 → 1 result is a synthetic EEV fixture showing that the initial class-0 Issue is not itself a QNE action under the assumed one-unit receipt. Section 20 identifies an existing policy concept (HALT) worth evaluating as the conservative alternative, but **does not establish that HALT is available at S0 or that it is non-eroding under Ω**.
+
+The exact-head test commit is `570fd8e9627acdb8170fefbab6d420581748d363`; its Haskell workflow `42177503315` was still reported `in_progress` at `Setup Haskell` when checked. Section 19 remains **added, not CI-verified** until a terminal exact-head result is observed.
