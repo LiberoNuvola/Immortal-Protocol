@@ -107,6 +107,7 @@ jobs:
           set -euo pipefail
           cabal test v3-golden-vector-tests --enable-tests --test-show-details=direct
           cabal test economic-admission-tests --enable-tests --test-show-details=direct
+          cabal test beacon-registry-adversarial-tests --enable-tests --test-show-details=direct
 
       - name: Save Cabal/Plutus build state
         if: always() && steps.plutus-cache.outputs.cache-hit != 'true'
