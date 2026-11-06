@@ -19,7 +19,7 @@ function parseOrigins(value) {
 }
 
 function validateRoute(method, pathname, searchParams) {
-  if (!pathname.startsWith('/blockfrost/') || pathname.includes('%') || pathname.includes('\\') || pathname.includes('//')) return null
+  if (!pathname.startsWith('/blockfrost/') || pathname.length > 512 || searchParams.toString().length > 128 || pathname.includes('%') || pathname.includes('\\') || pathname.includes('//')) return null
   const path = pathname.slice('/blockfrost/'.length)
   if (!path || path.split('/').some((part) => !part || part === '.' || part === '..')) return null
   const id = '[A-Za-z0-9]+'
