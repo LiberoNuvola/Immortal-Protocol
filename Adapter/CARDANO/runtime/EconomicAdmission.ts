@@ -34,11 +34,13 @@ export type EconomicAdmissionWitness = {
    * admission fixtures and non-carrier-bound economic transitions.
    */
   carrierAuthoritySignature?: string
+  /** EEV in the canonical economic state's unit basis (PRE-RICH V1: RU). */
   eev: bigint
   executableLiquidityObservation: ExecutableLiquidityObservation
   /** Independently authenticated B1 PrizePool state used for value correlation. */
   authenticatedPoolInputReference: string
   authenticatedPoolUsdmValue: bigint
+  /** Same scale as executableLiquidityObservation.declaredUsdmLiquidity (PRE-RICH V1: USDM sub-units). */
   requiredImmediateLiquidity: bigint
 }
 
