@@ -12,7 +12,7 @@
 **Status:** READ-ONLY BASELINE RECORDED; review and analytic follow-through open.
 
 New baseline:
-- `docs/COORDINATION/AGENT-A-R1-DYNAMIC-MARGIN-STATISTICAL-RESERVE-BASELINE-2026-11-06.md` (updated with exact moment reproduction at commit `ab2be9eddf1572fcceda0c163a6821496119a728`)
+- `docs/COORDINATION/AGENT-A-R1-DYNAMIC-MARGIN-STATISTICAL-RESERVE-BASELINE-2026-11-06.md` (updated with exact moment reproduction and symbolic lifecycle vectors (latest report commit `f62b22c0ac80319810094d6d5a6cbe6a48d05e3c`))
 - Commit introducing the baseline: `75f3dbb81a3740878b566528a37e5e8456de83bb`
 
 The audit distinguishes:
@@ -25,7 +25,7 @@ No statistical addend has been inserted into ProtectedCapital. No 500×, KA/KC/K
 
 ### Agent A next steps
 - Independently reproduce the current ticket-level probability moments from the canonical two-row payout table.
-- Build lifecycle vectors that display nominal face reserve, deterministic WCE, crystallized liability and the statistical estimate separately through Issue/Reveal/Claim/Expire — next.
+- Build lifecycle vectors that display nominal face reserve, deterministic WCE, crystallized liability and the statistical estimate separately through Issue/Reveal/Claim/Expire — **symbolically derived** in the A-R1 report; mixed-class variance expression remains conditional on cross-ticket independence.
 - Identify the missing specification/evidence contract for the statistical model's role, Z, mixed-class dependence, precision and admission boundary.
 - Keep the R1/QNE proof universal over the authoritative Ω; a statistical confidence estimate is not a substitute for that proof.
 
