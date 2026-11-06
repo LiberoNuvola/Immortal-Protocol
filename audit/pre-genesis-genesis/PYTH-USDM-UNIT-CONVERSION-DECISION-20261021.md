@@ -901,10 +901,14 @@ This uses the official Minswap V2 constant-product swap rule: k=x0*y0=(x0+(1-f)*
 
 ### Results — theoretical curve only
 
-| Direction | Gross input | Output | Marginal price movement |
-|---|---:|---:|---|
-| ADA → USDM | **9,895.902645 ADA** (9,895,902,645 lovelace) | **1,801.725759 USDM** (1,801,725,759 atomic units) | ADA per USDM rises 1% |
-| USDM → ADA | **1,842.776986 USDM** (1,842,776,986 atomic units) | **9,870.915800 ADA** (9,870,915,800 lovelace) | ADA per USDM falls 1% |
+| Target marginal ratio shift | ADA -> USDM gross input | USDM output | USDM -> ADA gross input | ADA output |
+|---|---:|---:|---:|---:|
+| +1% / -1% | 9,895.902645 ADA | 1,801.725759 USDM | 1,842.776986 USDM | 9,870.915800 ADA |
+| +2% / -2% | 19,742.935739 ADA | 3,576.890182 USDM | 3,713.688272 USDM | 19,791.811873 ADA |
+| +5% / -5% | 48,997.900840 ADA | 8,749.370057 USDM | 9,502.593262 USDM | 49,862.151451 ADA |
+| +10% / -10% | 96,842.424985 ADA | 16,895.197539 USDM | 19,786.456496 USDM | 101,054.660990 ADA |
+
+The 1% row is rounded to whole atomic units as shown in the ledger-precision correction; the same integer formula and rounding rule were applied to all rows.
 
 For the ADA-input side only, applying the four CEX ADA/USD midpoint range from §42 gives an indicative input notional of approximately **$1,825.249763–$1,825.991956**. The reverse side remains expressed as USDM units; it is deliberately not converted into USD because that would assume the very USDM/USD relationship Option B is intended to qualify. The two sides are not summed into a USD depth figure.
 
