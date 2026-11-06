@@ -95,10 +95,10 @@ function producerScript() {
     actionFingerprint: '6'.repeat(64),
     decisionReference,
     authoritativeObservationReference: observationReference,
-    preEEV: '100',
-    candidateEEV: '100',
-    availableExecutableLiquidity: '100',
-    requiredImmediateLiquidity: '0',
+    preEEV: '2000',
+    candidateEEV: '2000',
+    availableExecutableLiquidity: '200000',
+    requiredImmediateLiquidity: '150000',
     truthVerified: true,
     eevFresh: true,
     obligationsComplete: true,
@@ -169,10 +169,10 @@ describe('Haskell Issue admission provider', () => {
           preState: {},
           classId: 0,
           price: 1,
-          preEEV: 100,
-          candidateEEV: 100,
-          availableExecutableLiquidity: 100,
-          requiredImmediateLiquidity: 0,
+          preEEV: 2_000,
+          candidateEEV: 2_000,
+          availableExecutableLiquidity: 200_000,
+          requiredImmediateLiquidity: 150_000,
           truthVerified: true,
           eevFresh: true,
           obligationsComplete: true,
@@ -188,7 +188,7 @@ describe('Haskell Issue admission provider', () => {
           postStateHash: '5'.repeat(64),
         },
         poolInputReference: pool,
-        poolUsdmValue: 100n,
+        poolUsdmValue: 200_000n,
         liquiditySourceReferences: [pool],
         carrierStateReference: carrier,
         controlStateReference: control,
@@ -205,7 +205,7 @@ describe('Haskell Issue admission provider', () => {
       counterInputReference: counter,
       poolInputReference: pool,
       liquiditySourceReferences: [pool],
-      poolUsdmValue: 100n,
+      poolUsdmValue: 200_000n,
       classId: 0n,
       price: 1n,
       carrierStateReference: carrier,
@@ -214,7 +214,11 @@ describe('Haskell Issue admission provider', () => {
 
     expect(witness.actionClass).toBe('Issue')
     expect(witness.counterInputReference).toBe(counter)
-    expect(witness.preEEV).toBe(100n)
+    expect(witness.preEEV).toBe(2_000n)
+    expect(witness.eev).toBe(2_000n)
+    expect(witness.authenticatedPoolUsdmValue).toBe(200_000n)
+    expect(witness.executableLiquidityObservation.declaredUsdmLiquidity).toBe(200_000n)
+    expect(witness.requiredImmediateLiquidity).toBe(150_000n)
     expect(witness.issueClassId).toBe(0n)
     expect(witness.issuePrice).toBe(1n)
     expect(witness.truthVerified).toBe(true)
@@ -241,10 +245,10 @@ describe('Haskell Issue admission provider', () => {
           preState: {},
           classId: 0,
           price: 1,
-          preEEV: 100,
-          candidateEEV: 100,
-          availableExecutableLiquidity: 100,
-          requiredImmediateLiquidity: 0,
+          preEEV: 2_000,
+          candidateEEV: 2_000,
+          availableExecutableLiquidity: 200_000,
+          requiredImmediateLiquidity: 150_000,
           truthVerified: true,
           eevFresh: true,
           obligationsComplete: true,
@@ -260,7 +264,7 @@ describe('Haskell Issue admission provider', () => {
           postStateHash: '5'.repeat(64),
         },
         poolInputReference: pool,
-        poolUsdmValue: 100n,
+        poolUsdmValue: 200_000n,
         liquiditySourceReferences: [pool],
         carrierStateReference: carrier,
         controlStateReference: control,
@@ -277,7 +281,7 @@ describe('Haskell Issue admission provider', () => {
         counterInputReference: counter,
         poolInputReference: pool,
         liquiditySourceReferences: [pool],
-        poolUsdmValue: 100n,
+        poolUsdmValue: 200_000n,
         classId: 0n,
         price: 1n,
         carrierStateReference: carrier,
