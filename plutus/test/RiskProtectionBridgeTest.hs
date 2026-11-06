@@ -12,12 +12,15 @@ import Prelude
   , (++)
   , (&&)
   , error
+  , negate
   , putStrLn
   )
 
+import EconomicProfile (EconomicProfile (..))
 import PreRichEconomicProfile (preRichEconomicProfileV1)
 import RiskProtectionBridge
 
+profile :: EconomicProfile
 profile = preRichEconomicProfileV1
 
 verifiedDeterministic :: RiskAssessment
@@ -55,10 +58,36 @@ main = do
     "mismatched assessment cannot lower projected deterministic exposure"
 
   assert
+    (case deriveProtectionRequirement profile 42 1500
+      (verifiedDeterministic { raDeterministicExposure = Just 1501 }) of
+      Left DeterministicAssessmentMismatch -> True
+      _ -> False)
+    "mismatched assessment cannot overstate projected deterministic exposure"
+
+  assert
+    (case deriveProtectionRequirement (profile { epVersion = 0 }) 42 1500 verifiedDeterministic of
+      Left InvalidProfile -> True
+      _ -> False)
+    "invalid economic profile fails closed"
+
+  assert
     (case deriveProtectionRequirement profile 43 1500 verifiedDeterministic of
       Left InvalidTrajectoryId -> True
       _ -> False)
     "assessment bound to another trajectory fails closed"
+
+  assert
+    (case deriveProtectionRequirement profile (negate 1) 1500 verifiedDeterministic of
+      Left InvalidTrajectoryId -> True
+      _ -> False)
+    "negative expected trajectory identifier fails closed"
+
+  assert
+    (case deriveProtectionRequirement profile 42 1500
+      (verifiedDeterministic { raTrajectoryId = negate 1 }) of
+      Left InvalidTrajectoryId -> True
+      _ -> False)
+    "negative assessment trajectory identifier fails closed"
 
   assert
     (case deriveProtectionRequirement profile 42 1500
@@ -73,6 +102,33 @@ main = do
       Left MissingOrInvalidEvidence -> True
       _ -> False)
     "missing risk evidence fails closed"
+
+  assert
+    (case deriveProtectionRequirement profile 42 1500
+      (verifiedDeterministic { raEvidenceStatus = RiskEvidenceInvalid }) of
+      Left MissingOrInvalidEvidence -> True
+      _ -> False)
+    "invalid risk evidence fails closed"
+
+  assert
+    (case deriveProtectionRequirement profile 42 1500
+      (verifiedDeterministic { raDeterministicExposure = Nothing }) of
+      Left DeterministicAssessmentMissing -> True
+      _ -> False)
+    "missing deterministic assessment fails closed"
+
+  assert
+    (case deriveProtectionRequirement profile 42 (negate 1) verifiedDeterministic of
+      Left DeterministicAssessmentMismatch -> True
+      _ -> False)
+    "negative projected worst-case exposure fails closed"
+
+  assert
+    (case deriveProtectionRequirement profile 42 1500
+      (verifiedDeterministic { raDeterministicExposure = Just (negate 1) }) of
+      Left DeterministicAssessmentMismatch -> True
+      _ -> False)
+    "negative deterministic assessment fails closed"
 
   assert
     (case deriveProtectionRequirement profile 42 1500
