@@ -320,17 +320,32 @@ function verifyPoolOutput(row, datumBytes) {
   const valueAdaReserve = lovelace - MIN_POOL_ADA
 
   const valueAssets = new Map(assets)
-  const [assetAValue, assetBValue] = isAdaA
-    ? [valueAdaReserve, quantityOf(valueAssets, usdmUnit)]
-    : [quantityOf(valueAssets, usdmUnit), valueAdaReserve]
+  const ledgerUsdmReserve = quantityOf(valueAssets, usdmUnit)
+  const ledgerAdaReserve = valueAdaReserve
   const datumUsdmReserve = isUsdmA ? datum.reserveA : datum.reserveB
   const datumAdaReserve = isAdaA ? datum.reserveA : datum.reserveB
-  if (datumAdaReserve !== valueAdaReserve) {
-    fail('POOL_ADA_RESERVE_VALUE_MISMATCH', datumAdaReserve + '!=' + valueAdaReserve)
+
+  // Minswap V2 intentionally tracks two reserve views:
+  // - PoolDatum reserves are the swap-curve reserves.
+  // - physical Value reserves can exceed datum reserves by earned fee /
+  //   profit-sharing surplus. The official validator passes both separately
+  //   into BatchingPool and defines fee-sharing withdrawals as Value - Datum.
+  const adaValueMinusDatum = ledgerAdaReserve - datumAdaReserve
+  const usdmValueMinusDatum = ledgerUsdmReserve - datumUsdmReserve
+  if (adaValueMinusDatum < 0n || usdmValueMinusDatum < 0n) {
+    fail(
+      'POOL_DATUM_RESERVE_EXCEEDS_VALUE_RESERVE',
+      'ada=' + adaValueMinusDatum + ',usdm=' + usdmValueMinusDatum,
+    )
   }
-  if (datumUsdmReserve !== quantityOf(valueAssets, usdmUnit)) {
-    fail('POOL_USDM_RESERVE_VALUE_MISMATCH', datumUsdmReserve + '!=' + quantityOf(valueAssets, usdmUnit))
-  }
+
+  const [assetAValue, assetBValue] = isAdaA
+    ? [ledgerAdaReserve, ledgerUsdmReserve]
+    : [ledgerUsdmReserve, ledgerAdaReserve]
+  const datumReserveA = isAdaA ? datumAdaReserve : datumUsdmReserve
+  const datumReserveB = isAdaA ? datumUsdmReserve : datumAdaReserve
+  const valueReserveA = isAdaA ? ledgerAdaReserve : ledgerUsdmReserve
+  const valueReserveB = isAdaA ? ledgerUsdmReserve : ledgerAdaReserve
 
   const expectedAssetUnits = new Set([authUnit, lpUnit, usdmUnit])
   if (assets.size !== expectedAssetUnits.size ||
@@ -340,6 +355,8 @@ function verifyPoolOutput(row, datumBytes) {
 
   const adaPerUsdm = decimalRatio(datumAdaReserve, datumUsdmReserve)
   const usdmPerAda = decimalRatio(datumUsdmReserve, datumAdaReserve)
+  const physicalAdaPerUsdm = decimalRatio(ledgerAdaReserve, ledgerUsdmReserve)
+  const physicalUsdmPerAda = decimalRatio(ledgerUsdmReserve, ledgerAdaReserve)
   return {
     ref,
     address: row.address,
@@ -367,19 +384,41 @@ function verifyPoolOutput(row, datumBytes) {
       assetBReserve: assetBValue.toString(),
       lockedPoolAuthToken: quantityOf(assets, authUnit).toString(),
       poolHeldLpQuantity: lpLocked.toString(),
+      reserveViews: {
+        datumCurve: {
+          assetA: datumReserveA.toString(),
+          assetB: datumReserveB.toString(),
+        },
+        physicalValue: {
+          assetA: valueReserveA.toString(),
+          assetB: valueReserveB.toString(),
+        },
+        physicalValueMinusDatum: {
+          assetA: (valueReserveA - datumReserveA).toString(),
+          assetB: (valueReserveB - datumReserveB).toString(),
+          interpretation: 'Minswap V2 Value-minus-Datum reserve surplus; validator fee-sharing withdrawal computes Datum - Value as the exact removal delta.',
+        },
+      },
     },
     reconciliation: {
       lpAssetNameRecomputedFromExactDatumPair: computedLpName,
       lpAssetMatchesCanonicalPoolIdentifier: computedLpName === LP_NAME,
       poolHeldLpFormulaMatchesOfficialValidator: lpLocked === expectedPoolHeldLp,
-      adaReserveMatchesValueAfterMinimumAda: datumAdaReserve === valueAdaReserve,
-      usdmReserveMatchesValue: datumUsdmReserve === quantityOf(valueAssets, usdmUnit),
+      adaValueReserveMatchesLedgerValueAfterMinimumAda: ledgerAdaReserve === valueAdaReserve,
+      usdmValueReserveMatchesLedgerAssetQuantity: ledgerUsdmReserve === quantityOf(valueAssets, usdmUnit),
+      datumReservesDoNotExceedPhysicalValueReserves: adaValueMinusDatum >= 0n && usdmValueMinusDatum >= 0n,
       exactNativeAssetSetMatchesPoolValidator: true,
     },
     poolSpotReserveRatio: {
+      source: 'POOL_DATUM_SWAP_CURVE_RESERVES',
       adaPerUsdm: adaPerUsdm,
       usdmPerAda: usdmPerAda,
-      warning: 'Reserve ratio only; not an executable quote, TWAP, or USD/USDM price.',
+      warning: 'Datum reserve ratio only; not an executable quote, TWAP, or USD/USDM price.',
+    },
+    physicalValueReserveRatio: {
+      adaPerUsdm: physicalAdaPerUsdm,
+      usdmPerAda: physicalUsdmPerAda,
+      warning: 'Physical Value reserve ratio includes Value-minus-Datum surplus and is not the datum swap-curve ratio or an executable quote.',
     },
   }
 }
