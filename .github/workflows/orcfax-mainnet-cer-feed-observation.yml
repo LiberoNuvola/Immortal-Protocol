@@ -1,0 +1,66 @@
+name: Orcfax Mainnet CER Feeds — Read-Only Ledger Observation
+
+run-name: Orcfax Mainnet ADA-USD and ADA-USDM CER observation — ${{ github.sha }}
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "scripts/observeOrcfaxCerFeedsReadOnly.mjs"
+      - "scripts/lib/orcfaxCerDatum.mjs"
+      - "scripts/lib/orcfaxCerDatum.test.mjs"
+      - ".github/workflows/orcfax-mainnet-cer-feed-observation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orcfax-mainnet-cer-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Resolve official FSP pointer and inspect exact Mainnet ADA-USD / ADA-USDM CER feeds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      KOIOS_MAINNET_URL: https://api.koios.rest/api/v1
+    steps:
+      - name: Checkout exact observation source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked repository dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify observer and decoder syntax
+        run: |
+          node --check scripts/observeOrcfaxCerFeedsReadOnly.mjs
+          node --check scripts/lib/orcfaxCerDatum.mjs
+
+      - name: Run Orcfax datum and exact-rational decoder tests
+        run: npx vitest run scripts/lib/orcfaxCerDatum.test.mjs
+
+      - name: Read-only Mainnet FSP, FS token and CER statement observation
+        continue-on-error: true
+        run: |
+          mkdir -p audit/mainnet-evidence
+          node scripts/observeOrcfaxCerFeedsReadOnly.mjs --out audit/mainnet-evidence/orcfax-mainnet-cer-observation.json
+
+      - name: Upload read-only Mainnet ledger evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orcfax-mainnet-cer-observation-${{ github.sha }}
+          path: audit/mainnet-evidence/orcfax-mainnet-cer-observation.json
+          if-no-files-found: warn
+          retention-days: 30
