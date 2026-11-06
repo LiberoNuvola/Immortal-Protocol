@@ -68,8 +68,51 @@ function isCardanoTransactionCbor(buffer) {
     const initial = buffer[offset++]
     const major = initial >> 5
     const ai = initial & 31
-    if (ai === 31) throw new Error('indefinite CBOR items are not accepted')
+
+    // Indefinite-length byte/text strings are sequences of definite chunks
+    // with the same major type. Count each chunk against the node bound.
+    if (ai === 31 && (major === 2 || major === 3)) {
+      while (true) {
+        if (offset >= buffer.length) throw new Error('unterminated CBOR string')
+        if (buffer[offset] === 0xff) { offset++; break }
+        if (++nodes > 100000) throw new Error('CBOR node limit exceeded')
+        const chunkInitial = buffer[offset++]
+        const chunkMajor = chunkInitial >> 5
+        const chunkAi = chunkInitial & 31
+        if (chunkMajor !== major || chunkAi === 31) throw new Error('invalid indefinite CBOR string chunk')
+        const chunkLength = length(chunkAi)
+        if (offset + chunkLength > buffer.length) throw new Error('truncated CBOR string chunk')
+        offset += chunkLength
+      }
+      return major
+    }
+
+    // Indefinite arrays and maps terminate only at a break marker. For maps,
+    // require complete key/value pairs before accepting the terminator.
+    if (ai === 31 && major === 4) {
+      while (true) {
+        if (offset >= buffer.length) throw new Error('unterminated CBOR array')
+        if (buffer[offset] === 0xff) { offset++; break }
+        read(depth + 1)
+      }
+      return major
+    }
+    if (ai === 31 && major === 5) {
+      while (true) {
+        if (offset >= buffer.length) throw new Error('unterminated CBOR map')
+        if (buffer[offset] === 0xff) { offset++; break }
+        read(depth + 1)
+        if (offset >= buffer.length || buffer[offset] === 0xff) throw new Error('indefinite CBOR map has an unmatched key')
+        read(depth + 1)
+      }
+      return major
+    }
+    // A break marker outside an indefinite item, or an indefinite tag/simple
+    // value, is not a valid item.
+    if (ai === 31) throw new Error('unexpected CBOR break or unsupported indefinite item')
+
     if (major === 7) {
+      if (ai >= 28) throw new Error('reserved CBOR simple value')
       const size = ai === 24 ? 1 : ai === 25 ? 2 : ai === 26 ? 4 : ai === 27 ? 8 : 0
       if (offset + size > buffer.length) throw new Error('truncated CBOR simple value')
       offset += size
