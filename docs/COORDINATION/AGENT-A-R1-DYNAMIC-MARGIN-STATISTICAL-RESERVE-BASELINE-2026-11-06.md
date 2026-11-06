@@ -203,7 +203,7 @@ Var[X] = 44.7509158740234... × P²
 σ      = 6.689612535418134... × P
 ```
 
-The results reproduce the published `μ` and `σ` values to the stated precision. This was an independent arithmetic calculation over the documented integer counts; no repository test or CI workflow was run. It validates the two published moments conditional on the canonical payout table, not the RNG implementation, cross-ticket independence, choice of `Z`, or authority of a deployment statistical reserve.
+Before computing moments, the ticket-level table was also reconstructed from the row buckets `(payout, slots) = (0,17500), (1,1700), (2.5,600), (5,180), (100,19), (500,1)`: the Cartesian product of the two independent 20,000-slot rows, with ticket payout capped at 500×P, produces all 15 published ticket-level payout counts exactly (400,000,000 total pairs; zero row-count mismatches). The resulting moments reproduce the published `μ` and `σ` values to the stated precision. This was an independent arithmetic reconstruction, not a repository test or CI workflow. It validates the combinatorial table and its moments conditional on independent rows; it does not validate the RNG implementation, independence across different tickets, choice of `Z`, or authority of a deployment statistical reserve.
 
 For a common-price cohort of `N` tickets, the documented statistical estimate therefore reads:
 
