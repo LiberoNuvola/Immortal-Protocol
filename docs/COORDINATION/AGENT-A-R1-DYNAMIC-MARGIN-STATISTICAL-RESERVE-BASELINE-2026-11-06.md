@@ -156,10 +156,43 @@ The statistical reserve cannot erase that obstruction. If treated as an extra po
 | A5 — R1/QNE integration | Agent A | show which conditions are deterministic/universal and which are probabilistic/operational | no statistical shortcut for Ω |
 | B1 — Independent implementation review | Agent B | review V3, projection, carrier and Plutus mapping against this crosswalk | do not modify V3/Reveal semantics |
 
+### A2 — exact ticket-level moments independently reproduced (2026-11-06)
+
+The 15 canonical ticket-level payout rows in `GAME-ECONOMY.md` sum to exactly 400,000,000 pair outcomes. Recomputing the first and second moments from the integer outcome counts gives:
+
+```text
+E[X]   = 0.64996875 × P = (20,799 / 32,000) × P
+E[X²]  = 45.17337525 × P² = (180,693,501 / 4,000,000) × P²
+Var[X] = 44.7509158740234... × P²
+σ      = 6.689612535418134... × P
+```
+
+The results reproduce the published `μ` and `σ` values to the stated precision. This was an independent arithmetic calculation over the documented integer counts; no repository test or CI workflow was run. It validates the two published moments conditional on the canonical payout table, not the RNG implementation, cross-ticket independence, choice of `Z`, or authority of a deployment statistical reserve.
+
+For a common-price cohort of `N` tickets, the documented statistical estimate therefore reads:
+
+```text
+R_stat(N,P) = P × [0.64996875 × N + Z × 6.689612535418134... × sqrt(N)]
+```
+
+Under the same-price independent-ticket model, the marginal change from issuing one additional ticket at current count `N` is:
+
+```text
+Δ_issue R_stat = P × [μ₀ + Z × σ₀ × (sqrt(N+1) − sqrt(N))]
+```
+
+and removing one unresolved ticket at count `N > 0` changes the estimate by:
+
+```text
+Δ_remove R_stat = P × [−μ₀ + Z × σ₀ × (sqrt(N−1) − sqrt(N))]
+```
+
+where `μ₀ = 0.64996875` and `σ₀ = 6.689612535418134...`. These equations describe the statistical estimator only. They are not ProtectedCapital deltas and are not a substitute for the exact realized payout/liability transition in V3.
+
 ## 9. Verification status and next safe steps
 
 **Confirmed by source inspection**
-- PRE-RICH defines the current two-row ticket distribution and the stated `μ`/`σ` moments.
+- PRE-RICH defines the current two-row ticket distribution; an independent exact-count calculation reproduces the stated `μ`/`σ` moments to the published precision.
 - PRE-RICH documents `Nμ + Zσ√N` as a statistical risk model and keeps deterministic worst-case protection separately.
 - V3 `v3UnresolvedReserve` is the nominal face-price sum, not the statistical formula.
 - V3 ProtectedCapital uses deterministic WCE plus separately carried protected components.
