@@ -41,7 +41,7 @@ async function observe() {
       set('treasury-address','Treasury observation unavailable')
     }
 
-    set('provider-state', BLOCKFROST_PROJECT_ID ? 'CONFIGURED' : 'NOT CONFIGURED')
+    set('provider-state', BLOCKFROST_PROXY_URL ? 'CONFIGURED' : 'NOT CONFIGURED')
     set('observed-at', new Date().toISOString())
     set('runtime-status','Preprod observation completed from the configured application path.')
   } catch (error) {
