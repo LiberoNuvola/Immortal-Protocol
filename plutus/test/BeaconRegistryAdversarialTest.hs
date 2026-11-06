@@ -5,7 +5,7 @@
 -- wrappers. These are CEK evaluations over synthetic ScriptContext values;
 -- they are NOT balanced-ledger, Yaci, Preprod or deployment evidence.
 --
--- The tests deliberately retain two current-source acceptances as named
+-- The tests deliberately retain several current-source acceptances as named
 -- CHARACTERIZATION cases. They expose authority/continuity gaps and must not
 -- be interpreted as desirable protocol behavior.
 module Main where
