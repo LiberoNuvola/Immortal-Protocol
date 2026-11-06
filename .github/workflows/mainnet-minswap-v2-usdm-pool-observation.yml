@@ -20,9 +20,10 @@ jobs:
   observe:
     name: Replay exact Minswap V2 USDM/ADA pool UTxO and datum
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       KOIOS_MAINNET_URL: https://api.koios.rest/api/v1
+      KOIOS_API_TOKEN: ${{ secrets.KOIOS_API_TOKEN }}
       MINSWAP_EVIDENCE_OUTPUT: audit/cardano-integration/evidence/minswap-v2-usdm-ada-pool-observation.json
     steps:
       - name: Checkout exact source
