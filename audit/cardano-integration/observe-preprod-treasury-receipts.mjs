@@ -4,9 +4,12 @@ import 'dotenv/config'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { Emulator, Lucid } from 'lucid-cardano'
-import { buildScriptsFromLucid, treasuryValidator } from '../../src/loadValidator.ts'
-import { defaultPrizeTable } from '../../src/gameRules.ts'
+import {
+  mintingPolicyToId,
+  validatorToAddress,
+  validatorToScriptHash,
+} from '@lucid-evolution/lucid'
+import { createServer as createViteServer } from 'vite'
 import {
   assertTreasuryAddressOutputCrossCheck,
   buildTicketSaleReceiptJournal,
@@ -47,6 +50,34 @@ function delay() {
 
 const responseDigests = []
 let requestCount = 0
+
+async function loadTopologyModules() {
+  const vite = await createViteServer({
+    configFile: false,
+    root: process.cwd(),
+    appType: 'custom',
+    logLevel: 'error',
+    server: { middlewareMode: true },
+  })
+  try {
+    const [runtime, gameRules] = await Promise.all([
+      vite.ssrLoadModule('/src/loadValidator.ts'),
+      vite.ssrLoadModule('/src/gameRules.ts'),
+    ])
+    if (typeof runtime.buildScriptsFromLucid !== 'function' ||
+        !runtime.treasuryValidator ||
+        !gameRules.defaultPrizeTable) {
+      throw new Error('TREASURY_RECEIPT_TOPOLOGY_MODULES_INCOMPLETE')
+    }
+    return {
+      buildScriptsFromLucid: runtime.buildScriptsFromLucid,
+      treasuryValidator: runtime.treasuryValidator,
+      defaultPrizeTable: gameRules.defaultPrizeTable,
+    }
+  } finally {
+    await vite.close()
+  }
+}
 
 async function requestJson(endpoint, { method = 'GET', payload, query } = {}) {
   const url = new URL(KOIOS + '/' + endpoint)
@@ -214,7 +245,18 @@ if (!Number.isSafeInteger(REQUEST_DELAY_MS) || REQUEST_DELAY_MS < 0) {
   throw new Error('KOIOS_REQUEST_DELAY_MS_INVALID')
 }
 
-const lucid = await Lucid.new(new Emulator([]), 'Preprod')
+const {
+  buildScriptsFromLucid,
+  treasuryValidator,
+  defaultPrizeTable,
+} = await loadTopologyModules()
+const lucid = {
+  utils: {
+    validatorToScriptHash,
+    mintingPolicyToId,
+    validatorToAddress: (script) => validatorToAddress('Preprod', script),
+  },
+}
 const topology = buildScriptsFromLucid(
   lucid,
   defaultPrizeTable,
@@ -224,8 +266,8 @@ const topology = buildScriptsFromLucid(
   poolTokenPolicyId,
   poolTokenNameHex,
 )
-const treasuryAddress = lucid.utils.validatorToAddress(treasuryValidator)
-const treasuryPaymentCredential = lucid.utils.validatorToScriptHash(treasuryValidator)
+const treasuryAddress = topology.treasuryAddress
+const treasuryPaymentCredential = topology.treasuryHash
 const b1PrizePoolAddress = topology.b1PrizePoolAddress
 const b1PrizePoolPaymentCredential = topology.b1PrizePoolHash
 const ticketPolicyId = String(topology.ticketPolicyId).toLowerCase()
