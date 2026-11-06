@@ -4,6 +4,7 @@ import { execPath } from 'node:process'
 import {
   assertHaskellDecisionMatchesAuthorityBinding,
   createHaskellIssueAdmissionProvider,
+  stringifyHaskellIssueInput,
 } from './HaskellIssueAdmissionProvider'
 
 const counter = 'a'.repeat(64) + '#0'
@@ -12,6 +13,28 @@ const carrier = 'c'.repeat(64) + '#2'
 const control = 'e'.repeat(64) + '#3'
 const observationReference = 'observation:issue:provider'
 const decisionReference = 'decision:issue:provider'
+
+function v3PreStateWithLargeInteger() {
+  const prices = [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n]
+  return {
+    crystallizedLiabilities: 9_007_199_254_740_993n,
+    unresolvedReserve: 1n,
+    unresolvedTicketCount: 1n,
+    safetyCapital: 2n,
+    reserveProtection: 3n,
+    mandatoryFutureCosts: 5n,
+    classes: prices.map((price, index) => ({
+      classId: BigInt(index),
+      issued: index === 0 ? 1n : 0n,
+      unresolved: index === 0 ? 1n : 0n,
+      exposure: index === 0 ? price : 0n,
+      cap: 10n,
+      saleable: index === 0,
+    })),
+    control: { currentActiveClass: 0n, highestClassEverActivated: 0n },
+    jackpot: { lockedAmount: 4n, threshold: 0n, status: 'inactive' as const, cycle: 0n },
+  }
+}
 
 function pc() {
   return {
@@ -86,7 +109,7 @@ function viabilityCertificate() {
   }
 }
 
-function producerScript() {
+function producerScript(requiredInputFragment = '') {
   const decision = {
     actionClass: 'Issue',
     action: 'Issue:0:1',
@@ -132,10 +155,54 @@ function producerScript() {
     },
   }
   const payload = JSON.stringify({ admitted: true, decision })
-  return 'process.stdin.resume(); process.stdin.on("end",()=>process.stdout.write(' + JSON.stringify(payload) + '))'
+  const expected = JSON.stringify(requiredInputFragment)
+  return [
+    'let raw = "";',
+    'process.stdin.setEncoding("utf8");',
+    'process.stdin.on("data", chunk => raw += chunk);',
+    'process.stdin.on("end", () => {',
+    '  if (' + expected + ' && !raw.includes(' + expected + ')) {',
+    '    process.stderr.write("exact BigInt JSON input fragment missing");',
+    '    process.exitCode = 2;',
+    '    return;',
+    '  }',
+    '  process.stdout.write(' + JSON.stringify(payload) + ');',
+    '});',
+  ].join(' ')
 }
 
 describe('Haskell Issue admission provider', () => {
+  it('serializes nested BigInts as exact JSON integer tokens without Number coercion', () => {
+    const serialized = stringifyHaskellIssueInput({
+      preState: {
+        crystallizedLiabilities: 9_007_199_254_740_993n,
+        nested: [{ reserve: 123_456_789_012_345_678_901n }],
+      },
+      preEEV: 2_000n,
+      candidateEEV: 2_000n,
+      availableExecutableLiquidity: 200_000n,
+      requiredImmediateLiquidity: 150_000n,
+      ordinaryString: 'USDM_SUBUNITS',
+    })
+
+    expect(serialized).toContain('"crystallizedLiabilities":9007199254740993')
+    expect(serialized).toContain('"reserve":123456789012345678901')
+    expect(serialized).toContain('"preEEV":2000')
+    expect(serialized).toContain('"availableExecutableLiquidity":200000')
+    expect(serialized).toContain('"requiredImmediateLiquidity":150000')
+    expect(serialized).toContain('"ordinaryString":"USDM_SUBUNITS"')
+    expect(serialized).not.toContain('"9007199254740993"')
+  })
+
+  it('rejects collisions with the reserved BigInt JSON marker', () => {
+    expect(() => stringifyHaskellIssueInput({
+      comment: '__IMMORTAL_BIGINT_JSON_NUMBER__:42',
+    })).toThrow('reserved BigInt JSON marker')
+    expect(() => stringifyHaskellIssueInput({
+      __IMMORTAL_BIGINT_JSON_NUMBER__: '42',
+    })).toThrow('reserved BigInt JSON marker')
+  })
+
   it('rejects a signed carrier binding when Haskell recomputes a different digest', () => {
     const computed = {
       stateHash: '4'.repeat(64),
@@ -163,16 +230,16 @@ describe('Haskell Issue admission provider', () => {
 
     const provider = createHaskellIssueAdmissionProvider({
       command: execPath,
-      args: ['-e', producerScript()],
+      args: ['-e', producerScript('"crystallizedLiabilities":9007199254740993')],
       observationSource: async () => ({
         decisionInput: {
-          preState: {},
-          classId: 0,
-          price: 1,
-          preEEV: 2_000,
-          candidateEEV: 2_000,
-          availableExecutableLiquidity: 200_000,
-          requiredImmediateLiquidity: 150_000,
+          preState: v3PreStateWithLargeInteger(),
+          classId: 0n,
+          price: 1n,
+          preEEV: 2_000n,
+          candidateEEV: 2_000n,
+          availableExecutableLiquidity: 200_000n,
+          requiredImmediateLiquidity: 150_000n,
           truthVerified: true,
           eevFresh: true,
           obligationsComplete: true,
