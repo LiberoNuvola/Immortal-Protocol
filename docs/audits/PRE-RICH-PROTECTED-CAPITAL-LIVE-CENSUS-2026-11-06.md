@@ -155,7 +155,39 @@ At the observed times, two different Cardano query paths returned a concordant v
 
 This is a bounded current-state observation. It does not prove historical emptiness or the completeness of every source that could contribute to ProtectedCapital.
 
-## 8. Non-claims and remaining blockers
+## 8. First-Issue readiness boundary — exact blockers as of 2026-11-06
+
+The existing `audit/cardano-integration/preprod-first-issue-readiness.mjs` is a read-only gate. Its output status `READY_FOR_WALLET_REVIEW` is not itself an authorization to sign or submit a transaction.
+
+The currently measured and observed inputs map as follows:
+
+| Gate / artifact | Current evidence | Disposition |
+|---|---|---|
+| Exact direct-USDM Pool and asset identity | Current read-only Koios census and EV1–EV7 qualification bind the configured direct-tUSDM unit and exact live Pool out-reference | **Observed / EV1–EV7 qualified** |
+| Source-set deployment approval | Source-set remains `OBSERVED_NOT_QUALIFIED`; its deployment-approval subobject is `PENDING` | **OPEN** |
+| Signed deployment approval | The requalified artifact deliberately has `deploymentApproval=null`; no new approval signature was created | **OPEN** |
+| Oracle State singleton identity | Exact configured singleton remains live at the expected out-reference | **PASS for identity/liveness only** |
+| Oracle external-price truth | `externalPriceSourceVerified=false`; quote source is explicitly `NOT_PROVEN_BY_DATUM_ALONE` | **BLOCKED** |
+| Oracle freshness | Timestamp age is approximately 28.5 days vs one-hour maximum | **BLOCKED — STALE** |
+| B2 control singleton | Readiness requires a Preprod B2 deployment manifest. The three historical B2 manual-dispatch attempts found (9 October) are two failures and one cancellation; none has a deployment artifact | **MISSING / NOT DEPLOYED BY AVAILABLE EVIDENCE** |
+| Production Issue provider | The gate requires a configured provider module at runtime | **CONFIGURATION / AUTHORITY EVIDENCE REQUIRED** |
+| Signed external Issue authority | The gate requires a valid HTTP(S) authority endpoint and PEM verification public key; the signed witness contract requires EEV, ProtectedCapital provenance, liquidity, and viability fields | **EXTERNAL AUTHORITY INPUT NOT DEMONSTRATED** |
+| ProtectedCapital PA1–PA7 | Live PrizeValidator/Pool L1/L3 reconciliation is useful and concordant, but PA2 exhaustiveness, PA3 disjointness, PA4 complete valuation, PA5 full operation set, PA6 L6 emptiness, PA7 omission review remain open/partial | **NOT CERTIFIED** |
+| B-R1 | `RiskProtectionBridge` accepts only verified deterministic assessment exactly equal to projected worst-case exposure; statistical/combined mode fails closed. Module explicitly is not wired into `PreRichEconomicAdmission` | **SCAFFOLD ONLY / NOT END-TO-END CLOSED** |
+| Concrete viability | The 5 October viability audit records no concrete non-vacuity/QNE witness and no concrete `K_c` certificate | **NOT CERTIFIED** |
+
+### Dependency order
+
+1. A source-governed external price path and authorized publisher evidence must exist before the Oracle can be truth-qualified. A fresh timestamp alone is insufficient.
+2. Re-run and approve the exact direct-USDM qualification only after the live source and Oracle evidence are appropriate; approval must bind the exact current qualification, source-set, deployment, Oracle and candidate Pool.
+3. Freeze the intended B2 authority model and complete its deployment/transition evidence through an explicitly authorized deployment path. The present B2 workflow signs/deploys using the configured wallet seed; this report did not dispatch it.
+4. Produce the item-level ProtectedCapital perimeter with authoritative completeness, component semantics, disjointness, L2 Jackpot lifecycle and cost evidence; derive PA1–PA7 without inventing zero values.
+5. Discharge the concrete `K_c` / QNE / Omega completeness certificate and close the B-R1 bridge into the authoritative admission path only under an approved normative contract.
+6. Configure and validate the external signed Issue authority provider, then run the exact readiness gate. Only `READY_FOR_WALLET_REVIEW` permits a human wallet review; it is still not transaction authorization.
+
+No single code-only change can legitimately bypass these source, authority, viability and deployment dependencies.
+
+## 9. Non-claims and remaining blockers
 
 The following fields intentionally remain false in the Koios output:
 - `deploymentManifestAuthorityCryptographicallyVerified=false`;
