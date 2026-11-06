@@ -453,3 +453,47 @@ The exact-head Haskell workflow is [run 42176338793](https://github.com/LiberoNu
 The separate B2 carrier conformance workflow [42176338883](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42176338883) likewise remains in progress at Plutus toolchain setup; it is a non-deploying build/conformance workflow and does not establish live Preprod deployment.
 
 No production code was changed by this addendum. The previous architectural conclusion remains unchanged: a concrete lifecycle action and its complete `Accept / Omega / T / Safe / QNE / refinement` semantics require an explicit normative/architectural decision before production implementation.
+
+
+## 19. DECLARED PREPROD INITIAL-STATE QNE TEST — SYNTHETIC BUFFER FIXTURE (2026-11-06)
+
+A second test-only extension to plutus/test/EconomicAdmissionTest.hs now mirrors the declared PRE-RICH Preprod initial V3 state:
+
+- eight canonical classes (0–7);
+- cap 10 for each class;
+- class 0 saleable, classes 1–7 non-saleable;
+- zero issued/unresolved/exposure, liabilities, reserves and protected components;
+- control at class 0; Jackpot inactive.
+
+The test then checks the current V3 action surface at this exact represented initial state:
+- Issue(0,1) is structurally valid;
+- Reveal, Claim, and Expire are structurally unavailable before any ticket/liability exists.
+
+For a deliberately **synthetic unit fixture only**, it evaluates:
+b(S) = EEV(S) - ProtectedCapital(S)
+at pre-state EEV 500 and candidate post-Issue EEV 501, representing an assumed one-unit receipt. Under the frozen 500× profile, the initial buffer is 500 and post-Issue buffer is 1. The test therefore asserts a 499-unit buffer erosion for this action/fixture.
+
+### What it establishes
+
+If (a) the deployment's Rep includes the declared initial state, (b) the candidate EEV really increases by only the one-unit ticket receipt, and (c) the four current V3 constructors are the complete action set considered for QNE, then the only structurally available V3 action at that state is not QNE: its buffer falls from 500 to 1.
+
+This strengthens the earlier no-saleable-state counterexample by testing the declared initial state itself rather than only an arbitrary representable state.
+
+### What it does not establish
+
+- The EEV values 500 and 501 are synthetic test units, not live Preprod EEV observations and not the 4,000-USDM Genesis threshold.
+- The test does not establish that all possible application/lifecycle actions are exhausted; the application may require a separately specified action outside the current V3 economic constructors.
+- It does not instantiate or prove the full Omega, its perimeter Env, S1, CK1–CK8, or a concrete nonempty K_c.
+- It does not justify inventing a no-op, changing 500×, or weakening the Safe predicate.
+
+### Exact-head validation
+
+Test-only commit:
+570fd8e9627acdb8170fefbab6d420581748d363
+
+Exact-head Haskell run:
+https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42177503315
+
+At the time of this addendum, the run is still in_progress at Setup Haskell; the Economic Admission suite has not started. The assertions are **added, not yet CI-verified**.
+
+No production transition, Economic Gate, EconomicProfile, MintPolicy, B1PrizePool, V3 carrier, or Reveal semantics changed.
