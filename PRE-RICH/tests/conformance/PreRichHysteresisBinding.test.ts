@@ -59,6 +59,19 @@ describe('PRE-RICH hysteresis control binding', () => {
     expect(result.highestClassEverActivated).toBe(2)
   })
 
+  it('accepts HALT when no class remains maintainable and preserves the historical maximum', () => {
+    const result = assertPreRichControlMatches(
+      0n,
+      classes,
+      { currentActiveClass: 0, highestClassEverActivated: 2 },
+      { currentActiveClass: null, highestClassEverActivated: 2 },
+    )
+
+    expect(result.action).toBe('HALT')
+    expect(result.currentActiveClass).toBeNull()
+    expect(result.highestClassEverActivated).toBe(2)
+  })
+
   it('rejects a non-monotonic historical result', () => {
     expect(() =>
       assertPreRichControlHistory(
