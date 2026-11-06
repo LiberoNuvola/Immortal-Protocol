@@ -34,7 +34,7 @@ function plutusMap(value, label) {
   const result = new Map()
   for (const entry of entries) {
     const key = rawInteger(Array.isArray(entry) ? entry[0] : entry?.k)
-    if (key === null || !/^-?\\d+$/.test(key)) throw new Error('CHARLI3_MAP_KEY_INVALID:' + label)
+    if (key === null || !/^-?\d+$/.test(key)) throw new Error('CHARLI3_MAP_KEY_INVALID:' + label)
     const numericKey = Number(key)
     if (!Number.isSafeInteger(numericKey) || result.has(numericKey)) {
       throw new Error('CHARLI3_MAP_KEY_DUPLICATE_OR_UNSAFE:' + label)
@@ -46,7 +46,7 @@ function plutusMap(value, label) {
 
 function integer(value, label) {
   const raw = rawInteger(value)
-  if (raw === null || !/^-?\\d+$/.test(raw)) throw new Error('CHARLI3_INTEGER_INVALID:' + label)
+  if (raw === null || !/^-?\d+$/.test(raw)) throw new Error('CHARLI3_INTEGER_INVALID:' + label)
   return BigInt(raw)
 }
 
