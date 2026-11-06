@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  assertExpiryIssuanceStateMatchesAuthoritative,
   crystallizeTicketExpiry,
   preRichExpiryPolicyV1,
   PRE_RICH_EXPIRY_MIN_HORIZON_MS,
@@ -179,4 +180,42 @@ describe('PRE-RICH expiry policy boundary', () => {
     const result = crystallizeTicketExpiry(policy, issuanceState, 7_000n)
     expect(result.expiresAt).toBe(7_000n)
   })
+  it('accepts only an expiry issuance snapshot identical to authenticated admission and carrier state', () => {
+    const authoritative: PreRichExpiryIssuanceState = {
+      issuanceStateHash: 'authoritative-state-hash',
+      economicEpoch: 13n,
+      currentActiveClass: 4n,
+      highestClassEverActivated: 5n,
+      eev: 9007199254740993n,
+      unresolvedReserve: 25n,
+      unresolvedTicketCount: 2n,
+    }
+
+    expect(() =>
+      assertExpiryIssuanceStateMatchesAuthoritative(
+        { ...authoritative },
+        authoritative,
+      ),
+    ).not.toThrow()
+
+    const fields: (keyof PreRichExpiryIssuanceState)[] = [
+      'issuanceStateHash',
+      'economicEpoch',
+      'currentActiveClass',
+      'highestClassEverActivated',
+      'eev',
+      'unresolvedReserve',
+      'unresolvedTicketCount',
+    ]
+
+    for (const field of fields) {
+      const mismatched = { ...authoritative }
+      if (field === 'issuanceStateHash') mismatched[field] = 'different-state-hash'
+      else mismatched[field] = (authoritative[field] as bigint) + 1n
+      expect(() =>
+        assertExpiryIssuanceStateMatchesAuthoritative(mismatched, authoritative),
+      ).toThrow(`expiry issuance state does not match authoritative admission/carrier field: ${field}`)
+    }
+  })
+
 })
