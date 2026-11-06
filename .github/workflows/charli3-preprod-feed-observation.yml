@@ -8,6 +8,8 @@ on:
       - work/immortal-green-closure
     paths:
       - "audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs"
+      - "scripts/lib/charli3Datum.mjs"
+      - "scripts/lib/charli3Datum.test.mjs"
       - ".github/workflows/charli3-preprod-feed-observation.yml"
   workflow_dispatch:
 
@@ -40,6 +42,9 @@ jobs:
 
       - name: Verify read-only observer syntax
         run: node --check audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs
+
+      - name: Run shared Charli3 datum decoder tests
+        run: npx vitest run scripts/lib/charli3Datum.test.mjs
 
       - name: Observe exact Preprod feed NFT UTxOs and inline datums
         env:
