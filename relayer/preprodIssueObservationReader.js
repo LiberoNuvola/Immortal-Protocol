@@ -26,10 +26,11 @@ async function datumFields(utxo, label) {
  * - exact V3 economic-state carrier singleton;
  * - decoded V3 state from the carrier datum.
  *
- * It does NOT calculate EEV, ProtectedCapital, viability, class activation,
- * or Pool valuation. Those values must cross this boundary from an
- * authoritative source. This prevents a second economic oracle from being
- * introduced in the relayer.
+ * It does NOT derive or value EEV, ProtectedCapital, viability, class
+ * activation, or Pool valuation. Those values must cross this boundary from
+ * an authoritative source. It only performs the exact, fail-closed conversion
+ * of signed direct-USDM EEV sub-units into the V3 reference-unit basis. This
+ * prevents a second economic oracle from being introduced in the relayer.
  */
 
 async function decodeCarrierDatum(utxo) {
@@ -121,10 +122,10 @@ async function decodeCarrierDatum(utxo) {
 
 const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
 
-function poolSubunitsToReferenceUnits(value, field) {
+function usdmSubunitsToReferenceUnits(value, field, source = 'B1PrizePool') {
   if (value % USDM_SUBUNITS_PER_REFERENCE_UNIT !== 0n) {
     throw new Error(
-      'B1PrizePool ' + field +
+      source + ' ' + field +
       ' is not exactly representable in IMMORTAL reference units (100 USDM sub-units per reference unit)',
     )
   }
@@ -144,22 +145,22 @@ function reconcileB1PoolWithV3(poolState, v3State) {
   const monetaryChecks = [
     [
       'pendingLiabilities',
-      poolSubunitsToReferenceUnits(poolState.pendingLiabilities, 'pendingLiabilities'),
+      usdmSubunitsToReferenceUnits(poolState.pendingLiabilities, 'pendingLiabilities'),
       v3State.crystallizedLiabilities,
     ],
     [
       'unresolvedReserve',
-      poolSubunitsToReferenceUnits(poolState.unresolvedReserve, 'unresolvedReserve'),
+      usdmSubunitsToReferenceUnits(poolState.unresolvedReserve, 'unresolvedReserve'),
       v3State.unresolvedReserve,
     ],
     [
       'lockedJackpot',
-      poolSubunitsToReferenceUnits(poolState.lockedJackpot, 'lockedJackpot'),
+      usdmSubunitsToReferenceUnits(poolState.lockedJackpot, 'lockedJackpot'),
       v3State.jackpot.lockedAmount,
     ],
     [
       'jackpotThreshold',
-      poolSubunitsToReferenceUnits(poolState.jackpotThreshold, 'jackpotThreshold'),
+      usdmSubunitsToReferenceUnits(poolState.jackpotThreshold, 'jackpotThreshold'),
       v3State.jackpot.threshold,
     ],
   ]
@@ -345,7 +346,8 @@ async function decodePoolDatum(utxo) {
  * }
  *
  * The function binds those values to the exact observed Counter/Pool/Carrier
- * references and the decoded V3 state, but never computes them.
+ * references and the decoded V3 state. It never derives an EEV valuation; it
+ * normalizes signed direct-USDM units exactly before Haskell admission.
  */
 async function readPreprodIssueObservation({
   lucid,
@@ -544,10 +546,11 @@ async function readPreprodIssueObservation({
   if (candidateEEVUsdmSubunits !== poolUsdmValue) {
     throw new Error('signed candidateEEV does not match the direct-USDM Pool observation')
   }
-  const preEEV = poolSubunitsToReferenceUnits(preEEVUsdmSubunits, 'preEEV')
-  const candidateEEV = poolSubunitsToReferenceUnits(
+  const preEEV = usdmSubunitsToReferenceUnits(preEEVUsdmSubunits, 'preEEV', 'signed direct-USDM EEV')
+  const candidateEEV = usdmSubunitsToReferenceUnits(
     candidateEEVUsdmSubunits,
     'candidateEEV',
+    'signed direct-USDM EEV',
   )
   const requiredImmediateLiquidity = nonNegative(
     authoritativeInputs.requiredImmediateLiquidity,
