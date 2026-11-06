@@ -794,3 +794,26 @@ Artifact JSON SHA-256:
 - same-run reconciliation: `5c9e0e50e23456da410a04e88624bff931a8d9cab7e39380d34511f080e20384`
 
 **Disposition:** CURRENT MAINNET ADA/USDM MARKET OBSERVED AND CROSS-INDEXER RECONCILED / INDICATIVE USD/USDM RANGE COMPUTED FROM FOUR CEX MIDPOINTS / PRE-FEE AND TIME-SKEWED / NOT QUALIFIED FOR SETTLEMENT OR EEV. The USD/USDM Option B qualification remains OPEN; no USD peg, oracle quorum, PA1–PA7, deployment approval or first-Issue authority is inferred. No wallet, signature, oracle refresh, transaction, deployment, or ledger mutation occurred.
+
+
+## 43. Agent A — second on-chain ADA/USDM venue found; SundaeSwap V3 pool is structurally valid but older — 2026-11-06
+
+The broader multi-source run [#42196712888](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196712888) captured further venue-specific evidence. The run's Minswap raw observer failed because Koios returned HTTP 504 on `/asset_utxos`; therefore its API-to-on-chain reconciliation and derived cross-reference steps were skipped. This failed attempt is not used in place of the successful exact Minswap raw observation in [run #42196843453](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196843453).
+
+### SundaeSwap V3 — exact ADA/USDM pool structurally reconciled
+
+The successful read-only observer [artifact #13493135435](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196712888/artifacts/13493135435), ZIP SHA-256 `9eec02d729acc89aa3b6f4928f075a018b09f66039cd56f7aef14b2b5ee57f86`, reports:
+- 5 exact-USDM candidate pool UTxOs; all 5 payment credentials match; all 5 datums decode and structurally match; 0 unqualified; all 5 match same-run official SundaeSwap API; 0 API mismatches.
+- Exact ADA/USDM candidate UTxO: `870d7a6fb2d6d38a821485a240beb6b5da60e0bec1e2dfb79a43e15e6138b2b0#0`.
+- Datum pool identifier: `64f35d26b237ad58e099041bc14c687ea7fdc58969d7d5b66e2540ef`; exact ADA + Moneta USDM pair; Pool NFT quantity 1.
+- Datum reserves: ADA `75,548.054946`; USDM `13,964.244136`; bid and ask fee numerators 60 / 10,000 (0.60%).
+- Last pool transaction block height 14,163,727, timestamp `2026-11-06T02:02:07Z`.
+
+Its pre-fee reserve ratio is approximately **5.4101069997 ADA per USDM**. The Minswap V2 pool observed in #42196843453 has **5.4242107465 ADA per USDM** at its last transaction time 09:21:54Z. The Sundae transaction is about 7 hours 20 minutes older than the Minswap pool transaction. Their 0.26% ratio difference is therefore **not** a simultaneous arbitrage spread or a current venue consensus; it is only a second on-chain venue observation whose last update is materially older.
+
+### MuesliSwap and CSwap candidate disposition
+
+- MuesliSwap read-only artifact [#13492262278](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196712888/artifacts/13492262278), ZIP SHA-256 `750cc6a705de30a7357b3ce73dd5e04c7bddd2c1fdb63c880d3dd7cfa1ea261a`: 3 exact-USDM Pool NFT candidates; 2 official payment-credential matches and structural matches; 1 unqualified. The ADA/USDM candidate `04f0130e2e907a48d1f8752e7a5e90ebeda91183808ab0ed3a7d50a53ed625c1#3` has an older block time `2026-10-30T00:22:51Z` and the observer reports LP-asset quantity 0. It is not used as a live price/depth input.
+- CSwap artifact [#13492591337](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42196712888/artifacts/13492591337), ZIP SHA-256 `2c55327669f65ffcc0d30dfd73673d21244682213441407e812415fd5b7bf2a3`: one exact-USDM candidate at the official payment credential and a datum-decoding discovery result. The observer explicitly classifies it as pool discovery, not full contract qualification; no price or executable depth is inferred.
+
+**Updated market-source view:** a second structurally valid ADA/USDM DEX pool is present on-chain (Sundae V3), but its latest pool update is several hours older than Minswap. Muesli candidate is old with no LP unit in the observed Value, and CSwap remains discovery-only. The only contemporaneous indicative cross-rate retained in Section 42 remains the Minswap V2 datum reserve ratio combined with four same-run CEX midpoints; it is pre-fee, time-skewed and not qualified. No price averaging, same-time multi-venue consensus, peg, source quorum, or settlement/EEV qualification is claimed.
