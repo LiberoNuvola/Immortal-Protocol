@@ -580,3 +580,45 @@ This is an entitlement request, not permission to alter protocol economics or su
 The next externally dependent step is to obtain the exact feed entitlement, then re-run the existing probe in its default non-submitting mode. Only after a signed update and Pyth State identity are observed should a separately reviewed native-ledger test be considered. Do not run the manual `submit_preprod=true` path, connect this probe to production MintPolicy, or treat ADA/USD as an USDM quote.
 
 No change to production `MintPolicy`, `Economic.totalUsdmValue`, Oracle schema/datum, unit conversion, economic parameters, V3/Reveal, EEV approval, Issue authority, wallet, transaction or ledger state was made by this pass.
+
+
+## 35. Agent A — DIA Cardano Oracle provider candidate reviewed; custom USDM/USD pair remains unqualified — 2026-11-06
+
+A new provider architecture is now documented in the Option B source matrix: [DIA Cardano Oracle](https://github.com/diadata-org/dia-cardano-oracle). This is a concrete Cardano integration candidate, not a qualified USD/USDM reference.
+
+### What is evidenced
+
+- DIA documents an Aiken / Plutus V3 Cardano oracle, off-chain feeder, read-only indexer and consumer example. The consumer reads the live Pair UTxO as a reference input and authenticates it using the Pair NFT identity.
+- The public close-out report records one published Mainnet pair for client-test-01, ARS/USDT, and 40 confirmed updates in its July 2026 reliability window. It records 16 live/queryable pairs on Cardano Preview. The public deployment evidence inspected does not establish a USDM/USD pair or a Cardano Preprod deployment; Preview is not Preprod.
+- The indexer README describes a request/onboarding process to publish a feed from DIA's catalogue (2,500+ price feeds and 10,000+ RWA feeds). This makes a custom pair a plausible path to ask about, not an already deployed feed or a guaranteed service.
+- The Cardano Pair datum contains pair_id, integer price, timestamp, nonce, intent hash and signer. The indexer describes price as DIA fixed-point encoding, but the inspected datum has no scale/exponent field and the reviewed docs do not define the exact multiplier/rounding rule. A versioned numeric encoding must be supplied before integration.
+- DIA's security notes state that the on-chain protocol verifies an EIP-712 / secp256k1 intent against authorized DIA public keys but does not verify the underlying sources used by DIA's aggregation pipeline. Signature authenticity therefore proves authorized DIA publication, not independent correctness of the underlying market inputs. Admin and signer custody/rotation remain trust assumptions.
+- The documented consumer is Aiken / Plutus V3. Compatibility with PRE-RICH's Plutus V2 settlement consumer and the same-transaction Treasury valuation path is not demonstrated.
+
+The DIA Free API exposes an address-based lookup route and warns that symbol-based lookup can return the highest-volume asset with the same ticker. An exact live API observation for the Moneta Cardano USDM asset was not captured in this pass; no current DIA quote or volume is asserted.
+
+Sources: [DIA indexer and feed-request process](https://github.com/diadata-org/dia-cardano-oracle/blob/e3344f6938b97e5bf0457551ac19a90ae4200531/offchain/indexer/README.md) · [DIA close-out / deployment evidence](https://github.com/diadata-org/dia-cardano-oracle/blob/e3344f6938b97e5bf0457551/docs/milestones/close-out-report.md) · [PairDatum / intent validation](https://github.com/diadata-org/dia-cardano-oracle/blob/e3344f6938b97e5bf0457551/contracts/aiken/lib/dia_cardano_oracle/oracle_logic.ak) · [DIA security notes](https://github.com/diadata-org/dia-cardano-oracle/blob/e3344f6938b97e5bf0457551/docs/security/security-notes.md) · [DIA API address-vs-symbol guidance](https://www.diadata.org/free-crypto-api/).
+
+**Disposition:** DOCUMENTED CARDANO PROVIDER / CUSTOM FEED ONBOARDING POSSIBLE / EXISTING USDM-USD PAIR NOT ESTABLISHED / PREPROD DEPLOYMENT NOT ESTABLISHED / PRICE SCALE NOT SPECIFIED / NOT QUALIFIED.
+
+A request to DIA, if authorized, must specify the exact issuer and asset unit, pair direction, network (including Preprod), price scale and precision, source methodology and venue coverage, liquidity/manipulation limits, freshness/update cadence, signer governance, Pair NFT policy/address and consumer artifacts. No request was sent.
+
+## 36. Agent A — Mainnet USDM/ADA DEX market observed; not yet an admissible USD/USDM reference — 2026-11-06
+
+A separate market leg is now evidenced on Cardano Mainnet. Cardanoscan's current-crawl Minswap V2 USDM/ADA pool page reports:
+- Pool page identifier: `f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171`.
+- Reported reserves: about 363.7k USDM and 1.97m ADA; displayed rate 5.4029 ADA per USDM.
+- Reported TVL about USD 727k, 24h volume about USD 87k, 201 trades / 62 unique wallets and 0.75% fee.
+- Reported depth within ±1% is only about USD 4k. TVL is therefore not a substitute for executable depth or manipulation resistance.
+
+The explorer labels the pair USDM/ADA, but this pass did not independently decode the pool UTxO, datum and full native-asset units against the canonical Moneta policy+asset name. Those checks are mandatory before the pool can be treated as the exact intended token pair. The exact Mainnet Moneta asset identity is separately documented by the issuer as policy c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad and asset name 0014df105553444d. The Preprod tUSDM used in the B1 Pool is a different test asset; no Mainnet pool observation can be assigned to that Preprod unit.
+
+Sources: [Cardanoscan Minswap V2 USDM/ADA pool snapshot](https://cardanoscan.io/liquidityPool/f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171) · [Moneta canonical USDM identity](https://moneta.global/developers/) · [Minswap V2 pool contract source](https://github.com/minswap/minswap-dex-v2).
+
+This market could contribute an observed USDM/ADA leg. It cannot independently produce USD/USDM: that would also require a separately qualified ADA/USD source, exact same-time observations and a governed composition rule. A spot reserve ratio is not a robust liability-bearing price; the displayed ±1% depth and the need for pool-UTxO replay make the current observation research evidence only.
+
+A separate Cardano stablecoin tracker reads pools from its own db-sync node, but computes relative peg deviation against a stablecoin basket median and converts ADA using CoinGecko; it updates daily. Its own methodology says stable-swap reserve ratio is not price. This is useful cross-checking/market surveillance, not an independent USD/USDM authority. See [tracker and methodology](https://danonight.com/cardano/stablecoins).
+
+**Disposition:** MAINNET USDM/ADA MARKET OBSERVED / RAW POOL UNIT+DATUM NOT YET REPLAYED / ADA-USD SECOND LEG NOT QUALIFIED / PREPROD TEST-ASSET MARKET NOT ESTABLISHED / NOT QUALIFIED.
+
+Next bounded evidence is a raw Mainnet pool UTxO replay (exact Moneta asset unit, pool NFT, reserves/datum, DEX contract and pool type), cross-DEX and historical swap/TWAP analysis, quantified executable depth and manipulation cost, plus an independently qualified ADA/USD feed. A separate Preprod observation is required for any Preprod use. No protocol code, Oracle schema, MintPolicy, economic rule, V3/Reveal, wallet, approval or ledger state was changed by this research.
