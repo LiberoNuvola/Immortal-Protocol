@@ -25,6 +25,12 @@ import PreRichEconomicProjection
 -- It must already exclude funds that cannot be spent immediately (for
 -- example ring-fenced unresolved reserve, liabilities or locked Jackpot).
 -- `eev` remains a distinct economic-value input.
+--
+-- PRE-RICH V1 unit contract: preEEV/candidateEEV are IMMORTAL reference
+-- units; availableLiquidity/requiredLiquidity are USDM sub-units and remain
+-- a same-scale immediate-settlement pair. The Adapter performs exact EEV
+-- normalization before calling this kernel; this module does not convert or
+-- round either pair.
 data PreRichEconomicAdmission = PreRichEconomicAdmission
   { peaAction :: V3Action
   , peaCandidateV3 :: V3EconomicState
