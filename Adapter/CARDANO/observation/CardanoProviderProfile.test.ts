@@ -275,6 +275,7 @@ describe('Cardano provider observation contract', () => {
       '/addresses/x/utxos?page=2',
       '/addresses/../utxos',
       '/addresses/%2e%2e/utxos',
+      '/addresses/' + String.fromCharCode(92) + 'evil/utxos',
       '//other-host/utxos',
     ]) {
       expect(() => validateCardanoProviderObservation(
@@ -575,7 +576,7 @@ describe('purpose-scoped provider qualification', () => {
       makeDecision({ evidenceReferences: [] }),
     )).toThrow('qualification requires at least one evidence reference')
     expect(() => validateProviderQualificationDecision(
-      makeDecision({ scope: 'economic-authority' as 'provider-evidence-only' }),
+      makeDecision({ scope: 'economic-authority' as unknown as 'provider-evidence-only' }),
     )).toThrow('provider qualification scope must remain provider-evidence-only')
   })
 })
