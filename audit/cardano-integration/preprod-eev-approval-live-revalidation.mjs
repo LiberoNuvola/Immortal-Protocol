@@ -1,4 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   assertArtifactEvidenceHash,
   digestJson,
@@ -292,6 +294,8 @@ export function buildApprovalLiveRevalidation({
   }
 }
 
+
+async function main() {
 const paths = {
   historicalApprovedQualification: process.env.PREPROD_HISTORICAL_APPROVED_QUALIFICATION,
   historicalQualification: process.env.PREPROD_HISTORICAL_QUALIFICATION,
@@ -327,3 +331,8 @@ const result = buildApprovalLiveRevalidation({
 })
 await writeFile(required(paths.output, 'PREPROD_APPROVAL_REVALIDATION_OUTPUT'), JSON.stringify(result, null, 2) + '\n')
 console.log(JSON.stringify(result, null, 2))
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main()
+}
