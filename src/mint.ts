@@ -53,8 +53,11 @@ import {
   obtainAuthoritativeIssueAdmission,
   type AuthoritativeIssueAdmissionProvider,
   type AuthoritativeIssueAdmissionWitness,
-  type IssueV3CandidateState,
 } from './preRichIssueAdmissionBridge'
+import {
+  buildIssueCarrierAction,
+  buildIssueCarrierDatum,
+} from './v3CarrierData'
 import {
   buildScriptsFromLucid,
   counterValidator,
@@ -156,80 +159,6 @@ function beaconTargetToConstr(
     BigInt(target.round),
     toHex(target.mainchainRef),
     toHex(target.version),
-  ])
-}
-
-function booleanConstr(value: boolean): Constr<Data> {
-  return constr(value ? 1 : 0)
-}
-
-function issueCandidateStateToConstr(state: IssueV3CandidateState): Constr<Data> {
-  if (state.classes.length !== 8) {
-    throw new Error('Authoritative Issue candidate V3 state must contain exactly 8 classes')
-  }
-  const classes = state.classes.map((entry, index) => {
-    if (BigInt(entry.classId) !== BigInt(index)) {
-      throw new Error('Authoritative Issue candidate V3 class IDs are not canonical')
-    }
-    return constr(0, [
-      BigInt(entry.classId),
-      BigInt(entry.issued),
-      BigInt(entry.unresolved),
-      BigInt(entry.exposure),
-      BigInt(entry.cap),
-      booleanConstr(entry.saleable),
-    ])
-  })
-  const jackpotStatus = {
-    inactive: 0,
-    locked: 1,
-    payable: 2,
-    closed: 3,
-  }[state.jackpot.status]
-  if (jackpotStatus === undefined) {
-    throw new Error('Authoritative Issue candidate V3 jackpot status is invalid')
-  }
-  return constr(0, [
-    BigInt(state.crystallizedLiabilities),
-    BigInt(state.unresolvedReserve),
-    BigInt(state.unresolvedTicketCount),
-    BigInt(state.safetyCapital),
-    BigInt(state.reserveProtection),
-    BigInt(state.mandatoryFutureCosts),
-    classes,
-    constr(0, [
-      BigInt(state.control.currentActiveClass),
-      BigInt(state.control.highestClassEverActivated),
-    ]),
-    constr(jackpotStatus),
-  ])
-}
-
-function issueCarrierDatum(
-  stateVersion: bigint,
-  candidateState: IssueV3CandidateState,
-): Constr<Data> {
-  if (stateVersion < 0n) throw new Error('V3 carrier state version must be non-negative')
-  return constr(0, [
-    stateVersion + 1n,
-    issueCandidateStateToConstr(candidateState),
-  ])
-}
-
-function issueCarrierAction(
-  admission: AuthoritativeIssueAdmissionWitness,
-): Constr<Data> {
-  if (admission.actionClass !== 'Issue') {
-    throw new Error('V3 carrier action class must be Issue')
-  }
-  return constr(0, [
-    strToHex('Issue'),
-    strToHex(admission.decisionReference),
-    strToHex(admission.authoritativeObservationReference),
-    admission.stateHash,
-    admission.actionFingerprint,
-    admission.postStateHash,
-    admission.carrierAuthoritySignature ?? '',
   ])
 }
 
@@ -1451,11 +1380,11 @@ async function mintSerialNFTInternal(
     if (bound.v3CarrierBinding.carrierStateReference !== observedCarrierRef) {
       throw new Error('Authoritative Issue admission is bound to a different V3 carrier state')
     }
-    candidateCarrierDatum = issueCarrierDatum(
+    candidateCarrierDatum = buildIssueCarrierDatum(
       carrierObservation.stateVersion,
       bound.v3CarrierBinding.candidateState,
     )
-    carrierRedeemer = issueCarrierAction(bound)
+    carrierRedeemer = buildIssueCarrierAction(bound)
   }
 
   // ----------------------------------------------------------

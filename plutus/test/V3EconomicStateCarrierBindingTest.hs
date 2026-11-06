@@ -7,6 +7,9 @@ import Prelude
   , IO
   , String
   , error
+  , fromIntegral
+  , (*)
+  , (+)
   , putStrLn
   , not
   , (++)
@@ -14,7 +17,9 @@ import Prelude
   , (==)
   )
 
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
+import Data.Char (digitToInt)
 import PlutusTx (toBuiltin)
 import V3EconomicStateCarrier
   ( V3EconomicStateAction (..)
@@ -23,6 +28,17 @@ import V3EconomicStateCarrier
   )
 
 bytes = toBuiltin . BSC.pack
+
+-- Decode hex fixtures into the raw byte representation expected by Plutus.
+-- Textual redeemer fields remain ASCII bytes; only Ed25519 key/signature
+-- fixtures are decoded from their hexadecimal display form.
+hexBytes :: String -> BuiltinByteString
+hexBytes = toBuiltin . BS.pack . decodeHex
+  where
+    decodeHex [] = []
+    decodeHex (hi:lo:rest) =
+      fromIntegral (16 * digitToInt hi + digitToInt lo) : decodeHex rest
+    decodeHex _ = error "invalid hexadecimal fixture"
 
 valid :: V3EconomicStateAction
 valid =
@@ -33,10 +49,10 @@ valid =
     (bytes "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     (bytes "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
     (bytes "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
-    (bytes "3c1a0d94bc0024da6e8d1e0eaab96011b2fc07e2cbb074205a117bc90c0009b7e7339cd42d6cbd49a979918a71c98bf38ea550f241fede2615a4f504aa168a06")
+    (hexBytes "3c1a0d94bc0024da6e8d1e0eaab96011b2fc07e2cbb074205a117bc90c0009b7e7339cd42d6cbd49a979918a71c98bf38ea550f241fede2615a4f504aa168a06")
 
 authorityPublicKey =
-  bytes "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+  hexBytes "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
 
 assert :: Bool -> String -> IO ()
 assert condition label =
