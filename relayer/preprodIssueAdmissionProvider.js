@@ -42,6 +42,16 @@ async function observeDirectUsdmPool({ lucid, deployment, poolInputReference }) 
 
 const stripTxPrefix = (value) => String(value).trim().replace(/^cardano:tx\//, '')
 
+function requiredNonNegativeInteger(value, field) {
+  try {
+    const integer = BigInt(String(value))
+    if (integer < 0n) throw new Error('negative')
+    return String(integer)
+  } catch {
+    throw new Error(field + ' must be a non-negative integer')
+  }
+}
+
 function assertDirectUsdmEevUnits(observed, directUsdmValue) {
   const signed = observed?.signedEevUsdmSubunits
   const conversion = observed?.eevUnitConversion
