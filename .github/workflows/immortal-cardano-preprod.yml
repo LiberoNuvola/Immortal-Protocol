@@ -38,6 +38,8 @@ on:
 
 jobs:
   preprod-context:
+    # Read-only observation job. Push events run only this context job; deployment,
+    # direct-USDM bootstrap, V3 observation, and real Reveal remain manual-input gated below.
     runs-on: ubuntu-24.04
     environment: DEMETER
     timeout-minutes: 15
