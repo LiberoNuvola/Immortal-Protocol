@@ -1,13 +1,17 @@
 {
   "name": "blockfrost-proxy",
   "version": "1.0.0",
-  "private": true,
   "main": "proxy.js",
   "scripts": {
     "start": "node proxy.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "vite-plugin-top-level-await": "^1.5.0",
+    "vite-plugin-wasm": "^3.4.1"
   }
 }
