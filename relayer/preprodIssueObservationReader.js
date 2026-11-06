@@ -522,8 +522,22 @@ async function readPreprodIssueObservation({
     throw new Error('authenticated authority source did not provide ProtectedCapital provenance')
   }
   const poolUsdmValue = nonNegative(authoritativeInputs.poolUsdmValue, 'poolUsdmValue')
-  const preEEV = nonNegative(authoritativeInputs.preEEV, 'preEEV')
-  const candidateEEV = nonNegative(authoritativeInputs.candidateEEV, 'candidateEEV')
+
+  // PRE-RICH-EEV-USDM-DIRECT-V1 signs raw USDM sub-units from the exact
+  // physical PrizePool UTxO. V3 ProtectedCapital/kernel values are in
+  // IMMORTAL reference units (100 USDM sub-units each). Preserve the signed
+  // source amounts, then convert exactly before constructing the Haskell
+  // IssueDecisionInput. Never round EEV at this boundary.
+  const preEEVUsdmSubunits = nonNegative(authoritativeInputs.preEEV, 'preEEV USDM sub-units')
+  const candidateEEVUsdmSubunits = nonNegative(
+    authoritativeInputs.candidateEEV,
+    'candidateEEV USDM sub-units',
+  )
+  const preEEV = poolSubunitsToReferenceUnits(preEEVUsdmSubunits, 'preEEV')
+  const candidateEEV = poolSubunitsToReferenceUnits(
+    candidateEEVUsdmSubunits,
+    'candidateEEV',
+  )
   const requiredImmediateLiquidity = nonNegative(
     authoritativeInputs.requiredImmediateLiquidity,
     'requiredImmediateLiquidity',
@@ -543,6 +557,19 @@ async function readPreprodIssueObservation({
     counterInputReference: counterRef,
     poolInputReference: poolRef,
     poolUsdmValue,
+    // Raw amounts returned by the verified signed authority envelope.
+    signedEevUsdmSubunits: {
+      preEEV: preEEVUsdmSubunits,
+      candidateEEV: candidateEEVUsdmSubunits,
+    },
+    eevUnitConversion: {
+      sourceUnit: 'USDM_SUBUNITS',
+      sourceSubunitsPerReferenceUnit: USDM_SUBUNITS_PER_REFERENCE_UNIT,
+      targetUnit: 'IMMORTAL_REFERENCE_UNITS',
+      conversion: 'EXACT_DIVIDE_BY_100',
+      preEEVReferenceUnits: preEEV,
+      candidateEEVReferenceUnits: candidateEEV,
+    },
     carrierStateReference: carrier.carrierStateReference,
     carrierPolicyId: carrier.carrierPolicyId,
     carrierTokenNameHex: carrier.carrierTokenNameHex,
