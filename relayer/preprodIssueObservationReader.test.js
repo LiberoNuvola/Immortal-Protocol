@@ -33,7 +33,7 @@ function fakeLucid() {
         return [{
           txHash: ref('b'),
           outputIndex: 1,
-          datum: { fields: [100_000n,1_000n,300n,2n,5_000n,0n,{},{}] },
+          datum: { fields: [200_000n,1_000n,300n,2n,5_000n,0n,{},{}] },
           assets: { ['poolpolicy' + 'poolname']: 1n },
         }]
       }
@@ -96,7 +96,7 @@ function baseIssueOptions(lucid, overrides = {}) {
     price: 1,
     observedAt: 123n,
     authoritativeInputs: {
-      poolUsdmValue: 1_000n,
+      poolUsdmValue: 200_000n,
       preEEV: 1_000n,
       candidateEEV: 1_000n,
       requiredImmediateLiquidity: 1n,
@@ -151,7 +151,7 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
     price: 1,
     observedAt: 123n,
     authoritativeInputs: {
-      poolUsdmValue: 1_000n,
+      poolUsdmValue: 200_000n,
       preEEV: 1_000n,
       candidateEEV: 1_000n,
       requiredImmediateLiquidity: 1n,
@@ -225,7 +225,7 @@ test('passes the decoded B1 datum liquidity to the authenticated authority sourc
     authoritySource: async (request) => {
       observedPoolDatumLiquidity = request.poolDatumTotalLiquidity
       return {
-        poolUsdmValue: 1_000n,
+        poolUsdmValue: 200_000n,
         preEEV: 1_000n,
         candidateEEV: 1_000n,
         requiredImmediateLiquidity: 1n,
@@ -251,7 +251,7 @@ test('passes the decoded B1 datum liquidity to the authenticated authority sourc
       }
     },
   })
-  assert.equal(observedPoolDatumLiquidity, 1_000n)
+  assert.equal(observedPoolDatumLiquidity, 200_000n)
 })
 
 test('fails closed when the carrier singleton is ambiguous', async () => {
@@ -457,7 +457,7 @@ test('decodes Lucid CBOR string datums', async () => {
   const { Data, Constr } = await import('@lucid-evolution/lucid')
 
   const poolDatum = new Constr(0, [
-    100_000n, 1_000n, 300n, 2n, 5_000n, 0n,
+    200_000n, 1_000n, 300n, 2n, 5_000n, 0n,
     new Constr(0, []),
     new Constr(0, []),
   ])
@@ -520,7 +520,7 @@ test('decodes Lucid CBOR string datums', async () => {
     price: 1,
     observedAt: 123n,
     authoritativeInputs: {
-      poolUsdmValue: 1_000n,
+      poolUsdmValue: 200_000n,
       preEEV: 1_000n,
       candidateEEV: 1_000n,
       requiredImmediateLiquidity: 1n,
