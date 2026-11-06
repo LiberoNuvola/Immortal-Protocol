@@ -53,6 +53,7 @@ function isCardanoTransactionCbor(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 4 || (buffer[0] >> 5) !== 4) return false
   let offset = 0
   let nodes = 0
+  let rootArrayLength = null
   function length(ai) {
     if (ai < 24) return ai
     const size = ai === 24 ? 1 : ai === 25 ? 2 : ai === 26 ? 4 : ai === 27 ? 8 : 0
@@ -75,6 +76,7 @@ function isCardanoTransactionCbor(buffer) {
       return major
     }
     const count = length(ai)
+    if (depth === 0 && major === 4) rootArrayLength = count
     if (major === 0 || major === 1) return major
     if (major === 2 || major === 3) {
       if (offset + count > buffer.length) throw new Error('truncated CBOR string')
