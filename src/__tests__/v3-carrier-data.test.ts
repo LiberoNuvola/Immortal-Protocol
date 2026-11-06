@@ -26,6 +26,47 @@ function hexToText(value: unknown): string {
   return new TextDecoder().decode(bytes)
 }
 
+function cborHeader(major: number, value: bigint): string {
+  if (value < 0n) throw new Error('CBOR length/integer must be non-negative')
+  const prefix = major << 5
+  if (value < 24n) return (prefix | Number(value)).toString(16).padStart(2, '0')
+  if (value <= 0xffn) return (prefix | 24).toString(16).padStart(2, '0') + value.toString(16).padStart(2, '0')
+  if (value <= 0xffffn) return (prefix | 25).toString(16).padStart(2, '0') + value.toString(16).padStart(4, '0')
+  if (value <= 0xffffffffn) return (prefix | 26).toString(16).padStart(2, '0') + value.toString(16).padStart(8, '0')
+  if (value <= 0xffffffffffffffffn) return (prefix | 27).toString(16).padStart(2, '0') + value.toString(16).padStart(16, '0')
+  throw new Error('CBOR integer exceeds 64-bit test encoder bound')
+}
+
+function encodePlutusData(value: unknown): string {
+  if (typeof value === 'bigint') {
+    return value >= 0n
+      ? cborHeader(0, value)
+      : cborHeader(1, -1n - value)
+  }
+  if (typeof value === 'string') {
+    if (value.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(value)) {
+      throw new Error('Plutus byte-string fixture must be hexadecimal')
+    }
+    return cborHeader(2, BigInt(value.length / 2)) + value.toLowerCase()
+  }
+  if (Array.isArray(value)) {
+    return cborHeader(4, BigInt(value.length)) + value.map(encodePlutusData).join('')
+  }
+  if (value && typeof value === 'object') {
+    const candidate = value as { index?: unknown; fields?: unknown[] }
+    if (
+      typeof candidate.index === 'number' &&
+      Number.isInteger(candidate.index) &&
+      candidate.index >= 0 &&
+      candidate.index <= 6 &&
+      Array.isArray(candidate.fields)
+    ) {
+      return cborHeader(6, BigInt(121 + candidate.index)) + encodePlutusData(candidate.fields)
+    }
+  }
+  throw new Error('unsupported test Plutus-data value')
+}
+
 const candidateState: IssueV3CandidateState = {
   crystallizedLiabilities: '12',
   unresolvedReserve: '0',
@@ -61,7 +102,7 @@ const carrierIdentity = {
 
 describe('V3 Issue carrier Plutus-data serialization', () => {
   it('round-trips the exact four-field Jackpot state through the production observer', async () => {
-    const datum = Data.to(buildIssueCarrierDatum(4n, candidateState))
+    const datum = encodePlutusData(buildIssueCarrierDatum(4n, candidateState))
     const unit = carrierIdentity.carrierPolicyId + carrierIdentity.carrierTokenNameHex
     const observed = await observeEconomicStateCarrier({
       lucid: {
@@ -100,7 +141,7 @@ describe('V3 Issue carrier Plutus-data serialization', () => {
       carrierAuthoritySignature: '44'.repeat(64),
     } as unknown as AuthoritativeIssueAdmissionWitness
 
-    const encoded = Data.to(buildIssueCarrierAction(admission))
+    const encoded = encodePlutusData(buildIssueCarrierAction(admission))
     const redeemer = fieldsOf(Data.from(encoded))
 
     expect(redeemer).toHaveLength(7)
@@ -157,7 +198,7 @@ describe('V3 Issue carrier Plutus-data serialization', () => {
   })
 
   it('documents the four-field Jackpot constructor shape directly', () => {
-    const datum = Data.from(Data.to(buildIssueCarrierDatum(0n, candidateState)))
+    const datum = Data.from(encodePlutusData(buildIssueCarrierDatum(0n, candidateState)))
     const root = fieldsOf(datum)
     const state = fieldsOf(root[1])
     const jackpot = fieldsOf(state[8])
