@@ -522,6 +522,11 @@ async function readPreprodIssueObservation({
     throw new Error('authenticated authority source did not provide ProtectedCapital provenance')
   }
   const poolUsdmValue = nonNegative(authoritativeInputs.poolUsdmValue, 'poolUsdmValue')
+  if (poolUsdmValue !== poolState.totalLiquidity) {
+    throw new Error(
+      'authenticated direct-USDM Pool value does not match B1PrizePool totalLiquidity',
+    )
+  }
 
   // PRE-RICH-EEV-USDM-DIRECT-V1 signs raw USDM sub-units from the exact
   // physical PrizePool UTxO. V3 ProtectedCapital/kernel values are in
@@ -533,6 +538,12 @@ async function readPreprodIssueObservation({
     authoritativeInputs.candidateEEV,
     'candidateEEV USDM sub-units',
   )
+  if (preEEVUsdmSubunits !== poolUsdmValue) {
+    throw new Error('signed preEEV does not match the direct-USDM Pool observation')
+  }
+  if (candidateEEVUsdmSubunits !== poolUsdmValue) {
+    throw new Error('signed candidateEEV does not match the direct-USDM Pool observation')
+  }
   const preEEV = poolSubunitsToReferenceUnits(preEEVUsdmSubunits, 'preEEV')
   const candidateEEV = poolSubunitsToReferenceUnits(
     candidateEEVUsdmSubunits,
