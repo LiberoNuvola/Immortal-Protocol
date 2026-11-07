@@ -37,6 +37,7 @@ import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
   , BeaconTarget (..)
+  , BeaconRegistryDatum (..)
   , B1PrizePoolDatum (..)
   , B1PrizePoolAction (..)
   , PrizeAction (..)
@@ -88,6 +89,18 @@ samplePrizeDatum =
     , pdExpiresAt = 9000
     , pdRow1Tier = 0
     , pdRow2Tier = 0
+    }
+
+sampleBeaconRegistryDatum :: BeaconRegistryDatum
+sampleBeaconRegistryDatum =
+  BeaconRegistryDatum
+    { brRound = 42
+    , brTarget = sampleTarget
+    , brStatus = BeaconReady
+    , brBeaconValue = "aabb"
+    , brMcHash = "ccdd"
+    , brMateriosContext = "eeff"
+    , brRelayerPkh = PubKeyHash (rawBytes [1..28])
     }
 
 samplePoolDatum :: B1PrizePoolDatum
@@ -762,6 +775,7 @@ main = do
                 , "PrizeAction.Claim" .= hexData Claim
                 , "PrizeAction.Expire" .= hexData Expire
                 , "BeaconTarget" .= hexData sampleTarget
+                , "BeaconRegistryDatum" .= hexData sampleBeaconRegistryDatum
                 , "B1PrizePoolDatum" .= hexData samplePoolDatum
                 , "B1PrizePoolAction.FundTreasury" .= hexData FundTreasury
                 , "B1PrizePoolAction.TicketIssued" .= hexData (TicketIssued 100)
