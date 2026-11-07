@@ -4,6 +4,7 @@ use cardano/transaction
 use immortal/claim_transaction
 use immortal/expire_transaction
 use immortal/reveal_transaction
+use immortal/sync_beacon_transaction
 use immortal/reveal_types
 
 /// Parameterized Plutus V3 Prize-validator prototype.
@@ -12,6 +13,7 @@ use immortal/reveal_types
 /// and Expire continue to use their existing transition predicates unchanged.
 /// This prototype is not yet deployed or wired into the production topology.
 validator pre_rich_reveal(
+  registry_script_hash: aiken/crypto.ScriptHash,
   oracle_state_policy: PolicyId,
   oracle_state_name: AssetName,
   oracle_publisher: VerificationKeyHash,
@@ -24,6 +26,13 @@ validator pre_rich_reveal(
   ) {
     expect Some(input_datum) = datum_opt
     when action is {
+      reveal_types.SyncBeacon ->
+        sync_beacon_transaction.sync_beacon_transaction_is_valid(
+          self,
+          own_ref,
+          input_datum,
+          registry_script_hash,
+        )
       reveal_types.Reveal(player_secret) ->
         reveal_transaction.reveal_transaction_is_valid(self, own_ref, input_datum, player_secret)
       reveal_types.Expire ->
