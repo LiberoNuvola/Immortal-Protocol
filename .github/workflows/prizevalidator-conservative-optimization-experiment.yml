@@ -38,6 +38,9 @@ jobs:
       - name: Install repository runtime dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Setup legacy Lucid ESM runtime for the measurement probe
+        uses: ./.github/actions/setup-legacy-lucid
+
       - name: Setup canonical Plutus 1.67.0.0 toolchain
         uses: ./.github/actions/setup-plutus
         with:
@@ -56,7 +59,7 @@ jobs:
             echo "node=$(node --version)"
             echo "ghc=$(ghc --numeric-version)"
             echo "cabal=$(cabal --numeric-version)"
-            echo "plutus_git_pin=$(grep -A2 'location: https://github.com/IntersectMBO/plutus.git' cabal.project | tail -n1 | sed 's/^[[:space:]]*tag:[[:space:]]*//')"
+            echo "plutus_git_pin=$(grep -A1 'location: https://github.com/IntersectMBO/plutus.git' cabal.project | tail -n1 | sed 's/^[[:space:]]*tag:[[:space:]]*//')"
             echo "prize_validator_source_sha256=$(sha256sum plutus/PrizeValidator.hs | awk '{print $1}')"
           } | tee "$evidence_dir/provenance.txt"
           grep -q '48e9bf08f439e7223de713b5b71696fcd81cffc3' cabal.project
@@ -79,8 +82,10 @@ jobs:
             set +e
             cp "$original_validator" plutus/PrizeValidator.hs
             cp "$original_factory" src/plutusScripts/prizeValidatorFactory.plutus.json
-            git restore --source=HEAD --worktree -- plutus/PrizeValidator.hs src/plutusScripts/prizeValidatorFactory.plutus.json
-            rm -rf plutus/out
+            git restore --source=HEAD --worktree -- plutus/PrizeValidator.hs src/plutusScripts/prizeValidatorFactory.plutus.json plutus/out
+            git clean -fd -- plutus/out
+            git clean -fdX -- plutus/out
+            rm -f src/package.json Adapter/package.json
             rm -f "$probe_file"
             if [ -n "$(git diff --name-only HEAD)" ]; then
               echo "Unexpected tracked worktree diff remains after restoration." >&2
@@ -113,7 +118,7 @@ jobs:
           const oracleName = process.env.ORACLE_STATE_TOKEN_NAME_HEX
           const oraclePublisher = process.env.ORACLE_PUBLISHER_PKH
           const loadValidator = await import(pathToFileURL(root + '/src/loadValidator.ts').href)
-          const lucid = await import('@lucid-evolution/lucid')
+          const lucid = await import('lucid-cardano')
 
           const factoryRaw = readFileSync(root + '/plutus/out/prizeValidatorFactory.plutus.json')
           const envelope = JSON.parse(factoryRaw.toString('utf8'))
@@ -214,9 +219,11 @@ jobs:
           NODE
 
           echo "=== Compile canonical default baseline ==="
-          cabal run exe:export-scripts
+          cabal run exe:export-scripts > "$EXPERIMENT_EVIDENCE_DIR/baseline-compile.log" 2>&1 || { cat "$EXPERIMENT_EVIDENCE_DIR/baseline-compile.log"; exit 1; }
+          cat "$EXPERIMENT_EVIDENCE_DIR/baseline-compile.log"
           cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
-          EXPERIMENT_PHASE=baseline node --import=tsx/esm "$probe_file" | tee "$EXPERIMENT_EVIDENCE_DIR/baseline.log"
+          EXPERIMENT_PHASE=baseline node --import=tsx/esm "$probe_file" > "$EXPERIMENT_EVIDENCE_DIR/baseline.log" 2>&1 || { cat "$EXPERIMENT_EVIDENCE_DIR/baseline.log"; exit 1; }
+          cat "$EXPERIMENT_EVIDENCE_DIR/baseline.log"
 
           node --input-type=module - "$EXPERIMENT_EVIDENCE_DIR/baseline.json" <<'NODE'
           import { readFileSync } from 'node:fs'
@@ -252,9 +259,11 @@ jobs:
               raise SystemExit("Expected exactly one target-version pragma")
           path.write_text(source.replace(needle, replacement))
           PY
-          cabal run exe:export-scripts
+          cabal run exe:export-scripts > "$EXPERIMENT_EVIDENCE_DIR/candidate-compile.log" 2>&1 || { cat "$EXPERIMENT_EVIDENCE_DIR/candidate-compile.log"; exit 1; }
+          cat "$EXPERIMENT_EVIDENCE_DIR/candidate-compile.log"
           cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
-          EXPERIMENT_PHASE=candidate node --import=tsx/esm "$probe_file" | tee "$EXPERIMENT_EVIDENCE_DIR/candidate.log"
+          EXPERIMENT_PHASE=candidate node --import=tsx/esm "$probe_file" > "$EXPERIMENT_EVIDENCE_DIR/candidate.log" 2>&1 || { cat "$EXPERIMENT_EVIDENCE_DIR/candidate.log"; exit 1; }
+          cat "$EXPERIMENT_EVIDENCE_DIR/candidate.log"
 
           node --input-type=module - "$EXPERIMENT_EVIDENCE_DIR" <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs'
@@ -321,10 +330,16 @@ jobs:
           if [ -f "$RUNNER_TEMP/prizeValidatorFactory.plutus.json.original" ]; then
             cp "$RUNNER_TEMP/prizeValidatorFactory.plutus.json.original" src/plutusScripts/prizeValidatorFactory.plutus.json
           fi
-          rm -rf plutus/out
-          git restore --source=HEAD --worktree -- plutus/PrizeValidator.hs src/plutusScripts/prizeValidatorFactory.plutus.json
+          git restore --source=HEAD --worktree -- plutus/PrizeValidator.hs src/plutusScripts/prizeValidatorFactory.plutus.json plutus/out
+          git clean -fd -- plutus/out
+          git clean -fdX -- plutus/out
+          rm -f src/package.json Adapter/package.json
           if [ -n "$(git diff --name-only HEAD)" ]; then
             git diff --name-only HEAD
+            exit 1
+          fi
+          if [ -n "$(git status --porcelain --untracked-files=all -- src/package.json Adapter/package.json plutus/out)" ]; then
+            git status --short -- src/package.json Adapter/package.json plutus/out
             exit 1
           fi
 
