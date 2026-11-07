@@ -123,7 +123,7 @@ jobs:
           const oracleName = process.env.ORACLE_STATE_TOKEN_NAME_HEX
           const oraclePublisher = process.env.ORACLE_PUBLISHER_PKH
           const loadValidator = await import(pathToFileURL(root + '/src/loadValidator.ts').href)
-          const lucid = await import('lucid-cardano')
+          const { validatorToScriptHash } = await import('@lucid-evolution/lucid')
 
           const factoryRaw = readFileSync(root + '/plutus/out/prizeValidatorFactory.plutus.json')
           const envelope = JSON.parse(factoryRaw.toString('utf8'))
@@ -172,7 +172,7 @@ jobs:
 
           const factoryBytes = Buffer.from(envelope.cborHex, 'hex')
           const parameterizedBytes = Buffer.from(scriptHex, 'hex')
-          const scriptHash = lucid.utils.validatorToScriptHash(script)
+          const scriptHash = validatorToScriptHash(script)
           const result = {
             schema: 'IMMORTAL-PRIZEVALIDATOR-CONSERVATIVE-OPTIMIZATION-SIZE-EXPERIMENT-v0.1',
             phase,
