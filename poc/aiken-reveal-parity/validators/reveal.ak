@@ -46,7 +46,6 @@ validator pre_rich_reveal(
           oracle_state_name,
           oracle_publisher,
         )
-      _ -> False
     }
   }
 
