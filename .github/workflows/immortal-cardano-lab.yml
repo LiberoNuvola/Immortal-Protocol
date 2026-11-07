@@ -436,7 +436,7 @@ jobs:
       # build to fall through to a stale plutus.json.
       - name: Execute Aiken Prize + Haskell B1PrizePool Claim trace
         id: claim_trace
-        if: steps.aiken-reveal-build.outcome == 'success'
+        if: always() && steps.aiken-reveal-build.outcome == 'success'
         env:
           CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
           IMMORTAL_CLAIM_AIKEN_V3: "1"
