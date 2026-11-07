@@ -20,6 +20,7 @@ import {
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { bindPublishedReferenceScript } from './revealReferenceScripts'
+import { beaconRegistryValidator } from '../../src/loadValidator'
 
 const API = process.env.YACI_STORE_API ?? 'http://127.0.0.1:8080/api/v1'
 const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
@@ -105,7 +106,7 @@ if (!keyHash) fail('CI signing wallet has no payment key hash')
 const fixtureOracleStatePolicyId = mintingPolicyToId(nativePolicy(keyHash))
 const appliedCode = evolutionApplyParamsToScript(
   validator.compiledCode,
-  [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+  [validatorToScriptHash(beaconRegistryValidator).toLowerCase(), fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
 )
 const script: Script = { type: 'PlutusV3', script: appliedCode }
 const lucidityHash = validatorToScriptHash(script).toLowerCase()
