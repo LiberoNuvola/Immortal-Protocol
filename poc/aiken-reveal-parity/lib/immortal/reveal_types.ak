@@ -1,4 +1,4 @@
-use aiken/crypto.{ScriptHash}
+use aiken/crypto.{ScriptHash, VerificationKeyHash}
 use cardano/assets.{AssetName, PolicyId}
 
 /// Wire-compatible type declarations for the existing Haskell Types.hs schema.
