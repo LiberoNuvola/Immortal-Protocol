@@ -282,3 +282,56 @@ The same SHA triggered [IMMORTAL Cardano Preprod Context run #42340114380](https
 - No wallet signing, privileged approval, deployment or Preprod/mainnet ledger action was performed.
 
 **Next technical owner:** Agent B, read-only feasibility analysis in Issue #45. Agent A resumes documentation/coordination only; any implementation requires a new explicit, bounded authorization.
+
+## 2026-11-07 — Agent A read-only Haskell V2 PrizeValidator size-feasibility cross-check
+
+**Analysis issue:** [#45 — Haskell V2 PrizeValidator size feasibility](https://github.com/LiberoNuvola/Immortal-Protocol/issues/45)  
+**Source baseline:** `9d51437b80ce046bf82ec8b9ab0279a2243c7882`  
+**Branch HEAD before this documentation update:** `98ef14085563f0d047f89c33f441708cf4443a1b`  
+**Scope:** read-only source/build/log review; no implementation slot requested or granted.
+
+### Critical provenance correction
+
+The checked-in `plutus/out/prizeValidatorFactory.plutus.json` and `src/plutusScripts/prizeValidatorFactory.plutus.json` at the source baseline are byte-identical, with 19,520 hex characters = 9,760 CBOR-hex bytes. However, the Cardano Lab run does **not** consume the tracked artifact unchanged:
+
+1. Step 8 executes `cabal run exe:export-scripts`.
+2. `plutus/export/Export.hs` exports `PrizeValidator.compiledValidatorFactory` with `serialiseCompiledCode` and hex encoding.
+3. Step 12 records SHA-256 for the freshly generated artifacts.
+4. Step 13 copies the fresh PrizeValidator factory into `src/plutusScripts`.
+5. `src/loadValidator.ts` imports that artifact and applies the Registry ScriptHash, PrizeTable, Oracle singleton identity and Oracle publisher Pkh.
+
+Run #42340114425 / #2570 records generated factory JSON SHA-256:
+`14e6a36d7ae9de9bb5e64514c01fa20e224167c79d3b50745a677d8b7a6a7e60`.
+
+The tracked 19,713-byte JSON at the same source SHA has SHA-256:
+`5c0ba5880c423afd77c81cfd0cc5fdbda96a99e5759d1f3718e298b80970ed4a`.
+
+The generated JSON is therefore not byte-identical to the tracked artifact. The run retained only the generated JSON SHA, not the fresh `cborHex` bytes/length or wrapper depth. Consequently, **9,760 bytes is not established as the exact factory input to the failing runtime parameterization**, and the apparent 9,760 → 16,443 delta must not be attributed to parameter application or Lucid without further evidence.
+
+### Canonical toolchain and runtime path
+
+- CI uses GHC 9.6.7 / Cabal 3.12.1.0.
+- `cabal.project` pins Plutus release 1.67.0.0 at `48e9bf08f439e7223de713b5b71696fcd81cffc3` and exact package constraints.
+- `plutus/PrizeValidator.hs` targets Plutus Core 1.0.0 for V2 compatibility; current Cabal flags already use the standard Plinth-safe restrictions on GHC full-laziness, strictness, specialisation, SpecConstr and unboxing.
+- Export uses `serialiseCompiledCode`; parameter application is a distinct subsequent step through `lucid-cardano@0.10.11` `applyParamsToScript`, delegated to CML `apply_params_to_plutus_script`.
+- The exact Haskell V2 runtime PrizeValidator measurement remains hash `508588a6ac5925b316b87f85adcc746808b4b29d2e13952184e7175b`, 16,443 bytes. B1PrizePool is 12,085 bytes. The reference-script publication transaction is 16,540 bytes and fails before signing/submission.
+
+### Size-feasibility ranking and safe next experiment
+
+1. **First: build/representation provenance.** Capture exact fresh factory JSON, `cborHex`, inner flat bytes, CBOR wrapper depth, SHA-256 and byte length; capture exact parameterized bytes/hash from that fresh artifact; then measure the complete publication transaction.
+2. **Then: isolated compiler option comparison.** Plutus 1.67.0.0 exposes `conservative-optimisation`, `inline-callsite-growth`, `inline-constants` etc. These may affect UPLC bytes, script hash and CEK costs. Compare one option at a time in a throwaway checkout with same source/toolchain/target/parameters, retaining full all-action positive/negative/golden/CEK-cost evidence.
+3. **Source factoring/profile.** PrizeValidator contains 38 INLINABLE pragmas, no explicit INLINE/NOINLINE, 67 traceIfFalse sites; compact numeric trace labels are already used. Raw BuiltinData/Claim helpers and repeated TxInfo traversal are possible profiling targets but not demonstrated size hotspots.
+4. **Structural validator split.** High semantic/deployment risk: changes script topology/hashes/addresses/reference identity and parameter binding; requires a separate normative architecture and migration decision.
+5. **Aiken V3.** Smaller isolated local Yaci candidate is not semantic equivalence or authorization to replace the canonical V2 implementation.
+
+The measured publication transaction requires at least **156 bytes** reduction to fit the 16,384-byte limit. The one-run non-script remainder is 97 bytes, implying a 16,287-byte script target only under that exact same envelope; this is not a general overhead guarantee.
+
+### Agent A disposition
+
+- Haskell V2 failure is precisely localized to PrizeValidator reference-script publication.
+- The fresh factory → parameterized script growth is **not yet quantified** because the exact fresh factory CBOR was not retained.
+- Do not claim a Lucid parameterization bug, select a compiler flag, shrink scripts, alter ABI/validators, split the validator or substitute Aiken V3 from current evidence.
+- [Issue #45 comment #6702649762](https://github.com/LiberoNuvola/Immortal-Protocol/issues/45#issuecomment-6702649762) contains the full source-path review, risk ranking and bounded experiment recommendation.
+- Issue #45 remains **READ-ONLY / NO WRITE SLOT**. Any source/compiler implementation work requires a separate explicit authorization after provenance is reconciled.
+
+No code, build flags, dependencies, workflow, script artifact, economic rule, signing, deployment or ledger state was changed by this analysis.
