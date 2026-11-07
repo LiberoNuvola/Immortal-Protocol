@@ -1,0 +1,31 @@
+name: BeaconRegistry worker selection conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - '.github/workflows/beacon-registry-worker-conformance.yml'
+      - 'relayer/relayer.js'
+      - 'relayer/beaconRegistrySelection.js'
+      - 'relayer/__tests__/beaconRegistrySelection.test.js'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/beacon-registry-worker-conformance.yml'
+      - 'relayer/relayer.js'
+      - 'relayer/beaconRegistrySelection.js'
+      - 'relayer/__tests__/beaconRegistrySelection.test.js'
+  workflow_dispatch:
+
+jobs:
+  worker-selection:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run deterministic BeaconRegistry worker selection tests
+        run: node --test relayer/__tests__/beaconRegistrySelection.test.js

@@ -59,6 +59,10 @@ const {
   TREASURY_SCRIPT_PATH,
 } = require('./loadValidator')
 
+const {
+  selectPendingRegistryCandidates,
+} = require('./beaconRegistrySelection')
+
 // ---------------------------------------------------------------------------
 // Generic configuration
 // ---------------------------------------------------------------------------
@@ -763,23 +767,6 @@ function deriveBeaconOffChain(
 // Registry discovery
 // ---------------------------------------------------------------------------
 
-async function findPendingRegistry(
-  lucid,
-  registryAddress,
-) {
-  const utxos =
-    await lucid.utxosAt(
-      registryAddress,
-    )
-
-  const pending =
-    utxos.filter((u) =>
-      decodeRegistryDatum(u)?.status === 0,
-    )
-
-  return pending
-}
-
 async function beaconWorker(lucid) {
   const registryAddress =
     process.env.BEACON_REGISTRY_ADDRESS
@@ -791,63 +778,42 @@ async function beaconWorker(lucid) {
     return
   }
 
-  const pending =
-    await findPendingRegistry(
-      lucid,
+  const registryUtxos =
+    await lucid.utxosAt(
       registryAddress,
     )
 
-  if (pending.length === 0) {
-    return
-  }
-
   /*
-   * One Registry UTxO per round.
-   *
-   * We process each pending round independently.
-   * Duplicate Pending registries for the same round are
-   * refused rather than guessed.
+   * A Pending is eligible only when its own brRound equals target.round.
+   * Grouping happens on target.round after this equality check, so a
+   * mismatched brRound cannot split two UTxOs for one target into separate
+   * apparently-unique groups.
    */
-  const byRound =
-    new Map()
+  const selection = selectPendingRegistryCandidates(
+    registryUtxos,
+    decodeRegistryDatum,
+  )
 
-  for (const utxo of pending) {
-    const datum =
-      decodeRegistryDatum(utxo)
-
-    if (!datum) continue
-
-    const key =
-      datum.round.toString()
-
-    const current =
-      byRound.get(key) || []
-
-    current.push({
-      utxo,
-      datum,
-    })
-
-    byRound.set(key, current)
+  for (const { utxo, reason } of selection.rejected) {
+    if (reason === 'NOT_PENDING') continue
+    const outRef =
+      `${utxo?.txHash ?? 'unknown'}#${utxo?.outputIndex ?? 'unknown'}`
+    console.warn(
+      `[beacon] skipping Registry UTxO ${outRef}: ${reason}`,
+    )
   }
 
-  for (const [round, entries] of byRound) {
-    if (entries.length !== 1) {
-      console.error(
-        `[beacon] refusing round=${round}: ` +
-        `${entries.length} Pending registry UTxOs found; expected exactly one.`,
-      )
-      continue
-    }
+  for (const duplicate of selection.duplicates) {
+    console.error(
+      `[beacon] refusing targetRound=${duplicate.round}: ` +
+      `${duplicate.count} qualified Pending registry UTxOs found; expected exactly one.`,
+    )
+  }
 
-    const {
-      utxo,
-      datum,
-    } = entries[0]
-
+  for (const { round, utxo, datum } of selection.selected) {
     try {
       console.log(
-        `[beacon] publishing round=${round}`,
+        `[beacon] publishing targetRound=${round}`,
       )
 
       const txHash =
@@ -862,7 +828,7 @@ async function beaconWorker(lucid) {
       )
     } catch (error) {
       console.error(
-        `[beacon] round=${round} publication failed:`,
+        `[beacon] targetRound=${round} publication failed:`,
         error,
       )
     }
