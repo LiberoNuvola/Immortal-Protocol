@@ -52,6 +52,11 @@ jobs:
           set -euo pipefail
           evidence_dir="$RUNNER_TEMP/prizevalidator-conservative-optimization-experiment"
           mkdir -p "$evidence_dir"
+          plutus_git_pin="$(awk '
+            $1 == "location:" && $2 == "https://github.com/IntersectMBO/plutus.git" {
+              if (getline && $1 == "tag:") print $2
+            }
+          ' cabal.project)"
           {
             echo "workflow_sha=$GITHUB_SHA"
             echo "branch=$GITHUB_REF"
@@ -59,11 +64,6 @@ jobs:
             echo "node=$(node --version)"
             echo "ghc=$(ghc --numeric-version)"
             echo "cabal=$(cabal --numeric-version)"
-            plutus_git_pin="$(awk '
-              $1 == "location:" && $2 == "https://github.com/IntersectMBO/plutus.git" {
-                if (getline && $1 == "tag:") print $2
-              }
-            ' cabal.project)"
             echo "plutus_git_pin=$plutus_git_pin"
             echo "prize_validator_source_sha256=$(sha256sum plutus/PrizeValidator.hs | awk '{print $1}')"
           } | tee "$evidence_dir/provenance.txt"
