@@ -143,6 +143,104 @@ function hashJson(value: unknown): string {
     .digest('hex')
 }
 
+
+type ExpireBuilderPhase = 'complete' | 'sign'
+
+function cborHexByteLength(serialized: unknown): number | null {
+  if (typeof serialized !== 'string') return null
+  const hex = serialized.startsWith('0x') ? serialized.slice(2) : serialized
+  if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) return null
+  return hex.length / 2
+}
+
+function completedCandidateCbor(candidate: unknown): { bytes: number | null; source: string } {
+  const value = candidate as {
+    toCBOR?: () => string
+    toTransaction?: () => { to_bytes?: () => Uint8Array }
+  } | null
+  if (value && typeof value.toCBOR === 'function') {
+    return { bytes: cborHexByteLength(value.toCBOR()), source: 'toCBOR' }
+  }
+  if (value && typeof value.toTransaction === 'function') {
+    const transaction = value.toTransaction()
+    if (typeof transaction.to_bytes === 'function') {
+      return { bytes: transaction.to_bytes().length, source: 'toTransaction().to_bytes()' }
+    }
+  }
+  return { bytes: null, source: 'unavailable' }
+}
+
+async function traceExpireBuilder<T>(
+  stage: string,
+  phase: ExpireBuilderPhase,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const startedAt = Date.now()
+  console.log(JSON.stringify({
+    expireBuilderDiagnostic: 'start',
+    stage,
+    phase,
+    transactionSizeLimitBytes: 16_384,
+  }))
+  try {
+    const candidate = await operation()
+    let measurement: { bytes: number | null; source: string }
+    let measurementError: string | undefined
+    try {
+      measurement = completedCandidateCbor(candidate)
+    } catch (error) {
+      measurement = { bytes: null, source: 'measurement-error' }
+      measurementError = error instanceof Error ? error.message : String(error)
+    }
+    console.log(JSON.stringify({
+      expireBuilderDiagnostic: 'success',
+      stage,
+      phase,
+      elapsedMs: Date.now() - startedAt,
+      cborBytes: measurement.bytes,
+      cborMeasurement: measurement.source,
+      bytesOverCardanoLimit: measurement.bytes === null ? null : Math.max(0, measurement.bytes - 16_384),
+      transactionSizeLimitBytes: 16_384,
+      ...(measurementError ? { measurementError } : {}),
+    }))
+    return candidate
+  } catch (error) {
+    console.error(JSON.stringify({
+      expireBuilderDiagnostic: 'failure',
+      stage,
+      phase,
+      elapsedMs: Date.now() - startedAt,
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: (error instanceof Error ? error.message : String(error)).slice(0, 2000),
+      transactionSizeLimitBytes: 16_384,
+      outcome: 'rethrow-original-error',
+    }))
+    throw error
+  }
+}
+
+function recordExpireCborSerialization(stage: string, serialized: string): string {
+  const bytes = cborHexByteLength(serialized)
+  console.log(JSON.stringify({
+    expireBuilderDiagnostic: 'serialized-cbor',
+    stage,
+    cborBytes: bytes,
+    bytesOverCardanoLimit: bytes === null ? null : Math.max(0, bytes - 16_384),
+    transactionSizeLimitBytes: 16_384,
+  }))
+  return serialized
+}
+
+function expireScriptDiagnostic(name: string, script: Script | undefined) {
+  if (!script) return { name, present: false, scriptHash: null, scriptBytes: null }
+  return {
+    name,
+    present: true,
+    type: script.type,
+    scriptHash: validatorToScriptHash(script).toLowerCase(),
+    scriptBytes: Buffer.from(script.script, 'hex').length,
+  }
+}
 function ref(u: UTxO): string {
   return u.txHash + '#' + u.outputIndex
 }
@@ -545,6 +643,16 @@ if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
 }
 
+console.log(JSON.stringify({
+  expireScriptDiagnostics: {
+    backend: EXPIRE_BACKEND,
+    expireCase: EXPIRE_CASE,
+    prizeValidator: expireScriptDiagnostic('parameterized-prize-validator', scripts.prizeValidator),
+    b1PrizePool: expireScriptDiagnostic('parameterized-b1-prize-pool', scripts.b1PrizePool),
+  },
+  transactionSizeLimitBytes: 16_384,
+}, null, 2))
+
 // EXPIRE evaluates pdExpiresAt against the transaction validity range; it
 // does not establish the DApp/profile expiry horizon. Keep this fixture focused
 // on the EXPIRE transition and align its expiry marker with recent Yaci time so
@@ -575,7 +683,7 @@ const postPoolDatum = poolDatum(
   0n,
 )
 
-const bootstrap = await lucid
+const bootstrap = await traceExpireBuilder('bootstrap-mint-and-fixture-outputs', 'complete', () => lucid
   .newTx()
   .mintAssets(
     {
@@ -602,9 +710,13 @@ const bootstrap = await lucid
   )
   .pay.ToAddress(address, { lovelace: 2_000_000n, [ticketUnit]: 1n })
   .addSigner(address)
-  .complete()
+  .complete())
 
-const bootstrapSigned = await bootstrap.sign.withWallet().complete()
+const bootstrapSigned = await traceExpireBuilder(
+  'bootstrap-mint-and-fixture-outputs',
+  'sign',
+  () => bootstrap.sign.withWallet().complete(),
+)
 const bootstrapHash = await bootstrapSigned.submit()
 await lucid.awaitTx(bootstrapHash)
 
@@ -638,29 +750,45 @@ if (!prizeUtxo || !poolUtxo) {
 // collectFrom can resolve the script; the CML witness shim below turns the
 // resulting Plutus witness into Ref(hash), so the validator bytes are not
 // serialized in the spending transaction.
-const prizeReferenceTx = await lucid
-  .newTx()
-  .pay.ToAddressWithData(
-    referenceAddress,
-    undefined,
-    { lovelace: 2_000_000n },
-    scripts.prizeValidator as Script,
-  )
-  .complete({ localUPLCEval: false })
-const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete()
+const prizeReferenceTx = await traceExpireBuilder(
+  'publish-prize-reference-script',
+  'complete',
+  () => lucid
+    .newTx()
+    .pay.ToAddressWithData(
+      referenceAddress,
+      undefined,
+      { lovelace: 2_000_000n },
+      scripts.prizeValidator as Script,
+    )
+    .complete({ localUPLCEval: false }),
+)
+const prizeReferenceSigned = await traceExpireBuilder(
+  'publish-prize-reference-script',
+  'sign',
+  () => prizeReferenceTx.sign.withWallet().complete(),
+)
 const prizeReferenceHash = await prizeReferenceSigned.submit()
 await lucid.awaitTx(prizeReferenceHash)
 
-const poolReferenceTx = await lucid
-  .newTx()
-  .pay.ToAddressWithData(
-    referenceAddress,
-    undefined,
-    { lovelace: 2_000_000n },
-    scripts.b1PrizePool as Script,
-  )
-  .complete({ localUPLCEval: false })
-const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete()
+const poolReferenceTx = await traceExpireBuilder(
+  'publish-b1-prize-pool-reference-script',
+  'complete',
+  () => lucid
+    .newTx()
+    .pay.ToAddressWithData(
+      referenceAddress,
+      undefined,
+      { lovelace: 2_000_000n },
+      scripts.b1PrizePool as Script,
+    )
+    .complete({ localUPLCEval: false }),
+)
+const poolReferenceSigned = await traceExpireBuilder(
+  'publish-b1-prize-pool-reference-script',
+  'sign',
+  () => poolReferenceTx.sign.withWallet().complete(),
+)
 const poolReferenceHash = await poolReferenceSigned.submit()
 await lucid.awaitTx(poolReferenceHash)
 
@@ -720,31 +848,42 @@ const expireTx = await completeWithReferenceScriptWitnesses(
     validatorToScriptHash(scripts.prizeValidator as Script),
     validatorToScriptHash(scripts.b1PrizePool as Script),
   ],
-  () => lucid
-    .newTx()
-    .readFrom([prizeReferenceInput, poolReferenceInput])
-    .attach.SpendingValidator(scripts.prizeValidator as Script)
-    .attach.SpendingValidator(scripts.b1PrizePool as Script)
-    .collectFrom([prizeUtxo], Data.to(c(3)))
-    .collectFrom([poolUtxo], Data.to(c(4)))
-    .pay.ToAddress(address, {
-      lovelace: prizeUtxo.assets.lovelace ?? 0n,
-    })
-    .pay.ToContract(
-      scripts.b1PrizePoolAddress as string,
-      { kind: 'inline', value: Data.to(postPoolDatum) },
-      poolUtxo.assets,
-    )
-    .addSigner(address)
-    .validFrom(Number(expiresAt + 1_000n))
-    .complete({ localUPLCEval: false }),
+  () => traceExpireBuilder(
+    `expire-spend-${EXPIRE_BACKEND}-${EXPIRE_CASE}`,
+    'complete',
+    () => lucid
+      .newTx()
+      .readFrom([prizeReferenceInput, poolReferenceInput])
+      .attach.SpendingValidator(scripts.prizeValidator as Script)
+      .attach.SpendingValidator(scripts.b1PrizePool as Script)
+      .collectFrom([prizeUtxo], Data.to(c(3)))
+      .collectFrom([poolUtxo], Data.to(c(4)))
+      .pay.ToAddress(address, {
+        lovelace: prizeUtxo.assets.lovelace ?? 0n,
+      })
+      .pay.ToContract(
+        scripts.b1PrizePoolAddress as string,
+        { kind: 'inline', value: Data.to(postPoolDatum) },
+        poolUtxo.assets,
+      )
+      .addSigner(address)
+      .validFrom(Number(expiresAt + 1_000n))
+      .complete({ localUPLCEval: false }),
+  ),
 )
 
 // This fixture qualifies the on-chain EXPIRE transition only. It does not
 // claim an authoritative production Issue-admission witness or bypass that gate.
-const signedExpire = await expireTx.sign.withWallet().complete()
+const signedExpire = await traceExpireBuilder(
+  `expire-spend-${EXPIRE_BACKEND}-${EXPIRE_CASE}`,
+  'sign',
+  () => expireTx.sign.withWallet().complete(),
+)
 const txHash = await signedExpire.submit()
-const txCbor = signedExpire.toCBOR()
+const txCbor = recordExpireCborSerialization(
+  `expire-spend-${EXPIRE_BACKEND}-${EXPIRE_CASE}`,
+  signedExpire.toCBOR(),
+)
 await lucid.awaitTx(txHash)
 
 const postPoolUtxos = await waitFor(
