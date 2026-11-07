@@ -10,13 +10,328 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: prizevalidator-conservative-optimization-experiment-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  workflow-load-smoke:
+  compile-size-comparison:
     runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      EXPERIMENT_EVIDENCE_DIR: ${{ runner.temp }}/prizevalidator-conservative-optimization-experiment
+      REGISTRY_SCRIPT_HASH: 7e77d0b44002ea15d7c4a11f5acc176bfccec5bb0eafac66c528dcd8
+      ORACLE_STATE_POLICY_ID: 89234e0f20373cde0c7b0644edeb3cfc1dbca4005fd98b731518d235
+      ORACLE_STATE_TOKEN_NAME_HEX: 4f5241434c45
+      ORACLE_PUBLISHER_PKH: c8c47610a36034aac6fc58848bdae5c278d994ff502c05455e3b3ee8
     steps:
-      - name: Confirm isolated experiment workflow loaded
+      - name: Checkout exact experiment commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository runtime dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Setup canonical Plutus 1.67.0.0 toolchain
+        uses: ./.github/actions/setup-plutus
+        with:
+          update-hackage: "true"
+
+      - name: Record source and toolchain provenance
+        shell: bash
         run: |
           set -euo pipefail
-          echo "workflow syntax and job graph loaded"
-          echo "sha=$GITHUB_SHA"
-          echo "ref=$GITHUB_REF"
+          mkdir -p "$EXPERIMENT_EVIDENCE_DIR"
+          {
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "branch=$GITHUB_REF"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "node=$(node --version)"
+            echo "ghc=$(ghc --numeric-version)"
+            echo "cabal=$(cabal --numeric-version)"
+            echo "plutus_git_pin=$(grep -A2 'location: https://github.com/IntersectMBO/plutus.git' cabal.project | tail -n1 | sed 's/^[[:space:]]*tag:[[:space:]]*//')"
+            echo "prize_validator_source_sha256=$(sha256sum plutus/PrizeValidator.hs | awk '{print $1}')"
+          } | tee "$EXPERIMENT_EVIDENCE_DIR/provenance.txt"
+          grep -q '48e9bf08f439e7223de713b5b71696fcd81cffc3' cabal.project
+
+      - name: Compile, measure baseline, then compare the isolated candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$EXPERIMENT_EVIDENCE_DIR"
+          probe_file="$RUNNER_TEMP/prizevalidator-size-measure-probe.mjs"
+          original_validator="$RUNNER_TEMP/PrizeValidator.hs.original"
+          original_factory="$RUNNER_TEMP/prizeValidatorFactory.plutus.json.original"
+          cp plutus/PrizeValidator.hs "$original_validator"
+          cp src/plutusScripts/prizeValidatorFactory.plutus.json "$original_factory"
+
+          cleanup() {
+            rc=$?
+            trap - EXIT
+            set +e
+            cp "$original_validator" plutus/PrizeValidator.hs
+            cp "$original_factory" src/plutusScripts/prizeValidatorFactory.plutus.json
+            git restore --source=HEAD --worktree -- plutus/PrizeValidator.hs src/plutusScripts/prizeValidatorFactory.plutus.json
+            rm -rf plutus/out
+            rm -f "$probe_file"
+            if [ -n "$(git diff --name-only HEAD)" ]; then
+              echo "Unexpected tracked worktree diff remains after restoration." >&2
+              git diff --name-only HEAD >&2
+              rc=1
+            fi
+            cmp -s "$original_validator" plutus/PrizeValidator.hs || rc=1
+            cmp -s "$original_factory" src/plutusScripts/prizeValidatorFactory.plutus.json || rc=1
+            {
+              echo "tracked_worktree_diff_after_restore=$(git diff --name-only HEAD | tr '\n' ' ')"
+              echo "tracked_source_restore=$(cmp -s "$original_validator" plutus/PrizeValidator.hs && echo exact || echo mismatch)"
+              echo "tracked_factory_restore=$(cmp -s "$original_factory" src/plutusScripts/prizeValidatorFactory.plutus.json && echo exact || echo mismatch)"
+            } > "$EXPERIMENT_EVIDENCE_DIR/worktree-restoration.txt"
+            exit "$rc"
+          }
+          trap cleanup EXIT
+
+          cat > "$probe_file" <<'NODE'
+          import { createHash } from 'node:crypto'
+          import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+          import { execFileSync } from 'node:child_process'
+          import { pathToFileURL } from 'node:url'
+
+          const phase = process.env.EXPERIMENT_PHASE
+          if (!['baseline', 'candidate'].includes(phase)) throw new Error('Invalid EXPERIMENT_PHASE')
+          const root = process.env.GITHUB_WORKSPACE
+          const evidenceDir = process.env.EXPERIMENT_EVIDENCE_DIR
+          const registryHash = process.env.REGISTRY_SCRIPT_HASH
+          const oraclePolicy = process.env.ORACLE_STATE_POLICY_ID
+          const oracleName = process.env.ORACLE_STATE_TOKEN_NAME_HEX
+          const oraclePublisher = process.env.ORACLE_PUBLISHER_PKH
+          const loadValidator = await import(pathToFileURL(root + '/src/loadValidator.ts').href)
+          const lucid = await import('@lucid-evolution/lucid')
+
+          const factoryRaw = readFileSync(root + '/plutus/out/prizeValidatorFactory.plutus.json')
+          const envelope = JSON.parse(factoryRaw.toString('utf8'))
+          if (envelope.type !== 'PlutusScriptV2' || typeof envelope.cborHex !== 'string') {
+            throw new Error('Fresh generated factory envelope is malformed')
+          }
+          if (!/^(?:[0-9a-fA-F]{2})+$/.test(envelope.cborHex)) throw new Error('Factory CBOR hex malformed')
+
+          const table = { tier1: 2, tier2: 5, tier3: 10, tier4: 200, tier5: 1000 }
+          const script = loadValidator.buildPrizeValidator(
+            registryHash, table, oraclePolicy, oracleName, oraclePublisher
+          )
+          if (script.type !== 'PlutusV2' || typeof script.script !== 'string') {
+            throw new Error('Parameterized script is not PlutusV2')
+          }
+          const scriptHex = script.script.replace(/^0x/, '')
+          if (!/^(?:[0-9a-fA-F]{2})+$/.test(scriptHex)) throw new Error('Parameterized CBOR hex malformed')
+
+          const digest = bytes => createHash('sha256').update(bytes).digest('hex')
+          function cborEnvelope(hex) {
+            const bytes = Buffer.from(hex, 'hex')
+            const majorType = bytes[0] >> 5
+            const additionalInfo = bytes[0] & 31
+            const headerBytes = additionalInfo < 24 ? 1
+              : additionalInfo === 24 ? 2
+              : additionalInfo === 25 ? 3
+              : additionalInfo === 26 ? 5
+              : additionalInfo === 27 ? 9 : 0
+            if (majorType !== 2 || !headerBytes || bytes.length < headerBytes) {
+              throw new Error('Unexpected/truncated outer CBOR byte-string envelope')
+            }
+            const declaredPayloadBytes = additionalInfo < 24 ? additionalInfo
+              : additionalInfo === 24 ? bytes.readUInt8(1)
+              : additionalInfo === 25 ? bytes.readUInt16BE(1)
+              : additionalInfo === 26 ? bytes.readUInt32BE(1)
+              : Number(bytes.readBigUInt64BE(1))
+            const availablePayloadBytes = bytes.length - headerBytes
+            const payload = bytes.subarray(headerBytes, headerBytes + declaredPayloadBytes)
+            return {
+              majorType, additionalInfo, headerBytes, declaredPayloadBytes,
+              availablePayloadBytes,
+              trailingBytes: availablePayloadBytes - declaredPayloadBytes,
+              payloadSha256: digest(payload),
+            }
+          }
+
+          const factoryBytes = Buffer.from(envelope.cborHex, 'hex')
+          const parameterizedBytes = Buffer.from(scriptHex, 'hex')
+          const scriptHash = lucid.validatorToScriptHash(script)
+          const result = {
+            schema: 'IMMORTAL-PRIZEVALIDATOR-CONSERVATIVE-OPTIMIZATION-SIZE-EXPERIMENT-v0.1',
+            phase,
+            classification: phase === 'baseline' ? 'CANONICAL_DEFAULT_BASELINE' : 'ISOLATED_CONSERVATIVE_OPTIMISATION_CANDIDATE',
+            sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
+            sourceFileSha256: digest(readFileSync(root + '/plutus/PrizeValidator.hs')),
+            compilerOptionProfile: phase === 'baseline'
+              ? 'canonical default with target-version=1.0.0'
+              : 'canonical default plus only conservative-optimisation',
+            toolchain: {
+              node: process.version,
+              ghc: execFileSync('ghc', ['--numeric-version'], { encoding: 'utf8' }).trim(),
+              cabal: execFileSync('cabal', ['--numeric-version'], { encoding: 'utf8' }).trim(),
+            },
+            pinnedPlutusCommit: '48e9bf08f439e7223de713b5b71696fcd81cffc3',
+            parameters: {
+              registryScriptHash: registryHash,
+              prizeTable: table,
+              oracleSingletonPolicyId: oraclePolicy,
+              oracleSingletonTokenNameHex: oracleName,
+              oraclePublisherPkh: oraclePublisher,
+            },
+            factory: {
+              type: envelope.type,
+              jsonSha256: digest(factoryRaw),
+              cborBytes: factoryBytes.length,
+              cborSha256: digest(factoryBytes),
+              outerCborByteString: cborEnvelope(envelope.cborHex),
+              rawCborHex: envelope.cborHex,
+            },
+            parameterizedPrizeValidator: {
+              type: script.type,
+              cborBytes: parameterizedBytes.length,
+              cborSha256: digest(parameterizedBytes),
+              scriptHash,
+              outerCborByteString: cborEnvelope(scriptHex),
+              rawCborHex: scriptHex,
+            },
+          }
+          mkdirSync(evidenceDir, { recursive: true })
+          writeFileSync(evidenceDir + '/' + phase + '.json', JSON.stringify(result, null, 2) + '\n')
+          console.log(JSON.stringify({
+            phase, factoryBytes: result.factory.cborBytes,
+            factorySha256: result.factory.cborSha256,
+            parameterizedScriptBytes: result.parameterizedPrizeValidator.cborBytes,
+            parameterizedScriptSha256: result.parameterizedPrizeValidator.cborSha256,
+            scriptHash, evidenceFile: evidenceDir + '/' + phase + '.json',
+          }, null, 2))
+          NODE
+
+          echo "=== Compile canonical default baseline ==="
+          cabal run exe:export-scripts
+          cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
+          EXPERIMENT_PHASE=baseline node --import=tsx/esm "$probe_file" | tee "$EXPERIMENT_EVIDENCE_DIR/baseline.log"
+
+          node --input-type=module - "$EXPERIMENT_EVIDENCE_DIR/baseline.json" <<'NODE'
+          import { readFileSync } from 'node:fs'
+          const baseline = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+          const expected = {
+            factoryBytes: 16309,
+            factorySha256: '3c879feab921f4e39964baded675395c12bc20030c7843f2004017738aa37bf2',
+            parameterizedBytes: 16443,
+            parameterizedSha256: '9fec0f8342f0d1e55196dc57677222f45925087b46d0b15ca7c9aee8a5cf7036',
+            scriptHash: '508588a6ac5925b316b87f85adcc746808b4b29d2e13952184e7175b',
+          }
+          const actual = {
+            factoryBytes: baseline.factory.cborBytes,
+            factorySha256: baseline.factory.cborSha256,
+            parameterizedBytes: baseline.parameterizedPrizeValidator.cborBytes,
+            parameterizedSha256: baseline.parameterizedPrizeValidator.cborSha256,
+            scriptHash: baseline.parameterizedPrizeValidator.scriptHash,
+          }
+          console.log(JSON.stringify({ expected, actual }, null, 2))
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error('Baseline mismatch: stop before candidate compile')
+          }
+          NODE
+
+          echo "=== Temporarily add the single approved compiler option ==="
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("plutus/PrizeValidator.hs")
+          source = path.read_text()
+          needle = "{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 #-}"
+          replacement = "{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 -fplugin-opt Plinth.Plugin:conservative-optimisation #-}"
+          if source.count(needle) != 1:
+              raise SystemExit("Expected exactly one target-version pragma")
+          path.write_text(source.replace(needle, replacement))
+          PY
+          cabal run exe:export-scripts
+          cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
+          EXPERIMENT_PHASE=candidate node --import=tsx/esm "$probe_file" | tee "$EXPERIMENT_EVIDENCE_DIR/candidate.log"
+
+          node --input-type=module - "$EXPERIMENT_EVIDENCE_DIR" <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs'
+          const dir = process.argv[2]
+          const baseline = JSON.parse(readFileSync(dir + '/baseline.json', 'utf8'))
+          const candidate = JSON.parse(readFileSync(dir + '/candidate.json', 'utf8'))
+          const baselineBytes = baseline.parameterizedPrizeValidator.cborBytes
+          const candidateBytes = candidate.parameterizedPrizeValidator.cborBytes
+          const saving = baselineBytes - candidateBytes
+          const projected = 16540 + (candidateBytes - 16443)
+          const result = {
+            schema: 'IMMORTAL-PRIZEVALIDATOR-CONSERVATIVE-OPTIMIZATION-COMPARISON-v0.1',
+            classification: 'COMPILE_SIZE_ONLY_NOT_SEMANTIC_OR_LEDGER_QUALIFICATION',
+            baseline: {
+              factoryBytes: baseline.factory.cborBytes,
+              factorySha256: baseline.factory.cborSha256,
+              parameterizedScriptBytes: baselineBytes,
+              parameterizedScriptSha256: baseline.parameterizedPrizeValidator.cborSha256,
+              scriptHash: baseline.parameterizedPrizeValidator.scriptHash,
+            },
+            candidate: {
+              factoryBytes: candidate.factory.cborBytes,
+              factorySha256: candidate.factory.cborSha256,
+              parameterizedScriptBytes: candidateBytes,
+              parameterizedScriptSha256: candidate.parameterizedPrizeValidator.cborSha256,
+              scriptHash: candidate.parameterizedPrizeValidator.scriptHash,
+            },
+            parameterizedScriptBytesSaved: saving,
+            projectedPublicationTransactionBytes: projected,
+            projectionAssumption: 'projection only, assumes baseline 97-byte non-script remainder; no publication transaction was built',
+            candidateAtOrBelow16287ByteConditionalThreshold: candidateBytes <= 16287,
+            nonClaims: [
+              'no CEK-cost or semantic equivalence established',
+              'no transaction, Yaci, wallet, Preprod or Mainnet action',
+              'candidate hash is not production-qualified',
+              'no production artifact substitution or dependent-script re-binding',
+            ],
+          }
+          writeFileSync(dir + '/comparison.json', JSON.stringify(result, null, 2) + '\n')
+          writeFileSync(dir + '/comparison.md', [
+            '# PrizeValidator conservative-optimisation size experiment',
+            '',
+            'Baseline script bytes: ' + baselineBytes,
+            'Candidate script bytes: ' + candidateBytes,
+            'Absolute byte saving: ' + saving,
+            'Projected publication bytes: ' + projected + ' (projection only)',
+            'Candidate <= 16,287 bytes: ' + (candidateBytes <= 16287),
+            'Candidate script hash: ' + candidate.parameterizedPrizeValidator.scriptHash,
+            'No semantic/CEK equivalence or publication readiness is claimed.',
+          ].join('\n') + '\n')
+          console.log(JSON.stringify(result, null, 2))
+          NODE
+
+          cat "$EXPERIMENT_EVIDENCE_DIR/comparison.md"
+
+      - name: Restore compiler source and generated factory (also on failure)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f "$RUNNER_TEMP/PrizeValidator.hs.original" ]; then
+            cp "$RUNNER_TEMP/PrizeValidator.hs.original" plutus/PrizeValidator.hs
+          fi
+          if [ -f "$RUNNER_TEMP/prizeValidatorFactory.plutus.json.original" ]; then
+            cp "$RUNNER_TEMP/prizeValidatorFactory.plutus.json.original" src/plutusScripts/prizeValidatorFactory.plutus.json
+          fi
+          rm -rf plutus/out
+          git restore --source=HEAD --worktree -- plutus/PrizeValidator.hs src/plutusScripts/prizeValidatorFactory.plutus.json
+          if [ -n "$(git diff --name-only HEAD)" ]; then
+            git diff --name-only HEAD
+            exit 1
+          fi
+
+      - name: Upload compile-size evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prizevalidator-conservative-optimization-experiment
+          path: ${{ runner.temp }}/prizevalidator-conservative-optimization-experiment/
+          if-no-files-found: warn
+          retention-days: 14
