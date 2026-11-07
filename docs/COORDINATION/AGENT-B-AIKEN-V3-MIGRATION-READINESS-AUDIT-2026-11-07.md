@@ -112,3 +112,20 @@ Commits for this follow-up include:
 **Verification status:** The full Registry datum serialization comparison and updated Aiken build are pending exact-head CI. Source coverage is not yet a PASS. The transaction-context implementation still needs negative Yaci twins for absent Registry, wrong Registry credential, invalid/unreadable datum, mismatched round/target, non-Ready status, empty beacon, duplicate own input/output, altered immutable fields and altered continuing value. A successful compile alone will not close SyncBeacon.
 
 The latest Aiken Reveal Parity run observed during the follow-up was queued/in progress on an earlier head while the new fixture checker was being committed. The latest full Cardano Lab also still needed to reach the Aiken steps at the time of this report. No production or Preprod approval follows from this source port.
+
+
+## Follow-up verification — compiler correction and current exact-head CI (2026-11-07)
+
+The Aiken check failure on commit `51dc659fc2229e5ea56ee08badff38b8f7224435` was diagnosed from the compiler output, not assumed to be a Plutus bootstrap problem:
+
+- Fatal diagnostic: `aiken::check::redundant_pattern_match` in `validators/reveal.ak`, at the wildcard branch `_ -> False`.
+- All four `PrizeAction` constructors were already explicitly matched (`SyncBeacon`, `Reveal`, `Expire`, `Claim`); the catch-all was redundant and the checker rejected it.
+- Commit `eb6688d98e219f003d191b605da16dd9f963bd47` removes only that wildcard. Missing datum remains fail-closed through `expect Some(input_datum)`, and `else(_) { False }` remains the failure handler.
+
+Exact-head evidence after the correction:
+- Aiken B1 PrizePool Claim Slice [#42369160897](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160897) completed **SUCCESS** on `eb6688d`. Steps 5 and 6 both passed: isolated `aiken check` and `aiken build` for the updated package.
+- Aiken Reveal Parity [#42369160948](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160948) was still in step 4, canonical Plutus toolchain bootstrap, at observation time. It has not yet produced the exact-head Haskell fixture/serialization-parity result.
+- Cardano Integration Lab [#42369160963](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160963) had started but was still installing isolated lab dependencies at observation time. No latest-head EXPIRE, Claim, Reveal or SyncBeacon Yaci outcome is claimed.
+- The prior parity run on `51dc659` failed because of the redundant wildcard; its log also confirms the Haskell fixture executable itself compiled and generated 13 Plutus Data fixtures and 11 Haskell V2 CEK outcomes. It did not complete the Aiken serialization/parity phase.
+
+The compiler correction is therefore verified by the independent Claim Slice workflow, while full schema serialization parity and native-Yaci transaction qualification remain open. The pure SyncBeacon tests are still not a substitute for a transaction-context/Yaci trace. Haskell production sources remain unchanged.
