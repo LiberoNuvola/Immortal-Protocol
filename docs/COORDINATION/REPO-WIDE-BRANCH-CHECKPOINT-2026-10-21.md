@@ -163,3 +163,52 @@ The document defines minimum selector inputs and evidence bindings, ordered fail
 **Agent A:** preserve the separation between PRE-RICH Game and Arb Agent; no parameter or policy preference is to be invented.
 
 Current bridge behavior stays unchanged: deterministic-only accepted when it exactly matches projected WCE; StatisticalOnly and DeterministicAndStatistical remain unsupported/fail-closed. No code/tests/CI/V3/Reveal/500×/ProtectedCapital or deployment semantics were changed. R1/Kc/QNE remains open.
+
+
+## 2026-11-07 — Agent A final Cardano Lab #2569 disposition
+
+**Exact run:** [IMMORTAL Cardano Integration Lab #42338809302](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42338809302)  
+**Tested HEAD:** `2f6c437f1f9956f5c99ec4bf2b03d1317fba9fd8`  
+**Branch HEAD re-fetched at checkpoint update:** `2f6c437f1f9956f5c99ec4bf2b03d1317fba9fd8`  
+**Overall workflow:** `FAILURE`.
+
+### Exact step outcomes
+
+| Step | Outcome | Qualification |
+|---|---|---|
+| 10 — Plutus/Cabal conformance incl. BeaconRegistry adversarial CEK | PASS | B0 CEK suite reached successful exit |
+| 27 — B0 BeaconRegistry adversarial Yaci characterization | PASS | Local Yaci ledger characterization only |
+| 31 — Aiken V3 Reveal | PASS | Isolated Aiken V3 / local Yaci path |
+| 32 — FundTreasury / Oracle valuation | PASS | Local Yaci fixture; not USD/USDM qualification |
+| 33 — T3 TicketIssued boundary | STEP PASS / CAUSE QUALIFICATION OPEN | Eight accepted; ninth Plutus V2 script rejection, but prior valid ExUnits were reused after generic Yaci evaluation error |
+| 34 — Aiken V3 Expire | PASS | Isolated Aiken V3 / local Yaci path |
+| 35 — Haskell V2 Pending Expire | FAIL | Lucid/CML transaction builder rejected 16,540 bytes > 16,384 before submission |
+| 36–50 — remaining Expire, Claim, P2.8, decoder, invariants and predeploy checks | SKIPPED | Upstream step-35 failure |
+
+### T3 / 500× evidence boundary
+
+The synthetic local Yaci fixture contains 400,000 USDM subunits at 100 subunits per ticket. Issues 1–8 were accepted; the eighth reaches the arithmetic exposure boundary (500 × 8 × 100 = 400,000). Issue 9 would imply (450,000) exposure and was rejected at submission. However, the negative candidate's evaluation failed with a generic machine/script error; the harness reused the previous valid budget (`expectedNegativeBudgetFallbackUsed=true`; spend budget 1,636,544 mem / 350,284,223 steps). The final rejection is generic Plutus V2 script failure without an identifying trace. Record the accepted transitions and submitted rejection as observed, but keep the specific 500× predicate cause **not independently distinguished from generic execution failure** until a properly evidenced negative rerun. Scope excludes production MintPolicy, admission, EEV and source qualification. No economic rule changes are authorized.
+
+### Haskell V2 Pending Expire resource blocker
+
+Step 35 failed in Lucid/CML `TransactionBuilder.min_fee` with a candidate size of 16,540 bytes, 156 bytes above the Cardano 16,384-byte limit. This is a pre-submission build/resource block, not a validator semantic rejection. The step's logs did not identify which of the trace's several `.complete()` calls constructed the oversized candidate. The next work is a bounded diagnostics-only pass that marks each builder boundary and records exact CBOR size; do not alter EXPIRE semantics, scripts or economic invariants to mask the limit.
+
+### B0 disposition retained
+
+- B0 CEK step 10: PASS.
+- B0 Yaci step 27: PASS.
+- B0 remains OPEN / release-blocking: direct Ready/fake Ready-to-Prize SyncBeacon balanced Yaci twin, T07 worker regression, T08 authenticated Preprod Registry identity/UTxO, and independent Plutus/security review plus protocol-owner disposition remain outstanding.
+- The overall workflow failure at step 35 does not invalidate B0's two exact-step results.
+
+### Evidence publication
+
+The workflow generated and validated the JEV verification registry and operational prompt; their tests passed. The evidence packet contains 31 files and 82 redactions and was uploaded as artifact `13561096202`, ZIP SHA-256 `3a0ad6e6ad58d46cbb96c3a7e3252d7ed453b191caa8930387d2d68aaa226828`. The workflow log reports the Notion evidence ledger updated with run #2569.
+
+### Coordination / next owners
+
+- **Agent A:** keep R1/Kc/QNE, USD/USDM source qualification, EEV/deployment approval and first-Issue gates blocked; obtain an unambiguous T3 negative-cause proof without changing economic policy.
+- **Agent B:** take a separate, diagnostics-only serialized task to localize the Haskell V2 Pending Expire 16,540-byte candidate. No production validator, V3, Reveal or economics changes.
+- **Agent B / security reviewer:** continue the outstanding B0 Registry remediation specification/review separately; do not infer B0 closure from the passing characterization suite.
+- **Shared branch:** no code commit is made by this update. This checkpoint is documentation-only; all execution evidence above is bound to `2f6c437f1f9956f5c99ec4bf2b03d1317fba9fd8`.
+
+No deployment, signing, wallet operation, privileged approval or on-chain Preprod/mainnet action was performed.
