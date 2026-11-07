@@ -1,0 +1,211 @@
+name: Materios B3-B exact anchor public state probe
+
+on:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - ".github/workflows/materios-b3-exact-anchor-public-state-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: materios-b3-exact-anchor-public-state-probe-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact Agent C head
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Capture exact B3-B anchor and parent state availability
+        id: capture
+        env:
+          RPC_URL: https://materios.fluxpointstudios.com/rpc
+          OUT_PATH: ${{ runner.temp }}/MateriosB3ExactAnchorPublicStateProbe.json
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const TARGET_NUMBER = 1856408;
+          const PARENT_NUMBER = TARGET_NUMBER - 1;
+          const EXPECTED_GENESIS = '0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf';
+          const EXPECTED_TARGET_HASH = '0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e';
+          const GRANDPA_CURRENT_SET_ID_KEY = '0x5f9cc45b7a00c5899361e1c6099678dc8a2d09463effcc78a22d75b9cb87dffc';
+          const B3_STORAGE_KEY = '0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55';
+          let requestId = 0;
+
+          const packet = {
+            schema_version: 'materios-b3-exact-anchor-public-state-probe-v1',
+            captured_at: new Date().toISOString(),
+            chain_id: 'materios_preprod_v6',
+            rpc_origin: new URL(process.env.RPC_URL).origin,
+            trust_scope: 'Read-only public RPC transport evidence only. Header hash/state-root and trie proof are not independently verified here; GRANDPA finality and authority provenance are not established.',
+            expected: {
+              genesis_hash: EXPECTED_GENESIS,
+              target: { block_number: TARGET_NUMBER, block_hash: EXPECTED_TARGET_HASH },
+              parent_number: PARENT_NUMBER,
+              grandpa_current_set_id_storage_key: GRANDPA_CURRENT_SET_ID_KEY,
+              b3_storage_key: B3_STORAGE_KEY
+            }
+          };
+
+          async function rpc(method, params = []) {
+            const response = await fetch(process.env.RPC_URL, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ jsonrpc: '2.0', id: ++requestId, method, params }),
+              signal: AbortSignal.timeout(25000)
+            });
+            if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status} ${response.statusText}`), { method, httpStatus: response.status });
+            const body = await response.json();
+            if (body?.error) throw Object.assign(new Error(body.error.message || 'JSON-RPC error'), { method, rpcCode: body.error.code, rpcData: body.error.data ?? null });
+            if (!Object.prototype.hasOwnProperty.call(body, 'result')) throw Object.assign(new Error('JSON-RPC response lacks result'), { method });
+            return body.result;
+          }
+
+          function normalizeHash(value, label) {
+            if (typeof value !== 'string' || !/^0x[0-9a-f]{64}$/i.test(value)) throw new Error("${label}: expected 32-byte hash`);
+            return value.toLowerCase();
+          }
+
+          function parseBlockNumber(value, label) {
+            if (typeof value === 'number' && Number.isSafeInteger(value) &6 value >= 0) return BigInt(value);
+            if (typeof value === 'string' && /^0x[0-9a-f]+$/i.test(value)) return BigInt(value);
+            if (typeof value === 'string' && /^\d+$/.test(value)) return BigInt(value);
+            throw new Error(`${label}: invalid block number`);
+          }
+
+          function errorRecord(error) {
+            return {
+              message: error instanceof Error ? error.message : String(error),
+              method: error?.method ?? null,
+              rpc_code: error?.rpcCode ?? null,
+              http_status: error?.httpStatus ?? null,
+              rpc_data: error?.rpcData ?? null
+            };
+          }
+
+          async function observeCall(method, params) {
+            try { return { status: 'OK', result: await rpc(method, params) }; }
+            catch (error) { return { status: 'ERROR', error: errorRecord(error) }; }
+          }
+
+          function stateStatus(calls) {
+            const values = Object.values(calls);
+            if (values.every(x => x.status === 'OK')) return 'STATE_CAPTURED';
+            if (values.every(x => x.status === 'ERROR' && x.error?.rpc_code === 4003)) return 'HISTORICAL_STATE_PRUNED';
+            return 'PARTIAL_STATE_UNAVAILABLE';
+          }
+
+          async function observeAuthorityState(hash) {
+            const calls = {
+              runtime_set_id: await observeCall('state_call', ['GrandpaApi_current_set_id', '0x', hash]),
+              runtime_authorities: await observeCall('state_call', ['GrandpaApi_grandpa_authorities', '0x', hash]),
+              storage_current_set_id: await observeCall('state_getStorage', [GRANDPA_CURRENT_SET_ID_KEY, hash])
+            };
+            return { block_hash: hash, status: stateStatus(calls), calls };
+          }
+
+          async function main() {
+            const genesisHash = normalizeHash(await rpc('chain_getBlockHash', [0]), 'genesis hash');
+            packet.genesis_hash_observed = genesisHash;
+            packet.genesis_hash_match = genesisHash === EXPECTED_GENESIS;
+            if (!packet.genesis_hash_match) throw Object.assign(new Error('GENESIS_HASH_MISMATCH'), { classification: 'GENESIS_HASH_MISMATCH' });
+
+            const parentHash = normalizeHash(await rpc('chain_getBlockHash', [PARENT_NUMBER]), 'parent block hash');
+            const targetHash = normalizeHash(await rpc('chain_getBlockHash', [TARGET_NUMBER]), 'target block hash');
+            packet.parent_block_hash_observed = parentHash;
+            packet.target_block_hash_observed = targetHash;
+            packet.target_block_hash_match = targetHash === EXPECTED_TARGET_HASH;
+            if (!packet.target_block_hash_match) throw Object.assign(new Error('EXACT_B3_TARGET_HASH_MISMATCH'), { classification: 'TARGET_HASH_MISMATCH' });
+
+            const [parentHeader, targetHeader] = await Promise.all([
+              rpc('chain_getHeader', [parentHash]),
+              rpc('chain_getHeader', [targetHash])
+            ]);
+            const parentHeaderNumber = parseBlockNumber(parentHeader?.number, 'parent header number');
+            const targetHeaderNumber = parseBlockNumber(targetHeader?.number, 'target header number');
+            const targetParentHash = normalizeHash(targetHeader?.parentHash, 'target header parentHash');
+            packet.headers = {
+              parent: {
+                block_number: parentHeaderNumber.toString(),
+                block_hash_from_height: parentHash,
+                parent_hash: normalizeHash(parentHeader?.parentHash, 'parent header parentHash'),
+                state_root: normalizeHash(parentHeader?.stateRoot, 'parent header stateRoot'),
+                extrinsics_root: normalizeHash(parentHeader?.extrinsicsRoot, 'parent header extrinsicsRoot')
+              },
+              target: {
+                block_number: targetHeaderNumber.toString(),
+                block_hash_from_height: targetHash,
+                parent_hash: targetParentHash,
+                state_root: normalizeHash(targetHeader?.stateRoot, 'target header stateRoot'),
+                extrinsics_root: normalizeHash(targetHeader?.extrinsicsRoot, 'target header extrinsicsRoot')
+              }
+            };
+            packet.parent_height_match = parentHeaderNumber === BigInt(PARENT_NUMBER);
+            packet.target_height_match = targetHeaderNumber === BigInt(TARGET_NUMBER);
+            packet.parent_hash_binding_match = targetParentHash === parentHash;
+            if (!packet.parent_height_match || !packet.target_height_match || !packet.parent_hash_binding_match) {
+              throw Object.assign(new Error('ANCHOR_PARENT_OR_HEIGHT_BINDING_MISMATCH'), { classification: 'HEADER_BINDING_MISMATCH' });
+            }
+
+            const [parentState, targetState] = await Promise.all([
+              observeAuthorityState(parentHash),
+              observeAuthorityState(targetHash)
+            ]);
+            packet.parent_authority_state = parentState;
+            packet.target_authority_state = targetState;
+
+            packet.anchor_storage = {
+              block_hash: targetHash,
+              value: await observeCall('state_getStorage', [B3_STORAGE_KEY, targetHash]),
+              read_proof: await observeCall('state_getReadProof', [[B3_STORAGE_KEY], targetHash])
+            };
+            if (packet.anchor_storage.read_proof.status === 'OK') {
+              const proof = packet.anchor_storage.read_proof.result;
+              packet.anchor_storage.read_proof_at_match = typeof proof?.at === 'string' && proof.at.toLowerCase() === targetHash;
+              packet.anchor_storage.read_proof_nodes = Array.isArray(proof?.proof) ? proof.proof.length : null;
+            }
+
+            const statePruned = [parentState.status, targetState.status].includes('HISTORICAL_STATE_PRUNED') ||
+              [packet.anchor_storage.value, packet.anchor_storage.read_proof].some(x => x.status === 'ERROR' && x.error?.rpc_code === 4003);
+            const stateComplete = parentState.status === 'STATE_CAPTURED' && targetState.status === 'STATE_CAPTURED' &&
+              packet.anchor_storage.value.status === 'OK' && packet.anchor_storage.value.result !== null &&
+              packet.anchor_storage.read_proof.status === 'OK' && packet.anchor_storage.read_proof_at_match === true &&
+              Number.isInteger(packet.anchor_storage.read_proof_nodes) && packet.anchor_storage.read_proof_nodes > 0;
+            packet.status = statePruned ? 'HISTORICAL_STATE_PRUNED' : stateComplete ? 'STATE_AND_STORAGE_PROOF_CAPTURED_UNVERIFIED' : 'PARTIAL_STATE_OR_PROOF_UNAVAILABLE';
+          }
+
+          try {
+            await main();
+          } catch (error) {
+            packet.status = error?.classification ?? 'CAPTURE_ERROR';
+            packet.error = errorRecord(error);
+          }
+
+          fs.writeFileSync(process.env.OUT_PATH, JSON.stringify(packet, null, 2) + '\n', 'utf8');
+          console.log(JSON.stringify(packet, null, 2));
+          console.log('Classification:', packet.status);
+          // A failed state gate remains failed even though the diagnostic artifact is uploaded below.
+          if (packet.status !== 'STATE_AND_STORAGE_PROOF_CAPTURED_UNVERIFIED') process.exitCode = 1;
+          NODE
+
+      - name: Upload exact anchor diagnostic artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-b3-exact-anchor-public-state-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/MateriosB3ExactAnchorPublicStateProbe.json
+          if-no-files-found: error
+          retention-days: 30
