@@ -601,3 +601,17 @@ On head `51dc659`, Aiken failed with `aiken::check::redundant_pattern_match` at 
 5. Separately approved Preprod plan only after all prior gates pass.
 
 Haskell V2 remains the unchanged canonical oracle/fallback; no further compiler-size experiments. Aiken V3 is the primary migration candidate, not yet production-qualified. Existing V3 carrier, Reveal semantics/economics, 500×, KA/KC/KD, datum/redeemer ABI, EEV/USDM authority and Issue admission gates remain unchanged. No Preprod/Mainnet activity or wallet signing occurred.
+
+## 2026-11-07 — Agent B: decouple Haskell EXPIRE reference failures from Aiken/P2.8 CI
+
+**Commit:** `32961d2efa22e1beef39498dc81220f06ef5f486`  
+**Path:** `.github/workflows/immortal-cardano-lab.yml`  
+**Tracking:** [Issue #48](https://github.com/LiberoNuvola/Immortal-Protocol/issues/48)
+
+Run [#42369304644](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369304644) established successful Aiken Pending, Revealed Loss and Revealed Win EXPIRE ledger traces and successful Aiken Prize + Haskell B1PrizePool Claim trace. The Haskell V2 Pending EXPIRE diagnostic failed before submission because the reference-script publication transaction measured 16,540 bytes against the 16,384-byte transaction limit. This is a resource/build failure, not evidence of a semantic Plutus rejection.
+
+The workflow now marks all three Haskell V2 EXPIRE traces `continue-on-error: true`, assigns stable step IDs to Revealed Loss/Win and registers their separate `outcome` values in JEV. This preserves a visible Haskell `failure` without allowing it to suppress downstream P2.8 context materialization, UTxO decoder, evidence gate, resource audit and invariant checks.
+
+**State:** workflow change committed and read-back verified. The new push-triggered run on `32961d2` is pending; its result must be inspected before closing this CI separation task.
+
+No validator/source semantics, V3 carrier, Reveal economics, ABI, economic constants, EEV/USDM authority, or deployment path changed. No Preprod/Mainnet action or wallet signature occurred.
