@@ -135,3 +135,31 @@ Do not wire these references into V3, Reveal or the production Gate, and do not 
 
 The S0 Issue-only R1/QNE erosion finding remains unchanged. Neither a statistical mode, AWRA budget nor quiescent label creates a certified non-eroding witness by itself. Issue #37 remains open; no 500×, ProtectedCapital, V3/Reveal, deployment or Issue change is authorized.
 
+
+
+## 2026-11-07 — Agent A proposal: trajectory-to-RiskMode selector contract
+
+**Proposal:** `docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md`  
+**Creation commit:** `f512d9dc691a13f23e87be1fa9bb4da8dc35e3cd`.
+
+Agent A has translated the Canonical Economic Register and the current typed `RiskProtectionBridge` into a decision-ready contract proposal.
+
+### Principal semantics
+
+- `RiskMode` selects the risk-analysis mechanisms required for a particular verified trajectory; it is not a safety switch.
+- `StatisticalOnly` cannot suppress universal invariants or a deterministic floor that is separately mandatory in the applicable profile.
+- PRE-RICH V1 currently requires deterministic unresolved-ticket WCE at 500×. Statistical analysis cannot replace it.
+- `DeterministicAndStatistical` requires both outputs to remain separately typed until a versioned rule defines role, units, horizon, perimeter and non-overlap.
+- The mode must be resolved by an authorized, versioned profile policy over authenticated state/action/trajectory evidence. A caller-supplied enum is not sufficient authority.
+
+### Proposal coverage
+
+The document defines minimum selector inputs and evidence bindings, ordered fail-closed resolution, a trajectory-family matrix (Issue/Reveal/Claim/Expire, EEV/liquidity, quiescence and separate Arb Agent), typed output requirements into ProtectionRequirement/Gate, and open decisions for specification authority.
+
+### Coordination
+
+**Specification authority:** decide the trajectory-to-mode mapping, semantics/role of statistical results, model/horizon/confidence/dependence contract, any combined rule, and governing version.  
+**Agent B:** review exact state/action/policy/evidence binding and confirm the hard floor remains invariant when the authorized mapping is provided.  
+**Agent A:** preserve the separation between PRE-RICH Game and Arb Agent; no parameter or policy preference is to be invented.
+
+Current bridge behavior stays unchanged: deterministic-only accepted when it exactly matches projected WCE; StatisticalOnly and DeterministicAndStatistical remain unsupported/fail-closed. No code/tests/CI/V3/Reveal/500×/ProtectedCapital or deployment semantics were changed. R1/Kc/QNE remains open.
