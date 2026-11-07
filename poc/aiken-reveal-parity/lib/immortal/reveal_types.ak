@@ -25,6 +25,22 @@ pub type BeaconTarget {
   }
 }
 
+/// Field/constructor order mirrors Haskell Types.BeaconRegistryDatum.
+/// This datum is read from a Registry reference input; it is not trusted merely
+/// because its fields are well-formed. The Registry script hash is a validator
+/// parameter and the datum is accepted only from that exact script credential.
+pub type BeaconRegistryDatum {
+  BeaconRegistryDatum {
+    round: Int,
+    target: BeaconTarget,
+    status: BeaconStatus,
+    beacon_value: ByteArray,
+    mc_hash: ByteArray,
+    materios_context: ByteArray,
+    relayer: VerificationKeyHash,
+  }
+}
+
 pub type PrizeDatum {
   PrizeDatum {
     ticket_policy: PolicyId,
