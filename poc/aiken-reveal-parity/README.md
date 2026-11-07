@@ -201,3 +201,33 @@ The existing `.github/workflows/immortal-cardano-lab.yml` invokes this trace in 
 
 The negative twin reuses ExUnits from the valid twin only to construct the intentionally invalid transaction. It is not CPU/memory qualification. All fixtures remain synthetic local Yaci evidence; the Haskell V2 size blocker, full Haskell/Aiken state-effect parity, V2/V3 compatibility, production USDM/EEV qualification, and deployment approval remain open. The Haskell validator, existing V3 carrier, Reveal/economic semantics, and 16,384-byte ceiling remain unchanged.
 
+
+
+## Full Prize lifecycle migration work (2026-11-07)
+
+The isolated Aiken candidate is now being treated as the **primary migration candidate**, with Haskell Plutus V2 retained unchanged as the canonical differential oracle/fallback. This is a migration direction, not a production switch.
+
+### New source coverage
+
+- `lib/immortal/expire_transaction.ak` contains Pending, Revealed Loss and Revealed Win accounting branches. The Pending branch releases the exact ticket-price reserve and decrements unresolved count; Revealed Loss preserves reserve/count/liability; Revealed Win releases the frozen unpaid payout liability while preserving reserve/count.
+- `lib/immortal/reveal_types.ak` defines the Haskell-shaped `BeaconRegistryDatum`.
+- `lib/immortal/sync_beacon_transaction.ak` implements the Registry-reference-input SyncBeacon path. It checks the configured Registry script credential, decodes the Registry datum, requires Ready state and exact network/round/mainchain-ref/version match, requires a non-empty beacon, checks exactly one own Prize input and one continuing Prize output, preserves the own value and immutable ticket identity, and copies the Registry beacon/mcHash/Materios context exactly.
+- `validators/reveal.ak` dispatches `SyncBeacon` and takes the Registry ScriptHash as its first parameter. The isolated Reveal/Expire/Claim and publication probes all pass that same Registry hash before Oracle State parameters.
+- `plutus/test/RevealSchemaFixtures.hs` now emits a canonical Haskell `BeaconRegistryDatum` fixture; the Aiken schema fixture generator and parity workflow assert byte-for-byte serialization against it.
+- The Cardano Lab workflow runs separate Aiken EXPIRE cases for Pending, Revealed Loss and Revealed Win. The Aiken Claim trace is scheduled independently of a preceding Haskell failure, while still requiring a successful Aiken candidate build.
+
+### Verification status
+
+- Earlier local-Yaci Aiken Reveal and Pending Expire PASS results predate the new Registry parameter and complete-lifecycle source changes. They do not certify the current source.
+- Earlier Aiken parity CI PASS results also predate the SyncBeacon and Registry serialization changes.
+- The exact-head Aiken parity workflow on commit `34afe24579403e8bcab803c6b7fd347b102dac7b` was queued/in progress when this note was written. Its Haskell toolchain, Registry fixture, Aiken check/build and generated serialization assertions must complete successfully.
+- Full local-Yaci execution of the latest candidate remains required. No PASS is claimed here for the new SyncBeacon, Revealed Loss/Win Expire branches or the newly rebound Registry parameterization.
+- Add adversarial ledger twins for missing/wrong Registry, malformed or absent datum, wrong round/target, non-Ready Registry, empty beacon, duplicate own inputs/outputs, altered ticket identity and altered continuing value. The current pure SyncBeacon tests are not substitutes for those transaction-context/ledger cases.
+- The existing package still targets Plutus V3; the canonical Haskell validator targets Plutus V2. Target-ledger context, cost model and execution compatibility remain open. The Aiken candidate's added Registry parameter changes its hash and requires a coherent B1PrizePool and dependent-artifact rebind after acceptance gates pass.
+- No production deployment, wallet signing, Preprod/Mainnet transaction, economic-source qualification or deployment approval has occurred.
+
+Tracking and evidence:
+- [Issue #48 — Aiken V3 PrizeValidator migration qualification](https://github.com/LiberoNuvola/Immortal-Protocol/issues/48)
+- [Agent B readiness audit](../../docs/COORDINATION/AGENT-B-AIKEN-V3-MIGRATION-READINESS-AUDIT-2026-11-07.md)
+
+The Haskell validator, existing V3 carrier, Reveal semantics, datum/redeemer ABI, 500× rule, KA/KC/KD and economic input authority remain unchanged. Haskell compiler-size optimization is frozen after the measured candidate increased script size by 211 bytes.
