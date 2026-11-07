@@ -59,10 +59,15 @@ jobs:
             echo "node=$(node --version)"
             echo "ghc=$(ghc --numeric-version)"
             echo "cabal=$(cabal --numeric-version)"
-            echo "plutus_git_pin=$(grep -A1 'location: https://github.com/IntersectMBO/plutus.git' cabal.project | tail -n1 | sed 's/^[[:space:]]*tag:[[:space:]]*//')"
+            plutus_git_pin="$(awk '
+              $1 == "location:" && $2 == "https://github.com/IntersectMBO/plutus.git" {
+                if (getline && $1 == "tag:") print $2
+              }
+            ' cabal.project)"
+            echo "plutus_git_pin=$plutus_git_pin"
             echo "prize_validator_source_sha256=$(sha256sum plutus/PrizeValidator.hs | awk '{print $1}')"
           } | tee "$evidence_dir/provenance.txt"
-          grep -q '48e9bf08f439e7223de713b5b71696fcd81cffc3' cabal.project
+          test "$plutus_git_pin" = "48e9bf08f439e7223de713b5b71696fcd81cffc3"
 
       - name: Compile, measure baseline, then compare the isolated candidate
         shell: bash
@@ -70,7 +75,7 @@ jobs:
           set -Eeuo pipefail
           export EXPERIMENT_EVIDENCE_DIR="$RUNNER_TEMP/prizevalidator-conservative-optimization-experiment"
           mkdir -p "$EXPERIMENT_EVIDENCE_DIR"
-          probe_file="$RUNNER_TEMP/prizevalidator-size-measure-probe.mjs"
+          probe_file="$GITHUB_WORKSPACE/audit/cardano-integration/.prizevalidator-size-measure-probe.mjs"
           original_validator="$RUNNER_TEMP/PrizeValidator.hs.original"
           original_factory="$RUNNER_TEMP/prizeValidatorFactory.plutus.json.original"
           cp plutus/PrizeValidator.hs "$original_validator"
