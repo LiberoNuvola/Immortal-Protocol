@@ -128,6 +128,7 @@ const required = [
   'PrizeAction.Claim',
   'PrizeAction.Expire',
   'BeaconTarget',
+  'BeaconRegistryDatum',
   'B1PrizePoolDatum',
 ];
 for (const key of required) {
@@ -327,6 +328,23 @@ test beacon_target_serialisation_matches_haskell_fixture() {
     mainchain_ref: #"303130323033",
     version: #"7631",
   }) == #"${fixtures['BeaconTarget']}"
+}
+
+test beacon_registry_datum_serialisation_matches_haskell_fixture() {
+  serialise_data(reveal_types.BeaconRegistryDatum {
+    round: 42,
+    target: reveal_types.BeaconTarget {
+      network_id: 0,
+      round: 42,
+      mainchain_ref: #"303130323033",
+      version: #"7631",
+    },
+    status: reveal_types.BeaconReady,
+    beacon_value: #"61616262",
+    mc_hash: #"63636464",
+    materios_context: #"65656666",
+    relayer: #"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c",
+  }) == #"${fixtures['BeaconRegistryDatum']}"
 }
 
 test prize_status_pending_serialisation_matches_haskell_fixture() {
