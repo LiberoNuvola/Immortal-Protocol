@@ -3,7 +3,7 @@ use aiken/primitive/bytearray
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
 use cardano/transaction
-use immortal/reveal_types.{BeaconPending, BeaconReady, BeaconRegistryDatum, BeaconTarget, Pending, PrizeDatum}
+use immortal/reveal_types.{BeaconPending, BeaconReady, BeaconRegistryDatum, BeaconStatus, BeaconTarget, Pending, PrizeDatum}
 
 // Resolve inline and hashed Registry/Prize datums; missing witnesses fail closed.
 fn datum_data(tx: transaction.Transaction, output: transaction.Output) -> Option<Data> {
@@ -168,7 +168,7 @@ fn sync_fixture_target() -> BeaconTarget {
   }
 }
 
-fn sync_fixture_prize(beacon_status: immortal.reveal_types.BeaconStatus, beacon_value: ByteArray, mc_hash: ByteArray, context: ByteArray) -> PrizeDatum {
+fn sync_fixture_prize(beacon_status: BeaconStatus, beacon_value: ByteArray, mc_hash: ByteArray, context: ByteArray) -> PrizeDatum {
   PrizeDatum {
     ticket_policy: #"a1",
     ticket_name: #"01",
@@ -204,7 +204,7 @@ fn sync_fixture_registry() -> BeaconRegistryDatum {
     beacon_value: #"aabb",
     mc_hash: #"ccdd",
     materios_context: #"eeff",
-    relayer: #"010203",
+    relayer: #"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c",
   }
 }
 
