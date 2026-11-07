@@ -430,6 +430,15 @@ jobs:
           IMMORTAL_EXPIRE_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
+      # Aiken SyncBeacon transaction-context characterization runs independently
+      # of the Haskell differential lane. Fake-Ready acceptance is a security finding,
+      # not a PASS for Registry authenticity.
+      - name: Execute Aiken V3 SyncBeacon adversarial local-Yaci characterization
+        id: aiken_sync_beacon_ledger
+        if: always() && steps.aiken-reveal-build.outcome == 'success'
+        continue-on-error: true
+        run: node --import tsx/esm audit/cardano-integration/aiken-sync-beacon-ledger-trace.ts
+
       # Haskell V2 remains a differential reference only. Keep all three
       # diagnostic outcomes visible in JEV, but never let a Haskell build/resource
       # failure suppress the Aiken Claim or the independent P2.8 evidence steps.
@@ -577,6 +586,13 @@ jobs:
           HASKELL_REVEALED_WIN_EXPIRE_OUTCOME: ${{ steps.haskell_revealed_win_expire.outcome || 'unknown' }}
           AIKEN_SETUP_OUTCOME: ${{ steps.aiken-setup.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-reveal-build.outcome || 'unknown' }}
+          AIKEN_SYNC_BEACON_HARNESS_OUTCOME: ${{ steps.aiken_sync_beacon_ledger.outcome || 'unknown' }}
+          AIKEN_SYNC_BEACON_FAKE_READY_ACCEPTED: ${{ steps.aiken_sync_beacon_ledger.outputs.fake_ready_accepted || 'unknown' }}
+          AIKEN_SYNC_BEACON_REFERENCE_AMBIGUITY_ACCEPTED: ${{ steps.aiken_sync_beacon_ledger.outputs.registry_reference_ambiguity_accepted || 'unknown' }}
+          AIKEN_SYNC_BEACON_INVALID_REGISTRY_ACCEPTED: ${{ steps.aiken_sync_beacon_ledger.outputs.invalid_registry_reference_accepted || 'unknown' }}
+          AIKEN_SYNC_BEACON_DUPLICATE_STRUCTURE_ACCEPTED: ${{ steps.aiken_sync_beacon_ledger.outputs.duplicate_structure_accepted || 'unknown' }}
+          AIKEN_SYNC_BEACON_IMMUTABLE_MUTATION_ACCEPTED: ${{ steps.aiken_sync_beacon_ledger.outputs.immutable_identity_mutation_accepted || 'unknown' }}
+          AIKEN_SYNC_BEACON_VALUE_MUTATION_ACCEPTED: ${{ steps.aiken_sync_beacon_ledger.outputs.continuing_value_mutation_accepted || 'unknown' }}
           AIKEN_PUBLICATION_OUTCOME: ${{ steps.aiken_ref_publish.outcome || 'unknown' }}
           AIKEN_REVEAL_SPEND_OUTCOME: ${{ steps.aiken_reveal_spend.outcome || 'unknown' }}
           AIKEN_LEDGER_POSITIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.positive_outcome || 'unknown' }}
@@ -600,6 +616,7 @@ jobs:
           import fs from 'node:fs/promises';
           import { classifyLedgerEvaluation } from './scripts/jev-verification-registry-generator.mjs';
           const outcome = (v) => ['success','failure','cancelled','skipped'].includes(v) ? v : 'unknown';
+          const propertyOutcome = (v) => v === 'true' ? 'failure' : v === 'false' ? 'success' : 'unknown';
           const metadata = {
             repository: process.env.GITHUB_REPOSITORY,
             commitSha: process.env.GITHUB_SHA,
@@ -682,6 +699,61 @@ jobs:
                 'A transaction-size or fee failure during construction, before submission, is a pre-submission build/resource block and must not be interpreted as validator semantic failure.',
                 'Inspect the linked step log to identify the actual cause; this check does not infer it from the exit code.',
               ],
+            },
+            {
+              checkId: 'AIKEN.SYNC_BEACON.YACI.HARNESS',
+              requirementRef: 'Agent B / Aiken Plutus V3 SyncBeacon transaction-context characterization on ephemeral local Yaci',
+              stepOutcome: outcome(process.env.AIKEN_SYNC_BEACON_HARNESS_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'A successful harness means the enumerated local-Yaci transactions obtained conclusive ledger outcomes; it is not a security approval.',
+                'All Registry UTxOs in this trace are synthetic local-devnet fixtures and do not establish authenticated Registry identity or publisher authority.',
+              ],
+            },
+            {
+              checkId: 'AIKEN.SYNC_BEACON.FAKE_READY_AUTHENTICITY',
+              requirementRef: 'Agent B / Reject a BeaconReady-shaped Registry reference created without executing BeaconRegistry validator',
+              stepOutcome: propertyOutcome(process.env.AIKEN_SYNC_BEACON_FAKE_READY_ACCEPTED),
+              evidenceRefs,
+              limitations: [
+                'A failure means the Aiken SyncBeacon path accepted an unauthenticated synthetic Ready-shaped Registry reference; this is a release-blocking security finding, not a harness failure.',
+                'A success means only this exact synthetic local-Yaci twin was rejected; it does not prove a deployed Registry instance or publisher authority.',
+              ],
+            },
+            {
+              checkId: 'AIKEN.SYNC_BEACON.REGISTRY_REFERENCE_UNIQUENESS',
+              requirementRef: 'Agent B / Characterize multiple Registry reference inputs and first-match selection',
+              stepOutcome: propertyOutcome(process.env.AIKEN_SYNC_BEACON_REFERENCE_AMBIGUITY_ACCEPTED),
+              evidenceRefs,
+              limitations: ['A failure means multiple matching Registry references were accepted by the candidate; the outcome is scoped to the transaction ordering and synthetic fixtures in this local-Yaci run.'],
+            },
+            {
+              checkId: 'AIKEN.SYNC_BEACON.INVALID_REGISTRY_REJECTION',
+              requirementRef: 'Agent B / Reject missing, wrong-credential, malformed, non-Ready, target/round-mismatched and empty-Beacon Registry references',
+              stepOutcome: propertyOutcome(process.env.AIKEN_SYNC_BEACON_INVALID_REGISTRY_ACCEPTED),
+              evidenceRefs,
+              limitations: ['A failure means at least one invalid or unrelated Registry fixture was accepted.'],
+            },
+            {
+              checkId: 'AIKEN.SYNC_BEACON.INPUT_OUTPUT_UNIQUENESS',
+              requirementRef: 'Agent B / Require exactly one own Prize input and one continuing Prize output',
+              stepOutcome: propertyOutcome(process.env.AIKEN_SYNC_BEACON_DUPLICATE_STRUCTURE_ACCEPTED),
+              evidenceRefs,
+              limitations: ['A failure means a duplicate own Prize input or duplicate continuing Prize output was accepted.'],
+            },
+            {
+              checkId: 'AIKEN.SYNC_BEACON.IMMUTABLE_IDENTITY',
+              requirementRef: 'Agent B / Preserve immutable Prize identity fields during SyncBeacon',
+              stepOutcome: propertyOutcome(process.env.AIKEN_SYNC_BEACON_IMMUTABLE_MUTATION_ACCEPTED),
+              evidenceRefs,
+              limitations: ['A failure means the candidate accepted a continuing datum with a mutated immutable ticket commitment.'],
+            },
+            {
+              checkId: 'AIKEN.SYNC_BEACON.VALUE_CONTINUITY',
+              requirementRef: 'Agent B / Preserve exact continuing Prize Value during SyncBeacon',
+              stepOutcome: propertyOutcome(process.env.AIKEN_SYNC_BEACON_VALUE_MUTATION_ACCEPTED),
+              evidenceRefs,
+              limitations: ['A failure means the candidate accepted a continuing Prize output whose Value differs from its consumed input.'],
             },
             {
               checkId: 'AIKEN.REVEAL.V3.TOOLCHAIN_SETUP',
