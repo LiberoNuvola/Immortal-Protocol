@@ -406,8 +406,27 @@ jobs:
       - name: Execute real TicketIssued 500x solvency boundary trace
         run: node --import tsx/esm audit/cardano-integration/ticket-issued-solvency-boundary-trace.ts
 
-      - name: Execute Aiken V3 economic Expire transition trace
+      - name: Execute Aiken V3 Pending EXPIRE ledger trace
+        id: aiken_expire_pending
+        if: always() && steps.aiken-reveal-build.outcome == 'success'
         env:
+          IMMORTAL_EXPIRE_CASE: "pending"
+          IMMORTAL_EXPIRE_AIKEN_V3: "1"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Execute Aiken V3 Revealed Loss EXPIRE ledger trace
+        id: aiken_expire_revealed_loss
+        if: always() && steps.aiken-reveal-build.outcome == 'success'
+        env:
+          IMMORTAL_EXPIRE_CASE: "revealed-loss"
+          IMMORTAL_EXPIRE_AIKEN_V3: "1"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Execute Aiken V3 Revealed Win EXPIRE ledger trace
+        id: aiken_expire_revealed_win
+        if: always() && steps.aiken-reveal-build.outcome == 'success'
+        env:
+          IMMORTAL_EXPIRE_CASE: "revealed-win"
           IMMORTAL_EXPIRE_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
