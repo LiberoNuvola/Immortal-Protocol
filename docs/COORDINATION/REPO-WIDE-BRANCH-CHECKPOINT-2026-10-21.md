@@ -368,3 +368,71 @@ Agent A independently checked the report's key claims against the exact source a
 A separate follow-up issue is to grant Agent B a single-path, diagnostic-only write slot in `audit/cardano-integration/expire-ledger-trace.ts`. That slot may record the exact imported factory bytes/hash/length and the resulting parameterized script bytes/hash/length from the same CI run, plus the exact parameter identity and CBOR wrapper-depth diagnostics needed to reconcile the values. It must not change parameterization, compilation, script artifacts, transaction construction, or validator semantics. Any compiler-option comparison or code reduction remains out of scope and needs another explicit authorization.
 
 Issue #45 is complete as a read-only feasibility report, not as proof that the factory-to-script byte delta has been reproduced. The missing provenance is carried forward to the next diagnostic task.
+
+
+## 2026-11-07 — Haskell V2 factory-to-parameterized CBOR provenance measured on exact CI run
+
+**Diagnostic issue:** [#46 — Capture exact V2 factory-to-parameterized-script CBOR provenance](https://github.com/LiberoNuvola/Immortal-Protocol/issues/46) — CLOSED / write slot returned.  
+**Commit/exact tested SHA:** `8f12ecbca607c3e24d4feb1188a42619d2280bc1`.  
+**Workflow:** [Cardano Integration Lab run #42342592012 / #2571](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42342592012) — overall FAIL at Haskell V2 Pending EXPIRE step 35.  
+**Artifact:** [#13562462910](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42342592012/artifacts/13562462910), ZIP SHA-256 `9190b8b91e4fad7d641b2033977fd418d598aaf7adf3e10760d6ed8f614f2488`.
+
+### Independent artifact verification
+
+Agent A downloaded the actual uploaded ZIP, recomputed its archive SHA-256, extracted the runtime provenance JSON and recomputed both CBOR measurements:
+
+- ZIP digest: exact match to the GitHub artifact digest.
+- Packet source: repository `LiberoNuvola/Immortal-Protocol`, branch `work/immortal-green-closure`, commit `8f12ecb...`, run ID `42342592012`.
+- Evidence packet: 32 files; provenance JSON 67,801 bytes; packet entry SHA-256 `0fc2916e568efe6486098753043ba6946e9816213006c8fa3cfa7879d0253d48`; zero redactions.
+- Both embedded CBOR hex strings decode to their stated byte lengths, and their SHA-256 values independently recompute exactly.
+
+### Same-run factory → parameterized Plutus V2 result
+
+| Measure | Fresh Cabal-generated factory | Existing Haskell V2 parameter application |
+|---|---:|---:|
+| CBOR bytes | **16,309** | **16,443** |
+| SHA-256 of raw CBOR | `3c879feab921f4e39964baded675395c12bc20030c7843f2004017738aa37bf2` | `9fec0f8342f0d1e55196dc57677222f45925087b46d0b15ca7c9aee8a5cf7036` |
+| Outer CBOR byte-string | major type 2, 3-byte header | major type 2, 3-byte header |
+| Inner payload bytes | 16,306 | 16,440 |
+| Trailing bytes after declared payload | 0 | 0 |
+| Plutus V2 script hash | factory not parameterized | `508588a6ac5925b316b87f85adcc746808b4b29d2e13952184e7175b` |
+
+**Measured parameter-application delta: +134 bytes.** This is now a valid same-run comparison; the prior 9,760-byte figure was the checked-in factory only and must not be used as the CI baseline.
+
+Exact four runtime parameter identities recorded in the evidence JSON:
+- Registry ScriptHash: `7e77d0b44002ea15d7c4a11f5acc176bfccec5bb0eafac66c528dcd8`
+- PrizeTable: `2 / 5 / 10 / 200 / 1000`
+- Oracle singleton policy: `89234e0f20373cde0c7b0644edeb3cfc1dbca4005fd98b731518d235`
+- Oracle token name: `4f5241434c45`
+- Oracle publisher Pkh: `c8c47610a36034aac6fc58848bdae5c278d994ff502c05455e3b3ee8`
+
+### Failure boundary remains exactly known
+
+The Haskell V2 Pending EXPIRE step fails during `publish-prize-reference-script / complete()` at the Lucid/CML transaction builder with:
+
+`Max transaction size of 16384 exceeded. Found: 16540`
+
+- Transaction candidate: 16,540 bytes.
+- Cardano max: 16,384 bytes.
+- Minimum reduction to this exact candidate: **156 bytes**.
+- The one-run non-script remainder is 97 bytes (16,540 − 16,443). The implied ≤16,287-byte script target assumes all other envelope bytes remain unchanged; it is not a general overhead constant.
+- This is pre-signing and pre-submission for the failing reference-script publication. It is not a Plutus validation or ledger rejection.
+- No Haskell V2 final EXPIRE spend was built; later Haskell EXPIRE cases were skipped.
+
+### Other exact-run outcomes
+
+- B0 Yaci characterization step 27: SUCCESS on this SHA; B0 remains OPEN because direct-Ready/fake-Ready SyncBeacon ledger twins, T07/T08 and independent security/owner disposition remain outstanding.
+- Steps 25–34, including V3 carrier, active Reveal, FundTreasury, TicketIssued and Aiken V3 EXPIRE: SUCCESS as local-Yaci step evidence only.
+- Evidence preservation, packet tests, upload and Notion evidence registration: SUCCESS.
+- Overall lab: FAIL at step 35 only.
+- No Preprod/Mainnet publication or user-wallet operation occurred in this diagnostic slot.
+
+### Accepted disposition and next experiment boundary
+
+1. The fresh generated factory is 16,309 bytes; applying the exact four current parameters produces a 16,443-byte V2 PrizeValidator (+134).
+2. The remaining problem is not an unquantified factory/parameterization discrepancy. It is that the resulting V2 reference-script publication transaction is 156 bytes over the Cardano size limit.
+3. No evidence identifies a Lucid/CML defect. No evidence yet proves a particular compiler option will reduce the script by at least 156 bytes.
+4. A compiler-option comparison (first candidate: Plutus 1.67.0.0 `conservative-optimisation`) is the next bounded technical experiment, but it must be isolated from production, preserve the exact source/toolchain/parameters, and capture the changed script hash, complete publication CBOR size, all-action CEK costs and positive/negative conformance. Any changed artifact would change script identity and dependent B1PrizePool/MintPolicy bindings; it cannot be promoted based on size alone.
+5. No source, compiler flag, dependency, ABI, validator, V2/V3, Reveal/Expire or economic semantics change is authorized by the successful diagnostic measurement.
+
+Agent B explicitly returned the #46 write slot in [comment #6702888254](https://github.com/LiberoNuvola/Immortal-Protocol/issues/46#issuecomment-6702888254). The only tracked file changed by the slot is `audit/cardano-integration/expire-ledger-trace.ts`. Shared-branch writes may resume.
