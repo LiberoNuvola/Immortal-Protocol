@@ -130,9 +130,9 @@ test revealed_win_expiry_rejects_wrong_liability_release() {
 }
 
 /// Implements the existing PrizeValidator.validateExpire state transition.
-/// It consumes the Prize datum (no continuing Prize output) and releases exactly
-/// one ticket price from unresolved reserve and one unresolved ticket count.
-/// All other pool datum fields remain unchanged. No economic rule is introduced.
+/// It consumes the Prize datum (no continuing Prize output). Pending releases
+/// one ticket price from unresolved reserve/count; Revealed releases the frozen
+/// unpaid payout liability only. Other pool fields remain unchanged.
 pub fn expire_transaction_is_valid(
   tx: transaction.Transaction,
   own_ref: transaction.OutputReference,
@@ -189,7 +189,6 @@ pub fn expire_transaction_is_valid(
                           after.prize_hash == prize_hash,
                           after.prize_hash == before.prize_hash,
                           after.total_liquidity == before.total_liquidity,
-                          after.pending_liabilities == before.pending_liabilities,
                           expiry_pool_delta_is_valid(
                             input_datum.status,
                             input_datum.price_usdm,
