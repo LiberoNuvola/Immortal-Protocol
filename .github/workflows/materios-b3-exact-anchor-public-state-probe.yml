@@ -75,12 +75,12 @@ jobs:
           }
 
           function normalizeHash(value, label) {
-            if (typeof value !== 'string' || !/^0x[0-9a-f]{64}$/i.test(value)) throw new Error("${label}: expected 32-byte hash`);
+            if (typeof value !== 'string' || !/^0x[0-9a-f]{64}$/i.test(value)) throw new Error(`${label}: expected 32-byte hash`);
             return value.toLowerCase();
           }
 
           function parseBlockNumber(value, label) {
-            if (typeof value === 'number' && Number.isSafeInteger(value) &6 value >= 0) return BigInt(value);
+            if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) return BigInt(value);
             if (typeof value === 'string' && /^0x[0-9a-f]+$/i.test(value)) return BigInt(value);
             if (typeof value === 'string' && /^\d+$/.test(value)) return BigInt(value);
             throw new Error(`${label}: invalid block number`);
