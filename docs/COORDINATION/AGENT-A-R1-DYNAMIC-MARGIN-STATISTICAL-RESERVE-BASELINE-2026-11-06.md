@@ -442,3 +442,24 @@ Under the recovered two-layer invariant, `StatisticalOnly` cannot mean permissio
 Full source review and file/blob references: [Agent B R1 RiskMode and Regime-Control Audit](AGENT-B-R1-RISK-MODE-AND-REGIME-CONTROL-AUDIT-2026-11-07.md).
 
 **Disposition:** typed mode scaffold exists; only deterministic mode is supported; state-to-mode resolver and Admission integration are absent. No implementation or policy change is authorized by this audit.
+
+
+## 12. Agent A — trajectory-to-RiskMode selection contract proposal (2026-11-07)
+
+A separate proposal now formalizes the missing selector contract:
+
+`docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md`
+
+It interprets the existing three `RiskMode` values as analytical-mechanism selection results, not as safety switches. In particular, `StatisticalOnly` cannot waive universal invariants or any deterministic floor independently required by an application profile. PRE-RICH V1 still requires its current deterministic 500× unresolved-ticket WCE; a statistical result cannot replace it.
+
+The proposal defines:
+- the minimum authoritative inputs needed to resolve the mode (profile/version, pre-state and candidate transition commitments, trajectory definition, policy version, deterministic/statistical model references and evidence);
+- the requirement that the mode be resolved from profile policy and authenticated trajectory facts, not trusted as a caller-selected value;
+- an ordered fail-closed resolution sequence;
+- a trajectory-family matrix for Issue, Reveal, Claim, Expire, EEV/liquidity deterioration, quiescence and the separate Arb Agent perimeter;
+- the typed semantic output required before ProtectionRequirement can feed Admission/Gate;
+- explicit decisions still requiring specification authority, including statistical role, `Z`, horizon, dependence, combined-mode semantics and non-double-counting.
+
+The canonical Economic Register was rechecked: it states that the applicable profile supplies parameters and that IMMORTAL owns admissibility; trajectory-dependent selection is not a convenience choice by DApp, Adapter or user. It deliberately does not freeze a universal addition formula or a universal rule that one model replaces the other.
+
+**Disposition:** proposal ready for authority review; no executable selector, new mode behavior, combination rule, numerical parameter or production integration is adopted. Existing RiskProtectionBridge behavior remains deterministic-only / fail-closed for the other two modes.
