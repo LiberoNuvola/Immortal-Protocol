@@ -271,10 +271,68 @@ test sync_requires_ready_registry_with_nonempty_beacon_and_target() {
     beacon_value: #"aabb",
     mc_hash: #"ccdd",
     materios_context: #"eeff",
-    relayer: #"010203",
+    relayer: #"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c",
   }
   registry.status == BeaconReady
     && registry.round == target.round
     && same_target(registry.target, target)
     && bytearray.length(registry.beacon_value) > 0
 }
+
+test sync_rejects_wrong_network_target() {
+  !same_target(
+    sync_fixture_target(),
+    BeaconTarget { ..sync_fixture_target(), network_id: 1 },
+  )
+}
+
+test sync_rejects_wrong_mainchain_reference() {
+  !same_target(
+    sync_fixture_target(),
+    BeaconTarget { ..sync_fixture_target(), mainchain_ref: #"ff" },
+  )
+}
+
+test sync_rejects_wrong_target_version() {
+  !same_target(
+    sync_fixture_target(),
+    BeaconTarget { ..sync_fixture_target(), version: "v2" },
+  )
+}
+
+test sync_rejects_registry_round_mismatch() {
+  let registry = BeaconRegistryDatum {
+    ..sync_fixture_registry(),
+    round: 41,
+  }
+  !sync_output_matches(
+    sync_fixture_prize(BeaconPending, #"", #"", #""),
+    sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff"),
+    registry,
+  )
+}
+
+test sync_rejects_non_ready_registry() {
+  let registry = BeaconRegistryDatum {
+    ..sync_fixture_registry(),
+    status: BeaconPending,
+  }
+  !sync_output_matches(
+    sync_fixture_prize(BeaconPending, #"", #"", #""),
+    sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff"),
+    registry,
+  )
+}
+
+test sync_rejects_empty_registry_beacon() {
+  let registry = BeaconRegistryDatum {
+    ..sync_fixture_registry(),
+    beacon_value: #"",
+  }
+  !sync_output_matches(
+    sync_fixture_prize(BeaconPending, #"", #"", #""),
+    sync_fixture_prize(BeaconReady, #"", #"ccdd", #"eeff"),
+    registry,
+  )
+}
+
