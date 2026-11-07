@@ -12,6 +12,7 @@ module Main where
 
 import Prelude
 
+import PlutusCore.Version (plcVersion100)
 import PlutusLedgerApi.V1.Address (Address (..))
 import PlutusLedgerApi.V1.Credential (Credential (..), StakingCredential (..))
 import PlutusLedgerApi.V1.Crypto (PubKeyHash (..))
@@ -36,6 +37,7 @@ import PlutusLedgerApi.V2.Contexts
   )
 import PlutusLedgerApi.V2.Tx (OutputDatum (..), TxOut (..))
 import qualified PlutusTx
+import qualified PlutusTx.Lift as Lift
 import qualified PlutusTx.AssocMap as AssocMap
 import PlutusTx.Prelude
   ( BuiltinByteString
@@ -287,20 +289,20 @@ applySyncBeacon
 applySyncBeacon context =
   let
     p1 = PlutusTx.unsafeApplyCode compiledValidatorFactory
-      (PlutusTx.liftCodeDef registryHash)
+      (Lift.liftCode plcVersion100 registryHash)
     p2 = PlutusTx.unsafeApplyCode p1
-      (PlutusTx.liftCodeDef defaultPrizeTable)
+      (Lift.liftCode plcVersion100 defaultPrizeTable)
     p3 = PlutusTx.unsafeApplyCode p2
-      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData (0 :: Integer)))
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData (0 :: Integer)))
     p4 = PlutusTx.unsafeApplyCode p3
-      (PlutusTx.liftCodeDef buyerPkh)
+      (Lift.liftCode plcVersion100 buyerPkh)
     p5 = PlutusTx.unsafeApplyCode p4
-      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData basePrizeDatum))
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData basePrizeDatum))
     p6 = PlutusTx.unsafeApplyCode p5
-      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData SyncBeacon))
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData SyncBeacon))
   in
     PlutusTx.unsafeApplyCode p6
-      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData context))
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
 
 
 -- T00 positive-price MintPolicy wrapper fixture. The Registry is a reference
