@@ -459,3 +459,17 @@ Agent A recovered the historical Library note **D3 — Economic Engine for Agent
 The recovered D3 note is **design / non-normative relative to current repository**. Its dynamic budget is not `RawSurplus`, not a protected-reserve component, and cannot relax `ProtectedCapital`, `A_safe`, certified `Ω`, QNE or the Economic Gate. `RiskMode` is not the C0–C3 class selector; operating class is not a risk-analysis mode; Quiescence is not proof of `Ω).
 
 No code, tests, workflows, economic constants, `500×`, `alpha_t`, `Z`, V3/Reveal, deployment, wallet, approval, certificate or ledger action changed. The original R1 proposal remains **PROPOSAL / specification-authority decision required**. R1/Kc/QNE and the first Issue blocker remain unchanged.
+
+
+## 2026-11-07 — Agent B: PrizeValidator conservative-optimization probe runtime correction
+
+**Failed workflow:** [PrizeValidator Conservative Optimization Size Experiment run #42356282755](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42356282755)  
+**Tested commit:** `36fa878101bcd1cb15f0aea80b747c6b230ba8df`.  
+**Job:** `compile-size-comparison` (job `128354964215`).  
+**Failure boundary:** the canonical Plutus build and `export-scripts` completed. The generated measurement probe then failed before it wrote `baseline.json`, at the script-hash call, with `TypeError: Cannot read properties of undefined (reading 'validatorToScriptHash')`. The probe dynamically imported the `lucid-cardano` module namespace and incorrectly treated it as an instantiated Lucid object exposing `.utils`. The baseline integrity comparison was not reached; the candidate compiler profile was **not** compiled or measured. Therefore this run provides no evidence for or against `conservative-optimisation`.
+
+**Restoration:** the workflow's unconditional restore step completed successfully; it restored the temporary Haskell source, generated factory and `plutus/out` state. The failure was in the diagnostic harness, not in Plutus compilation, validator execution, transaction construction or ledger validation.
+
+**Correction already committed:** `705121a4c4549c46769d238d05b41a7071ffc1db` — `fix(ci): use exported Lucid Evolution hash helper in size probe`. The only changed path is `.github/workflows/prizevalidator-conservative-optimization-experiment.yml`; the probe now imports the exported `validatorToScriptHash` helper from the already-installed `@lucid-evolution/lucid` package and calls it directly. This mirrors the repository's existing Lucid Evolution helper usage. No production source, Plutus compiler option, script artifact, V3, Reveal, ABI, economic rule or deployment path was changed.
+
+**Disposition:** diagnostic harness corrected; rerun result **PENDING / NOT YET VERIFIED**. On the rerun, first require the canonical baseline to reproduce the established factory/script byte lengths, digests and script hash before allowing the isolated candidate compile. Candidate size alone is not semantic, CEK-cost, publication-transaction or deployment qualification. Preserve the existing scope: diagnostics only; do not promote a changed script identity or touch V3/Reveal semantics.
