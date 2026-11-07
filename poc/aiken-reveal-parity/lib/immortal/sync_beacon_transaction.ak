@@ -226,7 +226,8 @@ test sync_rejects_changed_registry_beacon_value() {
 
 test sync_rejects_changed_ticket_identity() {
   let input = sync_fixture_prize(BeaconPending, #"", #"", #"")
-  let output = PrizeDatum { ..sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff"), commitment: #"ff" }
+  let output_base = sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff")
+  let output = PrizeDatum { ..output_base, commitment: #"ff" }
   !sync_output_matches(input, output, sync_fixture_registry())
 }
 
@@ -280,31 +281,23 @@ test sync_requires_ready_registry_with_nonempty_beacon_and_target() {
 }
 
 test sync_rejects_wrong_network_target() {
-  !same_target(
-    sync_fixture_target(),
-    BeaconTarget { ..sync_fixture_target(), network_id: 1 },
-  )
+  let target = sync_fixture_target()
+  !same_target(target, BeaconTarget { ..target, network_id: 1 })
 }
 
 test sync_rejects_wrong_mainchain_reference() {
-  !same_target(
-    sync_fixture_target(),
-    BeaconTarget { ..sync_fixture_target(), mainchain_ref: #"ff" },
-  )
+  let target = sync_fixture_target()
+  !same_target(target, BeaconTarget { ..target, mainchain_ref: #"ff" })
 }
 
 test sync_rejects_wrong_target_version() {
-  !same_target(
-    sync_fixture_target(),
-    BeaconTarget { ..sync_fixture_target(), version: "v2" },
-  )
+  let target = sync_fixture_target()
+  !same_target(target, BeaconTarget { ..target, version: "v2" })
 }
 
 test sync_rejects_registry_round_mismatch() {
-  let registry = BeaconRegistryDatum {
-    ..sync_fixture_registry(),
-    round: 41,
-  }
+  let registry_base = sync_fixture_registry()
+  let registry = BeaconRegistryDatum { ..registry_base, round: 41 }
   !sync_output_matches(
     sync_fixture_prize(BeaconPending, #"", #"", #""),
     sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff"),
@@ -313,10 +306,8 @@ test sync_rejects_registry_round_mismatch() {
 }
 
 test sync_rejects_non_ready_registry() {
-  let registry = BeaconRegistryDatum {
-    ..sync_fixture_registry(),
-    status: BeaconPending,
-  }
+  let registry_base = sync_fixture_registry()
+  let registry = BeaconRegistryDatum { ..registry_base, status: BeaconPending }
   !sync_output_matches(
     sync_fixture_prize(BeaconPending, #"", #"", #""),
     sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff"),
@@ -325,14 +316,11 @@ test sync_rejects_non_ready_registry() {
 }
 
 test sync_rejects_empty_registry_beacon() {
-  let registry = BeaconRegistryDatum {
-    ..sync_fixture_registry(),
-    beacon_value: #"",
-  }
+  let registry_base = sync_fixture_registry()
+  let registry = BeaconRegistryDatum { ..registry_base, beacon_value: #"" }
   !sync_output_matches(
     sync_fixture_prize(BeaconPending, #"", #"", #""),
     sync_fixture_prize(BeaconReady, #"", #"ccdd", #"eeff"),
     registry,
   )
 }
-
