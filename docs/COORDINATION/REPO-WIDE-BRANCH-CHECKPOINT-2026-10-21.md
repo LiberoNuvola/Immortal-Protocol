@@ -436,3 +436,26 @@ The Haskell V2 Pending EXPIRE step fails during `publish-prize-reference-script 
 5. No source, compiler flag, dependency, ABI, validator, V2/V3, Reveal/Expire or economic semantics change is authorized by the successful diagnostic measurement.
 
 Agent B explicitly returned the #46 write slot in [comment #6702888254](https://github.com/LiberoNuvola/Immortal-Protocol/issues/46#issuecomment-6702888254). The only tracked file changed by the slot is `audit/cardano-integration/expire-ledger-trace.ts`. Shared-branch writes may resume.
+
+
+## 2026-11-07 — Agent A R1 / D3 two-layer model reconciliation
+
+**Proposal update:** `docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md`  
+**Clarification commit:** `40c49769b538e2dd80fc83c5bc79969a42356a9d`  
+**Scope:** documentation-only; one proposal file updated.
+
+Agent A recovered the historical Library note **D3 — Economic Engine for Agents** (2 Nov 2026) and reconciled it with the Canonical Economic Register and the three-value `RiskMode` scaffold.
+
+### Key separation
+
+1. **R1 / RiskMode** selects, for the authenticated candidate trajectory and profile, which analytical mechanisms are required: deterministic, statistical, or both. Their outputs remain distinct unless a versioned rule defines their joint role, units, horizon, perimeter and non-overlap.
+2. **D3 / operating intensity** is a separate, historical non-normative PRE-RICH Arb Agent design: a permanent deterministic safety floor plus discretionary, state-dependent operating capacity above that floor. The recovered sketch uses `S_res=max(0, EEV-PC-L_dedicated)`, `B_t=alpha_t(S_res,class,stats)*S_res`, and `Notional<=min(B_t,RiskEnvelope)`. No coefficient, estimator, class threshold or combination rule is adopted.
+3. D3's candidate C0–C3 capabilities are Observe/withdraw; micro one-leg; standard two-leg; and expanded operation only in a healthy regime. Separate high/low thresholds are proposed for hysteresis. Quiescence prohibits new exposure while permitting safe reduction/closure and withdrawal of uncommitted capital.
+4. Open multi-leg exposure retains its worst-loss bound until close/expiry; unrealized gains are not harvestable. The historical Solo/Pool distinction requires segregated versus explicitly shared principal/NAV accounting, with no silent cross-user netting.
+5. The D3 Arb Agent perimeter is separate from PRE-RICH Game PrizePool, Jackpot, ticket liabilities and Treasury. No automatic transfer of D3 mechanics to Scratch & Win is authorized.
+
+### Disposition
+
+The recovered D3 note is **design / non-normative relative to current repository**. Its dynamic budget is not `RawSurplus`, not a protected-reserve component, and cannot relax `ProtectedCapital`, `A_safe`, certified `Ω`, QNE or the Economic Gate. `RiskMode` is not the C0–C3 class selector; operating class is not a risk-analysis mode; Quiescence is not proof of `Ω).
+
+No code, tests, workflows, economic constants, `500×`, `alpha_t`, `Z`, V3/Reveal, deployment, wallet, approval, certificate or ledger action changed. The original R1 proposal remains **PROPOSAL / specification-authority decision required**. R1/Kc/QNE and the first Issue blocker remain unchanged.
