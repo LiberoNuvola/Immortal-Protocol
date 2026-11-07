@@ -46,3 +46,50 @@ No statistical addend has been inserted into ProtectedCapital. No 500×, KA/KC/K
 ## Change-control boundary
 
 This A-R1 increment is analysis/documentation only. No code/tests/workflows were changed or run; no certificate was issued; no wallet signature, transaction, bootstrap, approval or deployment was performed. Any implementation of statistical reserve behavior requires an explicit policy/specification decision and an evidence-backed field/gate contract first.
+
+
+## 2026-11-07 — A-R1 correction: recovered dual-layer risk/intensity model
+
+**Working branch:** `work/immortal-green-closure`  
+**Starting HEAD verified before this update:** `74744cf4bb465b13c76fe8918d63aa8aedf38075`  
+**Scope:** documentation and coordination only.
+
+The A-R1 report now includes §10, recovering the previously omitted two-layer architecture and correcting the interpretation of the statistical-reserve gap.
+
+### Recovered model
+
+1. **Layer A — always-on deterministic floor:** candidate post-state must preserve the applicable `ProtectedCapital`, `A_safe` and authoritative `Ω` constraints. A statistical model or dynamic budget cannot waive this floor.
+2. **Layer B — state-dependent intensity/allocation:** D3's application design expresses:
+   `S_res = max(0, EEV - ProtectedCapital - L_dedicated)`,
+   `B_t = α_t(S_res, class_t, stats_t) × S_res`,
+   `0 ≤ α_t ≤ 1`, and
+   `Notional ≤ min(B_t, RiskEnvelope)`.
+   This is an exposure-intensity control above the floor, not a replacement for worst-case protection and not a mechanical statistical addend to ProtectedCapital.
+3. **Operating regime controller:** D3 describes C0–C3, hysteresis and quiescence/recovery. These are application-design regimes, not the PRE-RICH Game prize class ladder or KA/KC/KD.
+
+### Authority and boundary
+
+- The IMMORTAL Canonical Economic Register supports trajectory-dependent use of separate Worst-Case and Statistical Risk Analysis mechanisms (either or both as appropriate). It does not define a universal addition formula, replacement rule or binary global mode switch.
+- The explicit D3 “Economic Engine for Agents” double-layer design was recovered from Library artifact `Testo incollato(20261102-204028).txt` (2026-11-02). That note expressly marks itself non-normative against the current repo and keeps the Arb Agent separate from Scratch & Win/PrizePool.
+- `PreRichAwraReference.ts` and `PreRichAwraDynamicReference.ts` remain research/historical references. The latter reconstructs a v36 envelope and observed v37 behavior; the original v37–v39 selector is unavailable. No α, Z, cadence, objective or fixed budget is promoted to protocol policy.
+- D3's separate Principal/capital perimeter cannot spend PRE-RICH Game PrizePool, Jackpot or Treasury funds.
+
+### Agent A / Agent B coordination
+
+**Agent A:** maintain the A-R1 crosswalk, but treat the dynamic intensity/regime contract as a separate specification workstream. Define the perimeter, residual-surplus semantics, typed risk output, policy authority and evidence requirements before recommending integration.
+
+**Agent B:** independently verify that no production V3/Plutus/Gate path already consumes an authorized dynamic intensity output. Review the separation between:
+- deterministic floor and trajectory-specific Worst-Case analysis;
+- statistical payout estimate `Nμ + Zσ√N`;
+- AWRA/static candidate reference;
+- historical dynamic risk envelope;
+- proposed D3 α/class/quiescence controller.
+
+Do not wire these references into V3, Reveal or the production Gate, and do not reinterpret C0–C3 as game prize classes.
+
+### Existing blockers and change control retained
+
+- The S0 Issue-only margin erosion of 500 RU remains the concrete R1/QNE obstruction. A lower α, statistical confidence estimate or informal quiescent mode does not create a certified non-eroding witness.
+- Issue #37 R1/Kc, PA3–PA4 provenance/non-overlap, USD/USDM source qualification and current EEV/approval gates remain open as previously recorded.
+- No code, tests, workflows, certificates, constants, ProtectedCapital formula, V3/Reveal semantics, wallet action or ledger state was changed or executed by this documentation update.
+
