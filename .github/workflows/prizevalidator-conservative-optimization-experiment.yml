@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
-      EXPERIMENT_EVIDENCE_DIR: ${{ runner.temp }}/prizevalidator-conservative-optimization-experiment
       REGISTRY_SCRIPT_HASH: 7e77d0b44002ea15d7c4a11f5acc176bfccec5bb0eafac66c528dcd8
       ORACLE_STATE_POLICY_ID: 89234e0f20373cde0c7b0644edeb3cfc1dbca4005fd98b731518d235
       ORACLE_STATE_TOKEN_NAME_HEX: 4f5241434c45
@@ -48,7 +47,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$EXPERIMENT_EVIDENCE_DIR"
+          evidence_dir="$RUNNER_TEMP/prizevalidator-conservative-optimization-experiment"
+          mkdir -p "$evidence_dir"
           {
             echo "workflow_sha=$GITHUB_SHA"
             echo "branch=$GITHUB_REF"
@@ -58,13 +58,14 @@ jobs:
             echo "cabal=$(cabal --numeric-version)"
             echo "plutus_git_pin=$(grep -A2 'location: https://github.com/IntersectMBO/plutus.git' cabal.project | tail -n1 | sed 's/^[[:space:]]*tag:[[:space:]]*//')"
             echo "prize_validator_source_sha256=$(sha256sum plutus/PrizeValidator.hs | awk '{print $1}')"
-          } | tee "$EXPERIMENT_EVIDENCE_DIR/provenance.txt"
+          } | tee "$evidence_dir/provenance.txt"
           grep -q '48e9bf08f439e7223de713b5b71696fcd81cffc3' cabal.project
 
       - name: Compile, measure baseline, then compare the isolated candidate
         shell: bash
         run: |
           set -Eeuo pipefail
+          export EXPERIMENT_EVIDENCE_DIR="$RUNNER_TEMP/prizevalidator-conservative-optimization-experiment"
           mkdir -p "$EXPERIMENT_EVIDENCE_DIR"
           probe_file="$RUNNER_TEMP/prizevalidator-size-measure-probe.mjs"
           original_validator="$RUNNER_TEMP/PrizeValidator.hs.original"
