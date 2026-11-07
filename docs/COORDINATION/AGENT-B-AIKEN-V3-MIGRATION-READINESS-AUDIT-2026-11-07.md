@@ -90,3 +90,25 @@ The latest source commit was observed at the time of audit. CI was in progress; 
 - Do not alter 500×, KA/KC/KD, price ladder, ProtectedCapital, EEV/USDM authority, datum/redeemer ABI, or first-Issue admission gates.
 - No production artifact substitution, wallet signature, Preprod/Mainnet action, or deployment was performed by this audit.
 - Aiken remains a **migration candidate**, not a production-qualified validator.
+
+
+## Follow-up implementation — SyncBeacon and canonical Registry fixture
+
+After the initial audit, Agent B added an Aiken source port for the missing SyncBeacon transition:
+
+- New canonical Aiken `BeaconRegistryDatum` type, field order matching Haskell `Types.BeaconRegistryDatum`.
+- New `sync_beacon_transaction.ak` module. It resolves only the configured Registry script credential from transaction reference inputs, decodes inline or witnessed datum, and checks Ready status, complete target equality (network / round / mainchain ref / version), non-empty beacon, one own Prize input, unique continuing Prize output, preserved value, unchanged immutable identity/row tiers/prize amount and exact copy of beacon / mcHash / Materios context.
+- `validators/reveal.ak` now dispatches `SyncBeacon` to that transition and takes the Registry ScriptHash as its first parameter. The candidate ABI therefore changes for this Aiken prototype only; no Haskell datum/redeemer ABI was changed.
+- All current Aiken parameterization callsites in Reveal, Expire, Claim and the standalone publication probes now pass the same derived Registry hash before the Oracle State parameters.
+- The canonical Haskell fixture producer `plutus/test/RevealSchemaFixtures.hs` now emits a full `BeaconRegistryDatum` Plutus Data fixture; the Aiken fixture generator creates a byte-for-byte serialization test, and the parity workflow requires the new fixture key.
+
+Commits for this follow-up include:
+- `cff4ed08e5c9d703fba879bf6c695f898fce2f15`, `ca3886b36303a997af823696e860649127a46c07`: Aiken Registry datum type/import.
+- `39a09ff55bbe79ea48f57ca538ac77fb4e80203f`, `904302926d87eba596d331e5c225db8031cbaa9c`, `2663098630e61fb8f0a0371b34058ced53afbb0f`, `8a9d38bbf4150e605dc4425fd6d26bf4b02a7729`, `d8434c95a8178ff04ea1b0c4d0e315319672e26d`: SyncBeacon implementation, focused transition vectors and import/type fixes.
+- `772f0aab4aa4cce74b43e26bf8ef3a64974f4655`, `4114743d30df2428ce71ca882ef13672ec1b9a06`: connect SyncBeacon to the unified Aiken Prize dispatcher and add Registry ScriptHash parameter.
+- `bb6a47fba55d5eb658483fa4f03373729176e55f`, `a505e13923765ce8cd3b45a4f32cfb8e9d8c6442`, `4302835b8adea432e1efc043161b774e82379db4`, `ec4bd3b6bf9e45f2b409300311fbe3e2a76441d2`, `e4b88a82b94a4adfd41e9e3aeb7d5ef83e382d49`: align all Aiken candidate parameterization and publication probes with the new Registry hash.
+- `98593bad0ed47fe80e19a6ec727008535b56248d`, `134e636c6b343697f186bfe0f4764c75fac51dbb`, `34afe24579403e8bcab803c6b7fd347b102dac7b`: canonical Haskell Registry datum fixture, generated Aiken serialization test and CI fixture requirement.
+
+**Verification status:** The full Registry datum serialization comparison and updated Aiken build are pending exact-head CI. Source coverage is not yet a PASS. The transaction-context implementation still needs negative Yaci twins for absent Registry, wrong Registry credential, invalid/unreadable datum, mismatched round/target, non-Ready status, empty beacon, duplicate own input/output, altered immutable fields and altered continuing value. A successful compile alone will not close SyncBeacon.
+
+The latest Aiken Reveal Parity run observed during the follow-up was queued/in progress on an earlier head while the new fixture checker was being committed. The latest full Cardano Lab also still needed to reach the Aiken steps at the time of this report. No production or Preprod approval follows from this source port.
