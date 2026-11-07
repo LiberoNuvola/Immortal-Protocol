@@ -544,3 +544,32 @@ On `d792d16`, Cardano Integration Lab [#42367753185](https://github.com/LiberoNu
 7. Local Yaci qualification precedes any separately approved Preprod plan.
 
 No change was made to the existing V3 carrier, Haskell source/compiler flags, Reveal economics, 500×, KA/KC/KD, datum/redeemer ABI, EEV/USDM authority or first-Issue admission gates. No wallet signing, Preprod/Mainnet action or deployment occurred. Aiken remains a migration candidate, not a production-qualified validator.
+
+
+## 2026-11-07 — Agent B follow-up: SyncBeacon source port and canonical Registry schema fixture
+
+**Tracking:** Issue [#48 — Aiken V3 PrizeValidator migration qualification](https://github.com/LiberoNuvola/Immortal-Protocol/issues/48).  
+**Detailed audit:** `docs/COORDINATION/AGENT-B-AIKEN-V3-MIGRATION-READINESS-AUDIT-2026-11-07.md`.  
+**Source head at checkpoint edit:** `34afe24579403e8bcab803c6b7fd347b102dac7b`.
+
+### Implementation added
+
+- Aiken now defines the Haskell wire-compatible `BeaconRegistryDatum` (round, target, status, beacon value, mcHash, Materios context, relayer).
+- New `sync_beacon_transaction.ak` reads the configured Registry script credential from reference inputs, decodes the Registry datum and checks Ready status, exact round/target, non-empty beacon, exactly one own Prize input and one continuing Prize output, preserved physical value, immutable ticket identity and exact Beacon/mcHash/Materios-context copy.
+- Aiken Prize dispatcher now routes `SyncBeacon` to this transaction-level predicate. Registry ScriptHash is the first parameter of the isolated candidate; all Aiken Reveal/Expire/Claim/probe parameterization callsites have been aligned to the new parameter list.
+- Haskell fixture producer adds a canonical serialized `BeaconRegistryDatum`; the Aiken fixture generator adds a byte-for-byte serialization check and CI now requires the key.
+- Existing Aiken EXPIRE source branches and independent Claim workflow condition from the preceding checkpoint remain in place.
+
+### New commits (in addition to the EXPIRE/Claim commits above)
+
+`cff4ed08e5c9d703fba879bf6c695f898fce2f15`, `ca3886b36303a997af823696e860649127a46c07`, `39a09ff55bbe79ea48f57ca538ac77fb4e80203f`, `904302926d87eba596d331e5c225db8031cbaa9c`, `772f0aab4aa4cce74b43e26bf8ef3a64974f4655`, `4114743d30df2428ce71ca882ef13672ec1b9a06`, `bb6a47fba55d5eb658483fa4f03373729176e55f`, `a505e13923765ce8cd3b45a4f32cfb8e9d8c6442`, `4302835b8adea432e1efc043161b774e82379db4`, `ec4bd3b6bf9e45f2b409300311fbe3e2a76441d2`, `e4b88a82b94a4adfd41e9e3aeb7d5ef83e382d49`, `8a9d38bbf4150e605dc4425fd6d26bf4b02a7729`, `2663098630e61fb8f0a0371b34058ced53afbb0f`, `d8434c95a8178ff04ea1b0c4d0e315319672e26d`, `98593bad0ed47fe80e19a6ec727008535b56248d`, `134e636c6b343697f186bfe0f4764c75fac51dbb`, `34afe24579403e8bcab803c6b7fd347b102dac7b`.
+
+### Verification still open
+
+- The previous Aiken parity run at `d792d16` had passed `aiken check` and `aiken build`, but it predates SyncBeacon source/schema additions and cannot certify this head.
+- The new exact-head Aiken Parity run was queued at `34afe245`; build, tests and Haskell-generated Registry datum serialization still require its result.
+- A Cardano Lab run on an earlier head was still at the canonical Plutus setup step; all three Expire Yaci traces, Claim trace, and SyncBeacon Yaci behavior remain pending.
+- Add adversarial Yaci fixtures for wrong/missing Registry, bad datum, round/target mismatch, non-Ready status, empty beacon, duplicate own input/output, altered identity and value. This is needed before calling SyncBeacon qualified.
+- The existing V2→V3 compatibility and B1PrizePool hash-rebinding/deployment gates remain open. Aiken is the primary migration candidate, not production-qualified.
+
+No change to Haskell production validator, V3 carrier semantics, Reveal economic rules, 500×, KA/KC/KD, datum/redeemer ABI, EEV/USDM source authority or first-Issue admission gates. No wallet signature, Preprod/Mainnet transaction or deployment has been performed.
