@@ -172,7 +172,7 @@ jobs:
 
           const factoryBytes = Buffer.from(envelope.cborHex, 'hex')
           const parameterizedBytes = Buffer.from(scriptHex, 'hex')
-          const scriptHash = lucid.validatorToScriptHash(script)
+          const scriptHash = lucid.utils.validatorToScriptHash(script)
           const result = {
             schema: 'IMMORTAL-PRIZEVALIDATOR-CONSERVATIVE-OPTIMIZATION-SIZE-EXPERIMENT-v0.1',
             phase,
