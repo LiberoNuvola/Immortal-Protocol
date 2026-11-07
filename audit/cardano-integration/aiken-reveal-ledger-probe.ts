@@ -28,6 +28,7 @@ import {
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
+import { beaconRegistryValidator } from '../../src/loadValidator'
 import {
   deriveBeacon,
   deriveSymbolsSeed,
@@ -226,7 +227,7 @@ const revealScript: Script = {
   type: 'PlutusV3',
   script: evolutionApplyParamsToScript(
     revealEntry.compiledCode,
-    [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+    [validatorToScriptHash(beaconRegistryValidator).toLowerCase(), fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
   ),
 }
 const revealHash = validatorToScriptHash(revealScript).toLowerCase()
