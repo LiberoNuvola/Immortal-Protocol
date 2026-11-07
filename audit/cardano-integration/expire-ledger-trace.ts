@@ -31,7 +31,7 @@ import {
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-import { buildB1PrizePool, buildScriptsFromLucid } from '../../src/loadValidator'
+import { buildB1PrizePool, buildScriptsFromLucid, prizeValidatorFactory } from '../../src/loadValidator'
 import {
   assertCanonicalTransitionBinding,
   type CanonicalTransitionEvidence,
@@ -239,6 +239,75 @@ function expireScriptDiagnostic(name: string, script: Script | undefined) {
     type: script.type,
     scriptHash: validatorToScriptHash(script).toLowerCase(),
     scriptBytes: Buffer.from(script.script, 'hex').length,
+  }
+}
+
+/**
+ * Inspect the outer definite-length CBOR byte-string envelope without
+ * altering the original script bytes. The raw hex is retained separately.
+ */
+function inspectCborByteString(hex: string) {
+  const bytes = Buffer.from(hex, 'hex')
+  if (bytes.length === 0) {
+    return {
+      present: false,
+      encodedBytes: 0,
+      majorType: null,
+      additionalInfo: null,
+      headerBytes: null,
+      declaredPayloadBytes: null,
+      availablePayloadBytes: 0,
+      trailingBytes: null,
+      payloadSha256: null,
+    }
+  }
+
+  const initial = bytes[0]
+  const majorType = initial >> 5
+  const additionalInfo = initial & 0x1f
+  let headerBytes = 1
+  let declaredPayloadBytes: bigint | null = null
+
+  if (additionalInfo < 24) {
+    declaredPayloadBytes = BigInt(additionalInfo)
+  } else if (additionalInfo === 24 && bytes.length >= 2) {
+    declaredPayloadBytes = BigInt(bytes[1])
+    headerBytes = 2
+  } else if (additionalInfo === 25 && bytes.length >= 3) {
+    declaredPayloadBytes = BigInt(bytes.readUInt16BE(1))
+    headerBytes = 3
+  } else if (additionalInfo === 26 && bytes.length >= 5) {
+    declaredPayloadBytes = BigInt(bytes.readUInt32BE(1))
+    headerBytes = 5
+  } else if (additionalInfo === 27 && bytes.length >= 9) {
+    declaredPayloadBytes = bytes.readBigUInt64BE(1)
+    headerBytes = 9
+  }
+
+  const availablePayloadBytes = Math.max(0, bytes.length - headerBytes)
+  const safeLength = declaredPayloadBytes !== null &&
+    declaredPayloadBytes <= BigInt(Number.MAX_SAFE_INTEGER)
+  const complete = majorType === 2 &&
+    safeLength &&
+    BigInt(availablePayloadBytes) >= declaredPayloadBytes!
+  const payload = complete
+    ? bytes.subarray(headerBytes, headerBytes + Number(declaredPayloadBytes))
+    : null
+
+  return {
+    present: true,
+    encodedBytes: bytes.length,
+    majorType,
+    additionalInfo,
+    headerBytes,
+    declaredPayloadBytes: declaredPayloadBytes?.toString() ?? null,
+    availablePayloadBytes,
+    trailingBytes: complete
+      ? availablePayloadBytes - Number(declaredPayloadBytes)
+      : null,
+    payloadSha256: payload
+      ? createHash('sha256').update(payload).digest('hex')
+      : null,
   }
 }
 function ref(u: UTxO): string {
@@ -577,6 +646,77 @@ const scripts = buildScriptsFromLucid(
   testPolicyId,
   poolTokenNameHex,
 )
+
+// Preserve byte-for-byte provenance from the factory generated earlier in this
+// CI job to the exact Haskell V2 script returned by the existing builder.
+// This is diagnostic only: it does not re-apply parameters or alter the script.
+const prizeFactoryCborHex = prizeValidatorFactory.script
+const haskellV2PrizeCborHex = scripts.prizeValidator.script
+const prizeFactoryBytes = Buffer.from(prizeFactoryCborHex, 'hex')
+const haskellV2PrizeBytes = Buffer.from(haskellV2PrizeCborHex, 'hex')
+const haskellV2PrizeHash = validatorToScriptHash(scripts.prizeValidator).toLowerCase()
+const sizeProvenance = {
+  schema: 'immortal.cardano.prize-validator-size-provenance.v1',
+  purpose: 'same-run Haskell V2 factory-to-parameterized-script byte provenance',
+  source: {
+    repository: process.env.GITHUB_REPOSITORY ?? null,
+    workflow: process.env.GITHUB_WORKFLOW ?? null,
+    ref: process.env.GITHUB_REF ?? null,
+    commitSha: process.env.GITHUB_SHA ?? null,
+    runId: process.env.GITHUB_RUN_ID ?? null,
+  },
+  execution: {
+    environment: 'local-yaci-devnet',
+    selectedExpireBackend: EXPIRE_BACKEND,
+    expireCase: EXPIRE_CASE,
+    capturedValidator: 'canonical-haskell-v2-before-any-aiken-override',
+    transactionSizeLimitBytes: 16_384,
+  },
+  parameters: {
+    registryScriptHashHex: scripts.registryHash,
+    prizeTable: {
+      tier1: defaultPrizeTable.tier1,
+      tier2: defaultPrizeTable.tier2,
+      tier3: defaultPrizeTable.tier3,
+      tier4: defaultPrizeTable.tier4,
+      tier5: defaultPrizeTable.tier5,
+    },
+    oracleStatePolicyIdHex: testPolicyId,
+    oracleStateTokenNameHex: ORACLE_STATE_TOKEN_NAME_HEX,
+    oraclePublisherPkhHex: keyHash,
+  },
+  factory: {
+    type: prizeValidatorFactory.type,
+    byteLength: prizeFactoryBytes.length,
+    sha256: createHash('sha256').update(prizeFactoryBytes).digest('hex'),
+    cborByteStringEnvelope: inspectCborByteString(prizeFactoryCborHex),
+    cborHex: prizeFactoryCborHex,
+  },
+  parameterizedPrizeValidator: {
+    type: scripts.prizeValidator.type,
+    byteLength: haskellV2PrizeBytes.length,
+    sha256: createHash('sha256').update(haskellV2PrizeBytes).digest('hex'),
+    scriptHash: haskellV2PrizeHash,
+    cborByteStringEnvelope: inspectCborByteString(haskellV2PrizeCborHex),
+    cborHex: haskellV2PrizeCborHex,
+  },
+  localOnly: true,
+}
+const sizeProvenancePath =
+  `audit/yaci-evidence/expire-script-size-provenance-haskell-v2-${EXPIRE_CASE}.json`
+writeFileSync(sizeProvenancePath, JSON.stringify(sizeProvenance, null, 2))
+console.log(JSON.stringify({
+  expireScriptSizeProvenance: {
+    path: sizeProvenancePath,
+    sourceSha: sizeProvenance.source.commitSha,
+    factoryBytes: sizeProvenance.factory.byteLength,
+    factorySha256: sizeProvenance.factory.sha256,
+    parameterizedBytes: sizeProvenance.parameterizedPrizeValidator.byteLength,
+    parameterizedSha256: sizeProvenance.parameterizedPrizeValidator.sha256,
+    parameterizedScriptHash: sizeProvenance.parameterizedPrizeValidator.scriptHash,
+    localOnly: true,
+  },
+}, null, 2))
 
 /**
  * Select the Aiken Plutus V3 Expire implementation only when explicitly enabled
