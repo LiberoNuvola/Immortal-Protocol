@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   compile-size-comparison:
-    if: github.ref == 'refs/heads/work/immortal-green-closure'
+    if: ${{ github.ref == 'refs/heads/work/immortal-green-closure' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
