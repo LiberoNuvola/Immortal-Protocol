@@ -688,7 +688,7 @@ if (aikenClaimV3Candidate) {
     type: 'PlutusV3',
     script: evolutionApplyParamsToScript(
       matches[0].compiledCode,
-      [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+      [scripts.registryHash, fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
     ),
   } as Script
   const aikenPrizeHash = validatorToScriptHash(aikenPrizeScript).toLowerCase()
