@@ -383,3 +383,62 @@ Until then, the safe disposition is:
 - **Production Gate/Plutus integration authorized by A-R1:** no.
 - **Changes to 500×, ProtectedCapital, V3, Reveal or deployment:** none authorized.
 
+
+
+## 11. Agent B source review — typed risk-mode selector boundary (2026-11-07)
+
+The independent production-source review found a more direct connection to the previously recovered dual-model architecture than the AWRA reference modules alone.
+
+### 11.1 The remembered risk-mode choice exists as a typed scaffold
+
+`IMMORTAL/kernel/RiskProtectionBridge.hs` declares:
+
+```haskell
+data RiskMode
+  = DeterministicWorstCaseOnly
+  | StatisticalOnly
+  | DeterministicAndStatistical
+```
+
+Its `RiskAssessment` binds `raMode` and optional deterministic/statistical observations to a profile version and trajectory ID. This is strong source evidence that the architecture intended risk assessment to be trajectory-specific, with three possible risk-analysis configurations.
+
+But this is a **typed interface, not a working state-to-mode selector**. The mode is supplied inside `RiskAssessment`; no inspected code derives it from the current protocol regime or trajectory facts.
+
+### 11.2 The bridge currently supports deterministic-only
+
+`deriveProtectionRequirement` accepts `DeterministicWorstCaseOnly` only when:
+- profile version and trajectory ID match;
+- evidence is verified;
+- deterministic assessment is present and exactly equals the projected WCE;
+- no statistical assessment or combination-rule version is smuggled into this mode.
+
+It returns `UnsupportedRiskMode` for `StatisticalOnly` and `DeterministicAndStatistical`. Its `ProtectionRequirement` contains only the deterministic amount.
+
+The module is exposed by `plutus/pre-rich-plutus.cabal` and has a dedicated `risk-protection-bridge-tests` suite. Those test sources cover deterministic acceptance and fail-closed statistical/combined cases. They were not executed in this audit.
+
+### 11.3 No production admission connection yet
+
+`PRE-RICH/onchain/PreRichEconomicAdmission.hs` imports `EconomicGate`, not `RiskProtectionBridge`. It creates the existing `EconomicGateInput` from truth/freshness/obligation evidence, EEV and immediate executable liquidity.
+
+`IMMORTAL/kernel/EconomicGate.hs` has no risk mode, statistical reserve, `α_t`, dynamic budget or `RiskEnvelope` field. It checks evidence, immediate liquidity, post-state solvency and the all-`Ω)-successors certified-kernel condition.
+
+Therefore the current flow is still deterministic WCE + Gate + Viability; the typed risk-mode bridge does not yet feed the production admission result.
+
+### 11.4 Existing controls are real, but serve different purposes
+
+- `src/preRichHysteresis.ts` implements PRE-RICH ticket-class activation/maintenance/contraction using `KA=8`, `KC=4`, `KD=4`. This is the Game class-capacity controller, not D3's C0–C3 AWRA intensity controller.
+- `PreRichLifecycleTransition.hs` implements a separate `ACTIVE → QUIESCENT` transition and `QUIESCENT` maintenance with a real lifecycle nonce. Its QNE helper checks a non-empty explicit `Ω) witness set for non-eroding, safe, representation-preserving successors. It does not modify V3 economic fields or select a statistical risk mode.
+- `PreRichRegimeState` has `PRE_GENESIS`, `GENESIS`, `ACTIVE`, and `QUIESCENT`, but the Cardano `GenesisRegimeCarrier` implements only `PRE_GENESIS → GENESIS`; the separate lifecycle module supplies the ACTIVE/QUIESCENT logic.
+- AWRA static/dynamic modules remain research/historical references; the original v37–v39 selector is not recovered.
+
+### 11.5 Corrected interpretation and next contract
+
+The remembered “passaggio tra modelli in base allo stato” has now been located at the typed interface level: `RiskMode` is trajectory-bound in `RiskAssessment`. It has **not** been completed as a policy resolver or production flow.
+
+Before implementation, the protocol authority must define the state/trajectory classifier, the exact conditions for each mode, the invariant hard floor, the semantics of `StatisticalOnly`, the dependence and evidence contract for statistical measures, any versioned combination rule, and the typed path into Admission/Gate.
+
+Under the recovered two-layer invariant, `StatisticalOnly` cannot mean permission to discard deterministic protection. It must either mean a statistical criterion applied while the deterministic floor remains independently enforced, or remain unsupported.
+
+Full source review and file/blob references: [Agent B R1 RiskMode and Regime-Control Audit](AGENT-B-R1-RISK-MODE-AND-REGIME-CONTROL-AUDIT-2026-11-07.md).
+
+**Disposition:** typed mode scaffold exists; only deterministic mode is supported; state-to-mode resolver and Admission integration are absent. No implementation or policy change is authorized by this audit.
