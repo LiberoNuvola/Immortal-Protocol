@@ -573,3 +573,31 @@ No change was made to the existing V3 carrier, Haskell source/compiler flags, Re
 - The existing V2→V3 compatibility and B1PrizePool hash-rebinding/deployment gates remain open. Aiken is the primary migration candidate, not production-qualified.
 
 No change to Haskell production validator, V3 carrier semantics, Reveal economic rules, 500×, KA/KC/KD, datum/redeemer ABI, EEV/USDM source authority or first-Issue admission gates. No wallet signature, Preprod/Mainnet transaction or deployment has been performed.
+
+
+## 2026-11-07 — Agent B: Aiken dispatcher compiler fix verified; full parity/Yaci still pending
+
+**Latest source head at checkpoint edit:** `eb6688d98e219f003d191b605da16dd9f963bd47`.  
+**Tracking issue:** [#48 — Aiken V3 PrizeValidator migration qualification](https://github.com/LiberoNuvola/Immortal-Protocol/issues/48).  
+**Audit:** `docs/COORDINATION/AGENT-B-AIKEN-V3-MIGRATION-READINESS-AUDIT-2026-11-07.md`.
+
+### Compiler error diagnosed and corrected
+
+On head `51dc659`, Aiken failed with `aiken::check::redundant_pattern_match` at the wildcard `_ -> False` in `validators/reveal.ak`. All four current `PrizeAction` constructors were already explicitly matched. Commit `eb6688d` removes only the redundant wildcard; the explicit missing-datum failure and `else(_) { False }` remain.
+
+### Exact-head verification
+
+- Aiken B1 PrizePool Claim Slice [#42369160897](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160897): **SUCCESS** on `eb6688d`; pinned Aiken v1.1.22 `aiken check` and Plutus V3 `aiken build` both passed.
+- Aiken Reveal Parity [#42369160948](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160948): still preparing the canonical Plutus toolchain at the time of observation; Haskell-generated fixture/serialization comparison not yet complete on the latest head.
+- Cardano Integration Lab [#42369160963](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160963): workflow started, still installing isolated dependencies at the time of observation; no latest-head Reveal/Expire/Claim/SyncBeacon Yaci result claimed.
+- On prior head `51dc659`, Haskell fixture generation succeeded and produced 13 Plutus Data encoding fixtures plus 11 compiled Haskell V2 CEK outcomes. The workflow then failed at Aiken check with the redundant-pattern diagnostic; no Aiken fixture parity result was accepted.
+
+### Remaining gates
+
+1. Latest-head Haskell/Aiken serialization parity and full Aiken parity workflow.
+2. Cardano local-Yaci tests for Pending, Revealed Loss and Revealed Win Expire, plus Claim; keep their real B1PrizePool V2 limitation explicit.
+3. Dedicated transaction-context/Yaci SyncBeacon positive and adversarial trace; pure transition tests are not enough.
+4. Full differential action/state matrix, Plutus V2→V3 ledger/cost/context compatibility, full transaction resource measurements and coherent Prize/B1PrizePool hash rebinding.
+5. Separately approved Preprod plan only after all prior gates pass.
+
+Haskell V2 remains the unchanged canonical oracle/fallback; no further compiler-size experiments. Aiken V3 is the primary migration candidate, not yet production-qualified. Existing V3 carrier, Reveal semantics/economics, 500×, KA/KC/KD, datum/redeemer ABI, EEV/USDM authority and Issue admission gates remain unchanged. No Preprod/Mainnet activity or wallet signing occurred.
