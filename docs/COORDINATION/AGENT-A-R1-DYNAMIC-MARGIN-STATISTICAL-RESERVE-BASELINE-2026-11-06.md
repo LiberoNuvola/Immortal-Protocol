@@ -261,3 +261,125 @@ where `μ₀ = 0.64996875` and `σ₀ = 6.689612535418134...`. These equations d
 
 **CI/test status:** no tests or CI were run as part of this read-only baseline.  
 **Ledger status:** no chain observation, signature, transaction, bootstrap, approval or deployment action was run.
+
+
+## 10. Recovered dual-layer, state-dependent risk / intensity architecture (2026-11-07)
+
+### 10.1 Why the A-R1 framing is being refined
+
+The preceding sections correctly distinguish nominal face reserve, deterministic worst-case exposure, the documented ticket-level statistical estimate, and `ReserveProtection`. They do not, by themselves, capture the separate **two-layer risk/intensity architecture** recovered from the project records.
+
+The recovered model is not a proposal to replace deterministic protection with a statistical model, nor is it a proposal to add `Nμ + Zσ√N` mechanically to `ProtectedCapital`. It separates:
+
+1. an always-on **deterministic safety floor** that constrains whether a candidate post-state is admissible; and
+2. a **state-dependent intensity/allocation layer** that governs how much of the surplus left after protection may be exposed, and in which operating regime.
+
+This distinction changes the interpretation of the A-R1 gap: the question is not only whether a statistical reserve has been wired into the Cardano Gate. The missing normative contract is also whether and how risk observations are allowed to modulate deployable surplus, class/intensity, and operational regime above the unmodified safety floor.
+
+### 10.2 Source hierarchy and normative status
+
+The recovered records have different authority and scope:
+
+| Source | Recovered content | Status / scope |
+|---|---|---|
+| IMMORTAL Canonical Economic Register, risk-engine sections | Worst-Case Analysis and Statistical Risk Analysis are separate mechanisms. The applicable analysis is selected trajectory-by-trajectory; either or both may be relevant. Their outputs feed a Protection Requirement and Gate. | Canonical architecture. It does **not** prescribe a universal additive formula, universal replacement rule, or binary global mode switch. |
+| Library design note `Testo incollato(20261102-204028).txt`, D3 “Economic Engine for Agents” | Explicit two-layer safety: worst-case floor plus dynamic surplus/intensity budget; operating classes C0–C3; hysteresis and quiescence. | Recovered design; explicitly marked non-normative relative to the current repository. It belongs to the separate PRE-RICH Arb Agent application and does not merge the Agent with Scratch & Win or its PrizePool. |
+| `PRE-RICH/src/PreRichAwraReference.ts` | Static current-model probability adaptation and candidate evaluation; caller supplies authorized policy/risk/viability functions. | Research/conformance reference, not a canonical policy selector. |
+| `PRE-RICH/src/PreRichAwraDynamicReference.ts` | Reconstructed v36 dynamic risk envelope and observed v37 budget-fit behavior. | Historical reference only. The original v37–v39 selector source is unavailable; observed targets are not normative parameters. |
+
+The Canonical Economic Register's trajectory-dependent treatment is the governing IMMORTAL statement. The more explicit Agent D3 model is useful evidence of the intended two-layer pattern, but cannot be promoted into Scratch & Win or the universal kernel without a separate specification decision.
+
+### 10.3 Layer A — deterministic floor (always on)
+
+For every candidate transition, the post-state must continue to satisfy the applicable deterministic protection conditions: the defined `ProtectedCapital`, `A_safe` and authoritative scenario envelope `Ω`. A statistical confidence level or a positive dynamic budget cannot authorize a transition that violates this floor.
+
+For current PRE-RICH, this preserves the existing deterministic WCE/500× boundary and the established lifecycle transfer from unresolved exposure to realized liability. It does not change any constant, formula, datum, validator, V3 or Reveal behavior.
+
+### 10.4 Layer B — dynamic surplus and exposure intensity
+
+The recovered D3 design expresses the post-protection residual surplus and candidate exposure budget as:
+
+```text
+S_res = max(0, EEV - ProtectedCapital - L_dedicated)
+B_t   = α_t(S_res, class_t, stats_t) × S_res
+0 ≤ α_t ≤ 1
+Notional ≤ min(B_t, RiskEnvelope)
+```
+
+Interpretation:
+
+- `S_res` is the residual amount available to the application only after the applicable protection and dedicated-liability perimeter has been respected.
+- `α_t` is state-dependent: it may depend on residual surplus, operating class and qualified statistics. It is an intensity/allocation coefficient, not a safety multiplier and not a substitute for the deterministic floor.
+- `RiskEnvelope` independently caps the candidate exposure. Passing the surplus-budget calculation does not waive the exposure envelope; passing the envelope does not waive Layer A.
+- The model therefore regulates the **amount and regime of new exposure**, rather than turning worst-case protection off when a statistical mode is selected.
+
+This D3 expression must retain its original application boundary. In particular, the Arb Agent uses a separately mandated capital perimeter; it is not authorized to consume PRE-RICH Game PrizePool, Jackpot or Treasury funds. Any reuse in Scratch & Win first requires a game-specific definition of `S_res`, dedicated liabilities, authority and non-overlap.
+
+### 10.5 Dynamic risk envelope and AWRA reference lineage
+
+The repository's historical dynamic reference reconstructs a separate envelope calculation:
+
+```text
+exposurePressure = unresolvedWorstCaseExposure / executableCash
+headroomFactor   = max(0, 1 - exposurePressure)
+allowedRatio     = 1 + eta × headroomFactor
+```
+
+The module also records observed v37 budget-fit behavior as `max(historicalFloor, eta / 2)`. Its header explicitly classifies the material as historical recovery and says the original v37–v39 selector is unavailable. The static AWRA reference separately evaluates candidate probability distributions and leaves policy preference to an external caller.
+
+These are two useful pieces of the recovered lineage, but they must not be conflated:
+- the D3 formula `B_t = α_t × S_res` is the application-level dynamic allocation expression;
+- the dynamic risk envelope is an additional exposure admissibility bound;
+- the ticket statistical estimate `Nμ + Zσ√N` is a payout-distribution risk measure;
+- the 55-candidate grid, historical budget floor/cap and observed `eta / 2` are reconstruction evidence, not an adopted selector.
+
+No final α function, Z, fixed budget fraction, cadence, Pareto/lexicographic objective or v37–v39 selector is established as normative.
+
+### 10.6 Operating regimes, hysteresis and quiescence
+
+The D3 note describes operating regimes:
+
+| Regime | Intended intensity |
+|---|---|
+| C0 | Observe / withdraw; no new exposure |
+| C1 | Micro; one leg |
+| C2 | Standard; two legs |
+| C3 | Expanded operation, only in a healthy regime |
+
+Promotion and contraction use separate high/low thresholds (hysteresis) to avoid regime thrashing. Quiescence is an admissible protective operating condition: no new exposure, while risk-reducing close/reduction and withdrawal of free funds remain possible. The design lists stale oracle data, inadequate depth, drawdown, revoked mandate, `α → 0` and incomplete evidence as possible quiescence triggers.
+
+These C0–C3 regimes are **not** the PRE-RICH Game class ladder, not `KA/KC/KD`, and not a reinterpretation of `CurrentActiveClass` or `HighestClassEverActivated`. They are a separate proposed application controller. Their numeric thresholds, recovery rules and authority are not frozen for Scratch & Win.
+
+### 10.7 Relationship to the A-R1 findings and R1/QNE
+
+The two-layer recovery refines, but does not invalidate, the prior A-R1 quantity and lifecycle findings:
+
+- Face reserve remains `Σ(P_i × N_i)`.
+- Current PRE-RICH deterministic WCE remains `500 × Σ(P_i × N_i)`.
+- The documented payout-distribution estimate remains a statistical measure, not the WCE and not an automatically funded component.
+- `ReserveProtection` remains a separate field whose source, derivation and non-overlap must be evidenced.
+- Any dynamic allocation budget must be downstream of the deterministic protection boundary; it cannot be used to reduce that boundary or to spend capital already needed for liabilities.
+
+The recovered intensity layer does **not** close the concrete S0 R1/QNE obstruction in §7. A lower `α`, a quiescent regime or a statistical estimate does not itself supply the currently missing available, non-eroding successor witness under the existing action relation and authoritative `Ω`. A no-new-exposure/quiescent action would need to be formally represented and certified before it could count as an R1 witness; this addendum does not invent or authorize one.
+
+### 10.8 Required contract before any implementation
+
+Before integrating this pattern into the current PRE-RICH Game or IMMORTAL production Gate, the specification authority must explicitly settle:
+
+1. application and capital perimeter (Arb Agent versus Scratch & Win; no cross-use of PrizePool/Treasury);
+2. exact definitions and evidence sources for `EEV`, `ProtectedCapital`, dedicated liabilities, executable cash and residual surplus, including non-overlap;
+3. the authority, distribution/horizon, dependence assumptions, freshness, confidence and precision of statistical/risk inputs;
+4. the `α_t` policy, exposure-envelope semantics and their relationship to trajectory-specific Worst-Case and Statistical Risk Analysis;
+5. regime transition, hysteresis, quiescence, recovery and admissible risk-reduction actions;
+6. the typed output from risk/intensity assessment into `Protection Requirement`, Economic Gate and any deployment certificate;
+7. the evidence and conformance tests that demonstrate the floor remains invariant through Issue/Reveal/Claim/Expire and all permitted operational regimes.
+
+Until then, the safe disposition is:
+
+- **Two-layer pattern recovered:** yes.
+- **Canonical IMMORTAL floor + trajectory-dependent risk-analysis architecture:** yes.
+- **Agent D3 intensity/regime controller adopted for PRE-RICH Game:** no; non-normative design only.
+- **AWRA references:** recovered/reproduced as research references; final selector remains open.
+- **Production Gate/Plutus integration authorized by A-R1:** no.
+- **Changes to 500×, ProtectedCapital, V3, Reveal or deployment:** none authorized.
+
