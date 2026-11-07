@@ -505,3 +505,42 @@ With the only added compiler option `Plinth.Plugin:conservative-optimisation`:
 - V3 carrier and Reveal semantics were not changed.
 
 **Next step:** retain the canonical default compiler profile. Any further compiler experiment (for example, one separately isolated inline-growth/constant-inlining setting) needs its own explicitly bounded comparison and must retain the same baseline guard, exact source/toolchain/parameter provenance, changed script identity, full artifact and cleanup proof. Do not select a setting from a size result alone; any candidate that might fit must subsequently pass a separately authorized full semantic and CEK-cost conformance matrix before downstream identity rebinding is even considered.
+
+
+## 2026-11-07 — Agent B: Aiken V3 migration qualification becomes primary Cardano Prize path
+
+**Tracking issue:** [#48 — Aiken V3 PrizeValidator migration qualification](https://github.com/LiberoNuvola/Immortal-Protocol/issues/48).  
+**Readiness audit:** `docs/COORDINATION/AGENT-B-AIKEN-V3-MIGRATION-READINESS-AUDIT-2026-11-07.md`.  
+**Latest reviewed source head for the implementation update:** `d792d16304eea6441364a903bd5e399028ef1c1e`.  
+**Decision:** Aiken Plutus V3 is the primary migration candidate; Haskell V2 is frozen as canonical differential reference/fallback. Further Haskell compiler-size experiments are suspended after `conservative-optimisation` made the parameterized script 211 bytes larger. No production substitution is authorized.
+
+### Evidence baseline
+
+- Cardano Lab [#42340114425](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42340114425): Aiken Reveal, Aiken Pending EXPIRE and the existing V3 carrier passed on synthetic local Yaci fixtures. Haskell V2 Pending EXPIRE failed before signing/submission at reference-script publication: 16,540 bytes against the 16,384-byte maximum.
+- The Aiken package `poc/aiken-reveal-parity` is explicitly marked isolated prototype / not deployable; it is pinned to Aiken v1.1.22 and Plutus V3. Canonical Haskell PrizeValidator is Plutus V2. V2→V3 context, ledger-era, cost-model and transaction compatibility remain open.
+- Earlier Aiken Claim trace was skipped because the step inherited implicit `success()` after Haskell failure.
+- Aiken Prize dispatcher had no SyncBeacon branch; the catch-all rejects it. Aiken EXPIRE originally implemented Pending only, while Haskell also supports Revealed Loss and Revealed Win.
+
+### Agent B implementation update
+
+- `f36b3cbc1a8b05200a33339db0449ff98562f5c5`: Aiken Claim trace condition now uses `always() && steps.aiken-reveal-build.outcome == 'success'`.
+- `c85a424e54e605d9036c12bb717440a770503047`: added Aiken EXPIRE status-specific Pending and Revealed accounting predicates plus five unit tests.
+- `3d86dbf6334922af5ad4c126620ec25cc85585ad`: Cardano Lab now defines separate Aiken Pending, Revealed Loss and Revealed Win EXPIRE ledger traces.
+- `d792d16304eea6441364a903bd5e399028ef1c1e`: removed the common Pending-only liability equality so Revealed Win can release its frozen unpaid liability.
+- Readiness report published at the path above; Issue #48 records the acceptance gates and implementation commits.
+
+### Exact-head CI observation
+
+On `d792d16`, Cardano Integration Lab [#42367753185](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42367753185) and Aiken Reveal Parity [#42367753361](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42367753361) were in progress at the time of the audit. Adapter Sale Conformance, Aiken B1 PrizePool Claim Slice, IMMORTAL Portability Conformance and Algorithmic Governability completed successfully. Flux Point DoD Pilot and Documentation Link Check failed and are separate CI issues. **No PASS is claimed yet for the new Revealed EXPIRE branches or for the corrected Aiken Claim scheduling.**
+
+### Acceptance gates and boundaries
+
+1. Qualify pinned Aiken build and all three EXPIRE local-Yaci traces, including real B1PrizePool V2, exact accounting deltas and replay rejection.
+2. Demonstrate that the Claim trace runs after Haskell failure and pass positive/adversarial settlement, oracle identity/publisher/freshness and pool tests.
+3. Implement authenticated SyncBeacon Registry-reference-input handling and differential parity.
+4. Complete Haskell/Aiken differential decisions and state effects for all Prize actions, constructor/field encodings, datums and adversarial contexts.
+5. Qualify Plutus V3 on the intended Cardano target/network, including context, cost model, execution limits and complete transaction sizes.
+6. Rebind Prize/B1PrizePool hashes and every dependent policy/reference-script/address/adapter/DApp/deployment reference only after all prior gates pass.
+7. Local Yaci qualification precedes any separately approved Preprod plan.
+
+No change was made to the existing V3 carrier, Haskell source/compiler flags, Reveal economics, 500×, KA/KC/KD, datum/redeemer ABI, EEV/USDM authority or first-Issue admission gates. No wallet signing, Preprod/Mainnet action or deployment occurred. Aiken remains a migration candidate, not a production-qualified validator.
