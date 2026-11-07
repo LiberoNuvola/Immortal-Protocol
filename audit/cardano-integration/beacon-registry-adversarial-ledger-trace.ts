@@ -59,6 +59,8 @@ type DecodedRegistry = {
   status: number
   relayerPkh: string
   beaconValue: string
+  mcHash: string
+  materiosContext: string
 }
 
 const jsonReplacer = (_key: string, value: unknown) =>
@@ -122,6 +124,8 @@ function decodeRegistry(utxo: UTxO): DecodedRegistry {
     status: status.index,
     relayerPkh: asHex(datum.fields[6], 'brRelayerPkh'),
     beaconValue: asHex(datum.fields[3], 'brBeaconValue'),
+    mcHash: asHex(datum.fields[4], 'brMcHash'),
+    materiosContext: asHex(datum.fields[5], 'brMateriosContext'),
   }
 }
 
@@ -344,6 +348,55 @@ async function main(): Promise<void> {
     }
   }
 
+  // T01b: create a BeaconReady-shaped output with an ordinary wallet
+  // payment. This deliberately does not consume a Registry UTxO, attach the
+  // Registry validator, or establish any authenticated Registry provenance.
+  const directReadyDatum = registryDatum({
+    brRound: target.round,
+    targetRound: target.round,
+    mainchainRefHex,
+    versionHex,
+    status: 1,
+    beaconValueHex: beaconHex,
+    mcHashHex,
+    materiosContextHex: contextHex,
+    relayerPkh: otherRelayerPkh,
+  })
+  const directReadyTx = await lucid
+    .newTx()
+    .pay.ToContract(registryAddress, { kind: 'inline', value: Data.to(directReadyDatum) }, {
+      lovelace: STARTING_PENDING_LOVELACE,
+    })
+    .complete({ localUPLCEval: false })
+  const directReadySigned = await directReadyTx.sign.withWallet().complete({ localUPLCEval: false })
+  const directReadyTxCbor = directReadySigned.toCBOR()
+  const directReadyTxHash = await directReadySigned.submit()
+  await lucid.awaitTx(directReadyTxHash)
+
+  const directReadyOutputs = await waitFor(
+    () => lucid.utxosAt(registryAddress),
+    (utxos) => utxos.filter((utxo) => utxo.txHash === directReadyTxHash).length === 1,
+    'one directly injected BeaconReady-shaped Registry output',
+  )
+  const directReadyMatches = directReadyOutputs.filter((utxo) => utxo.txHash === directReadyTxHash)
+  if (directReadyMatches.length !== 1) {
+    throw new Error('direct Ready injection did not create exactly one Registry output')
+  }
+  const directReadyUtxo = directReadyMatches[0]
+  const directReadyDecoded = decodeRegistry(directReadyUtxo)
+  if (
+    directReadyDecoded.round !== BigInt(target.round) ||
+    directReadyDecoded.targetRound !== BigInt(target.round) ||
+    directReadyDecoded.status !== 1 ||
+    directReadyDecoded.relayerPkh !== otherRelayerPkh ||
+    directReadyDecoded.beaconValue !== beaconHex ||
+    directReadyDecoded.mcHash !== mcHashHex ||
+    directReadyDecoded.materiosContext !== contextHex ||
+    directReadyUtxo.assets.lovelace !== STARTING_PENDING_LOVELACE
+  ) {
+    throw new Error('direct Ready injection did not preserve the exact expected seven-field datum and Value')
+  }
+
   async function publish(
     pending: UTxO,
     brRound: number,
@@ -468,6 +521,22 @@ async function main(): Promise<void> {
       versionHex,
     },
     derivedBeaconHex: beaconHex,
+    directReadyInjection: {
+      txHash: directReadyTxHash,
+      txCbor: directReadyTxCbor,
+      outRef: directReadyUtxo.txHash + '#' + directReadyUtxo.outputIndex,
+      lovelace: (directReadyUtxo.assets.lovelace ?? 0n).toString(),
+      brRound: directReadyDecoded.round.toString(),
+      btRound: directReadyDecoded.targetRound.toString(),
+      status: directReadyDecoded.status,
+      beaconHex: directReadyDecoded.beaconValue,
+      mcHashHex: directReadyDecoded.mcHash,
+      materiosContextHex: directReadyDecoded.materiosContext,
+      relayerPkh: directReadyDecoded.relayerPkh,
+      registrySpendExecuted: false,
+      registryValidatorAttached: false,
+      classification: 'LOCAL_YACI_DIRECT_READY_INJECTION_ONLY',
+    },
     bootstrap: {
       txHash: bootstrapHash,
       txCbor: bootstrapCbor,
@@ -511,7 +580,7 @@ async function main(): Promise<void> {
       relayerPkh: duplicatePending.datum.relayerPkh,
       remainsUnspent: duplicateStillPending,
     },
-    limitation: 'This local Yaci trace uses a deterministic ephemeral test wallet and synthetic fixture bytes. It is not an authenticated Preprod Registry identity, external Materios proof, independent B3 verification, production deployment, or authorization to issue a ticket.',
+    limitation: 'This local Yaci trace uses a deterministic ephemeral test wallet and synthetic fixture bytes. The direct Ready output is permissionlessly injected and is not an authenticated Registry instance; this does not prove PrizeValidator accepts a fake Ready SyncBeacon transaction. It is not an authenticated Preprod Registry identity, external Materios proof, independent B3 verification, production deployment, or authorization to issue a ticket.',
   }
 
   writeFileSync(
