@@ -1,8 +1,9 @@
 use aiken/collection/list
+use aiken/primitive/bytearray
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
 use cardano/transaction
-use immortal/reveal_types.{BeaconPending, BeaconReady, BeaconRegistryDatum, Pending, PrizeDatum, B1PrizePoolDatum}
+use immortal/reveal_types.{BeaconPending, BeaconReady, BeaconRegistryDatum, BeaconTarget, Pending, PrizeDatum}
 
 // Resolve inline and hashed Registry/Prize datums; missing witnesses fail closed.
 fn datum_data(tx: transaction.Transaction, output: transaction.Output) -> Option<Data> {
@@ -13,7 +14,7 @@ fn datum_data(tx: transaction.Transaction, output: transaction.Output) -> Option
   }
 }
 
-fn same_target(a: immortal.reveal_types.BeaconTarget, b: immortal.reveal_types.BeaconTarget) -> Bool {
+fn same_target(a: BeaconTarget, b: immortal.reveal_types.BeaconTarget) -> Bool {
   a.network_id == b.network_id
     && a.round_id == b.round_id
     && a.mainchain_ref == b.mainchain_ref
