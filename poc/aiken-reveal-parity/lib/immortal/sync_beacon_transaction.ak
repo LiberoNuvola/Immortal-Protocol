@@ -14,7 +14,7 @@ fn datum_data(tx: transaction.Transaction, output: transaction.Output) -> Option
   }
 }
 
-fn same_target(a: BeaconTarget, b: immortal.reveal_types.BeaconTarget) -> Bool {
+fn same_target(a: BeaconTarget, b: BeaconTarget) -> Bool {
   a.network_id == b.network_id
     && a.round == b.round
     && a.mainchain_ref == b.mainchain_ref
@@ -159,8 +159,79 @@ pub fn sync_beacon_transaction_is_valid(
   }
 }
 
+fn sync_fixture_target() -> BeaconTarget {
+  BeaconTarget {
+    network_id: 0,
+    round: 42,
+    mainchain_ref: #"010203",
+    version: "v1",
+  }
+}
+
+fn sync_fixture_prize(beacon_status: immortal.reveal_types.BeaconStatus, beacon_value: ByteArray, mc_hash: ByteArray, context: ByteArray) -> PrizeDatum {
+  PrizeDatum {
+    ticket_policy: #"a1",
+    ticket_name: #"01",
+    player_commitment: #"02",
+    price_usdm: 100,
+    commitment: #"03",
+    game_version: "classic-6-v1",
+    ticket_nonce: 7,
+    prize_amount: 0,
+    payment_policy: #"04",
+    payment_name: #"05",
+    status: Pending,
+    result: #"",
+    prize_tier: 0,
+    beacon_target: sync_fixture_target(),
+    beacon_status,
+    beacon_value,
+    mc_hash,
+    materios_context: context,
+    prize_pool_hash: #"09",
+    issued_at: 1_000,
+    expires_at: 9_000,
+    row1_tier: 0,
+    row2_tier: 0,
+  }
+}
+
+fn sync_fixture_registry() -> BeaconRegistryDatum {
+  BeaconRegistryDatum {
+    round: 42,
+    target: sync_fixture_target(),
+    status: BeaconReady,
+    beacon_value: #"aabb",
+    mc_hash: #"ccdd",
+    materios_context: #"eeff",
+    relayer: #"010203",
+  }
+}
+
+test sync_accepts_exact_ready_registry_copy() {
+  sync_output_matches(
+    sync_fixture_prize(BeaconPending, #"", #"", #""),
+    sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff"),
+    sync_fixture_registry(),
+  )
+}
+
+test sync_rejects_changed_registry_beacon_value() {
+  !sync_output_matches(
+    sync_fixture_prize(BeaconPending, #"", #"", #""),
+    sync_fixture_prize(BeaconReady, #"aabc", #"ccdd", #"eeff"),
+    sync_fixture_registry(),
+  )
+}
+
+test sync_rejects_changed_ticket_identity() {
+  let input = sync_fixture_prize(BeaconPending, #"", #"", #"")
+  let output = PrizeDatum { ..sync_fixture_prize(BeaconReady, #"aabb", #"ccdd", #"eeff"), commitment: #"ff" }
+  !sync_output_matches(input, output, sync_fixture_registry())
+}
+
 test sync_target_requires_network_round_reference_and_version() {
-  let expected = immortal.reveal_types.BeaconTarget {
+  let expected = BeaconTarget {
     network_id: 0,
     round: 42,
     mainchain_ref: #"010203",
@@ -168,7 +239,7 @@ test sync_target_requires_network_round_reference_and_version() {
   }
   same_target(
     expected,
-    immortal.reveal_types.BeaconTarget {
+    BeaconTarget {
       network_id: 0,
       round: 42,
       mainchain_ref: #"010203",
@@ -177,7 +248,7 @@ test sync_target_requires_network_round_reference_and_version() {
   )
     && !same_target(
       expected,
-      immortal.reveal_types.BeaconTarget {
+      BeaconTarget {
         network_id: 0,
         round: 43,
         mainchain_ref: #"010203",
@@ -187,7 +258,7 @@ test sync_target_requires_network_round_reference_and_version() {
 }
 
 test sync_requires_ready_registry_with_nonempty_beacon_and_target() {
-  let target = immortal.reveal_types.BeaconTarget {
+  let target = BeaconTarget {
     network_id: 0,
     round: 42,
     mainchain_ref: #"010203",
@@ -203,7 +274,7 @@ test sync_requires_ready_registry_with_nonempty_beacon_and_target() {
     relayer: #"010203",
   }
   registry.status == BeaconReady
-    && registry.round == target.round_id
+    && registry.round == target.round
     && same_target(registry.target, target)
     && bytearray.length(registry.beacon_value) > 0
 }
