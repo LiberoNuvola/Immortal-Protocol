@@ -129,3 +129,20 @@ Exact-head evidence after the correction:
 - The prior parity run on `51dc659` failed because of the redundant wildcard; its log also confirms the Haskell fixture executable itself compiled and generated 13 Plutus Data fixtures and 11 Haskell V2 CEK outcomes. It did not complete the Aiken serialization/parity phase.
 
 The compiler correction is therefore verified by the independent Claim Slice workflow, while full schema serialization parity and native-Yaci transaction qualification remain open. The pure SyncBeacon tests are still not a substitute for a transaction-context/Yaci trace. Haskell production sources remain unchanged.
+
+## Follow-up — isolate Haskell EXPIRE diagnostics from Aiken/P2.8 CI (2026-11-07)
+
+**Workflow commit:** `32961d2efa22e1beef39498dc81220f06ef5f486`  
+**Changed path:** `.github/workflows/immortal-cardano-lab.yml`
+
+The exact-head Cardano Integration Lab run `#42369304644` showed that Aiken Pending / Revealed Loss / Revealed Win EXPIRE and the Aiken Prize + Haskell B1PrizePool Claim trace all completed successfully. The Haskell V2 Pending EXPIRE step failed during reference-script transaction construction: 16,540 CBOR bytes against the 16,384-byte Cardano transaction limit, before signing/submission. This is a pre-submission build/resource block, not a validator semantic rejection.
+
+The workflow was adjusted as follows:
+
+- All three Haskell V2 EXPIRE traces are `continue-on-error: true`; Pending, Revealed Loss and Revealed Win each have a stable step ID.
+- Their outcomes remain readable through `steps.<id>.outcome` and are registered as distinct JEV checks. A Haskell failure is therefore recorded as `failure`, not normalized to PASS.
+- The diagnostic Haskell lane no longer prevents downstream P2.8 context materialization, native UTxO decoder, ledger evidence, resource footprint and pure invariant steps from executing.
+
+**Verification status:** the workflow change is committed and read-back verified on `work/immortal-green-closure`. The push-triggered CI result for commit `32961d2` is pending at this audit update; no PASS is claimed for the corrected run.
+
+No Aiken source, Haskell validator, B1PrizePool, V3 carrier, Reveal semantics/economics, datum/redeemer ABI, 500×, KA/KC/KD, EEV/USDM authority, or deployment configuration was modified. No Preprod/Mainnet transaction or signing occurred.
