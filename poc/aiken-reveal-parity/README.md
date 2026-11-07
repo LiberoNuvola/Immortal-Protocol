@@ -231,3 +231,14 @@ Tracking and evidence:
 - [Agent B readiness audit](../../docs/COORDINATION/AGENT-B-AIKEN-V3-MIGRATION-READINESS-AUDIT-2026-11-07.md)
 
 The Haskell validator, existing V3 carrier, Reveal semantics, datum/redeemer ABI, 500× rule, KA/KC/KD and economic input authority remain unchanged. Haskell compiler-size optimization is frozen after the measured candidate increased script size by 211 bytes.
+
+
+## Latest compiler verification (2026-11-07)
+
+The Aiken dispatcher initially failed `aiken check` on `51dc659` because the match enumerated all four `PrizeAction` constructors and then also included a redundant wildcard `_ -> False`. The wildcard was removed in commit `eb6688d98e219f003d191b605da16dd9f963bd47`; no action semantics changed.
+
+- [Aiken B1 PrizePool Claim Slice #42369160897](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160897) passed on `eb6688d`, including the package `aiken check` and Plutus V3 `aiken build`.
+- [Aiken Reveal Parity #42369160948](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160948) was still setting up the canonical Plutus fixture toolchain at the latest observation; Haskell-generated schema/transition parity is not yet a PASS on this head.
+- [IMMORTAL Cardano Integration Lab #42369160963](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42369160963) was still setting up isolated lab dependencies/Plutus CI; no latest-head Yaci result for EXPIRE, Claim or SyncBeacon is claimed.
+
+The Claim Slice workflow is a source-check/build job, not a native-ledger Claim settlement. Its PASS must not be reported as a Yaci or production Claim PASS. The isolated package remains non-deployable pending the full parity, transaction-context, V2→V3 compatibility, cost-model, transaction-size and Prize/B1PrizePool rebinding gates.
