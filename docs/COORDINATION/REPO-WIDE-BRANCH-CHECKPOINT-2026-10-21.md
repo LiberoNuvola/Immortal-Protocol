@@ -473,3 +473,35 @@ No code, tests, workflows, economic constants, `500×`, `alpha_t`, `Z`, V3/Revea
 **Correction already committed:** `705121a4c4549c46769d238d05b41a7071ffc1db` — `fix(ci): use exported Lucid Evolution hash helper in size probe`. The only changed path is `.github/workflows/prizevalidator-conservative-optimization-experiment.yml`; the probe now imports the exported `validatorToScriptHash` helper from the already-installed `@lucid-evolution/lucid` package and calls it directly. This mirrors the repository's existing Lucid Evolution helper usage. No production source, Plutus compiler option, script artifact, V3, Reveal, ABI, economic rule or deployment path was changed.
 
 **Disposition:** diagnostic harness corrected; rerun result **PENDING / NOT YET VERIFIED**. On the rerun, first require the canonical baseline to reproduce the established factory/script byte lengths, digests and script hash before allowing the isolated candidate compile. Candidate size alone is not semantic, CEK-cost, publication-transaction or deployment qualification. Preserve the existing scope: diagnostics only; do not promote a changed script identity or touch V3/Reveal semantics.
+
+
+## 2026-11-07 — Agent B: conservative-optimisation candidate rejected on size
+
+**Successful corrected workflow:** [run #42359125101](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42359125101)  
+**Tested commit:** `705121a4c4549c46769d238d05b41a7071ffc1db`.  
+**Job:** `compile-size-comparison`, job `128363534196`; all steps 1–10 completed successfully, including the baseline guard, isolated candidate compile/measurement, cleanup and artifact upload.  
+**Evidence artifact:** [artifact #13570121555](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42359125101/artifacts/13570121555), SHA-256 `5cb12852aa14137f889b8129abf8645120da0f9046c768ad6b5a625544e1fee7`.
+
+### Exact result
+
+The canonical baseline reproduced every guard value before candidate compilation:
+- Fresh factory: **16,309 bytes**, SHA-256 `3c879feab921f4e39964baded675395c12bc20030c7843f2004017738aa37bf2`.
+- Parameterized PrizeValidator: **16,443 bytes**, SHA-256 `9fec0f8342f0d1e55196dc57677222f45925087b46d0b15ca7c9aee8a5cf7036`.
+- Baseline script hash: `508588a6ac5925b316b87f85adcc746808b4b29d2e13952184e7175b`.
+
+With the only added compiler option `Plinth.Plugin:conservative-optimisation`:
+- Candidate factory: **16,520 bytes**, SHA-256 `b24a7af259ec76d356b8cd8e51d8da0c5eaf8a7bdb8a5a9a064e6f651e2a49ab`.
+- Parameterized PrizeValidator: **16,654 bytes**, SHA-256 `709ed21d4489d62e4c1553055134864c60fd9454285c065261c2886625a34893`.
+- Candidate script hash: `54323dea3a02d4d6ccc0a7d3b9425af96607674452c0293c04b36ac4`.
+
+**Delta:** candidate is **211 bytes larger** than baseline (−211 bytes saved). Applying the prior measured 97-byte non-script publication-envelope remainder solely as a projection gives **16,751 bytes**, 367 bytes above the Cardano 16,384-byte transaction limit. The conditional script threshold remains 16,287 bytes for that exact prior envelope; the candidate is 367 bytes above that threshold. No candidate publication transaction was built, so 16,751 is a projection, not a measured transaction.
+
+### Disposition / boundary
+
+- `conservative-optimisation` is **REJECTED for the size-reduction objective**. Do not carry this candidate into production or substitute its script artifact.
+- The successful run establishes a compile-size comparison only. It does **not** establish CEK-cost equivalence, semantic equivalence, validator conformance, reference-script publication feasibility, Yaci behavior, Preprod readiness or deployment qualification.
+- Candidate script identity differs from baseline. No dependent B1PrizePool/MintPolicy re-binding, artifact replacement, transaction, signing, wallet action, Preprod/Mainnet action or deployment was performed.
+- The workflow's restore step passed. Haskell source, generated artifacts and temporary factory were restored; no production compiler pragma or Plutus artifact was committed.
+- V3 carrier and Reveal semantics were not changed.
+
+**Next step:** retain the canonical default compiler profile. Any further compiler experiment (for example, one separately isolated inline-growth/constant-inlining setting) needs its own explicitly bounded comparison and must retain the same baseline guard, exact source/toolchain/parameter provenance, changed script identity, full artifact and cleanup proof. Do not select a setting from a size result alone; any candidate that might fit must subsequently pass a separately authorized full semantic and CEK-cost conformance matrix before downstream identity rebinding is even considered.
