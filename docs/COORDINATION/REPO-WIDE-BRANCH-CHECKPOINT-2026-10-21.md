@@ -212,3 +212,73 @@ The workflow generated and validated the JEV verification registry and operation
 - **Shared branch:** no code commit is made by this update. This checkpoint is documentation-only; all execution evidence above is bound to `2f6c437f1f9956f5c99ec4bf2b03d1317fba9fd8`.
 
 No deployment, signing, wallet operation, privileged approval or on-chain Preprod/mainnet action was performed.
+
+## 2026-11-07 — Agent B EXPIRE size diagnosis complete; reference-script publication is the blocker
+
+**Diagnostics commit:** `9d51437b80ce046bf82ec8b9ab0279a2243c7882`  
+**Commit message:** `test(cardano): instrument EXPIRE transaction size stages`  
+**Scope:** exactly one changed path, `audit/cardano-integration/expire-ledger-trace.ts`; 1 commit / 1 path versus release HEAD `a26cfd5d6fa9fdefea7da6d5ff2cb7256ed308b9`.  
+**Cardano Lab:** [run #42340114425](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42340114425)  
+**Evidence:** artifact [#13561801023](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42340114425/artifacts/13561801023), SHA-256 `c11595ec538a848a81f1bfa400ccae4b2ec4e3476e9e94a22db4ea52db078311`.
+
+### Exact failure localization
+
+The diagnostic conclusively locates the Haskell V2 Pending EXPIRE failure at:
+
+`publish-prize-reference-script / complete()`
+
+- The original 16,540-byte error is preserved and rethrown by the diagnostic wrapper.
+- Failure occurs before signing or submission.
+- It is not a final EXPIRE spend build failure, validator rejection or ledger rejection.
+- Bootstrap fixture transaction passed: 876 bytes unsigned / 982 bytes signed.
+- Prize reference-script publication failed at 16,540 bytes.
+- B1PrizePool reference-script publication was not reached.
+- Final Haskell V2 EXPIRE spending transaction was not built.
+
+Parameterized script measurements in the Haskell V2 Pending path:
+- PrizeValidator, PlutusV2, hash `508588a6ac5925b316b87f85adcc746808b4b29d2e13952184e7175b`: **16,443 bytes**, 59 bytes above the 16,384-byte maximum.
+- B1PrizePool, PlutusV2, hash `1fba040c25320f744120b9c6aa8f126f505bd6246779a903ab30bde1`: **12,085 bytes**.
+- Full Prize reference-script publication candidate: **16,540 bytes**, 156 bytes above the maximum.
+
+Thus the immediate blocker is the size of the parameterized Haskell V2 PrizeValidator carried in its reference-script publication transaction. No code shrink, split, validator rewrite, compiler change or alternate deployment arrangement has been applied or authorized.
+
+### Aiken V3 control — separate implementation, not equivalence proof
+
+The isolated Aiken V3 Pending EXPIRE control on the same local devnet succeeded:
+- Aiken PrizeValidator: PlutusV3, 10,801 bytes.
+- Bound B1PrizePool: PlutusV2, 12,085 bytes.
+- Prize reference publication: 10,999 unsigned / 11,105 signed bytes.
+- Pool reference publication: 12,283 unsigned / 12,389 signed bytes.
+- Final EXPIRE spend: 706 unsigned / 812 signed bytes; ledger accepted and replay rejected.
+
+This is local fixture evidence only. It does not establish semantic equivalence with the canonical Haskell V2 validator or authorize switching the production path to Aiken V3.
+
+### Avoid a misleading cross-language diagnostic
+
+The separate Reveal trace emits a `parameterizationDifferential` of 10,801 vs 16,443 bytes. Source inspection shows this is **not** a same-validator/same-input comparison of two parameterization libraries: the 10,801-byte side is the selected Aiken V3 candidate, while the 16,443-byte side is the separately parameterized Haskell V2 factory. Do not infer a Lucid parameterization defect from that differential. The Haskell V2 size finding above comes from its own exact Expire step's script diagnostic.
+
+### Exact run step outcomes
+
+- Step 10 Plutus/Cabal conformance including B0 CEK: PASS.
+- Step 27 B0 BeaconRegistry Yaci characterization: PASS.
+- Steps 29–34 V3 carrier, Reveal, FundTreasury, T3 TicketIssued and Aiken V3 Expire: PASS as workflow steps. T3's negative-cause evidence caveat remains recorded above and in Issue #37.
+- Step 35 Haskell V2 Pending EXPIRE: FAIL, precisely localized above.
+- Steps 36–50 (Haskell V2 Revealed Loss/Win, Claim, P2.8, decoder, invariants and predeploy gates): SKIPPED.
+- Steps 52–61 evidence preservation, JEV registry/prompt, packet generation/upload and Notion registration: SUCCESS.
+
+Agent B returned the diagnostics write slot. The diagnostics change itself is harness-only and does not change validator semantics. The follow-on [Issue #45](https://github.com/LiberoNuvola/Immortal-Protocol/issues/45) requests a **read-only** size feasibility study; it grants no write slot.
+
+### Separate Preprod Context workflow failure
+
+The same SHA triggered [IMMORTAL Cardano Preprod Context run #42340114380](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42340114380), which failed at step 8, `Probe Demeter Ogmios Preprod context`, with `Ogmios RPC timeout: queryLedgerState/utxo`. Steps 9–13 (live wallet/PrizeValidator/B1 Pool UTxO observation and observation binding) were skipped. Demeter credential and wallet-address validation passed. This is an RPC availability failure, **not** evidence that a qualifying UTxO/source is absent. It yields no new live Preprod observation or Issue-admission qualification. Issue #37 remains OPEN.
+
+### Current coordination
+
+- B0 CEK and Yaci characterization results remain PASS at steps 10 and 27; B0 remains OPEN for T01b/T04 balanced Yaci twins, T07 worker behavior, T08 authenticated Preprod identity and independent security/owner disposition.
+- Haskell V2 EXPIRE is blocked before ledger execution because its parameterized PrizeValidator reference script cannot be published within the active transaction size limit.
+- T3 remains source-consistent with a 500× post-state rejection but runtime failure cause is not independently typed.
+- EEV/Option B source qualification, deployment approval, R1/Kc and first real Issue remain blocked.
+- No economic rule, 500×, ProtectedCapital, datum/redeemer ABI, validator semantics, compiler or workflow was changed by the diagnostics task.
+- No wallet signing, privileged approval, deployment or Preprod/mainnet ledger action was performed.
+
+**Next technical owner:** Agent B, read-only feasibility analysis in Issue #45. Agent A resumes documentation/coordination only; any implementation requires a new explicit, bounded authorization.
