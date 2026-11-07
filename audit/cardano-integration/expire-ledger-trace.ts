@@ -745,7 +745,7 @@ if (aikenExpireV3) {
     type: 'PlutusV3',
     script: evolutionApplyParamsToScript(
       matches[0].compiledCode,
-      [testPolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+      [scripts.registryHash, testPolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
     ),
   } as Script
   const aikenPrizeHash = validatorToScriptHash(aikenPrizeScript).toLowerCase()
