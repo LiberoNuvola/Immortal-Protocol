@@ -430,21 +430,27 @@ jobs:
           IMMORTAL_EXPIRE_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
-      # Run the Haskell V2 PrizeValidator + B1PrizePool expiry profile separately.
-      # These are synthetic post-state fixtures for the EXPIRE transition only;
-      # they do not claim an end-to-end Reveal transaction or production issuance.
+      # Haskell V2 remains a differential reference only. Keep all three
+      # diagnostic outcomes visible in JEV, but never let a Haskell build/resource
+      # failure suppress the Aiken Claim or the independent P2.8 evidence steps.
+      # These are synthetic post-state fixtures, not production issuance.
       - name: Execute Haskell V2 Pending EXPIRE ledger trace
         id: haskell_pending_expire
+        continue-on-error: true
         env:
           IMMORTAL_EXPIRE_CASE: "pending"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
       - name: Execute Haskell V2 Revealed Loss EXPIRE ledger trace
+        id: haskell_revealed_loss_expire
+        continue-on-error: true
         env:
           IMMORTAL_EXPIRE_CASE: "revealed-loss"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
       - name: Execute Haskell V2 Revealed Win EXPIRE ledger trace
+        id: haskell_revealed_win_expire
+        continue-on-error: true
         env:
           IMMORTAL_EXPIRE_CASE: "revealed-win"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
@@ -567,6 +573,8 @@ jobs:
           BEACON_REGISTRY_B0_YACI_OUTCOME: ${{ steps.beacon_registry_b0_yaci.outcome || 'unknown' }}
           REVEAL_OUTCOME: ${{ steps.jev_reveal.outcome || 'unknown' }}
           HASKELL_PENDING_EXPIRE_OUTCOME: ${{ steps.haskell_pending_expire.outcome || 'unknown' }}
+          HASKELL_REVEALED_LOSS_EXPIRE_OUTCOME: ${{ steps.haskell_revealed_loss_expire.outcome || 'unknown' }}
+          HASKELL_REVEALED_WIN_EXPIRE_OUTCOME: ${{ steps.haskell_revealed_win_expire.outcome || 'unknown' }}
           AIKEN_SETUP_OUTCOME: ${{ steps.aiken-setup.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-reveal-build.outcome || 'unknown' }}
           AIKEN_PUBLICATION_OUTCOME: ${{ steps.aiken_ref_publish.outcome || 'unknown' }}
@@ -649,6 +657,28 @@ jobs:
               evidenceRefs,
               limitations: [
                 'This FAIL records the workflow step outcome only; it is not itself a typed Plutus ValidationFailure or a native ledger rejection.',
+                'A transaction-size or fee failure during construction, before submission, is a pre-submission build/resource block and must not be interpreted as validator semantic failure.',
+                'Inspect the linked step log to identify the actual cause; this check does not infer it from the exit code.',
+              ],
+            },
+            {
+              checkId: 'P2.8.HASKELL_V2.REVEALED_LOSS_EXPIRE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute Haskell V2 Revealed Loss EXPIRE ledger trace',
+              stepOutcome: outcome(process.env.HASKELL_REVEALED_LOSS_EXPIRE_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This is a differential-reference diagnostic step, not a production transaction.',
+                'A transaction-size or fee failure during construction, before submission, is a pre-submission build/resource block and must not be interpreted as validator semantic failure.',
+                'Inspect the linked step log to identify the actual cause; this check does not infer it from the exit code.',
+              ],
+            },
+            {
+              checkId: 'P2.8.HASKELL_V2.REVEALED_WIN_EXPIRE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute Haskell V2 Revealed Win EXPIRE ledger trace',
+              stepOutcome: outcome(process.env.HASKELL_REVEALED_WIN_EXPIRE_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This is a differential-reference diagnostic step, not a production transaction.',
                 'A transaction-size or fee failure during construction, before submission, is a pre-submission build/resource block and must not be interpreted as validator semantic failure.',
                 'Inspect the linked step log to identify the actual cause; this check does not infer it from the exit code.',
               ],
