@@ -16,7 +16,7 @@ fn datum_data(tx: transaction.Transaction, output: transaction.Output) -> Option
 
 fn same_target(a: BeaconTarget, b: immortal.reveal_types.BeaconTarget) -> Bool {
   a.network_id == b.network_id
-    && a.round_id == b.round_id
+    && a.round == b.round
     && a.mainchain_ref == b.mainchain_ref
     && a.version == b.version
 }
@@ -107,7 +107,7 @@ fn sync_output_matches(
     && input.status == Pending
     && input.beacon_status == BeaconPending
     && registry.status == BeaconReady
-    && registry.round == input.beacon_target.round_id
+    && registry.round == input.beacon_target.round
     && same_target(registry.target, input.beacon_target)
     && bytearray.length(registry.beacon_value) > 0
     && output.status == Pending
@@ -162,7 +162,7 @@ pub fn sync_beacon_transaction_is_valid(
 test sync_target_requires_network_round_reference_and_version() {
   let expected = immortal.reveal_types.BeaconTarget {
     network_id: 0,
-    round_id: 42,
+    round: 42,
     mainchain_ref: #"010203",
     version: "v1",
   }
@@ -170,7 +170,7 @@ test sync_target_requires_network_round_reference_and_version() {
     expected,
     immortal.reveal_types.BeaconTarget {
       network_id: 0,
-      round_id: 42,
+      round: 42,
       mainchain_ref: #"010203",
       version: "v1",
     },
@@ -179,7 +179,7 @@ test sync_target_requires_network_round_reference_and_version() {
       expected,
       immortal.reveal_types.BeaconTarget {
         network_id: 0,
-        round_id: 43,
+        round: 43,
         mainchain_ref: #"010203",
         version: "v1",
       },
@@ -189,7 +189,7 @@ test sync_target_requires_network_round_reference_and_version() {
 test sync_requires_ready_registry_with_nonempty_beacon_and_target() {
   let target = immortal.reveal_types.BeaconTarget {
     network_id: 0,
-    round_id: 42,
+    round: 42,
     mainchain_ref: #"010203",
     version: "v1",
   }
