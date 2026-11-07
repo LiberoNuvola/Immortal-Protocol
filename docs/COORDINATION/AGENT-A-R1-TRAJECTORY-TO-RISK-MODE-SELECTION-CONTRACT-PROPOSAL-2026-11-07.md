@@ -236,3 +236,72 @@ These are the explicit decisions still needed; this proposal does not answer the
 | Arb Agent D3 → Scratch & Win reuse | NOT AUTHORIZED |
 
 **No code or policy was changed.** This proposal does not close R1/Kc/QNE, does not create a non-eroding witness, does not modify 500×, ProtectedCapital, V3, Reveal, EEV, deployment or Issue authorization. All current bridge negative behavior remains the correct fail-closed disposition pending the decisions above.
+
+
+## 12. Recovered D3 clarification — permanent safety floor vs adaptive operating intensity
+
+A historical design note recovered from the project Library, **D3 — Economic Engine for Agents** (2 November 2026), makes an important distinction that must remain explicit in this R1 proposal. That note is classified as **design / non-normative relative to the current repository**. It is a recovered application design candidate, not an adopted IMMORTAL or PRE-RICH Game policy.
+
+### 12.1 The two layers are complementary, not interchangeable
+
+**Layer A — deterministic worst-case floor (permanent safety boundary).**
+
+No candidate action is admissible if its post-state violates the applicable ProtectedCapital, safe-action, or certified-Ω/viability requirements. A statistical signal, adaptive budget, operating class, or quiescent label cannot relax this floor.
+
+**Layer B — adaptive operating intensity (discretionary capacity above the floor).**
+
+Only after protected obligations and viability are accounted for may an application policy regulate the size/intensity of new exposure from genuine residual capacity. The recovered D3 sketch uses:
+
+```
+S_res(t) = max(0, EEV(t) - PC(t) - L_dedicated(t))
+B_t      = alpha_t(S_res(t), class_t, stats_t) * S_res(t)
+0 <= alpha_t <= 1
+Notional <= min(B_t, RiskEnvelope)
+```
+
+These are the historical D3 design expressions, not a newly adopted formula for the IMMORTAL kernel. In particular:
+- `S_res` is an operating-capacity view for the Agent's own capital/mandate perimeter; it is not automatically `RawSurplus`, a new ProtectedCapital bucket, or a PRE-RICH Game PrizePool balance.
+- `B_t` is a discretionary exposure budget, not a guarantee, a liability reserve, or permission to breach `A_safe`, `Ω`, the Economic Gate, or the deterministic floor.
+- `alpha_t`, its inputs/estimator, the RiskEnvelope, the horizon, and all transition thresholds remain unselected and non-normative until the relevant profile authority approves them.
+- Statistical information may inform adaptive intensity only through a declared, evidenced profile policy. It cannot certify its own evidence, enlarge the safe action set, or offset mandatory deterministic obligations.
+
+### 12.2 Operating regime and Quiescence candidate
+
+The recovered D3 design proposes the following Agent operating classes:
+
+| Class | Candidate operating capability |
+|---|---|
+| C0 | Observe / withdraw |
+| C1 | Micro size, one leg |
+| C2 | Standard size, two legs |
+| C3 | Expanded operation, only in a healthy regime |
+
+Upgrades/downgrades are proposed to use separate high/low thresholds (hysteresis) to avoid regime thrashing. No numerical thresholds or automatic mapping from `RiskMode` to C0–C3 are recovered as adopted policy.
+
+The historical Quiescence candidate allows no new exposure, permits reduction/closure of existing positions, and permits withdrawal of uncommitted capital subject to the mandate and obligations. Candidate triggers recorded in D3 include stale oracle evidence, low market depth, drawdown, mandate revocation, `alpha_t -> 0`, or incomplete evidence. These are candidate application triggers, not a currently authorized universal IMMORTAL state transition.
+
+### 12.3 Open exposure, harvestability, and ownership perimeter
+
+D3 also records three constraints that must not be lost when this design is reconsidered:
+- A multi-leg open position retains its bounded worst-loss obligation until the leg closes or expires; open exposure is not released merely because one leg has unrealized gains.
+- Unrealized gains are not harvestable surplus.
+- The recovered per-principal expression is `Harvestable_u = max(0, Equity_u - PC_u - OpenBound_u)`; the Pool analogue is assessed at Pool level and attributed through explicit shares.
+
+The design distinguishes **Solo** (segregated principal, PnL and risk envelope for each user) from **Pool** (explicit collective principal, NAV/share and pro-rata gain/loss). It rejects silent netting between Solo users and rejects access by the Agent to PRE-RICH Game PrizePool, Jackpot, or Treasury without a separately authorized principal.
+
+### 12.4 Relationship to RiskMode — do not collapse the two selectors
+
+The architecture therefore contains two separate questions:
+
+1. **RiskMode / R1:** for the exact candidate economic trajectory and profile, which risk-analysis mechanisms are required (deterministic, statistical, or both), and what typed evidence/constraints must reach ProtectionRequirement and the Economic Gate?
+2. **D3 operating regime:** after all mandatory protection and viability constraints hold, what level of discretionary operating intensity is available to this Agent (C0–C3, or Quiescence), under its own mandate, residual-capacity calculation and RiskEnvelope?
+
+RiskMode is not the C0–C3 class selector. C0–C3 is not a risk-analysis mode. Quiescence is not evidence that Ω is certified. A transition to a less intensive class or Quiescence cannot repair an already unsafe state retroactively; it only constrains future actions and permits the explicitly safe reduction/closure actions.
+
+### 12.5 Application boundary and disposition
+
+This D3 material belongs to the **PRE-RICH Arb Agent** candidate, not to the PRE-RICH Scratch & Win Game. Its Principal, liabilities, open exposures, EEV/valuation perimeter, RiskEnvelope, Solo/Pool accounting, and operational classes must remain separate from the Game's PrizePool, Jackpot, ticket exposure, and application policy.
+
+The transferable IMMORTAL-level concepts are limited to the semantic boundaries already supported by the Canonical Economic Register: liability/protection-first accounting, residual capacity only after protection, safe-action/viability filtering, evidence provenance, atomic transition, and no authority expansion by an adaptive selector. The numeric and application-specific D3 mechanics remain non-normative.
+
+**Status:** historical D3 two-layer design recovered and cross-referenced; no D3 selector, `alpha_t`, C0–C3 transition policy, RiskEnvelope, Solo/Pool accounting implementation, statistical reserve, or Game integration is authorized by this clarification. The deterministic safety floor remains non-substitutable.
