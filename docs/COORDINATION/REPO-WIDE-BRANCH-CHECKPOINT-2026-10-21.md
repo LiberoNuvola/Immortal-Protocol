@@ -977,3 +977,30 @@ No code, ABI, workflow, tests, CI, wallet, transaction, deployment, token identi
 3. Only after M1/M2, request an explicit governance decision on the Mithril stake-threshold trust model and the canonical entity/asset/snapshot rules.
 
 No production code, test, workflow, CI, wallet, transaction, deployment, PRE identity, voting rule, trust root or ledger state changed or was executed. The Factory STT remains a uniqueness candidate, not an implementation-ready trustless opener. Issue #43 remains release-blocking; Issue #37 first-ticket gates remain independent.
+
+## 2026-11-08 — Agent B: M1 signer-local PRE UTxO index and Mithril test contract
+
+**Research/prototype contract:** [AGENT-B-M1-PRE-SNAPSHOT-INDEXER-AND-MITHRIL-CERTIFICATION-TEST-PLAN-2026-11-08.md](AGENT-B-M1-PRE-SNAPSHOT-INDEXER-AND-MITHRIL-CERTIFICATION-TEST-PLAN-2026-11-08.md)  
+**Baseline HEAD:** `1070bb001bfed0ce21101668c7560cc65e2c7354`  
+**Artifact commit:** `1070bb001bfed0ce21101668c7560cc65e2c7354`  
+**Artifact blob:** `95d847bd8d59bcbe58011afa6a3b689c11c97a82`  
+**Classification:** DESIGN / PROTOTYPE TEST CONTRACT — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY.
+
+### Findings
+
+- The active branch contains no Mithril custom module, PRE snapshot indexer, Mithril Plutus verifier or M1 tests.
+- Governance.hs still models EntityId as Integer; snapshotValid checks structural properties only (timestamp, positive weight and unique entity IDs), not Cardano credential authenticity, ledger-balance truth or denominator completeness.
+- The Cardano API exposes QueryUTxOWhole with O(n) time and O(n) space. Repeated whole-ledger scans at every proposal are not accepted as the production design without strong measurement.
+- LocalStateQuery has explicit chain-point acquisition constraints; it is not an unlimited historical UTxO query. A signer that starts late cannot assume it can query an old voting-start point on demand.
+- The candidate M1 architecture is a signer-local incremental PRE UTxO index fed by each signer's own Node-to-Client full-block stream, with exact point binding, rollback/undo handling and no remote authoritative holder-list API.
+- M1 must compare full-history replay against one-time whole-UTxO bootstrap plus incremental tracking, reproduce identical canonical messages across independent signers, exercise splits/scripts/mint/burn/forks/rollback, then create and verify a real custom-module certificate in an isolated Mithril test network.
+- A private test network does not qualify the production Mithril signer population. Custom certification requires deployment across signers (the majority of registered SPOs), aggregators and clients.
+- The experiment uses raw address bytes as a **test-only** leaf identity. It does not choose the production GOV EntityId mapping, PRE asset identity, eligibility, exclusions or voting-start block-selection rule.
+
+### Next gates
+
+1. M1-A/B: deterministic indexer, independent replicas, full-state reference parity and rollback/adversarial tests.
+2. M1-C/D: real test custom-module certificate + official-client verification and resource/operations measurements.
+3. M2: verify a real recursive certificate proof in minimal Plutus V3 and measure actual CEK/memory/transaction envelope before any protocol decision.
+
+No code, tests, workflows, CI runs, Mithril network, certificate, wallet action, transaction, Preprod/Mainnet query, governance rule or ledger state was changed or executed. V3, Reveal, Issue #37, Issue #43 and Issue #49 remain separate and untouched.
