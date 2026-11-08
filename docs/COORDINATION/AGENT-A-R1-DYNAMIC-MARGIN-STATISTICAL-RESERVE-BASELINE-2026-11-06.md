@@ -437,7 +437,7 @@ The remembered “passaggio tra modelli in base allo stato” has now been locat
 
 Before implementation, the protocol authority must define the state/trajectory classifier, the exact conditions for each mode, the invariant hard floor, the semantics of `StatisticalOnly`, the dependence and evidence contract for statistical measures, any versioned combination rule, and the typed path into Admission/Gate.
 
-Under the recovered two-layer invariant, `StatisticalOnly` cannot mean permission to discard deterministic protection. It must either mean a statistical criterion applied while the deterministic floor remains independently enforced, or remain unsupported.
+Where the applicable profile makes a deterministic floor mandatory for the candidate trajectory, `StatisticalOnly` cannot suppress that floor: it may at most require a statistical criterion in addition, otherwise it remains unsupported. For current PRE-RICH V1 Issue, the 500× unresolved-ticket WCE is mandatory and remains binding. A future application profile could select a statistical payout criterion for a trajectory only through an explicit authority decision that changes that trajectory's payout-risk guarantee; it could not claim the current 500× pathwise coverage, and it would still have to preserve universal IMMORTAL invariants, known liabilities, any other mandatory deterministic floors, Economic Gate and Ω/viability. The Arb Agent D3 always-on floor is a separate application design and does not decide the PRE-RICH Game profile.
 
 Full source review and file/blob references: [Agent B R1 RiskMode and Regime-Control Audit](AGENT-B-R1-RISK-MODE-AND-REGIME-CONTROL-AUDIT-2026-11-07.md).
 
