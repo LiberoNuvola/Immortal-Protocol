@@ -151,16 +151,33 @@ function targetMintQuantity(mintValue, asset, field) {
   return quantity
 }
 
+function indexMap(state) {
+  return new Map(state.utxos.map(entry => [
+    entry.key,
+    Object.freeze({ addressHex: entry.addressHex, quantity: entry.quantity })
+  ]))
+}
+
+function immutableIndexEntries(utxos) {
+  return Object.freeze([...utxos.entries()]
+    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .map(([key, output]) => Object.freeze({
+      key,
+      addressHex: output.addressHex,
+      quantity: output.quantity
+    })))
+}
+
 function cloneIndexState(state, utxos, currentPoint, history) {
-  return {
+  return Object.freeze({
     schemaVersion: state.schemaVersion,
     networkId: state.networkId,
     asset: state.asset,
     anchorPoint: state.anchorPoint,
     currentPoint,
-    utxos,
-    history
-  }
+    utxos: immutableIndexEntries(utxos),
+    history: Object.freeze([...history])
+  })
 }
 
 /**
@@ -186,15 +203,12 @@ export function createPreSnapshotIndex({ networkId, asset, anchorPoint, utxos = 
     map.set(ref.key, tracked)
   }
 
-  return {
+  return cloneIndexState({
     schemaVersion: PRE_SNAPSHOT_INDEX_SCHEMA_VERSION,
     networkId: normalizedNetwork,
     asset: normalizedAsset,
-    anchorPoint: point,
-    currentPoint: point,
-    utxos: map,
-    history: []
-  }
+    anchorPoint: point
+  }, map, point, [])
 }
 
 /**
@@ -221,19 +235,19 @@ export function applyPreSnapshotBlock(state, blockValue) {
   const point = normalizePoint(blockValue.point, 'block.point')
   const parentPoint = normalizePoint(blockValue.parentPoint, 'block.parentPoint')
   if (!samePoint(parentPoint, state.currentPoint)) fail('BLOCK_PARENT_MISMATCH')
-  if (point.blockNo <= state.currentPoint.blockNo || point.slot < state.currentPoint.slot) {
-    fail('NON_MONOTONIC_BLOCK_POINT')
+  if (point.blockNo !== state.currentPoint.blockNo + 1 || point.slot <= state.currentPoint.slot) {
+    fail('BLOCK_SEQUENCE_MISMATCH')
   }
 
   const transactions = requiredArray(blockValue.transactions, 'block.transactions')
-  const utxos = new Map(state.utxos)
+  const utxos = indexMap(state)
   const created = []
   const createdSet = new Set()
   const spent = []
   const consumedInBlock = new Set()
   const seenTransactions = new Set()
   let validMint = 0n
-  const before = totalQuantity(state.utxos)
+  const before = totalQuantity(utxos)
 
   for (let txIndex = 0; txIndex < transactions.length; txIndex += 1) {
     const tx = requiredObject(transactions[txIndex], \`block.transactions[\${txIndex}]\`)
@@ -327,7 +341,7 @@ export function rollbackPreSnapshotIndex(state, targetValue) {
     state.history.some(entry => samePoint(entry.point, target))
   if (!known) fail('ROLLBACK_POINT_NOT_RETAINED')
 
-  const utxos = new Map(state.utxos)
+  const utxos = indexMap(state)
   const history = [...state.history]
   let currentPoint = state.currentPoint
 
@@ -411,7 +425,7 @@ function merkleSumRoot(leaves) {
 export function buildPreSnapshotMessage(state) {
   requiredObject(state, 'state')
   const balances = new Map()
-  for (const output of state.utxos.values()) {
+  for (const output of state.utxos) {
     balances.set(
       output.addressHex,
       (balances.get(output.addressHex) ?? 0n) + BigInt(output.quantity)
@@ -452,19 +466,13 @@ export function buildPreSnapshotMessage(state) {
 
 export function inspectPreSnapshotIndex(state) {
   requiredObject(state, 'state')
-  const entries = [...state.utxos.entries()]
-    .map(([key, output]) => Object.freeze({
-      key,
-      addressHex: output.addressHex,
-      quantity: output.quantity
-    }))
-    .sort((left, right) => left.key < right.key ? -1 : left.key > right.key ? 1 : 0)
+  const entries = state.utxos
   return Object.freeze({
     schemaVersion: state.schemaVersion,
     networkId: state.networkId,
     currentPoint: state.currentPoint,
     utxoCount: entries.length,
-    totalQuantity: totalQuantity(state.utxos).toString(),
+    totalQuantity: entries.reduce((sum, entry) => sum + BigInt(entry.quantity), 0n).toString(),
     entries: Object.freeze(entries)
   })
 }
