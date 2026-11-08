@@ -6,6 +6,7 @@
     "ws": "8.18.3"
   },
   "scripts": {
-    "preprod:wallet": "node preprod-wallet-utxo.mjs"
+    "preprod:wallet": "node preprod-wallet-utxo.mjs",
+    "test:pre-snapshot-index": "node --test preSnapshotUtxoIndex.test.mjs"
   }
 }
