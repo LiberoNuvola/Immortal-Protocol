@@ -818,3 +818,25 @@ At hypothetical 4,000 USDM of actual eligible Pool capital, V1 remains limited t
 **Authority choices:** S-OBSERVE (non-binding measurement), S-GATE (separate criterion with V1 floor retained), S-COHORT (new probabilistic guarantee) or S-HYBRID (qualified deterministic backstop plus statistical criterion). No option, Z/ε, horizon or admission predicate is selected by this work.
 
 No code, test, workflow, branch topology, V1 constant, V3/Reveal semantics, datum/redeemer ABI, wallet, deployment or ledger state changed. No CI run was started.
+
+## 2026-11-08 — Agent B: statistical Issue decision binding contract
+
+**Proposal:** [AGENT-B-R1-STATISTICAL-ISSUE-BINDING-CONTRACT-PROPOSAL-2026-11-08.md](AGENT-B-R1-STATISTICAL-ISSUE-BINDING-CONTRACT-PROPOSAL-2026-11-08.md)  
+**Baseline reviewed:** \`d67997372c9605910167f06f2cf67bc89c7a8215\`  
+**Proposal commit:** \`71d0faf4af6fe4ad4bc12fa6a680cd1b0af5f894\`  
+**Classification:** non-normative technical contract; no implementation authority.
+
+The contract binds a future RiskDecision to the exact Issue action and state transition, a complete pre-outcome cohort, the exact B1 Pool snapshot and non-overlapping capital perimeter, the game/Beacon randomness evidence, the model/policy version and a reproducible integer calculation.
+
+### Agent B findings recorded
+
+- Current PRE-RICH V1 and B1 independently preserve the deterministic 500× floor; a statistical certificate alone cannot increase current V1 capacity.
+- The current RiskProtectionBridge remains deterministic-only and is not wired into PreRichEconomicAdmission.
+- The current V3 Carrier has a configured Ed25519 authority-signature dependency; BeaconRegistry relies on a configured relayer signature and does not independently verify the external Materios receipt. The current path therefore cannot be described as fully permissionless/trustless.
+- The B1 effectivePool accounting value is Oracle-valued; direct physical tUSDM, executable settlement liquidity and the B1 accounting predicate must not be conflated.
+- The current Pool datum does not commit a complete cohort membership root, epoch freeze or disjoint capital tranches. A Merkle root alone does not prove membership completeness.
+- The static Cantelli candidate remains conditional on valid ticket marginals, a pre-outcome freeze, qualified Beacon evidence, a non-overlapping capital budget and no unmodeled Pool-draining outflow.
+
+**Next gates:** policy authority decision; Beacon/randomness qualification; authenticated Pool capital and C_other disjointness; permissionless append/freeze state machine; removal or explicit governance of configured signer/relayer dependencies; exact-integer reference/property tests and Plutus/transaction resource benchmarks.
+
+No production code, test, workflow, RiskMode, V1 500×, V3/Reveal, datum/redeemer ABI, oracle, wallet, deployment or ledger state was changed or run by this proposal.
