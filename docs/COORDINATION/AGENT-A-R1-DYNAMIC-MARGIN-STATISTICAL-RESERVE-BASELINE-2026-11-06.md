@@ -487,7 +487,7 @@ D3 is explicitly the **PRE-RICH Arb Agent** design with a separate Solo/Pool man
 
 ### 13.2 Where the new Cantelli result belongs
 
-The dependence-robust Cantelli predicate in the companion audit is a candidate **Statistical Risk Analysis** for one frozen, pre-outcome set of Pending tickets across all Beacon rounds sharing one B1 PrizePool. It is not:
+The dependence-robust Cantelli predicate in the companion audit is a candidate **Statistical Risk Analysis** for one frozen, pre-outcome set of Pending tickets enrolled across one or more Beacon rounds sharing one B1 PrizePool. Every included round must still be BeaconPending at the common freeze boundary; membership is then closed before the first included outcome becomes available. It is not:
 
 - the deterministic WCE;
 - a ProtectedCapital or ReserveProtection component;
@@ -495,7 +495,7 @@ The dependence-robust Cantelli predicate in the companion audit is a candidate *
 - a per-round limit that can be repeated against the same Pool;
 - an unconditional rolling test for future Issues after ticket outcomes become available.
 
-It supplies a candidate statistical constraint for a precisely defined population, horizon, tail ceiling and profile version. Its use would require the authority to freeze at least the PMF/profile version, pre-outcome cohort membership, aggregate shared-Pool perimeter, global ε, Beacon/randomness assumptions, conditional-information boundary, exact integer precision and evidence provenance. The same global ε and the same Pool capital cannot be restarted independently for each round or Issue.
+It supplies a candidate statistical constraint for a precisely defined population, horizon, tail ceiling and profile version. Its use would require the authority to freeze at least the PMF/profile version, the complete pre-outcome membership across included BeaconPending rounds, membership closure, aggregate shared-Pool perimeter, global ε, Beacon/randomness assumptions, conditional-information boundary, exact integer precision and evidence provenance. Pending tickets from a round already BeaconReady at a later epoch boundary are not fresh unconditional draws: they must remain covered by their original epoch / separately allocated capital or by a valid conditional-moment proof. Any new epoch's E must exclude capital already committed to those older epochs; the current B1 datum has no explicit epoch/capital-tranche fields. The same global ε and the same Pool capital cannot be restarted independently for each round or Issue.
 
 The previously documented Nμ + Zσ√N expression and the new Cantelli bound are two different statistical constructions. They must not be merged, treated as equivalent, or selected opportunistically from whichever yields a larger ticket count. The authority must choose a declared statistical criterion and version for a particular trajectory.
 
@@ -504,7 +504,7 @@ The previously documented Nμ + Zσ√N expression and the new Cantelli bound ar
 At the same hypothetical C=4,000 USDM initial shared B1 pre-Reveal EffectivePool:
 
 - **Current V1 deterministic floor:** 500× WCE permits 8 Genesis tickets.
-- **Research-only Cantelli candidate:** a single frozen multi-round set gives total aggregate ceilings 18 / 42 / 59 at global ε=0.1% / 0.5% / 1.0%, under the stated common marginal and pre-outcome assumptions.
+- **Research-only Cantelli candidate:** one frozen set enrolled across multiple BeaconPending rounds before any included outcome is available gives total aggregate ceilings 18 / 42 / 59 at global ε=0.1% / 0.5% / 1.0%, under the stated common marginal assumptions. These are total ceilings for that one sealed set, not quotas for later rounds or epochs.
 
 The second row is **not an increase available while retaining the same 500× pathwise WCE for every unresolved ticket**. If both constraints are required for the same exposure, the deterministic WCE remains binding and the statistical condition cannot raise the admissible count above it. Reaching a larger probabilistic capacity would require a separate, explicit PRE-RICH Game profile decision about whether the payout trajectory is governed by a statistical tail guarantee instead of the current per-ticket 500× deterministic reservation, while all other mandatory IMMORTAL invariants and known liabilities remain protected. Such a profile would offer a probabilistic guarantee, **not** the current unconditional 500× solvency guarantee. No such decision has been made.
 
@@ -536,6 +536,6 @@ The current interfaces do not yet carry this complete contract. RiskProtectionBr
 ### 13.6 Disposition
 
 - The remembered state/trajectory-dependent model selection corresponds to the typed RiskMode architecture; the remembered dynamic/intensity behavior is a separate second axis.
-- Static, pre-outcome, multi-round Cantelli aggregation is now mathematically recorded as a candidate statistical assessment.
+- Static, pre-outcome, multi-round Cantelli aggregation is mathematically recorded for one sealed set whose included rounds are BeaconPending at freeze; the current Pool datum does not implement epoch membership or ring-fenced capital.
 - Dynamic adaptive Issue after outcomes are knowable, the PRE-RICH Game-specific intensity model, global lifetime ε, exact capital qualification, Beacon qualification, typed Gate integration and authority decisions remain open.
 - Current V1 deterministic 500×, ProtectedCapital, V3/Reveal, RiskProtectionBridge fail-closed behavior, QNE/R1 and first-Issue blockers remain unchanged.
