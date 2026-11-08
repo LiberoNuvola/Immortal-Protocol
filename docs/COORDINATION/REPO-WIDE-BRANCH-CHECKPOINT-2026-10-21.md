@@ -797,3 +797,24 @@ The static proof and two-axis conceptual reconciliation are research/documentati
 Derive one unique required-analysis set from authenticated profile, pre-state, action, candidate post-state and trajectory evidence. Caller-supplied mode is rejected. Missing/ambiguous policy predicates or missing required model/proof fail closed. Any automatic state-based mode change is profile/version-bound, replay-safe and applies only to new commitments; existing ticket terms remain immutable. Universal invariants, known liabilities, mandatory deterministic floors and Ω viability remain mandatory.
 
 **Authority decisions still OPEN:** Issue statistical role; selected statistical construction and parameters; state/regime predicates and hysteresis; lifetime ε/epoch/capital allocation; proof format/resource bound; and any new Game-specific probabilistic guarantee. No code/tests, 500×, RiskProtectionBridge, V3/Reveal, QNE/R1 or deployment semantics changed.
+
+## 2026-11-08 — Agent A: PRE-RICH Sale statistical-reserve decision packet
+
+**Detail:** [Trajectory-to-RiskMode proposal §12](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md#12-pre-rich-sale-statistical-reserve-decision-packet).
+
+### Source reconciliation
+
+- PRE-RICH Economic Algorithm explicitly includes “evaluate statistical reserve” in the Sale sequence. Game Economy §4 defines the reference Classic-6 statistic N × μ + Z × σ × sqrt(N), with Z a deployment/model parameter, and says it does not replace deterministic worst-case protection.
+- The canonical Economic Register keeps deterministic and statistical risk as distinct trajectory-dependent mechanisms and does not approve a universal additive formula or automatic replacement rule. The Sale sources still do not decide whether the statistical output is monitoring-only or a binding second criterion.
+- Three state quantities are separate: B1/V3 face-price reserve ΣPᵢ; V1 deterministic WCE = 500 × ΣPᵢ; statistical payout-risk assessment. The generic ReserveProtection field has no proven mapping to the Classic-6 statistic.
+- B1 TicketIssued records face price; B1LegacyAdapter / PRE-RICH V3 projection derive 500× separately. EconomicGate and current PreRichEconomicAdmission do not consume a statistical assessment. RiskProtectionBridge remains deterministic-only, rejects statistical/combined modes and is not wired into admission.
+
+### Current disposition
+
+V1's 500× hard floor remains unchanged. The statistical Sale evaluation is an explicit source-to-implementation/specification gap: Z, mixed-price cohort aggregation, horizon/confidence, cross-ticket/Beacon dependence, capital comparator and binding effect are unresolved. Do not infer report-only, do not invent a reserve addend, and do not claim D+S production conformance.
+
+At hypothetical 4,000 USDM of actual eligible Pool capital, V1 remains limited to 8 Genesis tickets. Cantelli research figures 18 / 42 / 59 at global ε of 0.1% / 0.5% / 1% are a distinct sealed-cohort sensitivity and cannot lift capacity while the same 500× pathwise guarantee remains mandatory. Increased capacity requires a separately approved probabilistic or hybrid profile for new commitments; existing tickets remain immutable.
+
+**Authority choices:** S-OBSERVE (non-binding measurement), S-GATE (separate criterion with V1 floor retained), S-COHORT (new probabilistic guarantee) or S-HYBRID (qualified deterministic backstop plus statistical criterion). No option, Z/ε, horizon or admission predicate is selected by this work.
+
+No code, test, workflow, branch topology, V1 constant, V3/Reveal semantics, datum/redeemer ABI, wallet, deployment or ledger state changed. No CI run was started.
