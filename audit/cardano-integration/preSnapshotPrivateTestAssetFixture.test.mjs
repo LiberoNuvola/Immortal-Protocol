@@ -51,7 +51,7 @@ test('keeps every private fixture submission marker parseable at recovery bounda
 
   for (const marker of markers) {
     const serialized = serializeFixtureSubmissionMarker(marker)
-    assert.ok(serialized.endsWith('\\n'))
+    assert.equal(serialized.charCodeAt(serialized.length - 1), 10)
     assert.deepEqual(JSON.parse(serialized), marker)
   }
 })
