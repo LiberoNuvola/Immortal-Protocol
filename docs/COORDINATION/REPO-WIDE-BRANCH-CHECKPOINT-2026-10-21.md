@@ -1126,3 +1126,38 @@ No production governance rules, PRE asset identity, GOV entity mapping, voting e
 **Test status:** 25 tests authored; none executed. No local Cardano node, Ogmios endpoint, Kupo, private testnet or Mithril network was started. The Byron Base58 path converts address bytes but does not yet validate the full Byron CBOR envelope/checksum; this remains an explicit pre-production parser hardening item. No durable DB/cursor journal or crash recovery yet.
 
 **Qualification:** source code / static repository verification only. M1-A live ingestion, ledger conformance and resource benchmarks remain OPEN; M1-C/M2 remain NOT STARTED. The previous erroneous `inputSource` checkpoint statement has been corrected in the current status. No production protocol, V3, Reveal, GOV rules, Issue #37, Issue #43 or Issue #49 semantics changed.
+
+
+## 2026-11-08 — Agent B: persistent PRE snapshot WAL and restart/reorg recovery
+
+**Source:** `audit/cardano-integration/preSnapshotJournal.mjs`  
+**Tests:** `audit/cardano-integration/preSnapshotJournal.test.mjs`  
+**Integrated factory:** `createPersistentOgmiosV7ChainSyncClient({ journal, url, ...options })`  
+**Test commands:** `npm run test:pre-snapshot-journal`; combined `npm run test:pre-snapshot-index`.
+
+### WAL behavior
+
+- Bootstrap manifest binds network, exact PRE test asset, anchor point and initial UTxO rows with a SHA-256 digest; manifest is written to a temporary file, fsynced and atomically renamed.
+- Append-only `journal.ndjson` stores normalized full-block and rollback events. Sequence number + previous-record hash + record digest form a hash chain.
+- Each append is fsynced before reducer state/cursor changes. The cursor is derived from replayed state; no separate cursor file can drift away from the WAL.
+- Startup verifies manifest, record sequence, previous-hash chain, record digest and every reducer transition. Only an incomplete final fragment without a newline is truncated and fsynced; a complete malformed record, bad digest or invalid transition fails closed.
+- Single writer lock records PID and hostname. A provably dead PID on the same host is reclaimed under an exclusive reaper lock. Live, foreign-host and unverifiable locks are not removed. A stale reaper file left by a crash during lock reclamation needs manual inspection.
+- Queued operations serialize; block/rollback inputs are detached from caller mutation; close drains queued writes and rejects new ones.
+- WAL-backed ChainSync handlers commit forward and rollback callbacks before returning. On reconnect, a findIntersection earlier than the current local cursor is recorded as a WAL rollback before any further nextBlock request. The persistent client factory combines those callbacks with the v7 ChainSync client.
+
+### Test and qualification status
+
+- WAL test suite: 11 cases authored (reopen/replay, rollback and alternate branch across restart, torn-tail recovery, complete-record corruption, fail-closed invalid block, single-writer lock, callback commits, stale lock recovery, foreign lock, factory construction, queued writes/close race).
+- Total M1-A test inventory: **36 authored (12 reducer + 13 Ogmios adapter/client + 11 WAL); none executed**. Sparse checkout was attempted for execution, but this environment could not resolve `github.com`. Remote source re-reading is static verification only and is not test execution.
+- The isolated integration package adds `test:pre-snapshot-journal`; combined command `test:pre-snapshot-index` includes all three suites.
+
+### Known limits
+
+- Bootstrap UTxO manifest is one JSON payload; no large-state streaming/chunking.
+- Full normalized blocks remain in the WAL, replay starts at bootstrap on every restart, and the full undo history remains in memory. No compaction, checkpoint snapshots, retention policy, pruning or journal rotation. Resource growth is unmeasured.
+- SHA-256 hashes detect accidental corruption/torn records but are not signatures and do not prevent an administrator rewriting the whole store.
+- Single-writer/local-filesystem target; no shared network filesystem qualification.
+- On Windows, Node directory-entry fsync is skipped; file contents are fsynced. Linux/macOS attempt directory fsync.
+- Stale/unverifiable reaper lock files need manual recovery; Byron CBOR/checksum validation remains open.
+
+**Status:** persistent reducer + Ogmios v7 adapter/client + local WAL/replay and automatic intersection rollback = CODE PRESENT. Tests written/not run. Live two-node Cardano ledger conformance and resource measurements remain OPEN. M1-C Mithril certificate integration and M2 Plutus verification remain NOT STARTED. No production governance, PRE identity/eligibility, V3, Reveal, B1 EEV, Issue #37, Issue #43 or Issue #49 semantics changed.
