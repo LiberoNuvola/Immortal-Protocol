@@ -27,7 +27,7 @@ function hashFileBytes(value) {
 
 function pathIsInside(parent, child) {
   const rel = relative(parent, child)
-  return rel !== '' && rel !== '..' && !rel.startsWith('..' + sep) && !resolve(rel).startsWith(sep)
+  return rel !== '' && rel !== '..' && !rel.startsWith('..' + sep)
 }
 
 /**
@@ -295,6 +295,19 @@ async function loadPrepared(config) {
       manifest.assetUnit !== manifest.policyId + '.' + manifest.tokenNameHex) {
     fail('M1_FIXTURE_PREPARED_MANIFEST_MISMATCH')
   }
+  const expectedFiles = {
+    walletSigningKey: config.walletSigningKey,
+    walletVerificationKey: config.walletVerificationKey,
+    policySigningKey: join(config.workDirectory, 'policy.skey'),
+    policyVerificationKey: join(config.workDirectory, 'policy.vkey'),
+    policyScript: join(config.workDirectory, 'policy.json'),
+    unsignedBody: join(config.workDirectory, 'mint.body')
+  }
+  for (const [name, expectedPath] of Object.entries(expectedFiles)) {
+    if (resolve(manifest.files?.[name] ?? '') !== resolve(expectedPath)) {
+      fail('M1_FIXTURE_PREPARED_FILE_PATH_MISMATCH:' + name)
+    }
+  }
   const bodyPath = manifest.files?.unsignedBody
   if (typeof bodyPath !== 'string' || resolve(bodyPath) !== resolve(config.workDirectory, 'mint.body')) {
     fail('M1_FIXTURE_UNSIGNED_BODY_PATH_MISMATCH')
@@ -320,6 +333,13 @@ async function submit(config) {
     )
   }
   const manifest = await loadPrepared(config)
+  const submittedPath = join(config.workDirectory, 'submitted.json')
+  try {
+    await stat(submittedPath)
+    fail('M1_FIXTURE_ALREADY_SUBMITTED', 'This prepared fixture has already been submitted; do not replay it.')
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
   const signedTx = join(config.workDirectory, 'mint.signed')
   cli(config, [
     'latest', 'transaction', 'sign',
