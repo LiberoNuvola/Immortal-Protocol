@@ -2,7 +2,6 @@ import {
   open,
   mkdir,
   readFile,
-  writeFile,
   rename,
   unlink,
   truncate,
@@ -211,6 +210,12 @@ async function replayJournal(path, initialState) {
   if (bytes.length > 0 && finalNewline !== bytes.length - 1) {
     const safeLength = finalNewline + 1
     await truncate(path, safeLength)
+    const journalHandle = await open(path, 'r+')
+    try {
+      await journalHandle.sync()
+    } finally {
+      await journalHandle.close()
+    }
     bytes = bytes.subarray(0, safeLength)
   }
 
