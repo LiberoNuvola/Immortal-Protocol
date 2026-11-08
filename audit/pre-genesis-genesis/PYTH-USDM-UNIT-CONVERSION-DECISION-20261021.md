@@ -1027,3 +1027,24 @@ Required work order:
 **Disposition:** CURRENT ORACLE SCHEMA = MULTI-ASSET / SINGLE-QUOTE-PER-ASSET; CURRENT CONSUMERS = ONE CONFIGURED ORACLE STATE + ONE CONFIGURED PUBLISHER; MULTI-PROVIDER SAME-ASSET VERIFICATION = NOT IMPLEMENTED; PREPROD USD/USDM SOURCE = NOT QUALIFIED; OPTION B = SELECTED APPROACH, NOT A QUALIFIED DATA PATH; FIRST REAL ISSUE = BLOCKED.
 
 No provider was selected, no external feed/on-chain datum was refreshed, no custom feed was requested, no quorum or threshold was invented, and no schema, code, tests, workflow, approval, wallet, transaction, deployment or ledger state was changed by this audit.
+### 47.6 Publisher identity field versus proof of publisher authorization
+
+A further source-level boundary is necessary before this path can be described as cryptographically authenticated or trustless:
+
+- In `Economic.oraclePriceFor`, the consumer checks that `oqPublisher quote == configuredPublisher`, that the singleton token quantity is exactly one in the same reference input, and that timestamp/price pass the local guards. The function does not itself verify a signature from that publisher, invoke a provider-specific signed-update verifier, or bind the reference input's payment credential to a qualified source validator/address.
+- In `PRE-RICH/onchain/GenesisRegimeCarrier.hs` (blob `276b09deace4475853320356375a12f9ee5f1d60`), `findSingleOracleReference` likewise checks singleton quantity, quote publisher equality, freshness and non-negative price. It does not itself verify a publisher signature or the source update contract. The carrier datum stores the expected publisher, and the continuing transition preserves it, but this is not a substitute for proof that the Oracle State value was created/updated under that publisher's authorized source mechanism.
+- Therefore the datum's publisher key is a **claimed identity that the consumer matches to configuration**. Its authenticity depends on the upstream source contract/policy and update path that protect the singleton state. A singleton NFT authenticates an asset/state-container identity only to the extent its minting and continuing-state rules are qualified; token presence by itself does not prove that the quote's numeric content was signed or honestly sourced.
+
+This is not proof that every external provider lacks an authenticated update mechanism. It is a precise limit of the current consumer code: EV1 must identify the exact provider verification predicate and its ledger witness; EV2 must show that the exact `oqPrice`, asset identity, timestamp and publisher are derived from that authenticated witness. The current repository sources examined in §47 do not supply that end-to-end binding for a multi-provider USD/USDM price packet.
+
+### 47.7 Consequence for permissionless / trustless design
+
+The target must not turn a quote publisher into a trusted application signer or allow a backend to assert that a source was verified. Instead:
+
+1. Every provider observation needs either an on-chain-verifiable signature/update proof or a source-contract state transition whose validator/policy cryptographically enforces publisher authorization and quote-field integrity.
+2. The evidence packet must bind the exact provider/feed identity, network, asset pair/direction, raw price/exponent, timestamp, confidence (where applicable), and immutable source-state reference/digest. A bare `oqPublisher` string/key hash copied into a datum is insufficient proof.
+3. The consumer must verify the proof against the provider's pinned identity or a governed source-set verifier. A publisher's own self-asserted field cannot authorize itself.
+4. Anyone should be able to assemble and submit the proof-carrying transaction; the validator, not an exclusive relayer or API, determines admissibility. An updater may be permissioned at the provider layer, but the protocol must verify that layer's actual signature/contract rule and explicitly disclose the trust assumption.
+5. A provider-set change, signer rotation, policy/validator upgrade or source failure must be versioned and fail closed. It must not silently fall back to an old singleton quote or a weaker source.
+
+**Additional qualification gate:** recover and pin the actual Preprod Oracle State singleton's minting policy, holding/update address, validator or credential path, update transaction and authorized publisher proof. Demonstrate that a malformed datum, publisher-field substitution, unsigned price change, stale update and replayed provider statement cannot become an accepted quote. Until this evidence is produced, classify the current publisher match as a consumer-side identity check, not a complete independent proof of publisher authorization.
