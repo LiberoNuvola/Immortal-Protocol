@@ -294,6 +294,7 @@ test('ChainSync client serializes requests and waits for index commit before req
           return
         }
         if (request.method === 'nextBlock') {
+          assert.equal(Object.prototype.hasOwnProperty.call(request, 'params'), false)
           this.emit('message', Buffer.from(JSON.stringify({
             jsonrpc: '2.0',
             method: 'nextBlock',
