@@ -8,8 +8,9 @@
   },
   "scripts": {
     "preprod:wallet": "node preprod-wallet-utxo.mjs",
-    "test:pre-snapshot-index": "node --test preSnapshotUtxoIndex.test.mjs ogmiosV7PreSnapshotAdapter.test.mjs preSnapshotJournal.test.mjs",
+    "test:pre-snapshot-index": "node --test preSnapshotUtxoIndex.test.mjs ogmiosV7PreSnapshotAdapter.test.mjs preSnapshotJournal.test.mjs preSnapshotReplicaConformance.test.mjs",
     "test:ogmios-v7-adapter": "node --test ogmiosV7PreSnapshotAdapter.test.mjs",
-    "test:pre-snapshot-journal": "node --test preSnapshotJournal.test.mjs"
+    "test:pre-snapshot-journal": "node --test preSnapshotJournal.test.mjs",
+    "test:pre-snapshot-replicas": "node --test preSnapshotReplicaConformance.test.mjs"
   }
 }
