@@ -31,13 +31,13 @@ const utxo = (txId, index, addressHex, quantity, unit = asset) => ({
 })
 const tx = ({
   id,
-  validity = 'valid',
+  spends = 'inputs',
   inputs = [],
   collaterals = [],
   outputs = [],
   collateralReturn = null,
   mint = []
-}) => ({ id, validity, inputs, collaterals, outputs, collateralReturn, mint })
+}) => ({ id, spends, inputs, collaterals, outputs, collateralReturn, mint })
 const block = (previous, current, transactions) => ({
   parentPoint: previous,
   point: current,
@@ -69,7 +69,7 @@ test('bootstrap filters exact policy/name and aggregates balances by raw address
 
 test('valid transfer and split outputs preserve total and aggregate same-address UTxOs', () => {
   const initial = bootstrap([utxo('10'.repeat(32), 0, '01aa', 100)])
-  const next = point(1, 1, '11')
+  const next = point(1, 0, '11')
   const state = applyPreSnapshotBlock(initial, block(origin, next, [
     tx({
       id: '20'.repeat(32),
@@ -92,7 +92,7 @@ test('valid transfer and split outputs preserve total and aggregate same-address
 
 test('valid mint and burn reconcile exactly with UTxO total delta', () => {
   const initial = bootstrap([utxo('30'.repeat(32), 0, '01aa', 100)])
-  const mintedPoint = point(1, 1, '31')
+  const mintedPoint = point(1, 0, '31')
   const minted = applyPreSnapshotBlock(initial, block(origin, mintedPoint, [
     tx({
       id: '32'.repeat(32),
@@ -103,7 +103,7 @@ test('valid mint and burn reconcile exactly with UTxO total delta', () => {
   ]))
   assert.equal(inspectPreSnapshotIndex(minted).totalQuantity, '105')
 
-  const burnedPoint = point(2, 2, '33')
+  const burnedPoint = point(2, 1, '33')
   const burned = applyPreSnapshotBlock(minted, block(mintedPoint, burnedPoint, [
     tx({
       id: '34'.repeat(32),
@@ -120,11 +120,11 @@ test('phase-2-invalid transaction consumes collateral only and creates collatera
     utxo('40'.repeat(32), 0, '01aa', 100),
     utxo('41'.repeat(32), 0, '02bb', 40)
   ])
-  const next = point(1, 1, '42')
+  const next = point(1, 0, '42')
   const state = applyPreSnapshotBlock(initial, block(origin, next, [
     tx({
       id: '43'.repeat(32),
-      validity: 'invalid',
+      spends: 'collaterals',
       inputs: [ref('40'.repeat(32), 0)],
       collaterals: [ref('41'.repeat(32), 0)],
       outputs: [output('03cc', 777)],
@@ -141,7 +141,7 @@ test('phase-2-invalid transaction consumes collateral only and creates collatera
 
 test('within-block chained transactions rollback without resurrecting transient UTxOs', () => {
   const initial = bootstrap([utxo('50'.repeat(32), 0, '01aa', 100)])
-  const next = point(1, 1, '51')
+  const next = point(1, 0, '51')
   const chained = applyPreSnapshotBlock(initial, block(origin, next, [
     tx({
       id: '52'.repeat(32),
@@ -161,9 +161,9 @@ test('within-block chained transactions rollback without resurrecting transient 
 
 test('rollback and alternative fork match a clean replay of the selected branch', () => {
   const initial = bootstrap([utxo('60'.repeat(32), 0, '01aa', 100)])
-  const p1 = point(1, 1, '61')
-  const p2a = point(2, 2, '62')
-  const p2b = point(3, 2, '63')
+  const p1 = point(1, 0, '61')
+  const p2a = point(2, 1, '62')
+  const p2b = point(3, 1, '63')
 
   const after1 = applyPreSnapshotBlock(initial, block(origin, p1, [
     tx({
@@ -200,7 +200,7 @@ test('rollback and alternative fork match a clean replay of the selected branch'
 
 test('a mismatch in mint conservation fails atomically', () => {
   const initial = bootstrap([utxo('70'.repeat(32), 0, '01aa', 100)])
-  const next = point(1, 1, '71')
+  const next = point(1, 0, '71')
   assert.throws(() => applyPreSnapshotBlock(initial, block(origin, next, [
     tx({
       id: '72'.repeat(32),
@@ -214,7 +214,7 @@ test('a mismatch in mint conservation fails atomically', () => {
 
 test('duplicate block inputs and duplicate bootstrap UTxOs fail closed', () => {
   const initial = bootstrap([utxo('80'.repeat(32), 0, '01aa', 100)])
-  const next = point(1, 1, '81')
+  const next = point(1, 0, '81')
   assert.throws(() => applyPreSnapshotBlock(initial, block(origin, next, [
     tx({ id: '82'.repeat(32), inputs: [ref('80'.repeat(32), 0)], outputs: [] }),
     tx({ id: '83'.repeat(32), inputs: [ref('80'.repeat(32), 0)], outputs: [] })
@@ -227,10 +227,10 @@ test('duplicate block inputs and duplicate bootstrap UTxOs fail closed', () => {
 
 test('unknown validity, wrong parent, unknown rollback point and malformed asset fail closed', () => {
   const initial = bootstrap([utxo('90'.repeat(32), 0, '01aa', 100)])
-  const next = point(1, 1, '91')
+  const next = point(1, 0, '91')
   assert.throws(() => applyPreSnapshotBlock(initial, block(origin, next, [
-    tx({ id: '92'.repeat(32), validity: undefined, outputs: [] })
-  ])), /UNKNOWN_TRANSACTION_VALIDITY/)
+    tx({ id: '92'.repeat(32), spends: undefined, outputs: [] })
+  ])), /UNKNOWN_TRANSACTION_SPENDS/)
   assert.throws(() => applyPreSnapshotBlock(initial, block(point(0, 0, '93'), next, [])), /BLOCK_PARENT_MISMATCH/)
   assert.throws(() => rollbackPreSnapshotIndex(initial, point(9, 9, '94')), /ROLLBACK_POINT_NOT_RETAINED/)
   assert.throws(() => applyPreSnapshotBlock(initial, block(origin, point(2, 2, '96'), [])), /BLOCK_SEQUENCE_MISMATCH/)
