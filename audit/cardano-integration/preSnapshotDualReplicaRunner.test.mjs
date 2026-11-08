@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { resolve } from 'node:path'
 
 import {
+  isPreSnapshotRemoteTipAtOrAfterTarget,
   validatePreSnapshotDualReplicaConfig
 } from './preSnapshotDualReplicaRunner.mjs'
 
@@ -83,4 +84,16 @@ test('rejects invalid timeout and missing replica entry', () => {
   const missingReplica = config()
   missingReplica.replicas.pop()
   assert.throws(() => validatePreSnapshotDualReplicaConfig(missingReplica), /DUAL_REPLICA_EXACTLY_TWO_REPLICAS_REQUIRED/)
+})
+
+test('requires each connected remote tip to reach the externally fixed target', () => {
+  assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget({
+    id: 'aa'.repeat(32), slot: 120, height: 30
+  }, target), true)
+  assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget({
+    id: 'aa'.repeat(32), slot: 90, height: 20
+  }, target), false)
+  assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget('origin', origin), true)
+  assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget('origin', target), false)
+  assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget(null, target), false)
 })
