@@ -340,3 +340,40 @@ Package commands:
 - `npm run test:ogmios-v7-adapter`
 
 No local repository checkout/dependency installation was available for executing these tests. Static GitHub content verification is not a substitute for Node test execution or a live Ogmios/Cardano-node test.
+
+
+## 15. Persistent WAL, crash recovery and ChainSync integration
+
+**WAL source:** `audit/cardano-integration/preSnapshotJournal.mjs`  
+**WAL tests:** `audit/cardano-integration/preSnapshotJournal.test.mjs`  
+**Factory:** `createPersistentOgmiosV7ChainSyncClient({ journal, url, ...options })`  
+**Commands:** `npm run test:pre-snapshot-journal` / `npm run test:pre-snapshot-index`.
+
+### Implemented
+
+- Dedicated `manifest.json` stores the bootstrap network, asset, anchor point and initial test UTxOs with a SHA-256 digest. Manifest is written through a temporary file, fsynced and atomically renamed.
+- `journal.ndjson` records every normalized block and every rollback as a sequence-numbered event chained to the previous record hash. Each append is fsynced before the in-memory index and cursor advance.
+- The current cursor is derived from replayed reducer state; there is no separately updated cursor file that could disagree with the event log.
+- Reopen verifies the manifest, record sequence, previous-hash chain, record digest and reducer transition. A final incomplete line without newline is truncated and the truncation fsynced; a malformed complete line, invalid digest or replay inconsistency fails closed.
+- Single-writer `writer.lock` records PID and hostname. A local stale PID can be reclaimed under a short exclusive reaper lock; a live, foreign-host or unverifiable lock is not removed. A stale reaper file after a process dies during lock recovery still needs manual inspection.
+- Block and rollback operations are serialized. Inputs are detached from caller objects before queueing; close drains already-queued writes and rejects new writes. The state is exposed as the reducer's immutable representation.
+- `createPersistentOgmiosIndexHandlers` binds forward and rollback callbacks to the WAL. On reconnect, `onIntersection` automatically journals a rollback when the remote common point is earlier than the local cursor, before ChainSync requests the next block.
+- `createPersistentOgmiosV7ChainSyncClient` combines the WAL-backed handlers with the Ogmios v7 client. An optional user observer for intersection is called only after the WAL rollback has committed.
+
+### Tests and exact status
+
+The WAL suite contains 11 authored cases: event replay across restart, rollback/alternate branch persistence, incomplete-tail recovery, complete-record corruption, failed transition non-commit, single-writer rejection, forward/rollback callbacks, stale PID lock recovery, foreign-host lock rejection, persistent-client factory construction and queued-write/close ordering.
+
+**Total across M1-A so far: 36 tests authored (12 reducer + 13 Ogmios + 11 WAL); 0 executed.** A local sparse checkout was attempted for test execution but the execution environment could not resolve `github.com`. GitHub source files were re-read remotely; that static review is not a test run.
+
+### Deliberate limitations — not production qualified
+
+- The bootstrap manifest stores the initial UTxO set as one JSON payload; large-scale memory/disk and recovery performance are not measured.
+- The event log stores normalized full blocks and replays from the anchor on every restart. No snapshot compaction, pruning, bounded undo retention or journal rotation is implemented. Disk, CPU and memory grow with chain history.
+- The hash chain/digests detect accidental corruption and torn writes; they are **not authenticated signatures** and do not stop an administrator able to rewrite the entire manifest and journal.
+- It is single-writer and intended for a local signer process / dedicated local directory, not a shared network filesystem.
+- On Windows, Node does not provide a portable directory-handle fsync here; journal/manifest file contents are fsynced, but directory-entry fsync is skipped. Linux/macOS attempt directory sync.
+- Manual recovery is required for an unverifiable lock or orphaned reaper lock. Do not auto-delete those files.
+- No live Cardano node, Ogmios endpoint, Kupo, private testnet, Mithril network, benchmark or resource test was run. Byron Base58 CBOR/checksum validation remains open.
+
+**M1-A status:** reducer + Ogmios v7 adapter + reconnecting client + local WAL/replay and ChainSync rollback callback = CODE PRESENT; tests authored/not run; live two-node ledger conformance and resource qualification = OPEN. M1-C and M2 remain NOT STARTED.
