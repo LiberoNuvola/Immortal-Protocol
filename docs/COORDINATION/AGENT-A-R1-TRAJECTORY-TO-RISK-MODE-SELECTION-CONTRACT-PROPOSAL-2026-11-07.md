@@ -537,3 +537,67 @@ The following are not derivable from the resolver mechanics and must be explicit
 7. The separate PRE-RICH Arb Agent policy/mandate authority, if its D3 intensity design is ever implemented.
 
 **Disposition:** the resolver's structure and applicability boundaries are now explicit; the binding PRE-RICH statistical sale role, statistical model, state predicates, thresholds, epoch/global-budget state and on-chain verifier remain OPEN. No selector or mode switch is implemented by this proposal.
+
+## 12. PRE-RICH Sale statistical-reserve decision packet
+
+### 12.1 Source reconciliation — evaluation is explicit; admission semantics are not
+
+The current source hierarchy can be reconciled without inventing a new rule:
+
+1. PRE-RICH/docs/ECONOMIC-ALGORITHM.md places “evaluate statistical reserve” explicitly in the Sale sequence, after deterministic-exposure evaluation and before the safety-floor, locked-Jackpot and active-class checks. The integrative PRE-RICH complete specification repeats that order.
+2. PRE-RICH/docs/GAME-ECONOMY.md §4 defines the Classic-6 reference statistic as N × μ + Z × σ × sqrt(N), identifies Z as a deployment/model parameter, and states that this statistical model does not replace deterministic worst-case protection.
+3. The IMMORTAL Economic Canon & Parameter Boundary Register keeps Worst-Case and Statistical Risk as distinct, trajectory-dependent mechanisms. It rejects a universal additive formula and rejects an automatic rule that one always replaces the other. The generic hardened economic kernel supplies the viability/safety semantics; it does not choose PRE-RICH's Z or a Game-specific Sale criterion.
+
+These statements are compatible, but incomplete as an executable Sale rule. The algorithm names a required analytical stage; the current PRE-RICH sources do not say whether its result is informational, a separate pass/fail predicate, or an input to another versioned policy. They also do not specify the capital balance against which it is tested. Do not infer “report-only” from silence, and do not infer “binding reserve addend” from the word “reserve”.
+
+### 12.2 Four quantities that must remain distinct
+
+| Quantity | Current meaning | Current source/state boundary |
+|---|---|---|
+| Face-price accounting reserve | Sum of the prices of unresolved tickets, ΣPᵢ. | B1 ppUnresolvedReserve; V3 unresolvedReserve. It tracks the ticket-price reservation, not payout risk. |
+| Deterministic worst-case exposure | 500 × ΣPᵢ for the current PRE-RICH V1 profile. | Derived separately from the face reserve by the V1 profile/kernel; mandatory for current unresolved-ticket exposure. |
+| Statistical payout-risk assessment | Classic-6 model output, currently written as N × μ + Z × σ × sqrt(N). | A model result with an unselected Z and incomplete population, horizon, dependence and acceptance semantics. It is not the B1 face-reserve field. |
+| ReserveProtection | A separately represented generic ProtectedCapital component. | No current evidence maps it to the Classic-6 statistic or proves its source, perimeter and non-overlap. It must not be repurposed by implication. |
+
+The source-level implementation agrees with this separation:
+
+- B1 TicketIssued increments ppUnresolvedReserve by the exact ticket price and increments unresolved count; ppTotalLiquidity is unchanged. B1 solvency derives the 500× exposure separately.
+- B1LegacyAdapter maps the legacy face reserve into the universal state and independently derives WCE using the profile multiplier.
+- PreRichEconomicProjection derives class face reserve, count and 500× exposure separately; it carries V3 ReserveProtection as its own field rather than calculating it from the statistical formula.
+- EconomicGate currently evaluates EEV/freshness/obligation completeness/immediate liquidity and the deterministic solvency predicate. It has no statistical assessment input.
+
+References: [Economic Algorithm](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/docs/ECONOMIC-ALGORITHM.md), [Game Economy](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/docs/GAME-ECONOMY.md), [B1 PrizePool](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/plutus/B1PrizePool.hs), [B1 legacy projection](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/plutus/B1LegacyAdapter.hs), [PRE-RICH V3 projection](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/PRE-RICH/onchain/PreRichEconomicProjection.hs), [Economic Gate](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/IMMORTAL/kernel/EconomicGate.hs).
+
+### 12.3 What is not yet numerically or semantically qualified
+
+- Z has no approved active value. Historical Z candidates are not current deployment parameters.
+- The Game formula uses N and moments normalized to a 1-USDM ticket, while the sale ladder spans 1–100 USDM. The current sources do not freeze a class/price-weighted cohort formula for mixed ticket prices.
+- Independence is explicitly described between the two rows of one ticket. That does not, by itself, prove independence between tickets, rounds, cohorts or adversarially selected Reveal histories.
+- The statistical horizon, event being bounded, confidence/tail criterion, global lifetime risk budget, treatment of tickets in BeaconReady rounds and first-passage behaviour are not frozen by the Sale algorithm.
+- No approved comparison predicate says whether the statistic is compared with physical Pool capital, EffectivePool, a separately ring-fenced tranche or another state-derived budget.
+- No approved field/proof contract carries the model, cohort, horizon, confidence, capital perimeter and evidence into ProtectionRequirement / EconomicGate.
+
+Consequently the current implementation is deterministic-only. RiskProtectionBridge accepts DeterministicWorstCaseOnly and rejects StatisticalOnly and DeterministicAndStatistical; it is not wired into PreRichEconomicAdmission. The current profile fixes the 500 multiplier. This is a source-to-implementation/specification gap, not evidence that statistical mode is active or that a statistical result has already been funded.
+
+### 12.4 Decision paths reserved to specification authority
+
+| Candidate disposition | Effect on current V1 | Additional authority decisions required |
+|---|---|---|
+| S-OBSERVE — calculate and publish the statistical result as monitoring evidence only. | 500× remains the only Sale hard floor; no capacity uplift. | Explicitly declare the result non-binding, choose Z/model/horizon and define its provenance and freshness. |
+| S-GATE — require a separate statistical pass/fail predicate in addition to the V1 deterministic floor. | Cannot reduce 500×. It can be redundant or more restrictive; it does not create more V1 capacity. | Define the precise risk event, comparator/capital perimeter, confidence budget, mixed-price model, failure behaviour and non-overlap. Do not add the statistic arithmetically to WCE without a separate rule. |
+| S-COHORT — activate a distinct probabilistic cohort profile for new commitments. | Changes the guarantee for that new cohort; it is not V1 and cannot rewrite existing tickets. | Freeze epoch membership before outcomes are knowable, global lifetime ε, cross-round/shared-Pool aggregation, capital partition, path-risk and Reveal/Expire rules, Beacon assumptions, verifier and upgrade/migration boundary. |
+| S-HYBRID — use a statistical cohort criterion plus a separately qualified deterministic backstop for a defined exposure gap. | A new profile/guarantee; existing V1 obligations stay protected. | Define the exact uncovered gap, physical backstop ownership, non-overlap, atomic reservation and failure/recovery conditions. |
+
+These candidates are not interchangeable. In particular, adding a statistical quantity to 500× WCE is not justified by the current register and can double count the same payout perimeter. A statistical result must not be labelled funded capital merely because it is calculated.
+
+### 12.5 Capacity consequence — the 8-ticket V1 boundary remains
+
+At a hypothetical 4,000 USDM of actual eligible PrizePool capital, 500× WCE permits at most 8 unresolved Genesis tickets under the current V1 rule. The separate Cantelli research sensitivity of 18 / 42 / 59 Genesis tickets at global ε of 0.1% / 0.5% / 1% applies only to one sealed, pre-outcome cohort under its stated model and capital assumptions. It is not an uplift that can be combined with the same V1 500× pathwise guarantee. Those larger capacities require an approved probabilistic or hybrid profile for new commitments, not an automatic mode toggle.
+
+Any future automatic transition remains profile-owned and state/trajectory-derived. A caller, user, relayer or agent cannot request the cheaper mode. Existing tickets retain the guarantee and model bound when they were issued. Current Issue authority still has a configured Ed25519 dependency; the selector proposal does not make that path permissionless or trustless by declaration.
+
+### 12.6 Interim disposition and exact authority question
+
+Interim disposition: preserve PRE-RICH V1 and its deterministic 500× floor; do not modify RiskProtectionBridge, PreRichEconomicAdmission, EconomicGate, V3, Reveal, datum/redeemer ABI or deployment. Keep the statistical Sale step visibly OPEN as a specification-to-implementation gap. Do not declare D+S production conformance, do not silently call S report-only, and do not make the first Issue pass or fail solely by inventing a statistical rule.
+
+The specification authority must decide, in order: (1) S-OBSERVE, S-GATE, S-COHORT or S-HYBRID for the Sale trajectory; (2) the statistical construction and exact price/population model; (3) Z or ε, horizon and dependence/Beacon assumptions; (4) eligible capital perimeter, shared-Pool epoch allocation and non-overlap; and (5) whether unresolved statistical evaluation is a first-Issue acceptance prerequisite under the selected V1 policy. Until those decisions are versioned, no new statistical selector or capital mapping is authorized.
