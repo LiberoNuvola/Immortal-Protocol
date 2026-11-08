@@ -1,0 +1,60 @@
+name: M1-A PRE Snapshot Index and WAL Tests
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - ".github/workflows/m1-a-pre-snapshot-tests.yml"
+      - "audit/cardano-integration/preSnapshotUtxoIndex.mjs"
+      - "audit/cardano-integration/preSnapshotUtxoIndex.test.mjs"
+      - "audit/cardano-integration/ogmiosV7PreSnapshotAdapter.mjs"
+      - "audit/cardano-integration/ogmiosV7PreSnapshotAdapter.test.mjs"
+      - "audit/cardano-integration/ogmiosV7ChainSyncClient.mjs"
+      - "audit/cardano-integration/preSnapshotJournal.mjs"
+      - "audit/cardano-integration/preSnapshotJournal.test.mjs"
+      - "audit/cardano-integration/package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m1-a-pre-snapshot-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-snapshot-tests:
+    name: Reducer + Ogmios v7 + persistent WAL
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install only the runtime dependencies needed by this test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPS_DIR="${RUNNER_TEMP}/m1-a-test-deps"
+          mkdir -p "${DEPS_DIR}"
+          npm install --prefix "${DEPS_DIR}" --no-save --no-audit --no-fund \
+            ws@8.18.3 @cardanosolutions/json-bigint@1.0.1
+          ln -s "${DEPS_DIR}/node_modules" audit/cardano-integration/node_modules
+
+      - name: Run all M1-A reducer, Ogmios and WAL tests
+        working-directory: audit/cardano-integration
+        run: npm run test:pre-snapshot-index
+
+      - name: Verify test modules parse independently
+        working-directory: audit/cardano-integration
+        run: |
+          node --check preSnapshotUtxoIndex.mjs
+          node --check ogmiosV7PreSnapshotAdapter.mjs
+          node --check ogmiosV7ChainSyncClient.mjs
+          node --check preSnapshotJournal.mjs
