@@ -125,13 +125,14 @@ function totalQuantity(utxos) {
   return total
 }
 
-function addTrackedOutput(utxos, created, txId, index, output, asset, field) {
+function addTrackedOutput(utxos, created, createdSet, txId, index, output, asset, field) {
   const tracked = normalizeTrackedOutput(output, asset, field)
   if (tracked === null) return
   const ref = normalizeOutRef({ txId, index }, \`\${field}.outRef\`)
   if (utxos.has(ref.key)) fail(\`DUPLICATE_UTXO:\${ref.key}\`)
   utxos.set(ref.key, tracked)
   created.push(ref.key)
+  createdSet.add(ref.key)
 }
 
 function targetMintQuantity(mintValue, asset, field) {
@@ -227,6 +228,7 @@ export function applyPreSnapshotBlock(state, blockValue) {
   const transactions = requiredArray(blockValue.transactions, 'block.transactions')
   const utxos = new Map(state.utxos)
   const created = []
+  const createdSet = new Set()
   const spent = []
   const consumedInBlock = new Set()
   const seenTransactions = new Set()
@@ -255,7 +257,14 @@ export function applyPreSnapshotBlock(state, blockValue) {
       const previous = utxos.get(ref.key)
       if (previous !== undefined) {
         utxos.delete(ref.key)
-        spent.push({ key: ref.key, output: cloneOutput(previous) })
+        if (createdSet.has(ref.key)) {
+          createdSet.delete(ref.key)
+          const createdIndex = created.indexOf(ref.key)
+          if (createdIndex < 0) fail('BLOCK_CREATED_UTXO_TRACKING_CORRUPT')
+          created.splice(createdIndex, 1)
+        } else {
+          spent.push({ key: ref.key, output: cloneOutput(previous) })
+        }
       }
     }
 
@@ -265,6 +274,7 @@ export function applyPreSnapshotBlock(state, blockValue) {
         addTrackedOutput(
           utxos,
           created,
+          createdSet,
           txId,
           outputIndex,
           outputs[outputIndex],
@@ -277,6 +287,7 @@ export function applyPreSnapshotBlock(state, blockValue) {
       addTrackedOutput(
         utxos,
         created,
+        createdSet,
         txId,
         outputs.length,
         tx.collateralReturn,
@@ -408,7 +419,7 @@ export function buildPreSnapshotMessage(state) {
   }
   const leaves = [...balances.entries()]
     .map(([addressHex, quantity]) => ({ addressHex, quantity: quantity.toString() }))
-    .sort((left, right) => left.addressHex.localeCompare(right.addressHex))
+    .sort((left, right) => left.addressHex < right.addressHex ? -1 : left.addressHex > right.addressHex ? 1 : 0)
 
   const total = leaves.reduce((sum, leaf) => sum + BigInt(leaf.quantity), 0n)
   const message = {
@@ -447,7 +458,7 @@ export function inspectPreSnapshotIndex(state) {
       addressHex: output.addressHex,
       quantity: output.quantity
     }))
-    .sort((left, right) => left.key.localeCompare(right.key))
+    .sort((left, right) => left.key < right.key ? -1 : left.key > right.key ? 1 : 0)
   return Object.freeze({
     schemaVersion: state.schemaVersion,
     networkId: state.networkId,
