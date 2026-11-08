@@ -364,7 +364,7 @@ No local repository checkout/dependency installation was available for executing
 
 The WAL suite contains 11 authored cases: event replay across restart, rollback/alternate branch persistence, incomplete-tail recovery, complete-record corruption, failed transition non-commit, single-writer rejection, forward/rollback callbacks, stale PID lock recovery, foreign-host lock rejection, persistent-client factory construction and queued-write/close ordering.
 
-**Total across M1-A so far: 36 tests authored (12 reducer + 13 Ogmios + 11 WAL); 0 executed.** A local sparse checkout was attempted for test execution but the execution environment could not resolve `github.com`. GitHub source files were re-read remotely; that static review is not a test run.
+**Execution 2026-11-08 — GitHub Actions run 42459666825: 36/36 passed (12 reducer + 13 Ogmios + 11 WAL), 0 failures, 0 skipped.** The run used Node 22, installed only `ws@8.18.3` and `@cardanosolutions/json-bigint@1.0.1` in a temporary dependency directory, executed `npm run test:pre-snapshot-index`, and then successfully ran `node --check` on all four M1-A modules. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42459666825.
 
 ### Deliberate limitations — not production qualified
 
@@ -376,7 +376,7 @@ The WAL suite contains 11 authored cases: event replay across restart, rollback/
 - Manual recovery is required for an unverifiable lock or orphaned reaper lock. Do not auto-delete those files.
 - No live Cardano node, Ogmios endpoint, Kupo, private testnet, Mithril network, benchmark or resource test was run. Byron Base58 CBOR/checksum validation remains open.
 
-**M1-A status:** reducer + Ogmios v7 adapter + reconnecting client + local WAL/replay and ChainSync rollback callback = CODE PRESENT; tests authored/not run; live two-node ledger conformance and resource qualification = OPEN. M1-C and M2 remain NOT STARTED.
+**M1-A status:** reducer + Ogmios v7 adapter + reconnecting client + local WAL/replay and ChainSync rollback callback = CODE PRESENT; 36/36 unit tests PASS on GitHub Actions; live two-node ledger conformance and resource qualification = OPEN. M1-C and M2 remain NOT STARTED.
 
 
 ### CI entry point
