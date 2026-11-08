@@ -1161,3 +1161,18 @@ No production governance rules, PRE asset identity, GOV entity mapping, voting e
 - Stale/unverifiable reaper lock files need manual recovery; Byron CBOR/checksum validation remains open.
 
 **Status:** persistent reducer + Ogmios v7 adapter/client + local WAL/replay and automatic intersection rollback = CODE PRESENT. Tests written/not run. Live two-node Cardano ledger conformance and resource measurements remain OPEN. M1-C Mithril certificate integration and M2 Plutus verification remain NOT STARTED. No production governance, PRE identity/eligibility, V3, Reveal, B1 EEV, Issue #37, Issue #43 or Issue #49 semantics changed.
+
+
+## 2026-11-08 — Agent B: M1-A test execution result
+
+**Workflow:** `.github/workflows/m1-a-pre-snapshot-tests.yml`  
+**Successful run:** https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42459666825  
+**Commit tested:** `c6aa10829b54bd140e949e3693fa2964fbf492a7`
+
+- `npm run test:pre-snapshot-index`: **36 tests, 36 passed, 0 failed, 0 skipped** (12 reducer + 13 Ogmios adapter/client + 11 persistent WAL).
+- The follow-up `node --check` succeeded for `preSnapshotUtxoIndex.mjs`, `ogmiosV7PreSnapshotAdapter.mjs`, `ogmiosV7ChainSyncClient.mjs` and `preSnapshotJournal.mjs`.
+- Node 22 runner used a temporary dependency directory with only `ws@8.18.3` and `@cardanosolutions/json-bigint@1.0.1`; no root lockfile or production package dependency changes were made.
+- The initial run exposed two test-only defects: a helper default concealed an explicitly missing `spends` field, and the lock assertion expected an outdated error wording. Both tests were corrected; the reducer contract itself was unchanged. The final run passed.
+- The run uses synthetic fixtures and a fake WebSocket. It does **not** qualify a real Cardano node/Ogmios connection, Kupo parity, bootstrap completeness, Byron CBOR/checksum, performance/resource behavior, persistent-disk crash injection, or Mithril certification.
+
+**Updated M1-A status:** unit suite PASS (36/36); live two-node ledger conformance and resource qualification OPEN; M1-C Mithril and M2 Plutus verification NOT STARTED. No live chain services, wallet signing, Preprod/Mainnet transactions or protocol-economic/governance semantics were changed.
