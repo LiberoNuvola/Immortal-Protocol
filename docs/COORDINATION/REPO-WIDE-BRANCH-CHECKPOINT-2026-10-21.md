@@ -758,3 +758,24 @@ One `ε` cannot be freshly reused for each Issue or state refresh. A governing s
 - **Still blocked:** adaptive/new Issue after outcomes become available; conditional private-information model; heterogeneous profile moments; global lifetime epsilon; capital ring-fencing; authenticated (E^*); Beacon qualification and Plutus resource evidence.
 - No production source, test, risk parameter, profile, V1 500×, RiskProtectionBridge, V3/Reveal semantics, wallet, deployment or ledger state changed.
 - Agent A owns the economic/risk contract; Agent B's independent V1/Plutus review remains separate.
+
+
+## 2026-11-08 — Agent A: two-axis risk selection and adaptive intensity synthesis
+
+**Detailed baseline:** [Agent A-R1 Dynamic Margin / Statistical Reserve Baseline, §13](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-R1-DYNAMIC-MARGIN-STATISTICAL-RESERVE-BASELINE-2026-11-06.md).  
+**Related multi-round proof:** [Cantelli / Reveal-path audit, §8](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-CANTELLI-COHORT-BOUND-AND-REVEAL-PATH-AUDIT-2026-11-08.md).
+
+### Two independent axes
+
+1. **Risk-analysis mode**: profile-owned, trajectory-bound selection among DeterministicWorstCaseOnly / StatisticalOnly / DeterministicAndStatistical. It must be resolved from authenticated pre-state, candidate action, trajectory facts and versioned policy; not supplied by caller. Current PRE-RICH V1 and RiskProtectionBridge accept deterministic-only. No production selector exists.
+2. **Operating intensity**: a separate post-protection allocator can cap optional new notional using state-dependent surplus and a distinct risk envelope. The recovered D3 S_res / α_t / C0–C3 model belongs to the PRE-RICH Arb Agent with separate Solo/Pool capital, not Scratch & Win Game. PRE-RICH Game class hysteresis KA/KC/KD and lifecycle regimes are different controllers.
+
+The static Cantelli multi-round result is a candidate Statistical Risk Analysis for one frozen pre-outcome set across all Beacon rounds sharing one B1 Pool. It is neither WCE nor ProtectedCapital/ReserveProtection nor an α_t budget. It also cannot be merged opportunistically with Nμ+Zσ√N; the profile authority must choose the statistical criterion and version.
+
+### Capacity consequence
+
+At hypothetical C=4,000 USDM: current V1 500× deterministic WCE remains 8 Genesis tickets. Cantelli yields 18 / 42 / 59 **combined across all rounds sharing the Pool** at global ε=0.1% / 0.5% / 1%, but only under the frozen-set marginal assumptions. These higher figures are not available while retaining 500× pathwise coverage for the same unresolved payout exposure. A larger statistical capacity requires an explicit new PRE-RICH Game profile decision about the applicable payout-risk guarantee; it would be probabilistic, not the current unconditional 500× guarantee.
+
+### Disposition
+
+The static proof and two-axis conceptual reconciliation are research/documentation only. Dynamic Issue after outcomes become knowable, Game-specific intensity policy, global lifetime ε, conditional moments, capital qualification, Beacon qualification, Gate integration and specification authority decisions remain open. No production code/tests, policy parameters, 500×, ProtectedCapital, V3/Reveal, QNE/R1, wallet, deployment or ledger state changed.
