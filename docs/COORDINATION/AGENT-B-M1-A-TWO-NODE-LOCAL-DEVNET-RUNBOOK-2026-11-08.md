@@ -2,7 +2,7 @@
 
 **Data:** 8 novembre 2026  
 **Stato:** procedura documentata; non ancora eseguita su macchine locali.  
-**Scopo:** qualificare l'indicizzatore PRE su due processi Cardano separati, ciascuno con il proprio Ogmios e Kupo, allo stesso punto ledger fissato dall'operatore.
+**Scopo:** qualificare il plumbing dell'indicizzatore di un native asset (PRE-like) su due processi Cardano separati, ciascuno con il proprio Ogmios e Kupo, allo stesso punto ledger fissato dall'operatore.
 
 ## 1. Confini e risultato atteso
 
@@ -10,12 +10,12 @@ Questo runbook avvia un private testnet locale, non una rete pubblica e non Prep
 
 1. due processi cardano-node raggiungono lo stesso header point;
 2. due istanze Ogmios espongono ChainSync indipendente per ciascun socket;
-3. i due indici WAL M1-A ricostruiscono lo stesso snapshot PRE al punto fissato;
-4. due istanze Kupo, sincronizzate fino allo stesso punto, concordano con ciascun indice M1-A sugli output PRE non spesi.
+3. i due indici WAL M1-A ricostruiscono lo stesso snapshot dell'asset di test al punto fissato;
+4. due istanze Kupo, sincronizzate fino allo stesso punto, concordano con ciascun indice M1-A sugli output non spesi dell'asset di test.
 
 Il risultato PASS significa soltanto che queste repliche locali concordano sui dati osservati. Non prova indipendenza tra operatori, correttezza del software cardano-node, autenticità del bootstrap, identità dei titolari PRE o trustlessness assoluta. I due pool node creati dallo stesso cardano-testnet condividono genesis e ambiente operativo.
 
-**Non esegue** mint, Issue, firma wallet, submit di transazioni, deploy di validator/policy, modifica del protocollo IMMORTAL o aggiornamento dei parametri di governance.
+**Non esegue** mint, Issue, firma wallet, submit di transazioni, deploy di validator/policy, modifica del protocollo IMMORTAL o aggiornamento dei parametri di governance. Di conseguenza, nella modalità attuale è un *zero-state plumbing smoke test*: il nuovo private testnet non contiene il token PRE di Preprod/Mainnet e non genera output non-zero dell'asset. Un PASS con supply zero dimostra soltanto che nodi, Ogmios, WAL e Kupo concordano su un insieme vuoto; non è una prova della distribuzione PRE reale né una qualificazione completa del comportamento non-zero.
 
 ## 2. Stack fissato
 
@@ -206,12 +206,12 @@ Annotare e conservare entrambi i JSON tip. Il punto diventa immutabile per quest
 
 ## 8. Avviare due Kupo indipendenti, senza pruning
 
-Prima di proseguire servono i valori effettivi dell'asset PRE:
-- policy ID esatto, 56 caratteri hex minuscoli;
-- asset name esatto in hex, lunghezza pari e compresa fra 0 e 64 caratteri;
+Per questo private testnet servono i valori di un **asset di test locale**:
+- policy ID effettivo della policy di test, 56 caratteri hex minuscoli;
+- asset name effettivo in hex, lunghezza pari e compresa fra 0 e 64 caratteri;
 - rete e punto concordati sopra.
 
-Non usare un policy ID di esempio, un ticker, il nome testuale del token o un asset di un altro network. Non inventare o derivare un policy ID da una descrizione.
+Non inserire qui il policy ID PRE di Preprod/Mainnet aspettandoti che esista nel nuovo genesis: questo ambiente è una chain privata nuova e non contiene la storia o gli UTxO del token di produzione. Non usare un ticker o il nome testuale del token al posto dell'asset name hex; non inventare o derivare il policy ID da una descrizione.
 
 Il pattern Kupo per l'asset esatto è POLICY_ID.ASSET_NAME_HEX. Kupo 2.12 supporta --since origin e --until POINT, inclusivo. L'opzione --prune-utxo è facoltativa e deve essere omessa: vogliamo poter verificare gli output spesi e non avere una perdita informativa introdotta dal pruning. Usare due workdir separati.
 
@@ -250,7 +250,7 @@ Entrambi devono restituire slot_no uguale a SLOT e header_hash uguale a HASH. Un
 
 ## 9. Configurare il runner M1-A a due repliche
 
-La configurazione deve contenere il network label usato dal reducer, policy ID, asset name, anchor point e il medesimo expectedPoint. L'esempio presuppone che il punto di bootstrap sia origin e che sia stato verificato che il genesis creato da cardano-testnet non contenga PRE: soltanto in quel caso initialUtxos è vuoto. Se l'asset è già presente al punto di bootstrap, inserire l'intero set UTxO iniziale validato, non un sottoinsieme.
+La configurazione deve contenere il network label usato dal reducer, policy ID dell'asset di test, asset name, anchor point e il medesimo expectedPoint. L'esempio presuppone che il punto di bootstrap sia origin e che sia stato verificato che il genesis creato da cardano-testnet non contenga l'asset di test: soltanto in quel caso initialUtxos è vuoto. Se l'asset è già presente al punto di bootstrap, inserire l'intero set UTxO iniziale validato, non un sottoinsieme. Con il runbook corrente e senza una transazione locale di test, la lista rimane vuota per tutta la prova.
 
 Creare un file locale non versionato, per esempio $STATE/dual-runner.json:
 
@@ -258,8 +258,8 @@ Creare un file locale non versionato, per esempio $STATE/dual-runner.json:
 {
   "networkId": "cardano-private-testnet-magic-4242",
   "asset": {
-    "policyIdHex": "<policy-id-esatto-56-hex>",
-    "assetNameHex": "<asset-name-esatto-hex>"
+    "policyIdHex": "<policy-id-policy-test-locale-56-hex>",
+    "assetNameHex": "<asset-name-test-locale-hex>"
   },
   "anchorPoint": {
     "slot": 0,
@@ -380,6 +380,8 @@ Per la prova di rollback, usare una finestra di test dedicata e conservare i log
 ## 13. Limiti e gate successivi
 
 Anche due Kupo concordanti non certificano che il bootstrap iniziale fosse completo o che il network label corrisponda al network identity Cardano. La provenienza del bootstrap, l'esclusione Byron/validazione CBOR dell'indirizzo, l'eligibility PRE e la mappatura credenziali restano gate distinti. Il test a due pool nello stesso testnet locale non è una prova contro un operatore o un host malevolo.
+
+**Limite asset non-zero:** il private testnet appena creato non contiene il PRE token di produzione. La modalità senza transazioni descritta qui può quindi qualificare soltanto il wiring e la concordanza a supply zero. Per una prova non-zero servirà una fixture con un asset nativo *esclusivamente di test*, creata su questa chain privata con chiavi locali effimere e una transazione locale esplicitamente autorizzata; tale fixture non va mai descritta come il PRE di produzione. In alternativa, una prova dei saldi PRE reali richiederà due nodi di sola lettura sincronizzati con la rete pubblica corretta e l'identità PRE policy/name già governata. Nessuna di queste due estensioni è eseguita da questo runbook.
 
 M1-A live acceptance rimane OPEN fino a quando questa procedura non viene effettivamente eseguita e accompagnata da evidenze runtime indipendenti. M1-C Mithril e M2 Plutus non sono iniziati. Il primo Ticket PRE-RICH su Preprod resta sul percorso separato Issue #37 / EEV / R1 / Kc / Ω.
 
