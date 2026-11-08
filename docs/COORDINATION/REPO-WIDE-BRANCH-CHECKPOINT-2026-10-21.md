@@ -1380,3 +1380,24 @@ Agent A's R1 and multi-oracle specification/research remains documentation-only 
 ### Shared-branch serialization after handoff
 
 Agent A has returned the shared write slot. Agent B owns the next bounded M1-A implementation lane under the path scope above. Commits remain serialized; fetch the current branch state before each write, use only the owned paths, and never force-push or overwrite concurrent work.
+
+
+## 2026-11-08 — Agent B M1-A hosted-runner feasibility disposition
+
+**Review type:** read-only feasibility check; no runtime workflow or M1-A source changes made.
+
+- The current M1-A Node/fixture software workflow remains green: run #42467432784, 78/78 tests, all listed M1-A syntax checks PASS.
+- Existing M1-A workflow did not start cardano-node/cardano-testnet, Ogmios or Kupo; no local fixture was prepared, signed, submitted or verified.
+- A standard GitHub-hosted `ubuntu-24.04` runner provides 14 GB SSD (both public and private standard runner classes). Cardano Developer Portal installation guidance lists 20 GB free storage for a testnet. The 20 GB figure is a general recommendation rather than proof that this minimal fresh private chain cannot run on 14 GB; however, capacity has not been measured and no dedicated larger runner has been confirmed.
+- Therefore Agent B does **not** add an unvalidated hosted runtime workflow on the assumption that the standard disk is sufficient. A future hosted attempt requires either a confirmed runner with adequate resources or an explicitly measured preflight proving sufficient free disk/RAM for the complete pinned stack. A preflight failure remains BLOCKED, never PASS.
+- Pinned compatibility remains cardano-node 11.0.1 + Ogmios 7.0.0 + Kupo 2.12.0, as stated in the M1-A runbook. No dependency version is silently changed to fit a runner.
+- The user's WSL2 private testnet remains the currently documented runtime route. When actually executed, evidence must include two node tips at the same slot/block/hash, independent Ogmios sessions, distinct WALs, two strict Kupo checkpoints, dual-replica PASS and both Kupo parity PASS reports.
+- A successful private M1TEST run is only a test-asset plumbing result on magic 4242. It is not the production PRE distribution proof and does not close Issue #37 or first Preprod Issue admission.
+
+References checked 2026-11-08:
+- Cardano Developer Portal, installation guidance (testnet: 2 CPU, 4 GB RAM, 20 GB free storage): https://developers.cardano.org/docs/get-started/cardano-node/installing-cardano-node/
+- GitHub-hosted runners reference (standard `ubuntu-24.04`: 14 GB SSD; 4 CPU/16 GB RAM public and 2 CPU/8 GB RAM private): https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+- Ogmios v7.0.0 compatibility with cardano-node 11.0.1: https://github.com/CardanoSolutions/ogmios/releases/tag/v7.0.0
+- Kupo v2.12.0 tested with cardano-node 11.0.1 and Ogmios v7: https://github.com/CardanoSolutions/kupo/releases/tag/v2.12.0
+
+**Current Agent B disposition:** software gate PASS; runtime gate OPEN; no claim of live two-replica/Kupo acceptance.
