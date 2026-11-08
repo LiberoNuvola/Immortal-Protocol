@@ -13,6 +13,8 @@ on:
       - "audit/cardano-integration/ogmiosV7ChainSyncClient.mjs"
       - "audit/cardano-integration/preSnapshotJournal.mjs"
       - "audit/cardano-integration/preSnapshotJournal.test.mjs"
+      - "audit/cardano-integration/preSnapshotReplicaConformance.mjs"
+      - "audit/cardano-integration/preSnapshotReplicaConformance.test.mjs"
       - "audit/cardano-integration/package.json"
   workflow_dispatch:
 
