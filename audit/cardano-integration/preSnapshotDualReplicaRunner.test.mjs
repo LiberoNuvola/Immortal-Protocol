@@ -186,3 +186,75 @@ test('live runner requires two ChainSync intersections and freezes an exact dual
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+test('a fatal Ogmios intersection error is FAIL and can never become a stale-state PASS', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-a-dual-fatal-'))
+  class FatalWebSocket extends EventEmitter {
+    constructor() {
+      super()
+      this.OPEN = 1
+      this.CONNECTING = 0
+      this.readyState = this.CONNECTING
+      queueMicrotask(() => {
+        this.readyState = this.OPEN
+        this.emit('open')
+      })
+    }
+
+    send(payload, callback) {
+      const request = JSON.parse(payload)
+      callback?.(null)
+      if (request.method === 'findIntersection') {
+        queueMicrotask(() => {
+          if (this.readyState !== this.OPEN) return
+          this.emit('message', Buffer.from(JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'findIntersection',
+            error: { code: -32000, message: 'no common intersection' },
+            id: request.id
+          })))
+        })
+      }
+    }
+
+    close() {
+      if (this.readyState === 3) return
+      this.readyState = 3
+      queueMicrotask(() => this.emit('close', 1000, Buffer.from('fatal test close')))
+    }
+  }
+
+  try {
+    const value = {
+      networkId: 'cardano-private-testnet-m1',
+      asset: { ...asset },
+      anchorPoint: { ...origin },
+      expectedPoint: { ...origin },
+      timeoutMs: 2000,
+      pollIntervalMs: 50,
+      initialUtxos: [],
+      replicas: [
+        {
+          id: 'node-a',
+          nodeInstanceId: 'cardano-node-a',
+          url: 'ws://127.0.0.1:1337',
+          journalDirectory: join(directory, 'node-a')
+        },
+        {
+          id: 'node-b',
+          nodeInstanceId: 'cardano-node-b',
+          url: 'ws://127.0.0.1:1338',
+          journalDirectory: join(directory, 'node-b')
+        }
+      ]
+    }
+
+    const result = await runPreSnapshotDualReplicaConformance(value, {
+      WebSocketImpl: FatalWebSocket
+    })
+    assert.equal(result.status, 'FAIL')
+    assert.match(result.code, /^DUAL_REPLICA_OGMIOS_FATAL:/)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
