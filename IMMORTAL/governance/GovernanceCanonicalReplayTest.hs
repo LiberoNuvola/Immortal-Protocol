@@ -600,19 +600,22 @@ main = do
       let p = head (proposals voteState)
           ds = proposalDelegations p
           vs = proposalVotes p
-      assert "canonical valid delegation history counts all eligible weight once"
+      assert
         (participatingWeight (proposalSnapshot p) ds vs == 120 &&
          eligibleWeight (proposalSnapshot p) == 120 &&
          participatingWeight (proposalSnapshot p) ds vs <= eligibleWeight (proposalSnapshot p))
-      assert "canonical delegated For vote receives delegator weight once"
+        "canonical valid delegation history counts all eligible weight once"
+      assert
         (case [v | v <- vs, voter v == 20] of
            [v] -> effectiveVoteWeight (proposalSnapshot p) ds v == 100
            _ -> False)
-      assert "canonical opposing Against vote retains only its own weight"
+        "canonical delegated For vote receives delegator weight once"
+      assert
         (case [v | v <- vs, voter v == 30] of
            [v] -> choice v == Against &&
                   effectiveVoteWeight (proposalSnapshot p) ds v == 20
            _ -> False)
+        "canonical opposing Against vote retains only its own weight"
 
   let wrongState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Nothing }] 0
   case applyCanonicalEvent ruleset wrongState Nothing (withCommitment finalizedEvent) of
