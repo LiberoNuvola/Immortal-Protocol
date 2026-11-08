@@ -342,11 +342,11 @@ export function getOgmiosV7IntersectionPoints(state, maxPoints = 128) {
   const points = []
   const seen = new Set()
   for (const point of candidates) {
+    if (points.length >= pointLimit) break
     const key = point.slot + ':' + point.hash
     if (seen.has(key)) continue
     seen.add(key)
     points.push(pointToOgmios(point))
-    if (points.length >= pointLimit) break
   }
   if (hasOrigin) points.push('origin')
   return points
