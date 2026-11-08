@@ -22,6 +22,10 @@ function fail(code, message = code) {
   throw Object.assign(new Error(message), { code })
 }
 
+export function serializeFixtureSubmissionMarker(value) {
+  return JSON.stringify(value, null, 2) + '\n'
+}
+
 function hashFileBytes(value) {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -346,7 +350,7 @@ async function submit(config) {
     startedAt: new Date().toISOString()
   }
   try {
-    await writeFile(submittedPath, JSON.stringify(attempt, null, 2), {
+    await writeFile(submittedPath, serializeFixtureSubmissionMarker(attempt), {
       mode: 0o600,
       flag: 'wx'
     })
@@ -369,11 +373,11 @@ async function submit(config) {
     '--tx-file', signedTx
   ], 'derive-local-fixture-transaction-id')
   if (!/^[0-9a-f]{64}$/.test(txId)) fail('M1_FIXTURE_TXID_INVALID')
-  await writeFile(submittedPath, JSON.stringify({
+  await writeFile(submittedPath, serializeFixtureSubmissionMarker({
     ...attempt,
     status: 'SIGNED_READY_TO_SUBMIT',
     txId
-  }, null, 2) + '\\n', { mode: 0o600 })
+  }), { mode: 0o600 })
 
   cli(config, [
     'latest', 'transaction', 'submit',
@@ -392,7 +396,7 @@ async function submit(config) {
   }
   await writeFile(
     submittedPath,
-    JSON.stringify(submitted, null, 2) + '\n',
+    serializeFixtureSubmissionMarker(submitted),
     { mode: 0o600 }
   )
   return Object.freeze(submitted)
