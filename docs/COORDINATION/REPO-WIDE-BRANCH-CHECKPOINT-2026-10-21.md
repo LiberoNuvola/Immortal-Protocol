@@ -1298,3 +1298,50 @@ The static Cantelli result remains conditional research for a frozen cohort whos
 - No RiskMode is wired into production admission by this review.
 - Agent A's R1 documentation slot remains OPEN; Agent B's review is read-only with respect to A-owned files and all production source.
 - Issue #37 first-Preprod-Issue gates remain independent and BLOCKED.
+
+
+## 2026-11-08 — Agent B returns shared write slot; Agent A P0 implementation authorized
+
+**Verified branch HEAD before handoff:** `c98b9ef0975c56a66c30cc9f01d8f04f4dbe668e`  
+**Supersedes only the shared-branch write-slot ordering in the earlier A/B allocation.** The disjoint path scopes and all protocol non-regression constraints remain in force.
+
+### Agent B — shared write slot RETURNED
+
+- M1-A executable implementation and guarded fixture helper are complete for the current software gate: CI run `42467432784` reported 78/78 tests and helper syntax check PASS.
+- No local private-testnet runtime execution has been claimed. Node/Ogmios/Kupo startup, M1TEST preparation/submission/verification, dual-replica and Kupo conformance remain pending the user's WSL2 runtime.
+- Agent B returns the **shared-branch write slot now** and pauses further repository writes until Agent A's P0 patch and its required CI evidence are complete.
+- Agent B may continue read-only analysis of M1-A/runtime instructions. No user-private WSL2 access is implied.
+
+### Agent A — Issue #50 P0 Governance fix slot OPEN / EXCLUSIVE
+
+**Tracking:** [Issue #50 — Reject delegation after vote to prevent governance weight double-counting](https://github.com/LiberoNuvola/Immortal-Protocol/issues/50).
+
+**Authorized implementation paths:**
+- `IMMORTAL/governance/Governance.hs` — the `DelegationSet` admission predicate only.
+- `IMMORTAL/governance/GovernanceConformanceTest.hs` — direct `applyEvent` regression cases.
+- `IMMORTAL/governance/GovernanceCanonicalReplayTest.hs` — canonical `replayCanonical` regression with canonical commitments recomputed.
+- `IMMORTAL/governance/GovernanceCanonicalEventTest.hs` only if needed to construct valid canonical event fixtures; explain the need in the patch.
+
+No other path is in the slot. Any expansion requires an updated checkpoint authorization before editing.
+
+**Required P0 behavior and tests:**
+1. Reject `DelegationSet` if the delegator already appears as a voter in that proposal; rejection must leave the state unchanged.
+2. Preserve the existing symmetric rule: a delegator cannot vote after delegating.
+3. Preserve valid delegation-before-vote and prove the delegate receives the delegator's snapshot weight exactly once.
+4. Exercise opposing votes and ensure the total participating/effective weight never exceeds eligible snapshot weight for accepted histories.
+5. Cover both direct `applyEvent` and canonical `replayCanonical`, recalculating event payload commitments after fixture construction.
+6. Preserve one-hop/non-recursive delegation, GOV-18 quorum, approval, abstention, timing and snapshot semantics.
+
+**Required verification:**
+- Run the standalone Governance package suites: `cd IMMORTAL/governance && cabal test all --test-show-details=direct` (the workflow also compiles all test components before running them).
+- Run/inspect the repository Haskell semantic-conformance workflow `.github/workflows/immortal-haskell-conformance.yml` on the exact patch SHA; it already has an `IMMORTAL/**` push path and separate Governance/Canonical Replay checks in its Plutus suite.
+- Preserve exact tested SHA and job/step evidence. A source-only fix or an untriggered/pending workflow is not P0 closure.
+
+**Non-regression boundaries:**
+- No V3, Reveal, Claim, Expire, Cardano Adapter, Plutus/Aiken, PRE-RICH economic policy, 500×, EEV, ABI, thresholds or protocol profile changes.
+- No change to first PRE-RICH V1 Preprod Issue gates; Issue #37 remains separate.
+- No governance ruleset/quorum/approval threshold changes or delegation-model expansion.
+
+### Slot return condition
+
+Agent A holds the exclusive shared-branch write slot until the bounded patch is committed and both required verification tracks have completed with recorded evidence. Agent A then returns the slot; Agent B may resume M1-A repository writes if runtime evidence or a code defect requires them. The M1-A local runtime remains separately dependent on WSL2.
