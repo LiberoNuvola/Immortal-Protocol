@@ -334,11 +334,25 @@ async function submit(config) {
   }
   const manifest = await loadPrepared(config)
   const submittedPath = join(config.workDirectory, 'submitted.json')
+  // Write a durable one-shot marker before signing. If the process stops midway,
+  // the marker deliberately blocks replay until a human inspects the local node.
+  const attempt = {
+    status: 'SUBMISSION_ATTEMPT_STARTED',
+    networkMagic: REQUIRED_PRIVATE_MAGIC,
+    assetUnit: manifest.assetUnit,
+    tokenAmount: manifest.tokenAmount,
+    startedAt: new Date().toISOString()
+  }
   try {
-    await stat(submittedPath)
-    fail('M1_FIXTURE_ALREADY_SUBMITTED', 'This prepared fixture has already been submitted; do not replay it.')
+    await writeFile(submittedPath, JSON.stringify(attempt, null, 2) + '\\n', {
+      mode: 0o600,
+      flag: 'wx'
+    })
   } catch (error) {
-    if (error.code !== 'ENOENT') throw error
+    if (error.code === 'EEXIST') {
+      fail('M1_FIXTURE_ALREADY_SUBMITTED_OR_ATTEMPTED', 'A one-shot marker already exists; inspect the local ledger before any manual recovery.')
+    }
+    throw error
   }
   const signedTx = join(config.workDirectory, 'mint.signed')
   cli(config, [
