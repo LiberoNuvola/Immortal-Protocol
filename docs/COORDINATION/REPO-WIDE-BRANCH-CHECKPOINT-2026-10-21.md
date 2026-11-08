@@ -1109,3 +1109,20 @@ No production governance rules, PRE asset identity, GOV entity mapping, voting e
 - No real WebSocket endpoint, Cardano node, private testnet, Kupo or Mithril network was contacted or started. Persistent cursor/database, atomic journal, crash recovery and true node-level rollback remain unimplemented.
 
 **Disposition:** reducer + adapter + ChainSync client code present; static/synthetic tests authored but not run; live M1-A ledger integration/conformance remains OPEN. M1-C and M2 are not started. No V3, Reveal, GOV-16/17/18, B1/EEV, Issue #37, Issue #43 or Issue #49 protocol semantics changed.
+
+
+## 2026-11-08 — Agent B: Ogmios v7 static review corrections
+
+**Profile:** `AGENT-B-M1-A-LOCAL-NODE-INDEXER-EXECUTION-PROFILE-2026-11-08.md` §12–14  
+**Implementation files:** `ogmiosV7PreSnapshotAdapter.mjs`, `ogmiosV7ChainSyncClient.mjs`  
+**Tests:** `ogmiosV7PreSnapshotAdapter.test.mjs` (13 cases), `preSnapshotUtxoIndex.test.mjs` (12 cases).
+
+- Corrected earlier v7 schema misstatement: official field is required `Transaction.spends` with `"inputs" | "collaterals"`; `inputSource` is not the v7 field.
+- Corrected ChainSync request envelope: `findIntersection` uses `params.points`, while `nextBlock` has no `params` member. Added fake-WebSocket assertion.
+- Reserved a slot for the `"origin"` intersection fallback under a bounded candidate list, including `maxIntersectionPoints = 1`.
+- Added an adapter-to-reducer test exercising ordinary mint plus collateral-return application in one decoded v7 block.
+- BigInt-safe JSON parsing uses pinned `@cardanosolutions/json-bigint@1.0.1`; the isolated integration package also retains `ws@8.18.3`.
+
+**Test status:** 25 tests authored; none executed. No local Cardano node, Ogmios endpoint, Kupo, private testnet or Mithril network was started. The Byron Base58 path converts address bytes but does not yet validate the full Byron CBOR envelope/checksum; this remains an explicit pre-production parser hardening item. No durable DB/cursor journal or crash recovery yet.
+
+**Qualification:** source code / static repository verification only. M1-A live ingestion, ledger conformance and resource benchmarks remain OPEN; M1-C/M2 remain NOT STARTED. The previous erroneous `inputSource` checkpoint statement has been corrected in the current status. No production protocol, V3, Reveal, GOV rules, Issue #37, Issue #43 or Issue #49 semantics changed.
