@@ -1029,3 +1029,28 @@ No code, tests, workflows, CI runs, Mithril network, certificate, wallet action,
 M1-A is only an indexer-correctness gate. It requires two node replicas, full-replay parity, phase-2/collateral handling, idempotent reconnect, atomic rollback/recovery and pinned resource evidence. A simulated rollback alone is not a node-level fork demonstration. No private testnet, Ogmios, Kupo, indexer, source code, tests, workflow, CI, certificate, wallet, transaction or ledger query was run/created in this documentation pass.
 
 M1-C Mithril certification and M2 Plutus verification remain separate. Production entity identity, eligibility, PRE policy/name, snapshot-point selection and stake-threshold acceptance remain undecided. V3, Reveal, Issue #37, Issue #43 and Issue #49 are untouched.
+
+
+## 2026-11-08 — Agent A: adaptive Issue capacity and transition-to-RiskMode matrix
+
+**Research artifact:** [AGENT-A-R1-ADAPTIVE-ISSUE-CAPACITY-AND-TRANSITION-MATRIX-2026-11-08.md](AGENT-A-R1-ADAPTIVE-ISSUE-CAPACITY-AND-TRANSITION-MATRIX-2026-11-08.md)  
+**Artifact commit:** `19d51f2b6cc7bf92faae423c096ca7e1f3054bb7`  
+**Classification:** ECONOMIC RESEARCH / POLICY-MAPPING PROPOSAL — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY.
+
+### Result
+
+- Completed the Issue / Reveal / Claim / Expire / Quiesce / Recovery / liquidity trajectory matrix against the three existing RiskMode values.
+- Confirmed that RiskMode selects analytical mechanisms, not safety overrides. Current PRE-RICH V1 continues to require deterministic 500× WCE for every unresolved ticket; the bridge continues to accept only the exact deterministic mode and remains unwired from production admission.
+- Formalized the only plausible route to higher ticket capacity: a separately governed, non-retroactive statistical cohort profile for unresolved payout risk. Known liabilities, Claim settlement, Jackpot, mandatory costs and universal viability constraints remain deterministic. This is a different guarantee from V1's unconditional 500× Pending-ticket protection; it cannot be presented as preserving that per-ticket guarantee.
+- Corrected the capacity illustration for B1's actual reservation delta. With a hypothetical 4,000-USDM headroom before the cohort's face-price reserve, one-USDM tickets, no other encumbrances and one fixed pre-outcome cohort, post-Issue E* is 4,000 − N. The dependence-robust Cantelli sensitivity frontier is 18 / 41 / 58 tickets for illustrative whole-cohort ceilings 0.1% / 0.5% / 1.0%, versus 8 under the simplified 500× arithmetic. These are conditional research numbers, not approved sale limits. The alternative prior convention with 4,000 USDM already net of all face reserves yields 18 / 42 / 59 and is explicitly distinguished in the report.
+- Reaffirmed that an unconditional static Cantelli bound cannot be reused after Beacon results become available and remaining Pending membership becomes outcome-selected. Rolling Issue needs conditional moments over the full adversarial/private information history, one lifetime risk budget, and non-overlapping capital.
+- Current Pool datum does not enforce cohort membership/freeze, C_other allocation or lifetime ε. Existing Registry identity / publication and Beacon authenticity gaps also prevent a trustless freeze barrier.
+
+### Ownership / next boundary
+
+- **Agent A:** economic profile semantics, guarantee choice, ε/horizon/lifetime allocation, capacity frontier and capital perimeter.
+- **Specification authority:** must approve the new probabilistic guarantee, profile migration, freeze/liveness rule and risk-budget policy. No values are selected by this report.
+- **Agent B:** independent technical review; any cohort accumulator, Registry freeze integration or Plutus change requires a separate bounded implementation authorization and exact write slot.
+- **First V1 Preprod Issue:** remains a separate Issue #37 path; current USD/USDM source, fresh EV1–EV7, deployment-bound approval and R1/Kc/Ω certificate remain independent blockers.
+
+No code, tests, workflows, constants, profile, V3/Reveal semantics, oracle schema, certificate, wallet action, transaction, deployment or ledger state was changed or executed.
