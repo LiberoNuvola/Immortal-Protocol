@@ -723,3 +723,38 @@ Under a hypothetical 4,000-USDM *total payout budget* and Genesis-only cohort, t
 The Cantelli predicate is a promising constant-size integer verifier for a **static fixed cohort**, but it is not yet an admissible Issue rule. Next gates are: (1) extend the fixed-cohort path lemma to overlapping cohorts/new-Issue interleavings and derive the shared capital perimeter, (2) independently qualify Beacon/marginal-randomness assumptions, (3) implement exact-integer reference/property tests, and (4) benchmark Plutus CEK / full-transaction resources. Only then should the specification authority consider a new statistical profile and lifetime/global ε.
 
 PRE-RICH V1, deterministic 500×, current RiskProtectionBridge fail-closed behavior, V3/Reveal semantics, deployment and first-Issue gates remain unchanged. No code or tests were modified or executed by this research update.
+
+
+## 2026-11-08 — Agent A: global multi-round cohort bound / adaptive-Issue boundary
+
+**Research artifact:** [AGENT-A-CANTELLI-COHORT-BOUND-AND-REVEAL-PATH-AUDIT-2026-11-08.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-CANTELLI-COHORT-BOUND-AND-REVEAL-PATH-AUDIT-2026-11-08.md), §8.  
+**Classification:** RESEARCH ONLY; static mathematical extension, not implementation or policy approval.
+
+### Static result across active Beacon rounds
+
+The risk set for a shared B1 PrizePool is the union of **all Pending tickets across all active BeaconTarget / rounds**, counted once. For a pre-specified fixed set (U^*), aggregate face value (F^* = ΣP_i), authenticated initial B1 (E^*) and aggregate potential payout (S^* = ΣX_i), the same Classic-6 Cantelli bound applies if every ticket retains the canonical marginal law. Cauchy–Schwarz supports arbitrary dependence between tickets and between rounds. Do not compute separate per-round limits against the same Pool as if each round had its own capital.
+
+The exact fixed-set Reveal path requirement also aggregates over all rounds:
+
+```text
+R_max(U*) = Σ_i max(0, X_i − P_i) + max_i min(X_i, P_i) ≤ S*
+```
+
+Thus (S^* ≤ E^*) is sufficient for all Reveal/Expire orderings across a frozen multi-round set, provided there are no new Issues or other Pool-draining outflows while it resolves.
+
+### Dynamic Issue is a separate blocker
+
+This does **not** authorize reapplying unconditional (μ,σ) after outcomes have become available. With arbitrary dependence, observing one payout can make another ticket's payout conditionally known (e.g. (Y_2=Y_1)); after Reveal/Beacon availability and strategic withholding, the remaining Pending set can be outcome-selected. New Issues admitted at that point require a conditional-moment proof valid over the full adversarial information history, including ticket-holder private information, or another formally bounded construction.
+
+A possible conditional envelope is (M_t=ΣP_i μ_i(H_t)), (V_t≤(ΣP_i σ_i(H_t))²), then conditional Cantelli against current (E_t), only where (E_t>M_t) and the bounds are proven. Current sources do not supply this contract.
+
+### Lifetime budget / capital non-overlap
+
+One `ε` cannot be freshly reused for each Issue or state refresh. A governing specification must select one frozen aggregate risk set, or allocate conditional epoch budgets `ε_j` with `Σ ε_j ≤ ε_global` (or prove an alternative global supermartingale/alpha-spending rule). If epochs overlap in one Pool, their capital tranches must be disjoint/ring-fenced or covered by one joint aggregate bound. Per-cohort `C_j` values that all point at the same unpartitioned `effectivePool` would double-count capital.
+
+### Disposition / boundaries
+
+- **Research-level extension closed:** static multi-round aggregate with one common marginal PMF, arbitrary cross-round dependence, and one fixed shared Pool.
+- **Still blocked:** adaptive/new Issue after outcomes become available; conditional private-information model; heterogeneous profile moments; global lifetime epsilon; capital ring-fencing; authenticated (E^*); Beacon qualification and Plutus resource evidence.
+- No production source, test, risk parameter, profile, V1 500×, RiskProtectionBridge, V3/Reveal semantics, wallet, deployment or ledger state changed.
+- Agent A owns the economic/risk contract; Agent B's independent V1/Plutus review remains separate.
