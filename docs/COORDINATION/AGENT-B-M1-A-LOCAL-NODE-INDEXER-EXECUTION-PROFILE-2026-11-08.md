@@ -91,7 +91,7 @@ Persist append-only records keyed by block hash and chain point. At minimum reta
 - network magic / network identity;
 - slot, block number, header hash and parent point;
 - transaction index and transaction ID;
-- consumed input references, with the correct ledger input source;
+- consumed input references, with the correct ledger selected input set;
 - newly created output references;
 - exact raw address bytes;
 - exact test policy ID, asset name and integer quantity;
@@ -105,7 +105,7 @@ Do not store only a mutable running total. The rollback-safe source of truth is 
 
 The parser must not assume every transaction in a block spends its ordinary inputs and creates its ordinary outputs. Since Alonzo, a transaction whose phase-2 scripts fail can consume collateral inputs instead; Babbage+ may also create a collateral-return output.
 
-Ogmios v7 documents an \`inputSource\` distinction for Alonzo-and-later transaction inputs (\`inputs\` versus \`collaterals\`). The block decoder must pin and test the exact response schema for the selected version and preserve this distinction:
+Ogmios v7 documents an \`spends\` distinction for Alonzo-and-later transaction inputs (\`inputs\` versus \`collaterals\`). The block decoder must pin and test the exact response schema for the selected version and preserve this distinction:
 
 - successful ledger transaction: apply ordinary consumed inputs and ordinary outputs;
 - phase-2-invalid ledger transaction: apply collateral consumption and the valid collateral-return output, not the ordinary input/output transition;
@@ -189,7 +189,7 @@ In addition to the parent M1 test matrix, include:
 - output with same token name but different policy ID;
 - output under same policy with different asset name.
 
-No certificate is issued while any indexer is catching up, is at a different chain point, or has unresolved input-source/era decoding.
+No certificate is issued while any indexer is catching up, is at a different chain point, or has unresolved spends/era decoding.
 
 ## 7. Toolchain and implementation reuse
 
@@ -208,7 +208,7 @@ M1-A can be marked **PASS — INDEXER CORRECTNESS ONLY** only when:
 - both local indexers agree byte-for-byte;
 - full replay and checkpoint+incremental state agree on the full PRE UTxO set;
 - Kupo agrees when asked for the same point;
-- successful and phase-2-invalid transaction input sources are applied correctly;
+- successful and phase-2-invalid transaction selected input sets are applied correctly;
 - duplicate delivery, restart, rollback and reorg tests pass;
 - all source/image hashes, node configuration, network magic, Ogmios/Kupo schemas and evidence are pinned.
 
@@ -217,7 +217,7 @@ This pass does not mean M1-C certificate integration passed, and does not mean p
 Stop / remain BLOCKED if:
 - no reproducible real Cardano testnet can be provisioned;
 - the two node selections cannot be shown to contain the exact test point;
-- Ogmios drops required block/input-source data or an era is unsupported;
+- Ogmios drops required block/spends data or an era is unsupported;
 - the custom index and full replay diverge;
 - Kupo differs at a point it claims to represent;
 - rollback/cursor recovery is not atomic;
@@ -237,7 +237,7 @@ This profile selects a test-only toolchain baseline, not a protocol dependency o
 
 - Cardano architecture: Node-to-Client ChainSync transfers full blocks; LocalStateQuery queries ledger state: https://docs.cardano.org/about-cardano/explore-more/cardano-architecture
 - Ogmios chain synchronization: full block roll-forward, rollback point, intersection and resume semantics: https://ogmios.dev/mini-protocols/local-chain-sync/
-- Ogmios v7.0.0 / cardano-node 11.0.1 compatibility and Alonzo+ \`inputSource\` change: https://github.com/CardanoSolutions/ogmios
+- Ogmios v7.0.0 / cardano-node 11.0.1 compatibility and Alonzo+ \`spends\` change: https://github.com/CardanoSolutions/ogmios
 - Kupo v2.12.x compatibility matrix and filtered-UTxO index description: https://github.com/CardanoSolutions/kupo
 - Cardano Developer Portal — indexing/rollback, append-only rows, durable cursors, duplicate deliveries and indexer categories: https://developers.cardano.org/docs/developers/curriculum/production/indexing-and-analytics/
 - Cardano API — QueryUTxOWhole O(n) time/space and QueryUTxOByTxIn indexed query: https://cardano-api.cardano.intersectmbo.org/cardano-api/Cardano-Api-Query.html
@@ -272,6 +272,34 @@ This increment is not yet a functioning node indexer. It does **not** include:
 - Kupo comparison, real rollback/reorg observation or resource benchmarks;
 - a real Cardano block test or evidence manifest.
 
-The decoder must preserve Ogmios `inputSource` semantics and correctly map outputs, collateral return and native-asset values. Do not interpret a missing `inputSource` as ordinary inputs; the adapter must pin and validate the exact response shape for the selected node/Ogmios versions. Ogmios ChainSync supplies input references, not resolved historical input outputs; the reducer resolves spends from its own local PRE index.
+The decoder must preserve Ogmios `spends` semantics and correctly map outputs, collateral return and native-asset values. Do not interpret a missing `spends` as ordinary inputs; the adapter must pin and validate the exact response shape for the selected node/Ogmios versions. Ogmios ChainSync supplies input references, not resolved historical input outputs; the reducer resolves spends from its own local PRE index.
 
 **Disposition:** M1-A CORE REDUCER = CODE PRESENT; M1-A LEDGER INTEGRATION = OPEN; M1-A CONFORMANCE = NOT RUN. No Mithril certificate or production snapshot claim is made.
+
+
+## 12. Ogmios v7 decoder and ChainSync client — implementation increment
+
+**Adapter:** `audit/cardano-integration/ogmiosV7PreSnapshotAdapter.mjs`  
+**Client:** `audit/cardano-integration/ogmiosV7ChainSyncClient.mjs`  
+**Adapter/client tests:** `audit/cardano-integration/ogmiosV7PreSnapshotAdapter.test.mjs`  
+**Package dependency:** `@cardanosolutions/json-bigint@1.0.1` (BigInt-safe JSON parsing).
+
+### API correction
+
+The exact Ogmios v7 schema uses `Transaction.spends: "inputs" | "collaterals"`. It does **not** expose a transaction field named `inputSource`; an earlier paragraph in this profile used the wrong name. The adapter now rejects missing/unknown `spends` and selects ordinary inputs or collateral inputs only from this explicit discriminator. It also maps Praos block `id/ancestor/height/slot`, transaction references, nested asset values, mint quantities and collateral-return outputs.
+
+### Implemented in this increment
+
+- Bech32 Shelley output address decoding to exact raw address bytes; Base58 Byron decoding is present for legacy outputs.
+- BigInt-safe Ogmios JSON parser and exact nested `value` / `mint` map decoding.
+- Praos block/transaction normalization into the reducer contract; unsupported block types/eras, malformed hashes, bad ancestry, unknown `spends`, missing collateral inputs, unexpected collateral return and zero-valued explicit assets fail closed.
+- Translation of Ogmios rollback `(slot,id)` to a retained local reducer point (including the block number); rollback to `origin` is allowed only when the index was bootstrapped at the origin sentinel.
+- Retained local intersection points ordered newest-first, with an origin fallback reserved when the configured point limit permits.
+- Reconnecting WebSocket ChainSync client using one outstanding `nextBlock` request at a time. Each roll-forward / rollback callback must complete before the next block is requested. JSON-RPC IDs are matched, transport errors reconnect, and protocol/decoder/callback errors stop fail-closed.
+- Test coverage now includes the Ogmios v7 wire shape, address decoding, asset/mint quantity precision, collateral semantics, optional empty arrays, ancestry, rollback mapping, `origin`, bounded intersection fallback and a deterministic fake-WebSocket backpressure test.
+
+### Current qualification boundary
+
+The adapter and client are **source code only** at this point. The new tests are authored but have not been executed. No Ogmios endpoint, Cardano node, Kupo instance or private testnet has been started. There is no persistent DB / atomic journal / crash recovery adapter yet; callers must commit reducer state durably inside callbacks before resolving. The client deliberately requests one block at a time but does not itself persist the index or configure Node-to-Client sockets.
+
+**M1-A status:** reducer + Ogmios v7 normalization + WebSocket ChainSync client = CODE PRESENT; Node integration and conformance = NOT RUN; M1-C certificate and M2 Plutus verification = NOT STARTED.
