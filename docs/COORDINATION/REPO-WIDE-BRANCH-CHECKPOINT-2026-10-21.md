@@ -1218,3 +1218,19 @@ Latest isolated M1-A workflow run **42460691746**: **53 tests / 53 passed / 0 fa
 ### M1-A private-devnet asset-scope clarification
 
 The 2-node local runbook in this branch is presently a **zero-state plumbing smoke test** unless a test-only asset is separately created. A fresh `cardano-testnet` genesis does not contain the production PRE token or its Preprod/Mainnet UTxO history. Using production PRE policy/name on that fresh chain and obtaining two empty, matching indexes is not a non-zero PRE distribution proof. A non-zero local ledger fixture requires a clearly test-only native asset and ephemeral test keys, with its mint transaction confined to the private testnet; that fixture is not yet implemented or run. A real production PRE balance check must instead use the appropriate public Cardano network read-only and the exact governed PRE policy/name/eligibility inputs. Do not conflate these two evidence tracks.
+
+
+## 2026-11-08 — Agent B: guarded private-testnet non-zero fixture helper
+
+**Helper:** `audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs`  
+**Tests:** `audit/cardano-integration/preSnapshotPrivateTestAssetFixture.test.mjs` (9 cases)  
+**Runbook:** `AGENT-B-M1-A-TWO-NODE-LOCAL-DEVNET-RUNBOOK-2026-11-08.md` §6.1  
+**Successful CI:** https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42467432784
+
+- The optional local fixture defines a test-only native asset named `M1TEST` (hex `4d3154455354`) with quantity 100 under a one-key native policy. The policy key is generated in the private testnet workdir; funding uses only `cardano-testnet`'s generated `utxo1` wallet.
+- The helper is hard-bound to Linux/WSL, cardano-cli 11.0.1, magic 4242, the exact node1 Unix socket under the generated testnet root, generated wallet index 1 and a workdir under `m1-fixtures/`. It refuses Preprod/Mainnet/other network magics and writes fixture files locally with restrictive permissions.
+- `--prepare` only generates ephemeral keys/policy and creates an unsigned tx body. `--submit-local-private-testnet` is a separate opt-in mode requiring `IMMORTAL_M1_ALLOW_LOCAL_TESTNET_SUBMIT=YES`; it signs with test-only keys, submits only to the configured private node1 socket, and uses a one-shot marker/txid to prevent blind replay. `--verify` is read-only and checks the exact token unit in the test wallet UTxO set.
+- CI run **42467432784**, tested commit `4abadfb2ff9d7db8ad071c35a7b0a40b7fac9430`: **78/78 tests pass** (69 existing + 9 fixture safety/quantity/path tests); new helper syntax check passed.
+- **Not run:** CI does not invoke cardano-cli or execute keygen/build/sign/submit. No testnet node, Ogmios or Kupo was started. Agent B did not prepare or submit M1TEST. Live non-zero verification remains open until the user executes the optional local runbook steps and captures both-node + Kupo evidence. M1TEST is not production PRE and does not change production PRE policy identity.
+
+**Status:** M1-A software tests 78/78 PASS; guarded local non-zero fixture helper CODE PRESENT / CLI execution NOT RUN; real 2-node + 2-Ogmios + 2-Kupo conformance OPEN; PRE production distribution qualification OPEN; M1-C Mithril and M2 Plutus NOT STARTED. No Preprod/Mainnet transactions or IMMORTAL/PRE-RICH protocol/economic/governance semantics changed.
