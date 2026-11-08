@@ -1213,3 +1213,8 @@ Latest isolated M1-A workflow run **42460691746**: **53 tests / 53 passed / 0 fa
 - The WSL2 runbook is documentation only and has not been executed on a real local machine. Real two-node/two-Ogmios/two-Kupo conformance, pinned bootstrap provenance, runtime identity and resource/restart/rollback evidence remain OPEN. Two testnet producer nodes on one locally generated genesis are not independent operators or an adversarial trustlessness proof.
 
 **Status:** M1-A synthetic test gate PASS (69/69); local two-node + Kupo runtime acceptance OPEN; Byron envelope/checksum hardening and complete bootstrap provenance OPEN; M1-C Mithril and M2 Plutus not started. No Preprod/Mainnet transactions, wallet signing or IMMORTAL protocol/economic/governance semantics changed.
+
+
+### M1-A private-devnet asset-scope clarification
+
+The 2-node local runbook in this branch is presently a **zero-state plumbing smoke test** unless a test-only asset is separately created. A fresh `cardano-testnet` genesis does not contain the production PRE token or its Preprod/Mainnet UTxO history. Using production PRE policy/name on that fresh chain and obtaining two empty, matching indexes is not a non-zero PRE distribution proof. A non-zero local ledger fixture requires a clearly test-only native asset and ephemeral test keys, with its mint transaction confined to the private testnet; that fixture is not yet implemented or run. A real production PRE balance check must instead use the appropriate public Cardano network read-only and the exact governed PRE policy/name/eligibility inputs. Do not conflate these two evidence tracks.
