@@ -196,11 +196,17 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
         },
         onRollForward: async (_block, tip) => latestTips.set(replica.id, tip),
         onRollBackward: async (_point, tip) => latestTips.set(replica.id, tip),
-        onError: error => observedErrors.set(replica.id, {
-          code: error?.code ?? 'OGMIOS_UNKNOWN_ERROR',
-          message: error?.message ?? String(error),
-          fatal: error?.fatal === true
-        })
+        onError: error => {
+          // Any transport/protocol interruption invalidates the old session's
+          // readiness until a fresh findIntersection is accepted.
+          establishedSessions.delete(replica.id)
+          latestTips.delete(replica.id)
+          observedErrors.set(replica.id, {
+            code: error?.code ?? 'OGMIOS_UNKNOWN_ERROR',
+            message: error?.message ?? String(error),
+            fatal: error?.fatal === true
+          })
+        }
       })
       clients.push(client)
     }
@@ -216,6 +222,23 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
         journals[0].getState(),
         journals[1].getState()
       ])
+      const fatalIndex = clients.findIndex(client =>
+        !client.isRunning && client.lastError?.fatal === true
+      )
+      if (fatalIndex >= 0) {
+        const replica = config.replicas[fatalIndex]
+        const error = observedErrors.get(replica.id) ?? {
+          code: 'OGMIOS_FATAL_ERROR',
+          message: clients[fatalIndex].lastError?.message ?? 'Fatal ChainSync error'
+        }
+        report = Object.freeze({
+          status: 'FAIL',
+          code: 'DUAL_REPLICA_OGMIOS_FATAL:' + replica.id,
+          comparison: null,
+          error
+        })
+        break
+      }
       if (!config.replicas.every(replica => establishedSessions.has(replica.id)) ||
           !config.replicas.every(replica =>
             isPreSnapshotRemoteTipAtOrAfterTarget(latestTips.get(replica.id), config.expectedPoint)
@@ -234,23 +257,6 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
 
       if (comparison.status !== 'WAITING') break
 
-      const fatalIndex = clients.findIndex(client =>
-        !client.isRunning && client.lastError?.fatal === true
-      )
-      if (fatalIndex >= 0) {
-        const replica = config.replicas[fatalIndex]
-        const error = observedErrors.get(replica.id) ?? {
-          code: 'OGMIOS_FATAL_ERROR',
-          message: clients[fatalIndex].lastError?.message ?? 'Fatal ChainSync error'
-        }
-        report = Object.freeze({
-          status: 'FAIL',
-          code: 'DUAL_REPLICA_OGMIOS_FATAL:' + replica.id,
-          comparison,
-          error
-        })
-        break
-      }
       await wait(config.pollIntervalMs)
     }
 
