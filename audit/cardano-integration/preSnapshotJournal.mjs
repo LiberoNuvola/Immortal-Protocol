@@ -440,10 +440,12 @@ export async function createPreSnapshotJournal({
         return state
       },
       async applyBlock(block) {
-        return enqueue(() => appendEvent({ type: 'block', block }))
+        const detachedBlock = JSON.parse(canonicalJson(block))
+        return enqueue(() => appendEvent({ type: 'block', block: detachedBlock }))
       },
       async rollback(point) {
-        return enqueue(() => appendEvent({ type: 'rollback', point }))
+        const detachedPoint = JSON.parse(canonicalJson(point))
+        return enqueue(() => appendEvent({ type: 'rollback', point: detachedPoint }))
       },
       async getStatus() {
         return Object.freeze({
@@ -582,8 +584,15 @@ export function createPersistentOgmiosIndexHandlers(journal) {
  */
 export function createPersistentOgmiosV7ChainSyncClient({ journal, ...clientOptions }) {
   const handlers = createPersistentOgmiosIndexHandlers(journal)
+  const observerOnIntersection = clientOptions.onIntersection
   return createOgmiosV7ChainSyncClient({
     ...clientOptions,
-    ...handlers
+    ...handlers,
+    onIntersection: async (point, tip) => {
+      await handlers.onIntersection(point, tip)
+      if (typeof observerOnIntersection === 'function') {
+        await observerOnIntersection(point, tip)
+      }
+    }
   })
 }
