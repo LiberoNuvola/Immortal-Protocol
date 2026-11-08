@@ -1055,3 +1055,29 @@ M1-C Mithril certification and M2 Plutus verification remain separate. Productio
 - **First V1 Preprod Issue:** remains a separate Issue #37 path; current USD/USDM source, fresh EV1–EV7, deployment-bound approval and R1/Kc/Ω certificate remain independent blockers.
 
 No code, tests, workflows, constants, profile, V3/Reveal semantics, oracle schema, certificate, wallet action, transaction, deployment or ledger state was changed or executed.
+
+
+## 2026-11-08 — Agent B: isolated PRE snapshot UTxO reducer prototype
+
+**Core source:** `audit/cardano-integration/preSnapshotUtxoIndex.mjs`  
+**Unit tests:** `audit/cardano-integration/preSnapshotUtxoIndex.test.mjs`  
+**Test command:** `cd audit/cardano-integration && npm run test:pre-snapshot-index`  
+**Status:** CORE CODE PRESENT / TESTS AUTHORED BUT NOT RUN / NO LEDGER INTEGRATION.
+
+### Implemented
+
+- Pure, Node built-in-crypto reducer over a normalized block contract; no production or external dependencies added.
+- Exact PRE policy/name matching, arbitrary-precision quantities and test-only raw-address aggregation.
+- Deterministic SHA-256 Merkle-sum root and canonical snapshot message binding network, exact point, asset, identity-rule ID, total and leaf count.
+- Valid ordinary-input/output handling; invalid phase-2 collateral-input and collateral-return handling; valid mint/burn delta reconciliation.
+- Fail-closed checks for duplicate transactions/inputs/UTxOs, unknown validity, malformed quantities/addresses, zero target-asset outputs, wrong parent, skipped block number and conservation mismatch.
+- Immutable public state; rollback journals correctly handle UTxOs created and then spent inside the same block; rollback and alternate replay are modeled.
+- Twelve Node built-in test cases authored and a package command registered.
+
+### Remaining gap
+
+This is a reducer, **not yet a running Cardano indexer**. No Ogmios WebSocket client/decoder, durable cursor/database, local cardano-node topology, UTxO bootstrap, full replay, Kupo comparison, real chain rollback, resource measurement or M1 ledger evidence exists yet. Tests have not been run because no local repository checkout is available in this environment; do not report a pass. Ogmios adapter work must normalize the exact v7 schema and preserve `inputSource`, including failed phase-2 collateral semantics, before feeding the reducer.
+
+**M1-A status:** reducer implementation present; node ingestion and ledger conformance open. M1-C custom Mithril certificate and M2 Plutus proof verification remain future independent gates.
+
+No production governance rules, PRE asset identity, GOV entity mapping, voting eligibility, voting snapshot point, V3, Reveal, B1 EEV, Issue #37, Issue #43, Issue #49, workflow, wallet, transaction, deployment or ledger state changed.
