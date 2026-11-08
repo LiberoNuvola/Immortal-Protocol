@@ -304,8 +304,17 @@ function findRetainedPoint(state, slot, id) {
     state.anchorPoint
   ]
   const matches = candidates.filter(point => point.slot === slot && point.hash === id)
-  if (matches.length !== 1) fail('OGMIOS_ROLLBACK_POINT_NOT_RETAINED')
-  return matches[0]
+  const unique = []
+  const seen = new Set()
+  for (const match of matches) {
+    const key = match.slot + ':' + match.blockNo + ':' + match.hash
+    if (!seen.has(key)) {
+      seen.add(key)
+      unique.push(match)
+    }
+  }
+  if (unique.length !== 1) fail('OGMIOS_ROLLBACK_POINT_NOT_RETAINED')
+  return unique[0]
 }
 
 export function resolveOgmiosV7RollbackPoint(pointValue, state) {
