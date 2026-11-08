@@ -942,3 +942,88 @@ The same run re-observed the existing Oracle State singleton: timestamp age `248
 On this exact HEAD, Security Credential Boundary, Governance Adversarial Lab, Portability, Protocol Declaration and Cardano Adapter Sale all passed; Documentation Link Check is the only failed general workflow, still for the pre-existing Agent C relative link. No transaction, wallet signature, deployment approval, oracle refresh, or ledger write occurred.
 
 **Disposition:** REPEATED EXACT-HEAD EV1–EV7 PASS / DIRECT PHYSICAL CAPITAL PROFILE REPRODUCIBLE / ORACLE STALE / SOURCE-SET NOT QUALIFIED / PROTECTEDCAPITAL INTERNAL ONLY / APPROVAL NOT CREATED / FIRST ISSUE BLOCKED.
+
+## 47. Agent A — source-level multi-provider oracle boundary audit and target architecture — 2026-11-08
+
+**Classification:** READ-ONLY SOURCE AUDIT / ARCHITECTURE PROPOSAL / NO PROVIDER OR QUORUM POLICY SELECTED. The purpose of this section is to answer whether the current repository already implements the multi-oracle system discussed for Option B. It does not authorize an Oracle schema, validator, MintPolicy, economic rule, provider, quorum, threshold or deployment change.
+
+### 47.1 Exact current code finding: multi-asset is not multi-provider
+
+The current code contains a useful additive datum constructor, but its semantics are narrower than a multi-oracle consensus surface:
+
+- `Adapter/CARDANO/observation/OracleTypes.hs` (blob `fd9b59d59d3f536d4113fe781909688157a92c59`) defines `OracleQuote` with asset policy/name, integer price, timestamp and publisher. `OracleDatum` keeps the legacy five-field constructor and adds `OracleQuoteSet [OracleQuote]`.
+- `lookupOracleQuote(policy, name, datum)` searches by asset identity and requires exactly one match. A second quote for the same asset identity returns `Nothing`, even where its publisher differs. This is an intentional duplicate/ambiguity rejection, not source aggregation.
+- `plutus/Economic.hs` (blob `e50366a65ce34e9433d5ff179dfc03a35a24c1a1`) has `oraclePriceFor(..., OracleStateId, PubKeyHash publisher, ..., assetPolicy, assetName)`. For a matching singleton reference input it accepts one quote only when the quote publisher equals the single configured publisher, timestamp is no later than the transaction validity upper bound and no older than `maxOracleAge`, and integer price is non-negative. It returns that price; it does not collect multiple publishers, calculate a median/quorum, compare source dispersion, or bind an approved source-set version.
+- `Adapter/CARDANO/observation/OracleTypes.hs` sets `precision = 1,000,000` and the quote record has no explicit exponent, exact rational denominator, confidence interval, bid/ask, source/feed ID, base/quote direction, network tag or provider-specific witness digest. A raw Pyth price/exponent therefore cannot safely be treated as the existing integer `oqPrice` without a separate versioned conversion contract.
+- `src/config.ts` (blob `245d81ee6f9916623f7ed31fb4ef904af7407d3b`) exposes one `VITE_ORACLE_PUBLISHER_PKH`, one Oracle State policy/name and one Oracle State address. `src/loadValidator.ts` (blob `004c8d2281da0cb062b2e7387b597b6bd7578ae3`) parameterizes MintPolicy, PrizeValidator and B1PrizePool with one Oracle State identity and one publisher.
+
+**Conclusion:** the repository supports multiple asset quotes inside one authenticated Oracle State singleton. It does **not** currently implement independently authenticated observations for the same asset from several providers, source independence checks, quorum/aggregation, source-set governance or provider-disagreement handling.
+
+### 47.2 The current consumer and admission path still use one configured quote source
+
+The source path is consistent across the current economic consumers:
+
+- `plutus/MintPolicy.hs` (blob `0d59fc05b4c11873984fffd10014bd46d8470509`) calls `Economic.totalUsdmValue` from `atomicTreasuryPaymentValid` using the single parameterized Oracle State and publisher.
+- `plutus/PrizeValidator.hs` (blob `0e76d5c3bfd636b2cf212b3513ca84d48c6e3a41`) values a Claim settlement basket through the same single Oracle State/publisher pair.
+- `plutus/B1PrizePool.hs` (blob `175be60b8f01ef214c92d7527191bcebb66ad656`) uses the same conversion primitive for payout and Pool valuation.
+- `src/genesisTreasuryObservation.ts` (blob `8c08499c373a0318bb51a4d7d111683105f3d635`) selects exactly one Oracle State singleton UTxO, decodes the legacy five-field quote shape in its current reader, and checks one configured publisher/freshness. It is an off-chain Treasury observation path, not multi-provider on-chain verification.
+
+The existing `plutus/test/EconomicOracleTest.hs` (blob `14e832b15356a90fa20369eb3011ea49b622ffa3`) demonstrates the boundary rather than closing it:
+
+- `runMultiAssetQuoteSetBasketCase` covers ADA + PRE as two **different** asset identities in one `OracleQuoteSet`.
+- `runDuplicateOracleQuoteFailsClosedCase` rejects two observations for the same asset identity.
+- `runLegacyOracleStateRemainsSoleConfiguredPriceSourceCase` is explicitly a characterization of the still-open Pyth → MintPolicy binding: an unqualified candidate quote alone cannot value the basket, and when both candidate and configured legacy Oracle State are present the configured legacy quote remains authoritative. This is not a Pyth signature-verification test, not a multi-provider test and not proof of a production update path.
+
+No test in this audit was executed. These source identities are read-only branch snapshots, not new CI results.
+
+### 47.3 Provider/source qualification matrix — no current Preprod source is approved for Option B
+
+| Candidate | What the repository evidence supports | Remaining disqualifier for current Preprod USD/USDM use |
+|---|---|---|
+| **Pyth Lazer / Pyth Pro** | A genuine signed pull-update architecture is available for Cardano; a provider-specific verifier can be part of a Plutus/Aiken transaction path. Existing repository probe and feed catalogue work distinguish ADA/USD and reserve/NAV products. | The configured access did not establish an entitled live ADA/USD plus USDM/USD source pair for this deployment. The surfaced USDM reserve NAV is not a USD-per-USDM unit quote. No qualified two-leg proof currently reaches MintPolicy. |
+| **DIA Cardano Oracle** | A concrete Aiken / Plutus V3 Cardano push-oracle/provider architecture and custom-feed onboarding route are documented. | No existing qualified USDM/USD pair on the required Preprod network was evidenced; reviewed deployment evidence covered Mainnet/Preview, not the required Preprod deployment. Price scale, source methodology, signer governance and V2 consumer compatibility remain unqualified. A custom-feed request is only a possible route; none was sent in this audit. |
+| **Orcfax CER** | Mainnet ADA/USD and ADA/USDM statement identities and on-chain FS-token publication were observed in prior repository artifacts. | The latest recorded statements were stale against their declared one-hour heartbeat; published deployment evidence did not establish an operational Preprod pair. Two stale feeds cannot be combined into a current price. |
+| **Charli3** | A historical Preprod USDM/USD Feed NFT and ADA/USD Feed NFT were located in the source/ledger investigation. | The recorded USDM/USD datum was dated 2024-02-21, expired, with missing/unsupported precision; the Preprod ADA/USD datum was also stale/expired. Later public liveness evidence was mixed, so the safe classification is NOT QUALIFIED, not a categorical assertion that the whole service is inactive. |
+| **Cardano DEX-derived cross-rate** | Mainnet exact Moneta USDM/ADA pool UTxO/datums have been structurally reconciled for Minswap V2 and SundaeSwap V3. Same-run ADA/USD public CEX references exist as indicative research. | This is not the Preprod tUSDM unit; same-pool/indexer mirrors are not independent venues; recorded snapshots were not one atomic multi-venue observation; executable depth, manipulation cost, governed USD source and on-chain consumer proof are not qualified. A Mainnet market must never be substituted for the configured Preprod token. |
+
+References within this memo: §§33–46, in particular §§35, 38–43 and 44–46. The external architecture references already recorded there include [Pyth's Cardano integration](https://docs.pyth.network/price-feeds/core/use-real-time-data/cardano), [DIA Cardano Oracle](https://github.com/diadata-org/dia-cardano-oracle), [Orcfax feed overview](https://docs.orcfax.io/feed-overview) and [Charli3 Preprod network configuration](https://docs.charli3.io/oracles/resources/networks/preprod). Those provider documents establish possible integration patterns, not current source qualification for the PRE-RICH deployment.
+
+### 47.4 Target architecture for a genuinely multi-provider Option B path
+
+A future multi-provider price path must be a **proof-carrying source-set verifier**, not an off-chain service that simply returns a median:
+
+1. **Provider-specific verification adapters.** Every included observation must be authenticated according to that provider's real mechanism: for example, a Pyth signed pull update and its Cardano verifier; a DIA Pair NFT and its authenticated datum/signer; an Orcfax statement with its FS-state/token and feed identity; or a DEX pool UTxO with exact pool identity, datum and deterministic swap-curve replay. An indexer/API response may help acquire data but cannot itself become economic authority.
+2. **Canonical observation shape.** Each verified observation should bind at least: network; exact asset policy/name; base and quote asset identities and direction; provider/feed/source ID and version; exact rational price (numerator/denominator or integer plus declared exponent/scale); provider timestamp and ledger/validity reference; confidence/bid/ask fields where the provider supplies them; publisher/authority identity; verifier version; and evidence digest. Missing fields required by the selected provider/model must fail closed rather than be defaulted.
+3. **Source-set policy binding.** An immutable versioned source-set definition must identify which provider adapters are accepted, how provider independence/correlation is assessed, what evidence is required, and the allowed composition/aggregation operation. A caller, relayer or indexer cannot choose the source-set version or silently add a provider.
+4. **Same-asset multi-provider reconciliation.** Only after each provider proof is independently verified may the protocol apply an authority-approved rule to the resulting observations. A second publisher entry for the same asset must not be counted merely because it exists in an `OracleQuoteSet`; repeated observations from one provider, one upstream dataset mirrored by several APIs, or several wrappers around the same venue do not constitute independent sources.
+5. **Exact Option B composition.** If using a two-leg route, the inputs must be compatible in time and direction. For example, `USD/USDM = (USD/ADA) / (USDM/ADA)` when the two inputs are precisely USD-per-ADA and USDM-per-ADA; equivalently `USD/USDM = (USD/ADA) × (ADA/USDM)`. Compute with exact integer rationals/cross-multiplication, retain the raw exponents, and round once in the conservative direction under a versioned rule. Do not pre-round each leg or assume `1 USDM = 1 USD`.
+6. **On-chain verifier, permissionless construction.** Any participant may assemble and submit the evidence packet, but the Cardano verifier must independently validate each source-specific witness, the exact asset/network identities, timestamps, source-set hash and deterministic composition/aggregation. Relayers/indexers may improve liveness only; they cannot choose the quote, quorum, outlier rule or acceptance result. If the approved evidence set is incomplete, stale, ambiguous, equivocal or outside policy, the transaction fails closed.
+7. **Atomic use across consumers.** The same PriceReference commitment/version must be used consistently by MintPolicy Treasury valuation, B1 Pool valuation and PrizeValidator settlement (and by off-chain observation only as a mirror). No consumer may silently fall back to a different configured single-publisher quote when the selected multi-provider set is missing.
+
+This is a target boundary, not a statement that these provider adapters or a multi-provider verifier currently exist. The current single-publisher `OracleQuoteSet` must not be re-labelled as multi-oracle consensus.
+
+### 47.5 Decisions and qualification gates still open
+
+Before any implementation, the specification authority must define the source-set governance boundary and the exact USD/USDM method. The present evidence does not authorize this audit to invent:
+
+- the minimum number of sources or quorum;
+- provider eligibility/independence categories or correlation limits;
+- an aggregation rule (median, trimmed mean, interval intersection, weighted result or direct pair priority);
+- a numeric price-dispersion tolerance, confidence threshold or outlier cut;
+- the maximum cross-source timestamp skew or observation horizon;
+- how provider confidence intervals, spreads, liquidity and DEX manipulation cost enter a conservative price;
+- the exact Preprod provider identities, feed IDs, policy/asset bindings and signer/rotation authorities;
+- price precision/exponent limits, rational rounding, integer bounds or Plutus resource limits;
+- whether a direct unit-price feed may be preferred over a qualified two-leg result, and what failover is allowed.
+
+Required work order:
+
+1. Complete a provider-by-provider evidence matrix for the **same target network and exact asset unit**; explicitly separate a source lead, a structurally observed feed, a fresh quote, a verified proof and a qualified settlement source.
+2. Select, version and approve the source-set policy and the exact conversion/aggregation semantics; do not modify `OracleQuote`, `Economic.totalUsdmValue`, `OracleDatum`, MintPolicy, PrizeValidator or B1PrizePool before this approval.
+3. Implement provider-specific proof adapters and a deterministic reference model, then test malformed, stale, future-dated, duplicate, wrong-network, wrong-asset, wrong-direction, cross-provider disagreement, same-source replay and missing-provider cases.
+4. Benchmark the complete multi-source witness on the actual Cardano target for script size, transaction size, execution units, reference-input count and datum footprint. An off-chain unit test is not a ledger acceptance result.
+5. Requalify EV1–EV7 using the selected source/valuation boundary, obtain a separate human deployment approval bound to current evidence hashes, and retain the independent R1/Kc/Ω certificate and all other first-Issue gates.
+
+**Disposition:** CURRENT ORACLE SCHEMA = MULTI-ASSET / SINGLE-QUOTE-PER-ASSET; CURRENT CONSUMERS = ONE CONFIGURED ORACLE STATE + ONE CONFIGURED PUBLISHER; MULTI-PROVIDER SAME-ASSET VERIFICATION = NOT IMPLEMENTED; PREPROD USD/USDM SOURCE = NOT QUALIFIED; OPTION B = SELECTED APPROACH, NOT A QUALIFIED DATA PATH; FIRST REAL ISSUE = BLOCKED.
+
+No provider was selected, no external feed/on-chain datum was refreshed, no custom feed was requested, no quorum or threshold was invented, and no schema, code, tests, workflow, approval, wallet, transaction, deployment or ledger state was changed by this audit.
