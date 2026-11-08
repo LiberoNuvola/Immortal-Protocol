@@ -332,10 +332,12 @@ export function resolveOgmiosV7RollbackPoint(pointValue, state) {
 
 export function getOgmiosV7IntersectionPoints(state, maxPoints = 128) {
   if (!Number.isInteger(maxPoints) || maxPoints < 1) fail('OGMIOS_INVALID_INTERSECTION_LIMIT')
+  const hasOrigin = samePoint(state.anchorPoint, PRE_SNAPSHOT_ORIGIN_POINT)
+  const pointLimit = hasOrigin ? Math.max(0, maxPoints - 1) : maxPoints
   const candidates = [
     state.currentPoint,
     ...state.history.slice().reverse().map(entry => entry.point),
-    ...(samePoint(state.anchorPoint, PRE_SNAPSHOT_ORIGIN_POINT) ? [] : [state.anchorPoint])
+    ...(hasOrigin ? [] : [state.anchorPoint])
   ]
   const points = []
   const seen = new Set()
@@ -344,11 +346,9 @@ export function getOgmiosV7IntersectionPoints(state, maxPoints = 128) {
     if (seen.has(key)) continue
     seen.add(key)
     points.push(pointToOgmios(point))
-    if (points.length >= maxPoints) break
+    if (points.length >= pointLimit) break
   }
-  if (samePoint(state.anchorPoint, PRE_SNAPSHOT_ORIGIN_POINT) && points.length < maxPoints) {
-    points.push('origin')
-  }
+  if (hasOrigin) points.push('origin')
   return points
 }
 
