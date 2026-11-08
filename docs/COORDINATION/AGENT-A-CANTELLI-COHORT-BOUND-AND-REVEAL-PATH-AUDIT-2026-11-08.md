@@ -94,9 +94,19 @@ The Cantelli predicate is invalid as an admission guarantee if an adversary can 
 
 Thus the available amount changes by `effectivePool_after = effectivePool_before − payout + ticket_price`, but the payout affordability test is applied **before** the ticket-price reserve is released.
 
-The player secret is supplied to Reveal. Once the Beacon is Ready, the ticket holder can compute that ticket's deterministic result before submitting Reveal, so Reveal timing/order is a strategic path variable. Selectively expiring a losing ticket does not increase the sum of its fixed payouts (a loss is zero), but it can alter the timing of reserve releases. A terminal cohort-tail check alone therefore does not prove that every permitted Reveal/Expire ordering remains admissible.
+The player secret is supplied to Reveal. Once the Beacon is Ready, the ticket holder can compute that ticket's deterministic result before submitting Reveal, so Reveal timing/order is a strategic path variable. Selectively expiring a losing ticket does not increase the sum of its fixed payouts (a loss is zero), but it can alter the timing of reserve releases.
 
-Before this bound can be used by PRE-RICH Game, the specification must define the exact path event and the capital amount `C` consistently with this pre-Reveal affordability guard, face-reserve release, pending-liability crystallisation, Jackpot lock, expiry and all permitted orderings. `C` must not be equated with gross Treasury bootstrap, gross PrizePool Value, or the current `effectivePool` without that accounting derivation.
+**A conservative path-safety lemma is available for one fixed cohort.** Let `E0` be the exact B1 `effectivePool` after all tickets in that cohort have been issued and before its first Reveal. Let `S = ΣX_i` be the sum of the fixed possible payouts of every ticket in that cohort. If `S ≤ E0`, then every permitted ordering of Reveal and Pending Expire passes the B1 pre-Reveal payout-affordability check:
+
+- Before a Reveal of ticket k, let `R` be the tickets already revealed. The current effective pool is `E = E0 − Σ_{i∈R}X_i + Σ_{i∈R}P_i + Σ_{j expired}P_j`.
+- Since all payouts are non-negative and `S ≤ E0`, the next payout satisfies `X_k ≤ E0 − Σ_{i∈R}X_i ≤ E`.
+- Expiry releases face reserve and therefore only increases `E`; it cannot make this bound worse.
+
+Thus, for this fixed cohort with no additional Pool-draining Issue or other outflow during the resolution sequence, the event of any pre-Reveal affordability failure is contained in `S > E0`. The Cantelli bound applied with `C = E0` is therefore a conservative upper bound on **all Reveal/Expire ordering failures**, not merely a terminal accounting check. It may be loose because face-reserve releases can make some sequences succeed even when `S > E0`.
+
+This lemma does not automatically cover overlapping cohorts, other round admissions, a new model version, external Pool outflows, or a global lifetime risk budget. Such events must be included in one shared perimeter or allocated/proved without double-spending the same capital or risk budget.
+
+For the illustrative table in §3.2, `C=4,000 USDM` must therefore mean the B1 pre-Reveal `effectivePool` (or a stricter value after other protected obligations), **after** pending liabilities, all unresolved face-price reserves and locked Jackpot are deducted. It is not gross Pool liquidity, Treasury bootstrap, or an independently available 4,000-USDM balance. This exact capital mapping still requires a qualified authenticated state and the wider IMMORTAL protection contract.
 
 ## 5. What this candidate solves — and what it does not
 
