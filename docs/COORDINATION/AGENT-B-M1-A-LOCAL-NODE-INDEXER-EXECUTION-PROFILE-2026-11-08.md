@@ -303,3 +303,22 @@ The exact Ogmios v7 schema uses `Transaction.spends: "inputs" | "collaterals"`. 
 The adapter and client are **source code only** at this point. The new tests are authored but have not been executed. No Ogmios endpoint, Cardano node, Kupo instance or private testnet has been started. There is no persistent DB / atomic journal / crash recovery adapter yet; callers must commit reducer state durably inside callbacks before resolving. The client deliberately requests one block at a time but does not itself persist the index or configure Node-to-Client sockets.
 
 **M1-A status:** reducer + Ogmios v7 normalization + WebSocket ChainSync client = CODE PRESENT; Node integration and conformance = NOT RUN; M1-C certificate and M2 Plutus verification = NOT STARTED.
+
+
+## 13. Ogmios v7 schema erratum and remaining parser limits
+
+The official v7 TypeScript schema confirms:
+- `Transaction.spends` is required and restricted to `"inputs" | "collaterals"`;
+- `inputs` and `collaterals` are transaction-output references;
+- the block header has `type: "praos"`, `era`, `id`, `ancestor`, `height`, and `slot`;
+- ChainSync responses use `direction: "forward" | "backward"`, and rollback points are `{slot,id}` or `"origin"`.
+
+The prior use of `inputSource` in this report was incorrect for Ogmios v7 and is superseded by the `spends` contract above. This distinction is not cosmetic: only the ledger-selected input set may be consumed by the PRE index.
+
+The adapter currently decodes Base58 Byron address payload bytes, but does not yet verify the Byron CBOR envelope and checksum. Shelley Bech32 addresses have HRP and checksum validation. The Byron path is therefore an explicit hardening limitation: do not use this decoder for a production completeness claim until Byron address validation is independently implemented/tested or the protocol profile proves that no eligible PRE can exist in such outputs.
+
+Official pins inspected:
+- v7.0.0 JSON schema: https://raw.githubusercontent.com/CardanoSolutions/ogmios/v7.0.0/docs/static/cardano.json
+- v7.0.0 TypeScript schema: https://raw.githubusercontent.com/CardanoSolutions/ogmios/v7.0.0/clients/TypeScript/packages/schema/src/index.ts
+- v7.0.0 ChainSynchronization client: https://github.com/CardanoSolutions/ogmios/blob/v7.0.0/clients/TypeScript/packages/client/src/ChainSynchronization/Client.ts
+- v7.0.0 ChainSynchronization handlers: https://github.com/CardanoSolutions/ogmios/blob/v7.0.0/clients/TypeScript/packages/client/src/ChainSynchronization/nextBlock.ts
