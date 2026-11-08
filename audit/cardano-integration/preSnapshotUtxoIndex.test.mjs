@@ -233,12 +233,22 @@ test('unknown validity, wrong parent, unknown rollback point and malformed asset
   ])), /UNKNOWN_TRANSACTION_VALIDITY/)
   assert.throws(() => applyPreSnapshotBlock(initial, block(point(0, 0, '93'), next, [])), /BLOCK_PARENT_MISMATCH/)
   assert.throws(() => rollbackPreSnapshotIndex(initial, point(9, 9, '94')), /ROLLBACK_POINT_NOT_RETAINED/)
+  assert.throws(() => applyPreSnapshotBlock(initial, block(origin, point(2, 2, '96'), [])), /BLOCK_SEQUENCE_MISMATCH/)
   assert.throws(() => bootstrap([{
     txId: '95'.repeat(32),
     index: 0,
     addressHex: 'zz',
     assets: [{ ...asset, quantity: '100' }]
   }]), /INVALID_HEX/)
+})
+
+test('index state and exported UTxO rows are immutable', () => {
+  const state = bootstrap([utxo('97'.repeat(32), 0, '01aa', 100)])
+  assert.equal(Object.isFrozen(state), true)
+  assert.equal(Object.isFrozen(state.utxos), true)
+  assert.equal(Array.isArray(state.utxos), true)
+  assert.equal(Object.isFrozen(state.utxos[0]), true)
+  assert.throws(() => state.utxos.push({}), TypeError)
 })
 
 test('snapshot bytes and digest are deterministic for the same point and balances', () => {
