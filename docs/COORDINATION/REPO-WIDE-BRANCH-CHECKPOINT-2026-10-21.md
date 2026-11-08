@@ -1401,3 +1401,23 @@ References checked 2026-11-08:
 - Kupo v2.12.0 tested with cardano-node 11.0.1 and Ogmios v7: https://github.com/CardanoSolutions/kupo/releases/tag/v2.12.0
 
 **Current Agent B disposition:** software gate PASS; runtime gate OPEN; no claim of live two-replica/Kupo acceptance.
+
+
+## 2026-11-08 — Agent B M1-A recovery-marker hardening
+
+**Code/test SHA:** `7f8005fef23ff64ba88f1e97606b255c02adc802`.  
+**Files:** `audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs` and `audit/cardano-integration/preSnapshotPrivateTestAssetFixture.test.mjs` only.
+
+### Defect and bounded correction
+
+Read-only review found that the intermediate `SIGNED_READY_TO_SUBMIT` marker had a literal backslash-plus-n sequence appended rather than a real newline. If execution stopped after that marker was written but before submit/finalization, `submitted.json` would not be valid JSON for manual recovery inspection.
+
+- Added pure serializer `serializeFixtureSubmissionMarker`, now used for all three marker states: `SUBMISSION_ATTEMPT_STARTED`, `SIGNED_READY_TO_SUBMIT` and `SUBMITTED_PRIVATE_TESTNET`.
+- Added regression coverage that asserts the serialized value ends in byte 10 (LF) and can be parsed back with `JSON.parse` for each state.
+- No submit, signing, key generation, network startup or CLI execution was performed by this code/test correction.
+
+### Verification
+
+[M1-A PRE Snapshot Index and WAL Tests #42481336005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42481336005) on exact SHA `7f8005fef23ff64ba88f1e97606b255c02adc802`: **SUCCESS**, 79/79 tests passed; all listed M1-A source syntax checks passed.
+
+**M1-A status remains:** software regression gate PASS; private Cardano runtime and dual-node/Ogmios/Kupo acceptance OPEN. The serializer hardening does not convert a software test into runtime evidence.
