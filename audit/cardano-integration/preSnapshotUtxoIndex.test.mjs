@@ -251,6 +251,12 @@ test('index state and exported UTxO rows are immutable', () => {
   assert.throws(() => state.utxos.push({}), TypeError)
 })
 
+test('zero quantity for the exact asset is rejected rather than silently omitted', () => {
+  assert.throws(() => bootstrap([
+    utxo('98'.repeat(32), 0, '01aa', 0)
+  ]), /ZERO_TARGET_ASSET_QUANTITY/)
+})
+
 test('snapshot bytes and digest are deterministic for the same point and balances', () => {
   const first = bootstrap([
     utxo('a0'.repeat(32), 0, '02bb', 25),
