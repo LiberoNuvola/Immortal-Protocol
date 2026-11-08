@@ -278,3 +278,33 @@ test('persistent ChainSync factory binds journal callbacks without exposing an a
     await journal.close()
   })
 })
+
+
+test('queued writes are detached from caller mutation and drained before close', async () => {
+  await withDirectory(async directory => {
+    const journal = await create(directory)
+    const callerBlock = JSON.parse(JSON.stringify(transferBlock))
+    const firstWrite = journal.applyBlock(callerBlock)
+    callerBlock.point.hash = 'ff'.repeat(32)
+    const secondWrite = journal.applyBlock(nextBlock)
+    const closePromise = journal.close()
+
+    await assert.rejects(
+      journal.applyBlock({
+        parentPoint: pointTwo,
+        point: { slot: 3, blockNo: 2, hash: '44'.repeat(32) },
+        transactions: []
+      }),
+      /PRE_SNAPSHOT_JOURNAL_CLOSING/
+    )
+
+    await Promise.all([firstWrite, secondWrite])
+    await closePromise
+
+    const reopened = await openPreSnapshotJournal({ directory })
+    const status = await reopened.getStatus()
+    assert.equal(status.sequence, 2)
+    assert.equal(status.currentPoint.hash, pointTwo.hash)
+    await reopened.close()
+  })
+})
