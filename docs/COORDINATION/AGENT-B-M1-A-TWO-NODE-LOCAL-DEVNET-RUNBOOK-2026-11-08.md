@@ -15,7 +15,7 @@ Questo runbook avvia un private testnet locale, non una rete pubblica e non Prep
 
 Il risultato PASS significa soltanto che queste repliche locali concordano sui dati osservati. Non prova indipendenza tra operatori, correttezza del software cardano-node, autenticità del bootstrap, identità dei titolari PRE o trustlessness assoluta. I due pool node creati dallo stesso cardano-testnet condividono genesis e ambiente operativo.
 
-**Non esegue** mint, Issue, firma wallet, submit di transazioni, deploy di validator/policy, modifica del protocollo IMMORTAL o aggiornamento dei parametri di governance. Di conseguenza, nella modalità attuale è un *zero-state plumbing smoke test*: il nuovo private testnet non contiene il token PRE di Preprod/Mainnet e non genera output non-zero dell'asset. Un PASS con supply zero dimostra soltanto che nodi, Ogmios, WAL e Kupo concordano su un insieme vuoto; non è una prova della distribuzione PRE reale né una qualificazione completa del comportamento non-zero.
+La procedura base non esegue automaticamente alcuna transazione. La sezione 6.1 descrive una fixture nativa *esclusivamente di test* opzionale, confinata al private testnet magic 4242 e richiamabile soltanto con doppia conferma. Non esegue mai mint/Issue PRE-RICH, firma con chiavi IMMORTAL o PRE-RICH, transazioni Preprod/Mainnet, deploy di validator/policy di produzione o modifiche ai parametri di governance. Di conseguenza, nella modalità attuale è un *zero-state plumbing smoke test*: il nuovo private testnet non contiene il token PRE di Preprod/Mainnet e non genera output non-zero dell'asset. Un PASS con supply zero dimostra soltanto che nodi, Ogmios, WAL e Kupo concordano su un insieme vuoto; non è una prova della distribuzione PRE reale né una qualificazione completa del comportamento non-zero.
 
 ## 2. Stack fissato
 
@@ -180,6 +180,78 @@ ogmios \
 
 Controllare le due porte con l'endpoint health di ciascuna istanza. Verificare che non siano stati accidentalmente avviati due Ogmios sullo stesso socket.
 
+
+## 6.1. (Opzionale) Creare una fixture native asset non-zero, solo su magic 4242
+
+Questa fase consente di esercitare davvero il percorso UTxO non-zero. Crea un token locale chiamato `M1TEST`, quantità 100, con una native mint policy mono-firma effimera. Non è il token PRE di produzione, non usa policy ID o chiavi IMMORTAL/PRE-RICH e non può essere presentato come prova della distribuzione PRE su Preprod/Mainnet.
+
+Il helper è `audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs`. Accetta soltanto:
+- Linux/WSL2;
+- `cardano-cli 11.0.1`;
+- network magic esattamente `4242`;
+- il socket Unix esatto `$NET/socket/node1/sock` e config `$NET/configuration.yaml`;
+- il wallet `utxo1` generato da `cardano-testnet`;
+- workdir sotto `$NET/m1-fixtures/`.
+
+Creare una configurazione locale, non versionata:
+
+~~~bash
+cat > "$STATE/m1-private-asset-fixture.json" <<EOF
+{
+  "networkMagic": 4242,
+  "testnetRoot": "$NET",
+  "nodeSocketPath": "$NET/socket/node1/sock",
+  "nodeConfigPath": "$NET/configuration.yaml",
+  "walletIndex": 1,
+  "workDirectory": "$NET/m1-fixtures/pre-token",
+  "cardanoCli": "$BIN/cardano-cli"
+}
+EOF
+~~~
+
+Dalla root del repository, preparare la policy effimera e il transaction body non firmato:
+
+~~~bash
+node audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs \
+  --prepare "$STATE/m1-private-asset-fixture.json"
+~~~
+
+Questa fase genera chiavi di policy locali e costruisce il body, ma **non firma e non invia**. I file restano nel workdir privato con permessi restrittivi. Verificare l'output `PREPARED_UNSIGNED`, il policy ID e l'asset unit. Non copiare le chiavi in repository, log pubblici o artifact GitHub.
+
+La fase successiva firma con il solo wallet genesis locale `utxo1` e la chiave effimera della policy, quindi invia la transazione al socket node1 della rete privata. È un'operazione on-chain locale, separata e intenzionale: prima di eseguirla controllare di nuovo che il terminale sia quello del private testnet magic 4242 e che i due nodi siano quelli creati dal runbook.
+
+~~~bash
+IMMORTAL_M1_ALLOW_LOCAL_TESTNET_SUBMIT=YES \
+node audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs \
+  --submit-local-private-testnet "$STATE/m1-private-asset-fixture.json"
+~~~
+
+Il doppio consenso (flag di modalità + variabile d'ambiente) è obbligatorio. Il helper scrive un marker one-shot prima della firma; se il processo si interrompe durante la firma o il submit, non ripetere il comando alla cieca. Ispezionare prima il file `submitted.json`, il txid se già registrato e il ledger locale. Il marker blocca intenzionalmente un secondo tentativo.
+
+Attendere che la transazione sia inclusa e che il token compaia nel wallet `utxo1`; verificare in sola lettura:
+
+~~~bash
+node audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs \
+  --verify "$STATE/m1-private-asset-fixture.json"
+~~~
+
+Il risultato accettato è `PASS_NON_ZERO_LOCAL_TEST_ASSET`, con quantità osservata almeno 100. In caso di `WAITING_FOR_LOCAL_TEST_ASSET`, attendere altri blocchi e ripetere soltanto `--verify`.
+
+Estrarre policy e asset name per i due Kupo, senza trascriverli a mano:
+
+~~~bash
+FIXTURE="$NET/m1-fixtures/pre-token/prepared.json"
+POLICY_ID=$(jq -r '.policyId' "$FIXTURE")
+ASSET_NAME_HEX=$(jq -r '.tokenNameHex' "$FIXTURE")
+ASSET_UNIT=$(jq -r '.assetUnit' "$FIXTURE")
+printf 'local test asset: %s\n' "$ASSET_UNIT"
+~~~
+
+Solo dopo che entrambi i node hanno incluso la fixture e concordano sul tip, fissare il punto della sezione 7. Kupo A/B partono poi da `origin` e si fermano al punto concordato: in questo modo includono la transazione M1TEST. Il `initialUtxos` del runner resta vuoto se la fixture è stata creata *dopo* origin. Il report è una prova non-zero del plumbing su un native asset privato, non del PRE reale.
+
+Per una prova di puro wiring a supply zero, fermarsi dopo `--prepare` e non eseguire `--submit-local-private-testnet`. In quel caso il Kupo audit può restituire un match vuoto; etichettare l'esito come zero-state smoke test, mai come non-zero PRE conformance.
+
+
 ## 7. Fissare un unico punto ledger
 
 Ripetere le query tip finché entrambi i processi riportano lo stesso slot, block e hash. Lo script sotto estrae i campi JSON restituiti dalla CLI; se uno dei due nodi è indietro, ripetere la verifica più tardi:
@@ -206,10 +278,7 @@ Annotare e conservare entrambi i JSON tip. Il punto diventa immutabile per quest
 
 ## 8. Avviare due Kupo indipendenti, senza pruning
 
-Per questo private testnet servono i valori di un **asset di test locale**:
-- policy ID effettivo della policy di test, 56 caratteri hex minuscoli;
-- asset name effettivo in hex, lunghezza pari e compresa fra 0 e 64 caratteri;
-- rete e punto concordati sopra.
+Per questo private testnet servono i valori dell'asset di test locale creato in sezione 6.1 (se si sceglie la modalità non-zero), oppure della policy di test derivata in modalità prepare per uno smoke test a supply zero. Usare sempre policy ID e asset name hex ricavati dal file locale `prepared.json`, non quelli del PRE di produzione.
 
 Non inserire qui il policy ID PRE di Preprod/Mainnet aspettandoti che esista nel nuovo genesis: questo ambiente è una chain privata nuova e non contiene la storia o gli UTxO del token di produzione. Non usare un ticker o il nome testuale del token al posto dell'asset name hex; non inventare o derivare il policy ID da una descrizione.
 
@@ -351,7 +420,7 @@ node preSnapshotKupoAudit.mjs "$STATE/kupo-audit-b.json"
 
 Entrambi devono restituire PASS / KUPO_SNAPSHOT_EXACT_MATCH. Il rapporto registra digest, Merkle-sum root, quantità totale, leaf count e numero di UTxO. Conservare report completi, risposte strict checkpoint, tip JSON dei due node e versioni dei binari.
 
-Questo passaggio carica in memoria la risposta completa /matches per l'asset: è destinato al test locale e non è ancora uno strumento streaming/large-scale da produzione.
+Questo passaggio carica in memoria la risposta completa /matches per l'asset: è destinato al test locale e non è ancora uno strumento streaming/large-scale da produzione. Nel caso non-zero, il match atteso è il token M1TEST della fixture privata; non è un PRE-RICH ticket.
 
 ## 11. Cosa costituisce evidenza valida
 
@@ -365,7 +434,8 @@ Il pacchetto M1-A per una singola esecuzione deve contenere:
 7. configurazione dual runner e report PASS completo;
 8. configurazioni Kupo audit e due report PASS completi;
 9. hash SHA256 di ciascun report e log;
-10. misure di memoria, disco, durata bootstrap, tempo di catch-up, replay dopo arresto e rollback.
+10. misure di memoria, disco, durata bootstrap, tempo di catch-up, replay dopo arresto e rollback;
+11. se si è eseguita la fixture non-zero: `prepared.json`, policy ID/asset unit, txid, report `--verify` e output osservabile sui due nodi (senza includere le chiavi).
 
 Non includere private keys, signing keys, seed, mnemonic, token segreti o credenziali. Le cartelle state, gli archivi e le configurazioni locali non devono essere committati.
 
@@ -381,7 +451,7 @@ Per la prova di rollback, usare una finestra di test dedicata e conservare i log
 
 Anche due Kupo concordanti non certificano che il bootstrap iniziale fosse completo o che il network label corrisponda al network identity Cardano. La provenienza del bootstrap, l'esclusione Byron/validazione CBOR dell'indirizzo, l'eligibility PRE e la mappatura credenziali restano gate distinti. Il test a due pool nello stesso testnet locale non è una prova contro un operatore o un host malevolo.
 
-**Limite asset non-zero:** il private testnet appena creato non contiene il PRE token di produzione. La modalità senza transazioni descritta qui può quindi qualificare soltanto il wiring e la concordanza a supply zero. Per una prova non-zero servirà una fixture con un asset nativo *esclusivamente di test*, creata su questa chain privata con chiavi locali effimere e una transazione locale esplicitamente autorizzata; tale fixture non va mai descritta come il PRE di produzione. In alternativa, una prova dei saldi PRE reali richiederà due nodi di sola lettura sincronizzati con la rete pubblica corretta e l'identità PRE policy/name già governata. Nessuna di queste due estensioni è eseguita da questo runbook.
+**Limite asset non-zero:** il private testnet appena creato non contiene il PRE token di produzione. La sezione 6.1 ora documenta un helper per una fixture M1TEST esclusivamente locale, con chiavi effimere e doppia conferma per il submit su magic 4242. Il codice e i test della guardia sono presenti, ma la fixture non è stata preparata, firmata o inviata da questo lavoro. Anche dopo un PASS non-zero, la prova riguarda soltanto il plumbing di un native asset su una chain privata; non certifica la distribuzione PRE reale. Per i saldi PRE di produzione servirà una distinta prova read-only contro la rete pubblica corretta e l'identità PRE policy/name già governata.
 
 M1-A live acceptance rimane OPEN fino a quando questa procedura non viene effettivamente eseguita e accompagnata da evidenze runtime indipendenti. M1-C Mithril e M2 Plutus non sono iniziati. Il primo Ticket PRE-RICH su Preprod resta sul percorso separato Issue #37 / EEV / R1 / Kc / Ω.
 
