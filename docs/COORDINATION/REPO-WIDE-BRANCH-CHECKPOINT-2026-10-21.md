@@ -1034,7 +1034,7 @@ M1-C Mithril certification and M2 Plutus verification remain separate. Productio
 ## 2026-11-08 — Agent A: adaptive Issue capacity and transition-to-RiskMode matrix
 
 **Research artifact:** [AGENT-A-R1-ADAPTIVE-ISSUE-CAPACITY-AND-TRANSITION-MATRIX-2026-11-08.md](AGENT-A-R1-ADAPTIVE-ISSUE-CAPACITY-AND-TRANSITION-MATRIX-2026-11-08.md)  
-**Artifact commit:** `19d51f2b6cc7bf92faae423c096ca7e1f3054bb7`  
+**Artifact commit:** `e7f798f73e43b85e0f3ff259ff502ef70382e103`  
 **Classification:** ECONOMIC RESEARCH / POLICY-MAPPING PROPOSAL — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY.
 
 ### Result
@@ -1043,6 +1043,7 @@ M1-C Mithril certification and M2 Plutus verification remain separate. Productio
 - Confirmed that RiskMode selects analytical mechanisms, not safety overrides. Current PRE-RICH V1 continues to require deterministic 500× WCE for every unresolved ticket; the bridge continues to accept only the exact deterministic mode and remains unwired from production admission.
 - Formalized the only plausible route to higher ticket capacity: a separately governed, non-retroactive statistical cohort profile for unresolved payout risk. Known liabilities, Claim settlement, Jackpot, mandatory costs and universal viability constraints remain deterministic. This is a different guarantee from V1's unconditional 500× Pending-ticket protection; it cannot be presented as preserving that per-ticket guarantee.
 - Corrected the capacity illustration for B1's actual reservation delta. With a hypothetical 4,000-USDM headroom before the cohort's face-price reserve, one-USDM tickets, no other encumbrances and one fixed pre-outcome cohort, post-Issue E* is 4,000 − N. The dependence-robust Cantelli sensitivity frontier is 18 / 41 / 58 tickets for illustrative whole-cohort ceilings 0.1% / 0.5% / 1.0%, versus 8 under the simplified 500× arithmetic. These are conditional research numbers, not approved sale limits. The alternative prior convention with 4,000 USDM already net of all face reserves yields 18 / 42 / 59 and is explicitly distinguished in the report.
+- Added the entire current ticket-price ladder sensitivity. For the same 4,000-USDM pre-reserve headroom, the candidate homogeneous-class counts at ε = 0.1% / 0.5% / 1.0% are: P=1: 18/41/58; P=2: 9/20/29; P=3: 6/13/19; P=5: 3/8/11; P=10: 1/4/5; P=25: 0/1/2; P=50: 0/0/1; P=100: 0/0/0. Mixed classes must consume one aggregate face-value budget F and one shared Pool/risk perimeter; these are not independent class allowances.
 - Reaffirmed that an unconditional static Cantelli bound cannot be reused after Beacon results become available and remaining Pending membership becomes outcome-selected. Rolling Issue needs conditional moments over the full adversarial/private information history, one lifetime risk budget, and non-overlapping capital.
 - Current Pool datum does not enforce cohort membership/freeze, C_other allocation or lifetime ε. Existing Registry identity / publication and Beacon authenticity gaps also prevent a trustless freeze barrier.
 
