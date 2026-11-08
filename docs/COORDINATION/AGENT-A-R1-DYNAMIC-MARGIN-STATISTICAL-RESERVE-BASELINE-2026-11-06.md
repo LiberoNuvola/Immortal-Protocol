@@ -539,3 +539,21 @@ The current interfaces do not yet carry this complete contract. RiskProtectionBr
 - Static, pre-outcome, multi-round Cantelli aggregation is mathematically recorded for one sealed set whose included rounds are BeaconPending at freeze; the current Pool datum does not implement epoch membership or ring-fenced capital.
 - Dynamic adaptive Issue after outcomes are knowable, the PRE-RICH Game-specific intensity model, global lifetime ε, exact capital qualification, Beacon qualification, typed Gate integration and authority decisions remain open.
 - Current V1 deterministic 500×, ProtectedCapital, V3/Reveal, RiskProtectionBridge fail-closed behavior, QNE/R1 and first-Issue blockers remain unchanged.
+
+
+## 14. Agent A — explicit state/action RiskMode applicability matrix (2026-11-08)
+
+The detailed resolver contract and action matrix are recorded in [the RiskMode selection proposal, §11](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md).
+
+Important PRE-RICH source reconciliation:
+
+- The Economic Algorithm Sale sequence expressly lists both deterministic exposure evaluation and statistical reserve evaluation.
+- The current V1 application profile still fixes the 500× WCE; current RiskProtectionBridge accepts deterministic-only, and PreRichEconomicAdmission / EconomicGate contain no statistical assessment input.
+- The current source does not settle whether the Sale statistical evaluation is report-only or a binding second admission criterion. The Z/confidence/horizon, cross-ticket dependence, population/epoch and pass/fail rule are not fully qualified. Therefore the source-to-implementation gap is recorded; this audit does not pretend that Combined mode is already implemented or authorized.
+- Reveal crystallizes actual payout as a known liability; Claim settles that known liability; Expire closes the right under the frozen lifecycle. These are not new unconditional payout draws and cannot reset a statistical epoch or recycle its ε.
+- EEV/liquidity deterioration requires the relevant liquidation/stress model; the Classic-6 payout PMF cannot be reused as a market-liquidity model.
+- The separate PRE-RICH Arb Agent D3 intensity architecture is not Scratch & Win Game RiskMode policy.
+
+The target resolver derives one unique required-analysis set from the authenticated profile, pre-state, candidate action/post-state and trajectory evidence. Caller-selected modes, ambiguous/missing policy mappings, missing required evidence or unqualified model parameters fail closed. State-based mode changes can affect new candidates/new cohorts only; existing ticket guarantees remain immutable. Exact policy predicates, mode thresholds, statistical role/model, proof/resource format and epoch/budget state remain specification-authority decisions.
+
+No code, test, profile, threshold, Z, alpha, 500× rule, RiskProtectionBridge, V3/Reveal, QNE/R1, wallet, deployment or ledger state changed.
