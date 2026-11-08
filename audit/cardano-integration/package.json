@@ -8,11 +8,12 @@
   },
   "scripts": {
     "preprod:wallet": "node preprod-wallet-utxo.mjs",
-    "test:pre-snapshot-index": "node --test preSnapshotUtxoIndex.test.mjs ogmiosV7PreSnapshotAdapter.test.mjs preSnapshotJournal.test.mjs preSnapshotReplicaConformance.test.mjs preSnapshotDualReplicaRunner.test.mjs preSnapshotKupoParity.test.mjs",
+    "test:pre-snapshot-index": "node --test preSnapshotUtxoIndex.test.mjs ogmiosV7PreSnapshotAdapter.test.mjs preSnapshotJournal.test.mjs preSnapshotReplicaConformance.test.mjs preSnapshotDualReplicaRunner.test.mjs preSnapshotKupoParity.test.mjs preSnapshotKupoHttp.test.mjs",
     "test:ogmios-v7-adapter": "node --test ogmiosV7PreSnapshotAdapter.test.mjs",
     "test:pre-snapshot-journal": "node --test preSnapshotJournal.test.mjs",
     "test:pre-snapshot-replicas": "node --test preSnapshotReplicaConformance.test.mjs",
     "test:pre-snapshot-dual-runner": "node --test preSnapshotDualReplicaRunner.test.mjs",
-    "test:pre-snapshot-kupo": "node --test preSnapshotKupoParity.test.mjs"
+    "test:pre-snapshot-kupo": "node --test preSnapshotKupoParity.test.mjs",
+    "test:pre-snapshot-kupo-http": "node --test preSnapshotKupoHttp.test.mjs"
   }
 }
