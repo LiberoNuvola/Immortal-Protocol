@@ -39,195 +39,183 @@ function validateTipOrOrigin(tip) {
   }
 }
 
-function createSession(url, WebSocketImpl, maxPayload, getIndexState, callbacks, options) {
-  return new Promise((resolve, reject) => {
-    const socket = new WebSocketImpl(url, { maxPayload })
-    const pending = new Map()
-    let requestCounter = 0
-    let settled = false
-    let intentionalClose = false
+async function runOgmiosSession({
+  url,
+  WebSocketImpl,
+  getIndexState,
+  onRollForward,
+  onRollBackward,
+  onIntersection,
+  maxPayload,
+  maxIntersectionPoints,
+  isStopped,
+  setActiveSocket
+}) {
+  const socket = new WebSocketImpl(url, { maxPayload })
+  setActiveSocket(socket)
 
-    const rejectPending = error => {
-      for (const waiter of pending.values()) waiter.reject(error)
-      pending.clear()
+  await new Promise((resolve, reject) => {
+    const onOpen = () => {
+      socket.removeListener('error', onError)
+      socket.removeListener('close', onClose)
+      resolve()
+    }
+    const onError = error => reject(new ChainSyncError('OGMIOS_CONNECT_ERROR', error.message, false))
+    const onClose = (code, reason) => {
+      reject(new ChainSyncError(
+        'OGMIOS_CLOSED_BEFORE_OPEN',
+        reason ? reason.toString() : 'Ogmios closed before opening (' + code + ')',
+        false
+      ))
+    }
+    socket.once('open', onOpen)
+    socket.once('error', onError)
+    socket.once('close', onClose)
+  })
+
+  const pending = new Map()
+  let requestCounter = 0
+  let socketFailure = null
+
+  const rejectPending = error => {
+    socketFailure = error
+    for (const waiter of pending.values()) waiter.reject(error)
+    pending.clear()
+  }
+
+  socket.on('error', error => {
+    rejectPending(new ChainSyncError('OGMIOS_SOCKET_ERROR', error.message, false))
+  })
+  socket.on('close', (code, reason) => {
+    const message = reason ? reason.toString() : 'Ogmios WebSocket closed (' + code + ')'
+    rejectPending(new ChainSyncError('OGMIOS_SOCKET_CLOSED', message + ' (' + code + ')', false))
+  })
+  socket.on('message', data => {
+    let response
+    try {
+      response = parseMessage(data)
+    } catch (error) {
+      rejectPending(error)
+      return
     }
 
-    const fatal = (code, message) => new ChainSyncError(code, message, true)
+    const requestId = response && response.id && response.id.requestId
+    const waiter = pending.get(requestId)
+    if (!waiter) {
+      rejectPending(new ChainSyncError(
+        'OGMIOS_UNMATCHED_RESPONSE',
+        'Ogmios response did not match an outstanding request',
+        true
+      ))
+      return
+    }
+    pending.delete(requestId)
 
-    socket.on('message', data => {
-      let response
-      try {
-        response = parseMessage(data)
-      } catch (error) {
-        rejectPending(error)
-        return
-      }
+    if (response.error) {
+      const code = Number.isInteger(response.error.code) ? response.error.code : 'UNKNOWN'
+      waiter.reject(new ChainSyncError(
+        'OGMIOS_RPC_ERROR_' + code,
+        String(response.error.message || 'Ogmios JSON-RPC error'),
+        true
+      ))
+      return
+    }
+    if (response.method !== waiter.method || !Object.prototype.hasOwnProperty.call(response, 'result')) {
+      waiter.reject(new ChainSyncError(
+        'OGMIOS_RESPONSE_SHAPE_MISMATCH',
+        'Ogmios response method/result did not match the request',
+        true
+      ))
+      return
+    }
+    waiter.resolve(response.result)
+  })
 
-      const requestId = response && response.id && response.id.requestId
-      const waiter = pending.get(requestId)
-      if (!waiter) {
-        rejectPending(fatal('OGMIOS_UNMATCHED_RESPONSE', 'Ogmios response did not match an outstanding request'))
-        return
-      }
-      pending.delete(requestId)
-
-      if (response.error) {
-        const code = Number.isInteger(response.error.code) ? response.error.code : 'UNKNOWN'
-        waiter.reject(fatal('OGMIOS_RPC_ERROR_' + code, String(response.error.message || 'Ogmios JSON-RPC error')))
-        return
-      }
-      if (response.method !== waiter.method || !Object.prototype.hasOwnProperty.call(response, 'result')) {
-        waiter.reject(fatal('OGMIOS_RESPONSE_SHAPE_MISMATCH', 'Ogmios response method/result did not match the request'))
-        return
-      }
-      waiter.resolve(response.result)
-    })
-
-    socket.on('error', error => {
-      rejectPending(new ChainSyncError('OGMIOS_SOCKET_ERROR', error.message, false))
-      if (!settled) {
-        settled = true
-        reject(new ChainSyncError('OGMIOS_SOCKET_ERROR', error.message, false))
-      }
-    })
-
-    socket.on('close', (code, reason) => {
-      const message = reason ? reason.toString() : 'Ogmios WebSocket closed (' + code + ')'
-      const error = new ChainSyncError(
-        intentionalClose ? 'OGMIOS_STOPPED' : 'OGMIOS_SOCKET_CLOSED',
-        message,
-        false
-      )
-      rejectPending(error)
-      if (!settled) {
-        settled = true
-        if (intentionalClose) resolve()
-        else reject(error)
-      }
-    })
-
-    socket.once('open', async () => {
-      if (settled) return
-
-      const rpc = (method, params) => new Promise((rpcResolve, rpcReject) => {
-        if (socket.readyState !== socket.OPEN) {
-          rpcReject(new ChainSyncError('OGMIOS_SOCKET_NOT_OPEN', 'Cannot send request on a closed Ogmios socket', false))
-          return
-        }
-        requestCounter += 1
-        const requestId = 'm1-chain-sync-' + requestCounter
-        pending.set(requestId, { method, resolve: rpcResolve, reject: rpcReject })
-        const request = {
-          jsonrpc: '2.0',
-          method,
-          params,
-          id: { requestId }
-        }
-        try {
-          socket.send(JSON.stringify(request), error => {
-            if (error) {
-              const waiter = pending.get(requestId)
-              if (waiter) {
-                pending.delete(requestId)
-                waiter.reject(new ChainSyncError('OGMIOS_SEND_FAILED', error.message, false))
-              }
-            }
-          })
-        } catch (error) {
-          pending.delete(requestId)
-          rpcReject(new ChainSyncError('OGMIOS_SEND_FAILED', error.message, false))
+  const rpc = (method, params) => new Promise((resolve, reject) => {
+    if (socketFailure) {
+      reject(socketFailure)
+      return
+    }
+    if (socket.readyState !== socket.OPEN) {
+      reject(new ChainSyncError('OGMIOS_SOCKET_NOT_OPEN', 'Cannot send request on a closed Ogmios socket', false))
+      return
+    }
+    requestCounter += 1
+    const requestId = 'm1-chain-sync-' + requestCounter
+    pending.set(requestId, { method, resolve, reject })
+    try {
+      socket.send(JSON.stringify({
+        jsonrpc: '2.0',
+        method,
+        params,
+        id: { requestId }
+      }), error => {
+        if (error) {
+          const waiter = pending.get(requestId)
+          if (waiter) {
+            pending.delete(requestId)
+            waiter.reject(new ChainSyncError('OGMIOS_SEND_FAILED', error.message, false))
+          }
         }
       })
+    } catch (error) {
+      pending.delete(requestId)
+      reject(new ChainSyncError('OGMIOS_SEND_FAILED', error.message, false))
+    }
+  })
 
-      const session = {
-        socket,
-        close: () => {
-          intentionalClose = true
-          if (socket.readyState === socket.OPEN || socket.readyState === socket.CONNECTING) socket.close()
-          if (!settled) {
-            settled = true
-            resolve()
-          }
-        }
+  try {
+    const initialState = await getIndexState()
+    const points = getOgmiosV7IntersectionPoints(initialState, maxIntersectionPoints)
+    if (!Array.isArray(points) || points.length === 0) {
+      throw new ChainSyncError(
+        'OGMIOS_NO_INTERSECTION_CANDIDATES',
+        'No retained chain points are available for Ogmios intersection',
+        true
+      )
+    }
+
+    const intersection = await rpc('findIntersection', { points })
+    if (!intersection || !Object.prototype.hasOwnProperty.call(intersection, 'intersection')) {
+      throw new ChainSyncError(
+        'OGMIOS_NO_COMMON_INTERSECTION',
+        'Ogmios did not find a common point in the retained local index history',
+        true
+      )
+    }
+    validateTipOrOrigin(intersection.tip)
+
+    const currentState = await getIndexState()
+    const matchedPoint = resolveOgmiosV7RollbackPoint(intersection.intersection, currentState)
+    if (onIntersection) await onIntersection(matchedPoint, intersection.tip)
+
+    while (!isStopped()) {
+      const result = await rpc('nextBlock', {})
+      const state = await getIndexState()
+      let event
+      try {
+        event = decodeOgmiosV7ChainSyncResult(result, state)
+      } catch (error) {
+        throw new ChainSyncError('OGMIOS_BLOCK_DECODE_FAILED', error.message, true)
       }
+      validateTipOrOrigin(event.tip)
 
       try {
-        const initialState = await getIndexState()
-        const points = getOgmiosV7IntersectionPoints(initialState, options.maxIntersectionPoints)
-        if (!Array.isArray(points) || points.length === 0) {
-          throw fatal('OGMIOS_NO_INTERSECTION_CANDIDATES', 'No retained chain points are available for Ogmios intersection')
+        if (event.direction === 'forward') {
+          await onRollForward(event.block, event.tip)
+        } else {
+          await onRollBackward(event.point, event.tip)
         }
-
-        const intersection = await rpc('findIntersection', { points })
-        if (!intersection || !Object.prototype.hasOwnProperty.call(intersection, 'intersection')) {
-          throw fatal('OGMIOS_NO_COMMON_INTERSECTION', 'Ogmios did not find a common point in the retained local index history')
-        }
-        validateTipOrOrigin(intersection.tip)
-
-        const afterIntersectionState = await getIndexState()
-        const matchedPoint = resolveOgmiosV7RollbackPoint(intersection.intersection, afterIntersectionState)
-        if (callbacks.onIntersection) await callbacks.onIntersection(matchedPoint, intersection.tip)
-
-        while (!options.isStopped()) {
-          const result = await rpc('nextBlock', {})
-          const state = await getIndexState()
-          let event
-          try {
-            event = decodeOgmiosV7ChainSyncResult(result, state)
-          } catch (error) {
-            throw fatal('OGMIOS_BLOCK_DECODE_FAILED', error.message)
-          }
-          validateTipOrOrigin(event.tip)
-
-          try {
-            if (event.direction === 'forward') {
-              await callbacks.onRollForward(event.block, event.tip)
-            } else {
-              await callbacks.onRollBackward(event.point, event.tip)
-            }
-          } catch (error) {
-            throw fatal('PRE_SNAPSHOT_INDEX_CALLBACK_FAILED', error.message)
-          }
-        }
-
-        session.close()
       } catch (error) {
-        rejectPending(error)
-        if (!settled) {
-          settled = true
-          reject(error)
-        }
+        throw new ChainSyncError('PRE_SNAPSHOT_INDEX_CALLBACK_FAILED', error.message, true)
       }
-
-      if (!settled && !options.isStopped()) {
-        // A session remains alive while requests are outstanding. Its close/error events settle it.
-      }
-    })
-
-    resolve({
-      done: new Promise((doneResolve, doneReject) => {
-        // The outer promise is resolved to the session immediately; the session's completion
-        // is tracked independently so callers can stop or await it.
-        const poll = () => {
-          if (settled) {
-            doneResolve()
-            return
-          }
-          setTimeout(poll, 25)
-        }
-        poll()
-      }),
-      close: () => {
-        intentionalClose = true
-        if (socket.readyState === socket.OPEN || socket.readyState === socket.CONNECTING) socket.close()
-        if (!settled) {
-          settled = true
-          resolve()
-        }
-      },
-      socket
-    })
-  })
+    }
+  } finally {
+    setActiveSocket(null)
+    if (socket.readyState === socket.OPEN || socket.readyState === socket.CONNECTING) {
+      try { socket.close() } catch (_) {}
+    }
+  }
 }
 
 /**
@@ -256,13 +244,22 @@ export function createOgmiosV7ChainSyncClient({
       typeof onRollBackward !== 'function') {
     throw new Error('OGMIOS_INDEX_CALLBACKS_REQUIRED')
   }
-  if (!Number.isSafeInteger(reconnectDelayMs) || reconnectDelayMs < 0) throw new Error('INVALID_RECONNECT_DELAY')
+  if (!Number.isSafeInteger(reconnectDelayMs) || reconnectDelayMs < 0) {
+    throw new Error('INVALID_RECONNECT_DELAY')
+  }
+  if (!Number.isSafeInteger(maxIntersectionPoints) || maxIntersectionPoints < 1) {
+    throw new Error('INVALID_MAX_INTERSECTION_POINTS')
+  }
 
   let stopped = false
   let running = false
   let completion = null
-  let activeSession = null
+  let activeSocket = null
   let lastError = null
+
+  const setActiveSocket = socket => {
+    activeSocket = socket
+  }
 
   const reportError = error => {
     lastError = error
@@ -272,24 +269,26 @@ export function createOgmiosV7ChainSyncClient({
   const runLoop = async () => {
     while (!stopped) {
       try {
-        activeSession = await createSession(
+        await runOgmiosSession({
           url,
           WebSocketImpl,
-          maxPayload,
           getIndexState,
-          { onRollForward, onRollBackward, onIntersection },
-          {
-            maxIntersectionPoints,
-            isStopped: () => stopped
-          }
-        )
-        if (stopped) break
-        await activeSession.done
+          onRollForward,
+          onRollBackward,
+          onIntersection,
+          maxPayload,
+          maxIntersectionPoints,
+          isStopped: () => stopped,
+          setActiveSocket
+        })
         if (!stopped) {
-          throw new ChainSyncError('OGMIOS_SESSION_ENDED', 'Ogmios session ended unexpectedly', false)
+          throw new ChainSyncError(
+            'OGMIOS_SESSION_ENDED',
+            'Ogmios session ended unexpectedly',
+            false
+          )
         }
       } catch (error) {
-        activeSession = null
         if (stopped) break
         reportError(error)
         if (error && error.fatal) break
@@ -302,13 +301,17 @@ export function createOgmiosV7ChainSyncClient({
   return Object.freeze({
     start() {
       if (running) return completion
+      stopped = false
       running = true
       completion = runLoop()
       return completion
     },
     async stop() {
       stopped = true
-      if (activeSession) activeSession.close()
+      if (activeSocket &&
+          (activeSocket.readyState === activeSocket.OPEN || activeSocket.readyState === activeSocket.CONNECTING)) {
+        try { activeSocket.close() } catch (_) {}
+      }
       if (completion) await completion
     },
     get lastError() {
