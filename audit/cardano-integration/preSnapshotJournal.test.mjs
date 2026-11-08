@@ -1,11 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, appendFile, stat, rm, access } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdtemp, readFile, appendFile, stat, rm, access, writeFile } from 'node:fs/promises'
+import { tmpdir, hostname } from 'node:os'
+import { spawn } from 'node:child_process'
+import { once } from 'node:events'
 import { join } from 'node:path'
 
 import {
   createPersistentOgmiosIndexHandlers,
+  createPersistentOgmiosV7ChainSyncClient,
   createPreSnapshotJournal,
   openPreSnapshotJournal
 } from './preSnapshotJournal.mjs'
@@ -161,7 +164,7 @@ test('a complete but corrupted journal record fails closed and releases writer l
     record.hash = (record.hash[0] === '0' ? '1' : '0') + record.hash.slice(1)
     const corrupted = JSON.stringify(record) + '\n'
     assert.notEqual(corrupted, original)
-    await (await import('node:fs/promises')).writeFile(logPath, corrupted, 'utf8')
+    await writeFile(logPath, corrupted, 'utf8')
 
     await assert.rejects(
       openPreSnapshotJournal({ directory }),
@@ -215,6 +218,59 @@ test('ChainSync callbacks resolve only after persistent forward/rollback commits
     await handlers.onRollBackward(origin)
     assert.equal((await handlers.getIndexState()).currentPoint.hash, origin.hash)
     assert.equal((await journal.getStatus()).sequence, 2)
+    await journal.close()
+  })
+})
+
+test('stale writer lock from a terminated local process is reclaimed automatically', async () => {
+  await withDirectory(async directory => {
+    const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' })
+    await once(child, 'spawn')
+    const deadPid = child.pid
+    child.kill()
+    await once(child, 'exit')
+
+    await writeFile(join(directory, 'writer.lock'), JSON.stringify({
+      format: 'immortal-pre-snapshot-wal-v1',
+      pid: deadPid,
+      hostname: hostname(),
+      startedAt: new Date().toISOString()
+    }) + '\n', { mode: 0o600 })
+
+    const journal = await create(directory)
+    assert.equal((await journal.getStatus()).sequence, 0)
+    await journal.close()
+    await access(join(directory, 'writer.lock')).then(
+      () => assert.fail('writer lock should be removed after close'),
+      error => assert.equal(error.code, 'ENOENT')
+    )
+  })
+})
+
+test('a foreign-host or unverifiable writer lock is not removed', async () => {
+  await withDirectory(async directory => {
+    const lockPath = join(directory, 'writer.lock')
+    await writeFile(lockPath, JSON.stringify({
+      format: 'immortal-pre-snapshot-wal-v1',
+      pid: 999999,
+      hostname: 'not-this-host',
+      startedAt: new Date().toISOString()
+    }) + '\n', { mode: 0o600 })
+    await assert.rejects(create(directory), /writer lock owner cannot be verified/)
+    await access(lockPath)
+  })
+})
+
+test('persistent ChainSync factory binds journal callbacks without exposing an alternate state writer', async () => {
+  await withDirectory(async directory => {
+    const journal = await create(directory)
+    const client = createPersistentOgmiosV7ChainSyncClient({
+      journal,
+      url: 'ws://127.0.0.1:1337',
+      reconnectDelayMs: 10
+    })
+    assert.equal(client.isRunning, false)
+    assert.equal(client.lastError, null)
     await journal.close()
   })
 })
