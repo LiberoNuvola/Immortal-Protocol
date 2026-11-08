@@ -1197,3 +1197,19 @@ No production governance rules, PRE asset identity, GOV entity mapping, voting e
 Latest isolated M1-A workflow run **42460691746**: **53 tests / 53 passed / 0 failed / 0 skipped**. Inventory: 12 reducer + 13 Ogmios adapter/client + 11 WAL + 8 replica comparator + 9 dual local-runner. Six module `node --check` steps also passed. Run used Node 22 and only the runtime dependencies in a temporary runner directory. Earlier 36/36 and 44/44 runs are superseded by this wider 53-test run.
 
 **Important qualification boundary:** the suite uses synthetic fixtures and fake WebSockets; no actual Cardano node, Ogmios service, Kupo, private testnet or Mithril network has been started or contacted. Live M1-A acceptance remains OPEN: two independent local node processes and their own Ogmios processes, verified complete bootstrap set, one fixed target, exact replica state/message agreement and Kupo parity at the same point; then resource, restart, rollback and pinned runtime evidence. M1-C and M2 remain NOT STARTED. No V3, Reveal, GOV-16/17/18, B1/EEV, Issue #37, Issue #43, Issue #49 or economic policy semantics changed.
+
+
+## 2026-11-08 — Agent B: M1-A Kupo parity and two-node runbook
+
+**Kupo parity:** `audit/cardano-integration/preSnapshotKupoParity.mjs`, `preSnapshotKupoHttp.mjs`, `preSnapshotKupoAudit.mjs`  
+**Local runbook:** `docs/COORDINATION/AGENT-B-M1-A-TWO-NODE-LOCAL-DEVNET-RUNBOOK-2026-11-08.md`  
+**Successful M1-A run:** https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42462349216
+
+- Kupo exact-asset matcher compares the complete returned unspent match set against each reducer WAL at the operator-supplied slot/hash/block point. It validates out-refs, address bytes, quantity, creation point and `spent_at`, then compares canonical bytes + digest.
+- Loopback-only HTTP client calls `/checkpoints/{slot}?strict` and `/matches/{pattern}?unspent`, requests asset quantities as strings, and fails on checkpoint mismatch, HTTP error, malformed response or snapshot divergence.
+- Upstream Kupo v2.12.0 source confirms inclusive `--until POINT|SLOT`, `--since origin`, optional `--prune-utxo` (omitted by runbook), and OpenAPI match fields/quantity media type.
+- Upstream Cardano node 11.0.1 source confirms `cardano-testnet create-env --num-pool-nodes`, `--testnet-magic`, `--output`, the persisted `cardano-testnet cardano --node-env` flow, and paths `configuration.yaml`, `socket/nodeN/sock`, `node-data/nodeN/port`. Ogmios 7.0.0 and Kupo 2.12.0 declare/test compatibility with node 11.0.1.
+- GitHub Actions run **42462349216**, commit `bc4cbb72b91467adad90286c2928a7ca4f56265a`: **69 tests / 69 pass / 0 fail / 0 skipped**. Current HEAD adds only the runbook after that tested commit; executable M1-A files and the CI workflow are unchanged since the successful run.
+- The WSL2 runbook is documentation only and has not been executed on a real local machine. Real two-node/two-Ogmios/two-Kupo conformance, pinned bootstrap provenance, runtime identity and resource/restart/rollback evidence remain OPEN. Two testnet producer nodes on one locally generated genesis are not independent operators or an adversarial trustlessness proof.
+
+**Status:** M1-A synthetic test gate PASS (69/69); local two-node + Kupo runtime acceptance OPEN; Byron envelope/checksum hardening and complete bootstrap provenance OPEN; M1-C Mithril and M2 Plutus not started. No Preprod/Mainnet transactions, wallet signing or IMMORTAL protocol/economic/governance semantics changed.
