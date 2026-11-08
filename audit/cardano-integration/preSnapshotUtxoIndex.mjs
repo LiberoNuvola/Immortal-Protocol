@@ -104,13 +104,14 @@ function targetQuantity(assetsValue, asset, field) {
     found = true
     quantity = toBigIntExact(entry.quantity, \`\${field}.assets[\${index}].quantity\`)
   }
-  return quantity
+  return found ? quantity : null
 }
 
 function normalizeTrackedOutput(outputValue, asset, field) {
   const output = requiredObject(outputValue, field)
   const quantity = targetQuantity(output.assets, asset, field)
-  if (quantity === 0n) return null
+  if (quantity === null) return null
+  if (quantity === 0n) fail(`ZERO_TARGET_ASSET_QUANTITY:${field}`)
   const addressHex = normalizeHex(output.addressHex, \`\${field}.addressHex\`, { minBytes: 1, maxBytes: 128 })
   return Object.freeze({ addressHex, quantity: quantity.toString() })
 }
@@ -436,25 +437,25 @@ export function buildPreSnapshotMessage(state) {
     .sort((left, right) => left.addressHex < right.addressHex ? -1 : left.addressHex > right.addressHex ? 1 : 0)
 
   const total = leaves.reduce((sum, leaf) => sum + BigInt(leaf.quantity), 0n)
-  const message = {
+  const message = Object.freeze({
     moduleId: PRE_SNAPSHOT_MODULE_ID,
     schemaVersion: PRE_SNAPSHOT_INDEX_SCHEMA_VERSION,
     encodingVersion: PRE_SNAPSHOT_ENCODING_VERSION,
     networkId: state.networkId,
-    point: {
+    point: Object.freeze({
       slot: state.currentPoint.slot,
       blockNo: state.currentPoint.blockNo,
       hash: state.currentPoint.hash
-    },
-    asset: {
+    }),
+    asset: Object.freeze({
       policyIdHex: state.asset.policyIdHex,
       assetNameHex: state.asset.assetNameHex
-    },
+    }),
     identityRule: 'raw-address-bytes-test-only-v1',
     leafCount: leaves.length,
     totalQuantity: total.toString(),
     merkleSumRoot: merkleSumRoot(leaves)
-  }
+  })
   const canonicalBytes = Buffer.from(JSON.stringify(message), 'utf8')
   return Object.freeze({
     message: Object.freeze(message),
