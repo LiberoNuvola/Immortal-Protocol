@@ -131,7 +131,12 @@ test('duplicate replica labels and missing target points are rejected as configu
 })
 
 test('comparison never mutates or rolls back either replica', () => {
-  const stateA = advance(baseState(), pointTwo, txId, '02bb', 100)
+  const atPointOne = advance(baseState(), pointOne, txId, '02bb', 100)
+  const stateA = applyPreSnapshotBlock(atPointOne, {
+    parentPoint: pointOne,
+    point: pointTwo,
+    transactions: []
+  })
   const stateB = advance(baseState(), pointOne, txId, '02bb', 100)
   const beforeA = stateA.currentPoint
   const beforeB = stateB.currentPoint
