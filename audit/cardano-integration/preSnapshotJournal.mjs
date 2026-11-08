@@ -11,6 +11,8 @@ import { dirname, join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { hostname } from 'node:os'
 
+import { createOgmiosV7ChainSyncClient } from './ogmiosV7ChainSyncClient.mjs'
+
 import {
   PRE_SNAPSHOT_INDEX_SCHEMA_VERSION,
   applyPreSnapshotBlock,
@@ -564,5 +566,18 @@ export function createPersistentOgmiosIndexHandlers(journal) {
     onRollBackward: async point => {
       await journal.rollback(point)
     }
+  })
+}
+
+/**
+ * Build a live ChainSync client whose callbacks commit exclusively through the WAL.
+ * The supplied client options must include url and may include WebSocket options,
+ * reconnect settings and onError.
+ */
+export function createPersistentOgmiosV7ChainSyncClient({ journal, ...clientOptions }) {
+  const handlers = createPersistentOgmiosIndexHandlers(journal)
+  return createOgmiosV7ChainSyncClient({
+    ...clientOptions,
+    ...handlers
   })
 }
