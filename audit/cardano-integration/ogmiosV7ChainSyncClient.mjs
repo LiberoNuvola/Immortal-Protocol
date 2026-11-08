@@ -148,12 +148,13 @@ async function runOgmiosSession({
     const requestId = 'm1-chain-sync-' + requestCounter
     pending.set(requestId, { method, resolve, reject })
     try {
-      socket.send(JSON.stringify({
+      const request = {
         jsonrpc: '2.0',
         method,
-        params,
         id: { requestId }
-      }), error => {
+      }
+      if (params !== undefined) request.params = params
+      socket.send(JSON.stringify(request), error => {
         if (error) {
           const waiter = pending.get(requestId)
           if (waiter) {
@@ -194,7 +195,7 @@ async function runOgmiosSession({
     if (onIntersection) await onIntersection(matchedPoint, intersection.tip)
 
     while (!isStopped()) {
-      const result = await rpc('nextBlock', {})
+      const result = await rpc('nextBlock')
       const state = await getIndexState()
       let event
       try {
