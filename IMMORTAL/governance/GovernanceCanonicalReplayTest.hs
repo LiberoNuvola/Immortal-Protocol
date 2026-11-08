@@ -173,6 +173,120 @@ adoptionEvent =
     [EvidenceRef "adoption-evidence"]
     AcceptedEvent
 
+voteProposalFixture :: Proposal
+voteProposalFixture =
+  sampleProposal
+    { proposalId = 9
+    , proposalSnapshot = Snapshot 9 100 [(10,60),(20,40),(30,20)]
+    , proposalCreatedAt = 100
+    }
+
+voteLifecycleEvent
+  :: String -> EventType -> ActorClass -> Timestamp
+  -> CanonicalPayload -> Maybe String -> CanonicalEvent
+voteLifecycleEvent eid typ actor at payload prev =
+  withCommitment
+    (CanonicalEvent eid 9 1 typ actor at payload
+      "pending-commitment" prev
+      [EvidenceRef ("evidence-" ++ eid)] AcceptedEvent)
+
+voteProposalSubmitted :: CanonicalEvent
+voteProposalSubmitted =
+  voteLifecycleEvent "gov-vote-proposal" EProposalSubmitted Proposer 100
+    (PayloadProposalSubmitted voteProposalFixture) Nothing
+
+voteProposed :: CanonicalEvent
+voteProposed =
+  voteLifecycleEvent "gov-vote-proposed" EStatusChanged System 101
+    (PayloadStatusChanged 9 Proposed 101) (Just "gov-vote-proposal")
+
+voteClassified :: CanonicalEvent
+voteClassified =
+  voteLifecycleEvent "gov-vote-classified" EProposalClassified System 102
+    (PayloadProposalClassified 9 DocumentationOnly 102) (Just "gov-vote-proposed")
+
+voteImpactReview :: CanonicalEvent
+voteImpactReview =
+  voteLifecycleEvent "gov-vote-impact" EStatusChanged System 103
+    (PayloadStatusChanged 9 ImpactReview 103) (Just "gov-vote-classified")
+
+voteEvidenceReview :: CanonicalEvent
+voteEvidenceReview =
+  voteLifecycleEvent "gov-vote-evidence" EStatusChanged System 104
+    (PayloadStatusChanged 9 EvidenceReview 104) (Just "gov-vote-impact")
+
+voteGatesSet :: CanonicalEvent
+voteGatesSet =
+  voteLifecycleEvent "gov-vote-gates" EGatesSet Reviewer 105
+    (PayloadGatesSet 9 (GateResult True True True True) 105)
+    (Just "gov-vote-evidence")
+
+voteCommunityReview :: CanonicalEvent
+voteCommunityReview =
+  voteLifecycleEvent "gov-vote-community" EStatusChanged System 106
+    (PayloadStatusChanged 9 CommunityReview 106) (Just "gov-vote-gates")
+
+voteOpenedAt :: Timestamp
+voteOpenedAt = 106 + communityReviewSeconds
+
+voteOpened :: CanonicalEvent
+voteOpened =
+  voteLifecycleEvent "gov-vote-open" EStatusChanged System voteOpenedAt
+    (PayloadStatusChanged 9 Voting voteOpenedAt) (Just "gov-vote-community")
+
+voteLifecyclePrefix :: [CanonicalEvent]
+voteLifecyclePrefix =
+  [ voteProposalSubmitted
+  , voteProposed
+  , voteClassified
+  , voteImpactReview
+  , voteEvidenceReview
+  , voteGatesSet
+  , voteCommunityReview
+  , voteOpened
+  ]
+
+voteAAgainst :: CanonicalEvent
+voteAAgainst =
+  let at = voteOpenedAt + 1
+  in voteLifecycleEvent "gov-vote-a-against" EVoteCast Voter at
+       (PayloadVoteCast (Vote 9 10 Against at)) (Just "gov-vote-open")
+
+delegationAfterVote :: CanonicalEvent
+delegationAfterVote =
+  let at = voteOpenedAt + 2
+  in voteLifecycleEvent "gov-vote-a-delegates-late" EDelegationSet Delegate at
+       (PayloadDelegationSet 9 (Delegation 10 20) at)
+       (Just "gov-vote-a-against")
+
+voteBAfterLateDelegation :: CanonicalEvent
+voteBAfterLateDelegation =
+  let at = voteOpenedAt + 3
+  in voteLifecycleEvent "gov-vote-b-after-late-delegation" EVoteCast Voter at
+       (PayloadVoteCast (Vote 9 20 For at))
+       (Just "gov-vote-a-delegates-late")
+
+delegationBeforeVote :: CanonicalEvent
+delegationBeforeVote =
+  let at = voteOpenedAt + 1
+  in voteLifecycleEvent "gov-valid-delegation" EDelegationSet Delegate at
+       (PayloadDelegationSet 9 (Delegation 10 20) at)
+       (Just "gov-vote-open")
+
+voteBFor :: CanonicalEvent
+voteBFor =
+  let at = voteOpenedAt + 2
+  in voteLifecycleEvent "gov-valid-vote-b-for" EVoteCast Voter at
+       (PayloadVoteCast (Vote 9 20 For at))
+       (Just "gov-valid-delegation")
+
+voteCAgainst :: CanonicalEvent
+voteCAgainst =
+  let at = voteOpenedAt + 3
+  in voteLifecycleEvent "gov-valid-vote-c-against" EVoteCast Voter at
+       (PayloadVoteCast (Vote 9 30 Against at))
+       (Just "gov-valid-vote-b-for")
+
 main :: IO ()
 main = do
   assert (not (canonicalizationRequiresConformance DocumentationOnly))
@@ -473,6 +587,32 @@ main = do
   case applyCanonicalEvent ruleset finalizationState Nothing (withCommitment wrongOutcomeEvent) of
     Left _ -> putStrLn "PASS: finalized decision must record Accepted outcome"
     Right _ -> error "FAIL: DecisionRecorded accepted as finalized outcome"
+
+  case replayCanonical ruleset emptyState
+         (voteLifecyclePrefix ++ [voteAAgainst, delegationAfterVote, voteBAfterLateDelegation]) of
+    Left _ -> putStrLn "PASS: canonical replay rejects delegation after an existing vote"
+    Right _ -> error "FAIL: canonical replay accepted delegation after an existing vote"
+
+  case replayCanonical ruleset emptyState
+         (voteLifecyclePrefix ++ [delegationBeforeVote, voteBFor, voteCAgainst]) of
+    Left err -> error ("FAIL: canonical replay rejected valid delegation-before-vote history: " ++ err)
+    Right voteState -> do
+      let p = head (proposals voteState)
+          ds = proposalDelegations p
+          vs = proposalVotes p
+      assert "canonical valid delegation history counts all eligible weight once"
+        (participatingWeight (proposalSnapshot p) ds vs == 120 &&
+         eligibleWeight (proposalSnapshot p) == 120 &&
+         participatingWeight (proposalSnapshot p) ds vs <= eligibleWeight (proposalSnapshot p))
+      assert "canonical delegated For vote receives delegator weight once"
+        (case [v | v <- vs, voter v == 20] of
+           [v] -> effectiveVoteWeight (proposalSnapshot p) ds v == 100
+           _ -> False)
+      assert "canonical opposing Against vote retains only its own weight"
+        (case [v | v <- vs, voter v == 30] of
+           [v] -> choice v == Against &&
+                  effectiveVoteWeight (proposalSnapshot p) ds v == 20
+           _ -> False)
 
   let wrongState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Nothing }] 0
   case applyCanonicalEvent ruleset wrongState Nothing (withCommitment finalizedEvent) of

@@ -312,7 +312,8 @@ applyEvent st ev = case ev of
       (\p -> if proposalStatus p == Voting &&
                 voteWindowOpen p at &&
                 delegationValid (proposalSnapshot p) (proposalDelegations p ++ [d]) &&
-                not (any ((== delegate d) . voter) (proposalVotes p))
+                not (any ((== delegate d) . voter) (proposalVotes p)) &&
+                not (any ((== delegator d) . voter) (proposalVotes p))
              then p { proposalDelegations = proposalDelegations p ++ [d] }
              else p)
       (proposals st)
