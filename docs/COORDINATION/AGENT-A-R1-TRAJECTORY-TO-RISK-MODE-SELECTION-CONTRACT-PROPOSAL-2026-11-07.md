@@ -305,3 +305,111 @@ This D3 material belongs to the **PRE-RICH Arb Agent** candidate, not to the PRE
 The transferable IMMORTAL-level concepts are limited to the semantic boundaries already supported by the Canonical Economic Register: liability/protection-first accounting, residual capacity only after protection, safe-action/viability filtering, evidence provenance, atomic transition, and no authority expansion by an adaptive selector. The numeric and application-specific D3 mechanics remain non-normative.
 
 **Status:** historical D3 two-layer design recovered and cross-referenced; no D3 selector, `alpha_t`, C0–C3 transition policy, RiskEnvelope, Solo/Pool accounting implementation, statistical reserve, or Game integration is authorized by this clarification. The deterministic safety floor remains non-substitutable.
+## 10. Permissionless and automatic execution contract — required target
+
+This section records the project requirement that the selector and admission path remain **permissionless, automatic, deterministic and independently verifiable**. It is a target architecture contract, not a claim that the current Issue path already satisfies it.
+
+### 10.1 Invocation is permissionless; economic truth is not caller-defined
+
+- Any user, keeper, relayer or independent observer may construct and submit a candidate transition.
+- The caller may provide observations, witnesses and a candidate action, but may not choose the applicable RiskMode, risk-policy version, cohort limit, epsilon allocation or evidence-validity result.
+- The canonical verifier and economic rules determine whether the submitted candidate is admissible. The submitter receives no special economic authority.
+- A backend, signer, publisher or single operator must not become the per-transition source of economic truth. If an external data source is required, its identity, trust assumptions, freshness and verification boundary must be explicit and independently checkable.
+- Liveness services may wake up, construct or relay a transaction; they cannot authorise an unsafe transition or make an invalid witness valid.
+
+### 10.2 Automatic selector: deterministic function of authenticated inputs
+
+The mode resolver must be a pure, deterministic, versioned function of at least:
+
+- authenticated canonical pre-state and candidate post-state/projection;
+- exact action and transition identity;
+- active immutable profile and risk-policy commitments;
+- trajectory definition and permitted transition envelope;
+- authenticated liquidity, obligations and source observations;
+- the model/evidence references required by that profile.
+
+The same authenticated inputs and policy version must yield the same selected mode and disposition. The selector must choose required analytical mechanisms from the predeclared policy and verified trajectory facts, not select a mode after seeing which result is easiest to pass.
+
+Unknown trajectory, missing/stale evidence, mismatched commitments or unavailable required analysis must fail closed. There is no automatic fallback from a required combined/statistical analysis to a weaker deterministic-only or caller-selected path merely because the required evidence failed.
+
+Mode selection must be performed by canonical verifier logic or by a permissionless proof-carrying computation whose result is verified by canonical on-chain rules. A naked API response, database row, enum, or single authority signature over an off-chain scalar is not a trustless selector.
+
+### 10.3 Statistical computation must be independently verifiable
+
+Statistical cohort computation may be expensive and can be produced off-chain by any party, but the result cannot be accepted solely because a configured backend or signer asserts it.
+
+Before a statistical profile is activated, its implementation must provide one of:
+- an on-chain verifier for the declared bounded calculation; or
+- a proof/witness format that any party can generate and the canonical on-chain verifier can validate against the committed model, cohort, state and inputs.
+
+A committee or publisher signature may identify an observation source where the profile explicitly permits that trust assumption; it must not silently substitute for proof of the risk calculation or confer exclusive admission authority.
+
+If the declared statistical calculation cannot be verified within the target ledger's transaction/resource constraints, the statistical admission mode remains unavailable/fail-closed on that adapter until a verifiable execution path is qualified. A simulation, Monte Carlo point estimate or off-chain attestation is not sufficient by itself.
+
+### 10.4 Risk-budget reservation must be atomic and replay/concurrency safe
+
+For a statistical cohort profile:
+
+- the lifetime/global risk budget and every cohort allocation must be represented by canonical, versioned state;
+- the new Issue must atomically reserve its allocation and bind it to the exact cohort/model/policy version;
+- competing Issue transactions must not be able to consume the same remaining risk budget;
+- a read-only reference to a budget UTxO is not, by itself, a concurrency lock or reservation;
+- where multiple cohorts share one global budget, the canonical budget state must be consumed/recreated or otherwise updated through an equivalent ledger-enforced serialization mechanism in the same atomic admission transition;
+- replay, stale-state, concurrent-spend or changed-model attempts must fail closed.
+
+No new epsilon value, allocation formula, threshold or budget-reset rule is selected by this proposal.
+
+### 10.5 Cohort terms are immutable; automatic regime changes affect new commitments
+
+A ticket/cohort must be bound at admission to its exact application profile, policy version, payout-model version, cohort ID, risk-budget allocation and evidence commitment.
+
+An automatic mode change may govern **new Issue candidates / new cohorts only**. It cannot retroactively:
+- change the guarantee attached to an existing ticket;
+- convert an existing statistical cohort into an unconditional deterministic 500× guarantee without actual eligible top-up/backstop;
+- reduce a crystallised win or known liability;
+- replenish a breached risk budget with future losing outcomes, future sales or uncommitted Treasury value.
+
+If conditions deteriorate, the selector may stop or contract new admissions. Existing Reveal, Claim, Expire and settlement rights continue under the immutable rules already bound to their tickets.
+
+### 10.6 Deterministic, statistical and hybrid application postures
+
+These are distinct application guarantees, not an unrestricted global toggle:
+
+| Application posture | New unresolved exposure | Required condition |
+|---|---|---|
+| **V1 deterministic** | Full profile WCE, currently 500 × Σ(Pᵢ × Nᵢ) | Existing PRE-RICH V1 rule; no statistical downgrade |
+| **Statistical cohort** | Profile-approved cohort/path-risk requirement for unresolved outcomes | Explicit application-policy approval, qualified model, lifetime risk budget, eligible-capital perimeter and independently verifiable computation |
+| **Hybrid/backstopped** | Statistical assessment plus a separately enforced deterministic backstop for the uncovered gap | Backstop must be real, authenticated, unencumbered and available to the same obligation perimeter |
+
+For every posture, universal IMMORTAL invariants, authenticated state, known crystallised liabilities and the Economic/Viability Gate remain mandatory. A statistical profile may replace the current 500× unresolved-ticket WCE only if the specification authority explicitly adopts that different application guarantee for a new profile version. It cannot be presented as the same unconditional 500× guarantee.
+
+The D3 Arb Agent intensity budget remains a separate mechanism: it limits discretionary activity above its safety floor and uses its own Principal / open-exposure perimeter. It is not the PRE-RICH Game statistical-cohort policy.
+
+### 10.7 Quiescence and recovery are protocol dispositions, not privileged commands
+
+A future governed selector may derive NORMAL / CONTRACTING / QUIESCENT / RECOVERY dispositions from authenticated state and the active policy. Their exact thresholds and model inputs remain authority decisions.
+
+- QUIESCENT blocks new exposure/Issue when the required evidence, capital or risk conditions are not satisfied; it does not invalidate existing tickets or block their canonical lifecycle settlement.
+- RECOVERY permits new admissions only after fresh authenticated evidence and the same canonical verifier establish that the active policy is again satisfied.
+- Hysteresis thresholds, policy versions and transition evidence must be canonical and replay-safe. They must not be supplied per call by a user, DApp or relayer.
+- PRE-RICH ticket-price classes (and KA/KC/KD) remain distinct from IMMORTAL RiskMode and from D3 Arb Agent operating classes C0–C3.
+
+### 10.8 Current implementation gap — do not overstate permissionlessness
+
+Agent B's independent 8 Nov review found that the current Issue-admission path verifies a configured Ed25519 authority binding over action/decision/observation references and state hashes. This is not the RiskMode selector, but it is a current admission dependency and means the path must not yet be described as fully permissionless/trustless.
+
+The review also confirms that the current RiskProtectionBridge is not wired into PreRichEconomicAdmission; it accepts only the deterministic-only path and rejects StatisticalOnly / DeterministicAndStatistical. Its RiskEvidenceVerified constructor is an enum, not cryptographic proof.
+
+Therefore this section specifies the desired trust boundary and future conformance target. It does not authorise removing the current signature, introduce a replacement signer, or claim a permissionless production path exists. Any removal of the configured authority dependency requires a separate proof-backed design and authorization.
+
+### 10.9 Recommended order of implementation after policy approval
+
+1. Freeze the application policy/profile version and its transition-to-mode mapping.
+2. Specify the on-chain verifiable statistical witness/proof and deterministic calculation bounds; reject the design if it cannot meet ledger resource limits without trusted off-chain authority.
+3. Specify atomic cohort/global-budget state and concurrency/replay behavior.
+4. Bind profile, mode, model, cohort, state/action and evidence commitments into the canonical admission result.
+5. Prove that universal invariants and known liabilities cannot be bypassed in any mode.
+6. Implement behind a new, explicitly versioned application profile; preserve PRE-RICH V1 unchanged as the current fallback.
+7. Run adversarial, differential, resource and on-chain conformance tests before any deployment consideration.
+
+**Disposition:** permissionless/automatic/trustless selection is recorded as a hard target constraint. The resolver, proof-carrying statistical verifier, atomic risk-budget state and removal of the current configured signer dependency are not implemented or qualified. No risk appetite, alpha, Z, threshold, confidence level, combination formula or new guarantee is approved by this section.
