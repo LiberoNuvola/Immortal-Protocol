@@ -364,7 +364,7 @@ No local repository checkout/dependency installation was available for executing
 
 The WAL suite contains 11 authored cases: event replay across restart, rollback/alternate branch persistence, incomplete-tail recovery, complete-record corruption, failed transition non-commit, single-writer rejection, forward/rollback callbacks, stale PID lock recovery, foreign-host lock rejection, persistent-client factory construction and queued-write/close ordering.
 
-**Execution 2026-11-08 — GitHub Actions run 42459666825: 36/36 passed (12 reducer + 13 Ogmios + 11 WAL), 0 failures, 0 skipped.** The run used Node 22, installed only `ws@8.18.3` and `@cardanosolutions/json-bigint@1.0.1` in a temporary dependency directory, executed `npm run test:pre-snapshot-index`, and then successfully ran `node --check` on all four M1-A modules. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42459666825.
+**Execution 2026-11-08 — current qualified run 42460691746: 53/53 passed, 0 failures, 0 skipped.** The suite consists of 12 reducer + 13 Ogmios adapter/client + 11 WAL + 8 fixed-point replica-comparison + 9 dual-local-runner tests. Node 22 ran `npm run test:pre-snapshot-index`; six M1-A modules passed `node --check`. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42460691746. Earlier 36/36 and 44/44 runs are superseded by this wider suite.
 
 ### Deliberate limitations — not production qualified
 
@@ -376,9 +376,61 @@ The WAL suite contains 11 authored cases: event replay across restart, rollback/
 - Manual recovery is required for an unverifiable lock or orphaned reaper lock. Do not auto-delete those files.
 - No live Cardano node, Ogmios endpoint, Kupo, private testnet, Mithril network, benchmark or resource test was run. Byron Base58 CBOR/checksum validation remains open.
 
-**M1-A status:** reducer + Ogmios v7 adapter + reconnecting client + local WAL/replay and ChainSync rollback callback = CODE PRESENT; 36/36 unit tests PASS on GitHub Actions; live two-node ledger conformance and resource qualification = OPEN. M1-C and M2 remain NOT STARTED.
+**M1-A status:** reducer + Ogmios v7 adapter + reconnecting client + local WAL/replay + fixed-point replica comparator + dual-local-runner = CODE PRESENT; 53/53 unit tests PASS on GitHub Actions; live independent two-node ledger conformance, Kupo parity and resource qualification = OPEN. M1-C and M2 remain NOT STARTED.
 
 
 ### CI entry point
 
 An isolated workflow, `.github/workflows/m1-a-pre-snapshot-tests.yml`, now runs on changes to the M1-A reducer, Ogmios adapter/client, WAL and their tests on `work/immortal-green-closure`, and supports manual `workflow_dispatch`. It has `contents: read` only, does not load secrets, does not start Cardano services, and does not sign or submit transactions. The successful run above is the first qualified execution of the 36-test M1-A unit suite.
+
+
+## 16. Fixed-point two-replica comparator and local runner
+
+**Comparator:** `audit/cardano-integration/preSnapshotReplicaConformance.mjs`  
+**Comparator tests:** `audit/cardano-integration/preSnapshotReplicaConformance.test.mjs` (8 cases)  
+**Runner:** `audit/cardano-integration/preSnapshotDualReplicaRunner.mjs`  
+**Runner tests:** `audit/cardano-integration/preSnapshotDualReplicaRunner.test.mjs` (9 cases)
+
+### Comparison contract
+
+- `expectedPoint` is mandatory and supplied by the operator/configuration; the runner never decides a governance snapshot point.
+- Both reducer states must use the exact expected network and PRE policy ID + asset name.
+- Both Ogmios sessions must complete `findIntersection`; a stale local journal by itself cannot produce PASS.
+- Both remote tips must be at or beyond the configured point. The local reducer state is compared at that exact point; a replica ahead may be non-mutatingly projected back only if the point remains in retained history.
+- PASS requires byte-identical canonical snapshot messages and matching digests. Same-height different header hashes fail as chain-selection divergence; a node behind remains WAITING; missing target history/configuration mismatch fails closed.
+- Runner records readiness only after the intersection callback and WAL commit. Any transport/protocol error clears that session readiness until a new intersection is established. A fatal Ogmios RPC/intersection error is an immediate FAIL. Before returning PASS the runner stops both sessions and freezes/rechecks the same target; session loss or target movement at freeze cannot be turned into PASS.
+- Two labels / node instance IDs / loopback URLs are still operator-supplied identity declarations; they are not cryptographic attestation that the sockets terminate at two physically independent hosts or processes.
+
+### Local invocation (not run against real nodes yet)
+
+Create a local JSON config with the following fields and operator-supplied values:
+
+```json
+{
+  "networkId": "<local private testnet identity>",
+  "asset": { "policyIdHex": "<56 lowercase hex chars>", "assetNameHex": "<exact asset-name hex>" },
+  "anchorPoint": { "slot": 0, "blockNo": 0, "hash": "<64 lowercase hex chars>" },
+  "expectedPoint": { "slot": 0, "blockNo": 0, "hash": "<64 lowercase hex chars>" },
+  "initialUtxos": [],
+  "timeoutMs": 120000,
+  "pollIntervalMs": 250,
+  "replicas": [
+    { "id": "node-a", "nodeInstanceId": "<instance-a>", "url": "ws://127.0.0.1:1337", "journalDirectory": "<absolute-local-dir-a>" },
+    { "id": "node-b", "nodeInstanceId": "<instance-b>", "url": "ws://127.0.0.1:1338", "journalDirectory": "<absolute-local-dir-b>" }
+  ]
+}
+```
+
+`initialUtxos` must be the complete bootstrap set at `anchorPoint`, from a separately verified bootstrap/replay procedure; the empty array above is illustrative schema only, not evidence of a zero-supply PRE asset. The policy ID, asset name, network identity, anchor and expected point are deliberately not preselected here. Each Ogmios endpoint must be plain `ws://` on local loopback; separate local journal paths are mandatory. From the integration directory run:
+
+```powershell
+node .\\preSnapshotDualReplicaRunner.mjs <path-to-local-config.json>
+```
+
+The program is read-only with respect to Cardano nodes: it opens two local Ogmios ChainSync sessions and writes only its two local journals. It does not sign, submit, or select protocol/governance points. A non-PASS result exits nonzero.
+
+## 17. Latest M1-A unit qualification
+
+GitHub Actions run **42460691746** tested exact commit `6158c847545fdefe5b6d6b908b824b7b3279f028` and reported **53 tests, 53 passed, 0 failed, 0 skipped**. It also passed `node --check` for reducer, Ogmios adapter, ChainSync client, WAL, replica comparator and dual-node runner. Two additional runner integration tests use fake Ogmios WebSockets: one reaches an exact fixed-point PASS only after two successful intersections and final freeze; one proves a fatal `findIntersection` error yields FAIL rather than stale-state PASS.
+
+**Qualification boundary:** this does not mean two Cardano nodes were provisioned or contacted. No real Node-to-Client socket, Ogmios instance, Kupo instance, private testnet or Mithril certificate was used by the run. The synthetic tests verify software control flow only. M1-A live acceptance still requires two genuinely independent local node processes, two separate Ogmios instances, an independently verified complete bootstrap UTxO set, a fixed externally chosen point, and Kupo comparison at that exact point; then resource/recovery testing and pinned runtime evidence.
