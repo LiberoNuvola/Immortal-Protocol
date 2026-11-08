@@ -242,3 +242,36 @@ This profile selects a test-only toolchain baseline, not a protocol dependency o
 - Cardano Developer Portal — indexing/rollback, append-only rows, durable cursors, duplicate deliveries and indexer categories: https://developers.cardano.org/docs/developers/curriculum/production/indexing-and-analytics/
 - Cardano API — QueryUTxOWhole O(n) time/space and QueryUTxOByTxIn indexed query: https://cardano-api.cardano.intersectmbo.org/cardano-api/Cardano-Api-Query.html
 - Prior M1 parent plan: \`AGENT-B-M1-PRE-SNAPSHOT-INDEXER-AND-MITHRIL-CERTIFICATION-TEST-PLAN-2026-11-08.md\`
+
+
+## 11. Prototype implementation status — pure reducer only
+
+**Source:** `audit/cardano-integration/preSnapshotUtxoIndex.mjs`  
+**Tests:** `audit/cardano-integration/preSnapshotUtxoIndex.test.mjs`  
+**Command:** `cd audit/cardano-integration && npm run test:pre-snapshot-index`  
+**Package command:** `node --test preSnapshotUtxoIndex.test.mjs`  
+**Status:** CORE IMPLEMENTED / NOT YET EXECUTED OR LEDGER-VALIDATED.
+
+The first isolated code increment implements a dependency-light, pure UTxO reducer. It accepts a normalized block contract and supports:
+
+- exact policy ID + asset-name filtering, address-level aggregation for the explicitly test-only identity rule, arbitrary-precision quantities and deterministic SHA-256 Merkle-sum message encoding;
+- valid transaction ordinary-input/output application and phase-2-invalid collateral-input/collateral-return application;
+- valid mint/burn reconciliation against the net PRE quantity change in each block;
+- duplicate TxIn/transaction detection, unknown validity, malformed values, zero target-asset outputs, wrong parent points and skipped block numbers failing closed;
+- immutable returned index states and rollback journals, including correct undo when one transaction creates a PRE UTxO and a later transaction in the same block spends it;
+- rollback to a retained ancestor and alternate-branch replay.
+
+Twelve Node built-in test cases were authored for bootstrap filtering, split outputs, mint/burn, collateral-return handling, within-block chained transactions, fork/rollback, atomic failure, duplicates, malformed points/assets, immutability, zero quantities and canonical digest determinism. They are **written but not run** in this environment; the repository does not exist as a local checkout here. The command is registered in the integration package so it can be run on a real checkout.
+
+### Exact remaining M1-A work
+
+This increment is not yet a functioning node indexer. It does **not** include:
+- Ogmios WebSocket connection, `findIntersection` / `nextBlock` handling or reconnect cursor persistence;
+- an Ogmios v7 block/transaction decoder into the normalized reducer contract;
+- local node topology, full-UTxO bootstrap, full-chain replay or persistent atomic journal;
+- Kupo comparison, real rollback/reorg observation or resource benchmarks;
+- a real Cardano block test or evidence manifest.
+
+The decoder must preserve Ogmios `inputSource` semantics and correctly map outputs, collateral return and native-asset values. Do not interpret a missing `inputSource` as ordinary inputs; the adapter must pin and validate the exact response shape for the selected node/Ogmios versions. Ogmios ChainSync supplies input references, not resolved historical input outputs; the reducer resolves spends from its own local PRE index.
+
+**Disposition:** M1-A CORE REDUCER = CODE PRESENT; M1-A LEDGER INTEGRATION = OPEN; M1-A CONFORMANCE = NOT RUN. No Mithril certificate or production snapshot claim is made.
