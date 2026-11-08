@@ -3,7 +3,8 @@
   "type": "module",
   "dependencies": {
     "@lucid-evolution/lucid": "0.6.5",
-    "ws": "8.18.3"
+    "ws": "8.18.3",
+    "@cardanosolutions/json-bigint": "1.0.1"
   },
   "scripts": {
     "preprod:wallet": "node preprod-wallet-utxo.mjs",
