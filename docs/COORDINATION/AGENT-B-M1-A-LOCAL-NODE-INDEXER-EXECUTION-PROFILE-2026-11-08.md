@@ -377,3 +377,8 @@ The WAL suite contains 11 authored cases: event replay across restart, rollback/
 - No live Cardano node, Ogmios endpoint, Kupo, private testnet, Mithril network, benchmark or resource test was run. Byron Base58 CBOR/checksum validation remains open.
 
 **M1-A status:** reducer + Ogmios v7 adapter + reconnecting client + local WAL/replay and ChainSync rollback callback = CODE PRESENT; tests authored/not run; live two-node ledger conformance and resource qualification = OPEN. M1-C and M2 remain NOT STARTED.
+
+
+### CI entry point
+
+An isolated workflow, `.github/workflows/m1-a-pre-snapshot-tests.yml`, now runs on changes to the M1-A reducer, Ogmios adapter/client, WAL and their tests on `work/immortal-green-closure`, and supports manual `workflow_dispatch`. It has `contents: read` only, does not load secrets, does not start Cardano services, and does not sign or submit transactions. The successful run above is the first qualified execution of the 36-test M1-A unit suite.
