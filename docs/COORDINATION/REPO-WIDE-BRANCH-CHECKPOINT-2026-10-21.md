@@ -1176,3 +1176,24 @@ No production governance rules, PRE asset identity, GOV entity mapping, voting e
 - The run uses synthetic fixtures and a fake WebSocket. It does **not** qualify a real Cardano node/Ogmios connection, Kupo parity, bootstrap completeness, Byron CBOR/checksum, performance/resource behavior, persistent-disk crash injection, or Mithril certification.
 
 **Updated M1-A status:** unit suite PASS (36/36); live two-node ledger conformance and resource qualification OPEN; M1-C Mithril and M2 Plutus verification NOT STARTED. No live chain services, wallet signing, Preprod/Mainnet transactions or protocol-economic/governance semantics were changed.
+
+
+## 2026-11-08 — Agent B: M1-A dual-replica comparator and local ChainSync runner
+
+**Comparator:** `audit/cardano-integration/preSnapshotReplicaConformance.mjs` and `.test.mjs` (8 tests).  
+**Runner:** `audit/cardano-integration/preSnapshotDualReplicaRunner.mjs` and `.test.mjs` (9 tests).  
+**Workflow:** `.github/workflows/m1-a-pre-snapshot-tests.yml`  
+**Latest successful run:** https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42460691746  
+**Exact tested commit:** `6158c847545fdefe5b6d6b908b824b7b3279f028`
+
+- Comparator requires two distinct labelled replicas, exact operator-provided network/asset and fixed `expectedPoint`. PASS requires both local indexes at that point (or non-mutating projection from a later tip where retained history permits), byte-identical canonical snapshot bytes and matching digest. A same-height different header hash fails; behind replicas remain WAITING; unavailable historical target/config mismatches fail closed. It never selects a snapshot point or changes either state.
+- Local runner accepts exactly two distinct node instance labels, separate local journal directories and two distinct loopback `ws://` Ogmios URLs. It opens two persistent clients, requires successful `findIntersection` for both, remote tips at/after the supplied target, and exact snapshot match. Transport error resets that session's readiness; fatal Ogmios RPC is FAIL. It stops both sessions and rechecks the target before returning PASS. It writes local WALs only; no signing/submission or Cardano-node write API.
+- A successful fake-WebSocket integration test executes both intersection sessions, fixed-point compare, and final freeze. A separate negative test ensures fatal intersection errors cannot return stale-state PASS. `WebSocketImpl` is injectable for deterministic tests; the real CLI uses the pinned `ws` package.
+- Config's replica IDs, nodeInstanceIDs and URLs are declarations supplied by the operator, not cryptographic attestation of independent physical/process nodes. Real node identity/process independence must be established in the local runtime evidence.
+- The local config's `expectedPoint`, exact PRE policy/name, network identity, anchor point and full bootstrap UTxO set remain operator inputs. `initialUtxos: []` in documentation is schema illustration only, not zero-supply evidence. Invocation: `node preSnapshotDualReplicaRunner.mjs <path-to-local-config.json>` from `audit/cardano-integration`.
+
+### Test execution
+
+Latest isolated M1-A workflow run **42460691746**: **53 tests / 53 passed / 0 failed / 0 skipped**. Inventory: 12 reducer + 13 Ogmios adapter/client + 11 WAL + 8 replica comparator + 9 dual local-runner. Six module `node --check` steps also passed. Run used Node 22 and only the runtime dependencies in a temporary runner directory. Earlier 36/36 and 44/44 runs are superseded by this wider 53-test run.
+
+**Important qualification boundary:** the suite uses synthetic fixtures and fake WebSockets; no actual Cardano node, Ogmios service, Kupo, private testnet or Mithril network has been started or contacted. Live M1-A acceptance remains OPEN: two independent local node processes and their own Ogmios processes, verified complete bootstrap set, one fixed target, exact replica state/message agreement and Kupo parity at the same point; then resource, restart, rollback and pinned runtime evidence. M1-C and M2 remain NOT STARTED. No V3, Reveal, GOV-16/17/18, B1/EEV, Issue #37, Issue #43, Issue #49 or economic policy semantics changed.
