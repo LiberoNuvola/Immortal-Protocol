@@ -157,9 +157,10 @@ test('a complete but corrupted journal record fails closed and releases writer l
     await journal.close()
     const logPath = join(directory, 'journal.ndjson')
     const original = await readFile(logPath, 'utf8')
-    const corrupted = original.replace(/"hash":"[0-9a-f]/, '"hash":"f')
+    const record = JSON.parse(original.trim())
+    record.hash = (record.hash[0] === '0' ? '1' : '0') + record.hash.slice(1)
+    const corrupted = JSON.stringify(record) + '\n'
     assert.notEqual(corrupted, original)
-    await appendFile(logPath + '.unused', '', 'utf8')
     await (await import('node:fs/promises')).writeFile(logPath, corrupted, 'utf8')
 
     await assert.rejects(
