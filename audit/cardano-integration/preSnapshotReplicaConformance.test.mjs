@@ -130,7 +130,7 @@ test('duplicate replica labels and missing target points are rejected as configu
   }), /PRE_SNAPSHOT_EXPECTED_POINT_INVALID/)
 })
 
-test('comparison never mutates or rolls back either replica', () => {
+test('a replica ahead of the target is projected to the retained point without mutation', () => {
   const atPointOne = advance(baseState(), pointOne, txId, '02bb', 100)
   const stateA = applyPreSnapshotBlock(atPointOne, {
     parentPoint: pointOne,
@@ -141,7 +141,22 @@ test('comparison never mutates or rolls back either replica', () => {
   const beforeA = stateA.currentPoint
   const beforeB = stateB.currentPoint
   const result = compare(stateA, stateB)
-  assert.equal(result.status, 'WAITING')
+  assert.equal(result.status, 'PASS')
+  assert.equal(result.replicaA.indexTip.hash, pointTwo.hash)
+  assert.equal(result.replicaA.snapshotPoint.hash, pointOne.hash)
   assert.equal(stateA.currentPoint, beforeA)
   assert.equal(stateB.currentPoint, beforeB)
+})
+
+test('a replica without the requested point in retained history fails closed', () => {
+  const anchoredAfterTarget = createPreSnapshotIndex({
+    networkId: 'cardano-m1-two-node-test',
+    asset,
+    anchorPoint: pointTwo,
+    utxos: [utxo('40'.repeat(32), '01aa', 100)]
+  })
+  const atPointOne = advance(baseState(), pointOne, txId, '02bb', 100)
+  const result = compare(anchoredAfterTarget, atPointOne)
+  assert.equal(result.status, 'FAIL')
+  assert.equal(result.code, 'REPLICA_TARGET_POINT_NOT_RETAINED')
 })
