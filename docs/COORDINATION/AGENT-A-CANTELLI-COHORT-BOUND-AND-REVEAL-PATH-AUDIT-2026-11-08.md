@@ -126,13 +126,14 @@ For the illustrative table in §3.2, `C=4,000 USDM` must therefore mean the B1 p
 
 ## 5. What this candidate solves — and what it does not
 
-**Potentially solves:** a compact, exact, dependence-robust upper bound for the *static aggregate payout* of one fixed cohort, using only a small number of integer operations and profile-committed rational constants.
+**Potentially solves:** a compact, exact, dependence-robust upper bound for the *static aggregate payout* of one pre-specified fixed set spanning multiple active Beacon rounds that share one B1 Pool, using only a small number of integer operations and profile-committed rational constants.
 
 **Does not solve:**
 
 - the trustworthiness of each ticket's marginal randomness distribution or the Beacon's conditional unpredictability;
 - an exact/tight path-risk model: the sufficient condition `S ≤ E0` is conservative and only covers a fixed cohort with no additional Pool-draining Issue or other outflow during resolution;
-- application of the same bound across overlapping cohorts, new Issue interleavings, different model versions or a shared lifetime risk budget;
+- rolling/adaptive Issue interleavings after any relevant outcome becomes available; §8 covers only the fixed aggregate set across active rounds whose membership and marginal-law assumptions were fixed at the valid pre-outcome risk boundary;
+- heterogeneous profile versions without per-ticket or dominating moment bounds, and a shared lifetime risk budget across repeated risk epochs;
 - a qualified derivation of `C=E0` from authenticated B1 Pool state plus any additional IMMORTAL protected-capital requirements;
 - lifetime risk-budget allocation across multiple cohorts, model versioning, concurrency and replay;
 - preservation of the separate deterministic floor for known liabilities, Jackpot, fees, safety capital and any mandatory backstop;
@@ -142,7 +143,7 @@ A Cantelli-bound profile would be a distinct probabilistic application guarantee
 
 ## 6. Required next feasibility gates
 
-1. Extend the fixed-cohort sufficiency lemma to overlapping rounds/cohorts, new-Issue interleavings and all other permitted Pool transitions; bind the common capital perimeter and risk-budget composition.
+1. For any rolling/adaptive Issue design, establish conditional moment bounds over the full adversarial information history and prove risk-budget spending / capital non-overlap; the static multi-round fixed-set Reveal lemma is now recorded in §8.
 2. Qualify the Beacon's source, unpredictability, bias resistance, ticket commitment timing and per-ticket marginal distribution against the actual configured Registry / Materios authority boundary.
 3. Derive `C` from authenticated physical PrizePool value after all obligations, with face-price reserve and payout budget accounted for exactly once.
 4. Implement a standalone reference calculator and exact-integer property tests; compare it with the exact convolution under independence and adversarial-dependence test cases. These tests were not run in this research note.
@@ -166,7 +167,7 @@ A Cantelli-bound profile would be a distinct probabilistic application guarantee
 
 ### 8.1 Multiple active rounds can be one static risk perimeter
 
-For a single B1 PrizePool, the relevant static set is not one Beacon round at a time. At a qualified admission boundary, define (U^*) as **all Pending tickets backed by that same Pool across every active BeaconTarget / round**. Include every unresolved ticket exactly once, whatever its round or Beacon status; already-Revealed payouts are represented in crystallised pending liabilities and are not added again as unresolved random payout. Pending tickets that may later Expire can remain in the set: including their potential payout is conservative.
+For a single B1 PrizePool, the relevant static set is not one Beacon round at a time. At a qualified admission boundary, define (U^*) as **all Pending tickets backed by that same Pool across every active BeaconTarget / round whose membership is fixed before any corresponding outcome becomes available to an adversarial ticket holder**. Include every ticket in that frozen set exactly once, whatever its round; already-Revealed payouts are represented in crystallised pending liabilities and are not added again as unresolved random payout. Pending tickets that may later Expire can remain in the set: including their potential payout is conservative. A ticket whose Beacon is already Ready at a later admission/refresh boundary cannot be treated as a fresh unconditional draw merely because it remains Pending: it must remain covered by its earlier frozen risk epoch or have a valid conditional-moment bound (§8.2).
 
 Let:
 
