@@ -335,7 +335,7 @@ export function getOgmiosV7IntersectionPoints(state, maxPoints = 128) {
   const candidates = [
     state.currentPoint,
     ...state.history.slice().reverse().map(entry => entry.point),
-    state.anchorPoint
+    ...(samePoint(state.anchorPoint, PRE_SNAPSHOT_ORIGIN_POINT) ? [] : [state.anchorPoint])
   ]
   const points = []
   const seen = new Set()
