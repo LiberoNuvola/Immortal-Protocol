@@ -186,9 +186,9 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
       clients.push(client)
     }
 
-    const runningPromises = clients.map(client =>
+    clients.forEach(client => {
       client.start().catch(() => {})
-    )
+    })
     const deadline = Date.now() + config.timeoutMs
     let comparison = null
 
@@ -232,7 +232,8 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
         report = Object.freeze({
           status: 'WAITING',
           code: 'DUAL_REPLICA_CONFORMANCE_TIMEOUT',
-          comparison
+          comparison,
+          observedErrors: Object.fromEntries(observedErrors)
         })
       } else {
         report = comparison
