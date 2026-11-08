@@ -779,3 +779,21 @@ At hypothetical C=4,000 USDM: current V1 500× deterministic WCE remains 8 Genes
 ### Disposition
 
 The static proof and two-axis conceptual reconciliation are research/documentation only. Dynamic Issue after outcomes become knowable, Game-specific intensity policy, global lifetime ε, conditional moments, capital qualification, Beacon qualification, Gate integration and specification authority decisions remain open. No production code/tests, policy parameters, 500×, ProtectedCapital, V3/Reveal, QNE/R1, wallet, deployment or ledger state changed.
+
+
+## 2026-11-08 — Agent A: explicit RiskMode state/action resolver matrix
+
+**Detailed contract:** [Trajectory-to-RiskMode proposal §11](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md).
+
+### Verified applicability boundaries
+
+- PRE-RICH Sale algorithm lists both deterministic exposure and statistical-reserve evaluation. However, current V1 WCE 500× remains mandatory; current code/Gate implements deterministic only. The statistical evaluation's role (reporting versus binding admission criterion), Z/confidence/horizon/epoch and acceptance rule remain unresolved. Record a source-to-implementation gap; do not claim D+S production conformance.
+- Reveal crystallizes actual payout into a known liability; Claim settles it; Expire closes the right. None is a fresh unconditional payout draw or a budget reset.
+- Classic-6 payout moments do not model EEV / market-liquidity risk.
+- Arb Agent D3 intensity is a separate application/capital profile, not Game RiskMode.
+
+### Resolver target
+
+Derive one unique required-analysis set from authenticated profile, pre-state, action, candidate post-state and trajectory evidence. Caller-supplied mode is rejected. Missing/ambiguous policy predicates or missing required model/proof fail closed. Any automatic state-based mode change is profile/version-bound, replay-safe and applies only to new commitments; existing ticket terms remain immutable. Universal invariants, known liabilities, mandatory deterministic floors and Ω viability remain mandatory.
+
+**Authority decisions still OPEN:** Issue statistical role; selected statistical construction and parameters; state/regime predicates and hysteresis; lifetime ε/epoch/capital allocation; proof format/resource bound; and any new Game-specific probabilistic guarantee. No code/tests, 500×, RiskProtectionBridge, V3/Reveal, QNE/R1 or deployment semantics changed.
