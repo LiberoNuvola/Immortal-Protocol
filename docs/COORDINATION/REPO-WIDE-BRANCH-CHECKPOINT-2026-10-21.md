@@ -950,3 +950,30 @@ Detail: [source memo §47.6–47.7](https://github.com/LiberoNuvola/Immortal-Pro
 4. Then measure the complete governance/Factory/Registry verifier design, including Cardano resource and transaction-size feasibility.
 
 No code, ABI, workflow, tests, CI, wallet, transaction, deployment, token identity, voting rule, target formula, publisher role or ledger state was changed or executed. Issue #43 remains release-blocking; Issue #37 first-ticket gates remain independent.
+
+## 2026-11-08 — Agent B: Mithril PRE snapshot and Plutus verifier feasibility
+
+**Research artifact:** [AGENT-B-MITHRIL-PRE-SNAPSHOT-ONCHAIN-VERIFICATION-FEASIBILITY-2026-11-08.md](AGENT-B-MITHRIL-PRE-SNAPSHOT-ONCHAIN-VERIFICATION-FEASIBILITY-2026-11-08.md)  
+**Exact reviewed HEAD:** `0df1b84906c48e88305b9f4902c761b093baf953`  
+**Artifact commit:** `0d700d881c9edf2b083531157a090e30ac9271d5`  
+**Artifact blob:** `75b612abd08a48c1db2992152e2d6b2dc818da65`  
+**Classification:** DESIGN / EXTERNAL-PROTOCOL FEASIBILITY — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY.
+
+### Findings
+
+- Mithril's official certification framework supports pluggable custom data modules. Signers independently compute messages, aggregators aggregate signatures, and clients verify artifacts/certificates. Custom modules require significant work and deployment across signers (the majority of registered SPOs), aggregators and clients.
+- Standard Mithril SPO stake distribution is not PRE holder distribution. Standard Cardano DB v2 certifies committed immutable-file hashes but explicitly excludes the last immutable file, ledger state and volatile data. The new Cardano blocks/transactions certification authenticates membership and depth, not a complete PRE balance tree.
+- A custom PRE module could independently aggregate all PRE-bearing UTxOs by a canonical governance entity/credential at one exact snapshot point and sign a Merkle-sum root plus total and asset/network/boundary/ruleset commitments. Entity identity, PRE asset identity, eligibility and complete full-UTxO computation remain unresolved.
+- Mithril 2642 (2026-10-21) introduced compact SNARK certificate support and a genesis-signed circuit verification-key registry, both still unstable. On 2026-11-04, activation of the SNARK feature by default was still in progress.
+- Documented approximate aggregate-signature sizes: concatenation ~150 KB (stable); non-recursive SNARK ~4 KB (unstable, one cert at a time); recursive SNARK/IVC ~13 KB (unstable, can prove the certificate chain back to genesis).
+- Plutus V3 / protocol version 11 exposes BLS12-381 pairing operations and CIP-133 multi-scalar multiplication, creating a plausible primitive overlap with Mithril's Halo2/KZG verifier. This is not a verified drop-in: exact transcript/field/key encodings, circuit-key registry, CEK and full transaction-size measurements are still absent.
+- The strongest research candidate is a custom PRE snapshot module plus recursive Mithril certificate verification inside Plutus. It would remove a single per-proposal snapshot publisher and allow any participant to submit the proof, but retains explicit Cardano consensus, stake-threshold, genesis/circuit-key and module-correctness assumptions.
+- Off-chain certificate verification followed by an unverified root passed to the governance/Factory UTxO is rejected as final authority. It is not on-chain trustless verification.
+
+### Next gates
+
+1. M1: prototype a custom PRE snapshot module in an isolated Mithril dev/test network; show independent signers produce the same complete Merkle-sum root at one exact test ledger point.
+2. M2: verify a real Mithril recursive certificate proof in a minimal Plutus V3 validator; test the genesis/circuit-key roots and measure CEK, memory and transaction-size limits.
+3. Only after M1/M2, request an explicit governance decision on the Mithril stake-threshold trust model and the canonical entity/asset/snapshot rules.
+
+No production code, test, workflow, CI, wallet, transaction, deployment, PRE identity, voting rule, trust root or ledger state changed or was executed. The Factory STT remains a uniqueness candidate, not an implementation-ready trustless opener. Issue #43 remains release-blocking; Issue #37 first-ticket gates remain independent.
