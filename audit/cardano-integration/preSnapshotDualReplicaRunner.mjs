@@ -22,6 +22,17 @@ function validPoint(point, name) {
   }
 }
 
+export function isPreSnapshotRemoteTipAtOrAfterTarget(tip, target) {
+  if (tip === 'origin') return target.slot === 0 && target.blockNo === 0
+  if (!tip || typeof tip !== 'object' || typeof tip.id !== 'string' || tip.id.length === 0) {
+    return false
+  }
+  const slot = Number(tip.slot)
+  const height = Number(tip.height)
+  return Number.isSafeInteger(slot) && Number.isSafeInteger(height) &&
+    slot >= target.slot && height >= target.blockNo
+}
+
 function validateLocalOgmiosUrl(value, name) {
   let url
   try {
@@ -167,6 +178,8 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
   const journals = []
   const clients = []
   const observedErrors = new Map()
+  const establishedSessions = new Set()
+  const latestTips = new Map()
   let report = null
 
   try {
@@ -177,6 +190,12 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
         journal,
         url: replica.url,
         reconnectDelayMs: 1000,
+        onIntersection: async (_point, tip) => {
+          establishedSessions.add(replica.id)
+          latestTips.set(replica.id, tip)
+        },
+        onRollForward: async (_block, tip) => latestTips.set(replica.id, tip),
+        onRollBackward: async (_point, tip) => latestTips.set(replica.id, tip),
         onError: error => observedErrors.set(replica.id, {
           code: error?.code ?? 'OGMIOS_UNKNOWN_ERROR',
           message: error?.message ?? String(error),
@@ -197,6 +216,14 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
         journals[0].getState(),
         journals[1].getState()
       ])
+      if (!config.replicas.every(replica => establishedSessions.has(replica.id)) ||
+          !config.replicas.every(replica =>
+            isPreSnapshotRemoteTipAtOrAfterTarget(latestTips.get(replica.id), config.expectedPoint)
+          )) {
+        await wait(config.pollIntervalMs)
+        continue
+      }
+
       comparison = comparePreSnapshotReplicaStates({
         replicaA: { id: config.replicas[0].id, state: stateA },
         replicaB: { id: config.replicas[1].id, state: stateB },
@@ -233,7 +260,9 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
           status: 'WAITING',
           code: 'DUAL_REPLICA_CONFORMANCE_TIMEOUT',
           comparison,
-          observedErrors: Object.fromEntries(observedErrors)
+          observedErrors: Object.fromEntries(observedErrors),
+          establishedSessions: [...establishedSessions],
+          latestTips: Object.fromEntries(latestTips)
         })
       } else {
         report = comparison
