@@ -896,3 +896,24 @@ No code, tests, workflow, ABI, B1/Registry/Prize/MintPolicy/V3/Reveal semantics,
 4. Obtain a separately authorized implementation slot with exact HEAD and bounded paths.
 
 No code, ABI, tests, workflow, CI run, wallet action, transaction, deployment, or ledger state was changed or executed by this audit.
+
+## 2026-11-08 — Agent A: source-level multi-provider oracle boundary audit (Option B)
+
+**Detailed audit:** [PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md §47](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md#47-agent-a--source-level-multi-provider-oracle-boundary-audit-and-target-architecture--2026-11-08).
+
+### Verified implementation boundary
+
+- `OracleQuoteSet` in `Adapter/CARDANO/observation/OracleTypes.hs` is a **multi-asset** container: it can hold one quote for each distinct asset identity. `lookupOracleQuote` rejects duplicate matches for the same policy/name, even from different publishers. It is not a multi-provider consensus set.
+- `Economic.oraclePriceFor` uses one configured Oracle State singleton and one configured publisher, requires a unique matching asset quote and freshness against the transaction validity upper bound, and returns that single integer price. Current quote schema lacks source/feed ID, network, base/quote direction, explicit exponent/rational denominator, confidence and a source-set proof digest.
+- MintPolicy Treasury valuation, PrizeValidator Claim valuation and B1PrizePool payout/Pool valuation all call the current `totalUsdmValue` path with one configured Oracle State/publisher. `src/genesisTreasuryObservation.ts` also reads a single singleton and its current parser is legacy five-field shape.
+- Existing `EconomicOracleTest.hs` proves multi-asset basket support and duplicate rejection; its Pyth-binding characterization explicitly shows that an unqualified candidate quote is not consumed and the configured legacy Oracle State remains authoritative. It is not a Pyth or multi-provider integration pass.
+
+### Provider/source status for Option B
+
+Pyth Lazer, DIA Cardano Oracle, Orcfax CER, Charli3 and Cardano DEX two-leg routes are distinct provider/market leads, not a currently qualified multi-provider USD/USDM set for the exact Preprod tUSDM unit. The source memo records stale historical Charli3/Orcfax observations, a DIA custom-feed/Preprod gap, Pyth entitlement/feed-unit gaps, and Mainnet DEX research that cannot be substituted for the Preprod asset. Option B remains the approved approach; the USD/USDM source remains NOT QUALIFIED.
+
+### Target architecture (proposal only)
+
+A true multi-provider path requires independently verified provider-specific witnesses; exact asset/network/direction and rational price/exponent metadata; a versioned governed source-set; cross-provider reconciliation under an explicit authority-approved rule; exact rational two-leg composition where used; source-set hash and evidence binding; and on-chain verification so any participant can assemble/submit a candidate while relayers/indexers remain liveness-only. Missing, stale, duplicate, equivocal or out-of-policy inputs must fail closed.
+
+No quorum size, source count, dispersion tolerance, confidence cut, timestamp skew or aggregation method is selected here. No Oracle schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, PrizeValidator, B1PrizePool, deployment or ledger semantics are changed. This audit is documentation/source review only; no tests or CI were run.
