@@ -469,3 +469,23 @@ No cardano-node, Ogmios or Kupo process has yet been started by this work. The r
 The local runbook is deliberately a **zero-state plumbing smoke test** in its current no-transaction form. A freshly generated private Cardano testnet does not contain the production PRE token or its Preprod/Mainnet UTxO history. Supplying the real production policy ID/name to this private chain would therefore produce an empty index; a 2-node + 2-Kupo PASS at supply zero must not be described as a non-zero PRE distribution or full PRE index correctness.
 
 For non-zero live UTxO behavior, the private network needs a clearly labelled test-only native asset minted by ephemeral test keys through a transaction that stays on that private chain. Such a local-only fixture is not the production PRE identity and has not yet been added or executed. An actual production PRE distribution check is a distinct, read-only run against the relevant public Cardano network, and requires the exact PRE policy/name and governed eligibility/identity inputs. Do not silently substitute between these two tracks.
+
+
+## 19. Guarded non-zero private-testnet fixture (M1TEST)
+
+**Helper:** `audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs`  
+**Unit tests:** `audit/cardano-integration/preSnapshotPrivateTestAssetFixture.test.mjs` (9 cases)  
+**Command:** `npm run test:pre-snapshot-fixture`; included in `npm run test:pre-snapshot-index`.
+
+The helper creates a local native asset named `M1TEST` (asset name hex `4d3154455354`, quantity 100) under a single-signature native policy whose signing key is generated only inside the private-testnet fixture workdir. It uses the generated `utxo-keys/utxo1` test wallet for funding and as the destination address. The resulting policy ID is discovered from the locally generated script and written into a local-only prepared manifest. It does not reuse any production PRE policy/key, wallet, seed or IMMORTAL/PRE-RICH credential.
+
+The helper is deliberately narrow and fail-closed: Linux/WSL only; cardano-cli 11.0.1; network magic fixed at 4242; exact local node1 Unix socket `<testnetRoot>/socket/node1/sock`; exact `configuration.yaml` under the same generated testnet root; generated wallet index 1 only; workdir confined to `<testnetRoot>/m1-fixtures/`. It creates a 0700 workdir and stores ephemeral fixture files there.
+
+Two distinct modes:
+- `--prepare <config.json>`: generates an ephemeral native-policy key, writes policy/script metadata and builds an **unsigned** transaction body. No signing or submit occurs.
+- `--submit-local-private-testnet <config.json>`: signs with the generated local UTxO wallet key plus the ephemeral test policy key, and submits only through the verified node1 socket. Requires the additional environment opt-in `IMMORTAL_M1_ALLOW_LOCAL_TESTNET_SUBMIT=YES`. A one-shot marker is created before signing and updated with txid before submit; the helper refuses replay if a marker already exists.
+- `--verify <config.json>`: read-only query of the test wallet UTxOs and exact fixture asset unit; PASS requires observed quantity at least 100.
+
+CI run **42467432784**, exact tested commit `4abadfb2ff9d7db8ad071c35a7b0a40b7fac9430`: **78 tests / 78 passed / 0 failed / 0 skipped**. The run included 69 previous reducer/Ogmios/WAL/replica/Kupo cases plus 9 fixture-safety unit cases. Syntax check passed for the new helper. URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42467432784.
+
+**Critical boundary:** CI exercised pure configuration guards, UTxO selection/quantity parsing and syntax only. It did not call cardano-cli, generate keys, build a transaction, sign, submit or start Cardano/Ogmios/Kupo. The local `--prepare`/`--submit`/`--verify` sequence has not been executed. The helper deliberately contains a submit path, but no submit was performed by Agent B. Any resulting M1TEST is a private testnet asset only; it is not the PRE-RICH token or proof of production PRE distribution.
