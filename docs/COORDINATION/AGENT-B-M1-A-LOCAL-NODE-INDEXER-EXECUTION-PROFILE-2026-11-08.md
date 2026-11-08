@@ -434,3 +434,31 @@ The program is read-only with respect to Cardano nodes: it opens two local Ogmio
 GitHub Actions run **42460691746** tested exact commit `6158c847545fdefe5b6d6b908b824b7b3279f028` and reported **53 tests, 53 passed, 0 failed, 0 skipped**. It also passed `node --check` for reducer, Ogmios adapter, ChainSync client, WAL, replica comparator and dual-node runner. Two additional runner integration tests use fake Ogmios WebSockets: one reaches an exact fixed-point PASS only after two successful intersections and final freeze; one proves a fatal `findIntersection` error yields FAIL rather than stale-state PASS.
 
 **Qualification boundary:** this does not mean two Cardano nodes were provisioned or contacted. No real Node-to-Client socket, Ogmios instance, Kupo instance, private testnet or Mithril certificate was used by the run. The synthetic tests verify software control flow only. M1-A live acceptance still requires two genuinely independent local node processes, two separate Ogmios instances, an independently verified complete bootstrap UTxO set, a fixed externally chosen point, and Kupo comparison at that exact point; then resource/recovery testing and pinned runtime evidence.
+
+
+## 18. Kupo parity + HTTP and two-node local devnet runbook
+
+**Kupo parity reducer:** `audit/cardano-integration/preSnapshotKupoParity.mjs`  
+**Kupo HTTP client:** `audit/cardano-integration/preSnapshotKupoHttp.mjs`  
+**Kupo audit CLI:** `audit/cardano-integration/preSnapshotKupoAudit.mjs`  
+**Runbook:** `AGENT-B-M1-A-TWO-NODE-LOCAL-DEVNET-RUNBOOK-2026-11-08.md`
+
+### Implemented and statically verified
+
+- Kupo parity reconstructs a reducer state from the exact unspent matches returned for the exact policy ID + asset name; it validates each out-ref, address, quantity, creation point and spent state, then compares canonical bytes and digest at an externally supplied point.
+- The HTTP client is intentionally limited to loopback HTTP, queries `/checkpoints/{slot}?strict` and `/matches/{policy}.{assetName}?unspent`, and requests asset quantities as strings to avoid unsafe JSON number conversion.
+- The local Kupo audit reopens one replica's WAL and compares it to one corresponding Kupo endpoint; the runbook requires one Kupo instance per node and distinct workdirs, with `--prune-utxo` omitted.
+- Kupo 2.12.0 upstream source confirms `--until` accepts an inclusive slot or point, `--since origin` is supported, and `--prune-utxo` is opt-in (default behavior keeps spent rows marked). Its v2.12.0 OpenAPI schema marks `spent_at` and `created_at` as required match fields and documents string-valued asset quantities via `Accept: application/json;asset-quantity=string`.
+- The two-node WSL runbook was checked against the Cardano node 11.0.1 tag: `cardano-testnet create-env` supports `--num-pool-nodes`, `--testnet-magic` and `--output`; `cardano-testnet cardano --node-env` runs the persisted environment. `Cardano.Node.Testnet.Paths` confirms `configuration.yaml`, `socket/nodeN/sock` and `node-data/nodeN/port` paths. Ogmios v7.0.0 and Kupo v2.12.0 both declare/test compatibility with cardano-node 11.0.1, so the runbook pins that common version rather than using an unqualified newer node binary.
+
+### CI execution
+
+Workflow run **42462349216** tested commit `bc4cbb72b91467adad90286c2928a7ca4f56265a`: **69 tests / 69 passed / 0 failed / 0 skipped**. This inventory includes reducer, Ogmios adapter/client, WAL, dual-replica comparator/runner and Kupo parity/HTTP cases. Run URL: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42462349216.
+
+The current branch HEAD `5fd0267c297e2d9d6d58d3226ae38cfa7e982027` differs from the tested commit only by the new two-node runbook document; no executable source, test, package script or M1-A workflow file changed after the 69/69 run. Therefore the 69-test result still applies to the code at current HEAD.
+
+### Live acceptance remains open
+
+No cardano-node, Ogmios or Kupo process has yet been started by this work. The runbook is a manual, local WSL2 procedure; synthetic CI does not prove the node binaries, sockets, Kupo database or two replicas actually operate together. Live PASS still requires two independently identified local node processes, two node sockets, two Ogmios sessions, independently verified complete bootstrap, a single operator-fixed point, 2/2 Kupo exact-point parity, and retained resource/restart/rollback evidence. The testnet-local pool nodes share an operator and genesis environment; this is not multi-operator or adversarial trustlessness.
+
+**Updated status:** 69/69 M1-A unit tests PASS; source flags/paths statically checked against pinned upstream release tags; real two-node + two-Kupo execution, Byron CBOR/checksum validation, bootstrap provenance and resource/recovery benchmarks remain OPEN. M1-C Mithril and M2 Plutus verification remain NOT STARTED. No production governance, asset identity, V3, Reveal, B1/EEV, Issue #37, Issue #43, Issue #49 or economic semantics changed.
