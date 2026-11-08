@@ -1,7 +1,5 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { resolve } from 'node:path'
-
 import {
   isPreSnapshotRemoteTipAtOrAfterTarget,
   validatePreSnapshotDualReplicaConfig
@@ -15,9 +13,9 @@ const origin = { slot: 0, blockNo: 0, hash: '00'.repeat(32) }
 const target = { slot: 100, blockNo: 25, hash: '11'.repeat(32) }
 const config = () => ({
   networkId: 'cardano-private-testnet-m1',
-  asset,
-  anchorPoint: origin,
-  expectedPoint: target,
+  asset: { ...asset },
+  anchorPoint: { ...origin },
+  expectedPoint: { ...target },
   initialUtxos: [],
   replicas: [
     {
