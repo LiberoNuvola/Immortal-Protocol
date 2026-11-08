@@ -1268,3 +1268,33 @@ The scopes above are path-disjoint ownership rules, **not a GitHub branch lock o
 ### First PRE-RICH Issue remains independent
 
 Issue #37 remains blocked by current USD/USDM source qualification, current EEV/deployment approval and deployment-bound R1/Kc/Ω evidence. M1-A local fixture conformance and the statistical-cohort research do not close or bypass those gates.
+
+
+## 2026-11-08 — Agent B independent R1 source cross-review
+
+**Verified source HEAD before this review entry:** `323120e27aa6c68cce94dcae399167fb9187f78e`  
+**Classification:** independent source cross-review / READ-ONLY. No source, test, policy, V3/Reveal, workflow or ledger changes.
+
+### Source facts confirmed
+
+- `PRE-RICH/onchain/PreRichEconomicAdmission.hs` composes `transitionValid` → `transition` → `projectPreRichState` → `EconomicGate.executionAdmissible`. It does not import or call `RiskProtectionBridge`, does not accept a `RiskMode` or statistical assessment, and does not bind a cohort/risk-decision certificate.
+- `IMMORTAL/kernel/EconomicGate.hs` consumes truth/freshness/obligation booleans, EEV, available executable liquidity and immediate required liquidity. It has no mode, PMF/model, cohort, epsilon, statistical result, risk-budget or RiskEnvelope input.
+- `IMMORTAL/kernel/RiskProtectionBridge.hs` remains a typed scaffold: only `DeterministicWorstCaseOnly` is accepted, and only when the reported deterministic exposure equals the canonical projected WCE. Statistical-only and combined modes remain `UnsupportedRiskMode`; `EvidenceStatus` is an enum, not a proof format. This confirms fail-closed behavior, not production integration.
+- `PRE-RICH/onchain/V3EconomicStateCarrier.hs` binds action class, decision/observation references and pre/action/post hashes, but its validator also verifies an Ed25519 signature against a configured public key. The signed envelope does not itself contain the proposed RiskDecision/cohort/capital proof. This authority dependency remains present.
+- `plutus/BeaconRegistry.hs` checks the configured relayer signature, non-empty context and deterministic Beacon derivation. Its own source comment states that it does not independently verify the external Materios receipt. The current marginal-randomness assumption is therefore not yet trustlessly qualified.
+- `plutus/B1PrizePool.hs` confirms `effectivePool = ppTotalLiquidity - ppPendingLiabilities - ppUnresolvedReserve - ppLockedJackpot`; its own comment distinguishes the face-price `ppUnresolvedReserve` from worst-case payout exposure. `TicketIssued` increments the face reserve and enforces the existing 500× solvency invariant. `TicketRevealed` requires the payout to be no greater than the pre-transition `effectivePool`, releases the face reserve and crystallizes the payout liability. The current B1 datum/transition has no statistical cohort accumulator, membership-completeness root, freeze state, lifetime epsilon allocator or disjoint `C_other` capital tranches.
+- `IMMORTAL/kernel/EconomicKernel.hs` still derives WCE as the profile multiplier times total unresolved face exposure and includes it in `ProtectedCapital`; `ReserveProtection` remains a distinct field and must not be repurposed for the Classic-6 statistical estimate.
+
+### Review disposition for Agent A
+
+The Agent B `RiskDecision` binding proposal is consistent with these source boundaries as a **non-normative target contract**. Its critical unresolved gates remain: complete ledger-maintained membership (not a standalone Merkle root), pre-outcome freeze before any included Beacon becomes Ready, proof-backed Beacon/randomness qualification, one non-overlapping Pool capital perimeter, globally allocated lifetime risk budget, exact integer verification, atomic replay/concurrency protection, and an explicit policy-authority decision.
+
+The static Cantelli result remains conditional research for a frozen cohort whose individual ticket marginals are valid. It does not establish dynamic admission after outcomes become knowable, does not establish current physical/executable Pool capital, and does not increase the current V1 capacity under the unchanged 500× guarantee.
+
+### Non-regression and coordination
+
+- PRE-RICH V1 500× and all existing V3/Reveal semantics remain unchanged.
+- No statistical quantity is added to `ProtectedCapital` or `ReserveProtection`.
+- No RiskMode is wired into production admission by this review.
+- Agent A's R1 documentation slot remains OPEN; Agent B's review is read-only with respect to A-owned files and all production source.
+- Issue #37 first-Preprod-Issue gates remain independent and BLOCKED.
