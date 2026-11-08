@@ -355,3 +355,65 @@ test('ChainSync client serializes requests and waits for index commit before req
   assert.equal(client.isRunning, false)
   assert.equal(client.lastError, null)
 })
+
+
+test('Ogmios-decoded real-shape blocks apply ordinary mint and collateral-return UTxO effects', () => {
+  const ordinaryTxIn = '91'.repeat(32)
+  const collateralTxIn = '92'.repeat(32)
+  const state = createPreSnapshotIndex({
+    networkId: 'cardano-private-testnet-m1',
+    asset: { policyIdHex, assetNameHex },
+    anchorPoint: PRE_SNAPSHOT_ORIGIN_POINT,
+    utxos: [
+      {
+        txId: ordinaryTxIn,
+        index: 0,
+        addressHex,
+        assets: [{ policyIdHex, assetNameHex, quantity: '100' }]
+      },
+      {
+        txId: collateralTxIn,
+        index: 0,
+        addressHex,
+        assets: [{ policyIdHex, assetNameHex, quantity: '40' }]
+      }
+    ]
+  })
+
+  const block = decodeOgmiosV7Block({
+    type: 'praos',
+    era: 'conway',
+    id: '93'.repeat(32),
+    ancestor: 'genesis',
+    height: 0,
+    slot: 1,
+    transactions: [
+      {
+        id: '94'.repeat(32),
+        spends: 'inputs',
+        inputs: [reference(ordinaryTxIn, 0)],
+        collaterals: [],
+        outputs: [output(105)],
+        mint: { [policyIdHex]: { [assetNameHex]: 5n } },
+        signatories: []
+      },
+      {
+        id: '95'.repeat(32),
+        spends: 'collaterals',
+        inputs: [reference('96'.repeat(32), 0)],
+        collaterals: [reference(collateralTxIn, 0)],
+        outputs: [output(777)],
+        collateralReturn: output(40),
+        signatories: []
+      }
+    ]
+  }, PRE_SNAPSHOT_ORIGIN_POINT)
+
+  const after = applyPreSnapshotBlock(state, block)
+  assert.equal(after.currentPoint.hash, '93'.repeat(32))
+  assert.equal(after.utxos.reduce((sum, item) => sum + BigInt(item.quantity), 0n).toString(), '145')
+  assert.deepEqual(after.utxos.map(item => item.key), [
+    '9494949494949494949494949494949494949494949494949494949494949494#0',
+    '9595959595959595959595959595959595959595959595959595959595959595#1'
+  ])
+})
