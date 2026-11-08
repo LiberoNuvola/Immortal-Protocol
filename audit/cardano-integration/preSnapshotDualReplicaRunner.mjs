@@ -173,7 +173,10 @@ function wait(milliseconds) {
  * supplied expectedPoint. It never signs, submits, chooses a point or writes
  * to a Cardano node. A WAITING timeout is not a PASS.
  */
-export async function runPreSnapshotDualReplicaConformance(configValue) {
+export async function runPreSnapshotDualReplicaConformance(
+  configValue,
+  { WebSocketImpl } = {}
+) {
   const config = validatePreSnapshotDualReplicaConfig(configValue)
   const journals = []
   const clients = []
@@ -190,6 +193,7 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
       const client = createPersistentOgmiosV7ChainSyncClient({
         journal,
         url: replica.url,
+        ...(WebSocketImpl ? { WebSocketImpl } : {}),
         reconnectDelayMs: 1000,
         onIntersection: async (_point, tip) => {
           establishedSessions.add(replica.id)
@@ -256,7 +260,10 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
         expectedPoint: config.expectedPoint
       })
 
-      if (comparison.status !== 'WAITING') break
+      if (comparison.status !== 'WAITING') {
+        comparisonProducedByLiveSessions = true
+        break
+      }
 
       await wait(config.pollIntervalMs)
     }
