@@ -200,7 +200,7 @@ test('single-writer lock rejects a second process opening the same journal', asy
     const journal = await create(directory)
     await assert.rejects(
       openPreSnapshotJournal({ directory }),
-      /Another writer holds this PRE snapshot journal/
+      /Another (?:live process|writer) holds this PRE snapshot journal/
     )
     await journal.close()
     const reopened = await openPreSnapshotJournal({ directory })
