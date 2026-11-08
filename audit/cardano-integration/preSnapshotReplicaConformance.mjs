@@ -1,4 +1,7 @@
-import { buildPreSnapshotMessage } from './preSnapshotUtxoIndex.mjs'
+import {
+  buildPreSnapshotMessage,
+  rollbackPreSnapshotIndex
+} from './preSnapshotUtxoIndex.mjs'
 
 export const PRE_SNAPSHOT_REPLICA_CONFORMANCE_VERSION = 1
 
@@ -47,7 +50,8 @@ function assetEqual(left, right) {
 function replicaSummary(replica, snapshot) {
   return Object.freeze({
     id: replica.id,
-    currentPoint: replica.state.currentPoint,
+    indexTip: replica.state.currentPoint,
+    snapshotPoint: snapshot?.message.point ?? null,
     digestHex: snapshot?.digestHex ?? null,
     merkleSumRoot: snapshot?.message.merkleSumRoot ?? null,
     totalQuantity: snapshot?.message.totalQuantity ?? null,
@@ -113,29 +117,59 @@ export function comparePreSnapshotReplicaStates({
   const leftAtTarget = pointEqual(leftPoint, targetPoint)
   const rightAtTarget = pointEqual(rightPoint, targetPoint)
 
-  if (!leftAtTarget || !rightAtTarget) {
-    const sameHeight = leftPoint.slot === rightPoint.slot &&
-      leftPoint.blockNo === rightPoint.blockNo
-    if (sameHeight && leftPoint.hash !== rightPoint.hash) {
+  const sameHeight = leftPoint.slot === rightPoint.slot &&
+    leftPoint.blockNo === rightPoint.blockNo
+  if (sameHeight && leftPoint.hash !== rightPoint.hash) {
+    return Object.freeze({
+      ...base,
+      status: 'FAIL',
+      code: 'REPLICA_CHAIN_SELECTION_DIVERGENCE',
+      replicaA: replicaSummary(left, null),
+      replicaB: replicaSummary(right, null)
+    })
+  }
+
+  const projectToTarget = (state, atTarget) => {
+    if (atTarget) return { status: 'READY', state }
+    if (state.currentPoint.slot < targetPoint.slot) {
+      return { status: 'WAITING' }
+    }
+    if (state.currentPoint.slot === targetPoint.slot) {
+      return { status: 'FAIL', code: 'REPLICA_TARGET_POINT_CONFLICT' }
+    }
+    try {
+      return {
+        status: 'READY',
+        state: rollbackPreSnapshotIndex(state, targetPoint)
+      }
+    } catch (_) {
+      return { status: 'FAIL', code: 'REPLICA_TARGET_POINT_NOT_RETAINED' }
+    }
+  }
+
+  const projectedA = projectToTarget(leftState, leftAtTarget)
+  const projectedB = projectToTarget(rightState, rightAtTarget)
+  if (projectedA.status !== 'READY' || projectedB.status !== 'READY') {
+    if (projectedA.status === 'WAITING' || projectedB.status === 'WAITING') {
       return Object.freeze({
         ...base,
-        status: 'FAIL',
-        code: 'REPLICA_CHAIN_SELECTION_DIVERGENCE',
+        status: 'WAITING',
+        code: 'REPLICAS_NOT_AT_EXPECTED_POINT',
         replicaA: replicaSummary(left, null),
         replicaB: replicaSummary(right, null)
       })
     }
     return Object.freeze({
       ...base,
-      status: 'WAITING',
-      code: 'REPLICAS_NOT_AT_EXPECTED_POINT',
+      status: 'FAIL',
+      code: projectedA.code ?? projectedB.code ?? 'REPLICA_TARGET_POINT_UNAVAILABLE',
       replicaA: replicaSummary(left, null),
       replicaB: replicaSummary(right, null)
     })
   }
 
-  const snapshotA = buildPreSnapshotMessage(leftState)
-  const snapshotB = buildPreSnapshotMessage(rightState)
+  const snapshotA = buildPreSnapshotMessage(projectedA.state)
+  const snapshotB = buildPreSnapshotMessage(projectedB.state)
   const summaries = {
     replicaA: replicaSummary(left, snapshotA),
     replicaB: replicaSummary(right, snapshotB)
