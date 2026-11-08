@@ -560,6 +560,12 @@ export function createPersistentOgmiosIndexHandlers(journal) {
   }
   return Object.freeze({
     getIndexState: () => journal.getState(),
+    onIntersection: async point => {
+      const state = await journal.getState()
+      if (!pointEqual(state.currentPoint, point)) {
+        await journal.rollback(point)
+      }
+    },
     onRollForward: async normalizedBlock => {
       await journal.applyBlock(normalizedBlock)
     },
