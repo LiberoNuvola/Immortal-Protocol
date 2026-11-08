@@ -177,7 +177,7 @@ Let:
 
 If every ticket in (U^*) has the same canonical Classic-6 marginal distribution, then:
 
-`E[S*] = μF*` and `Var(S*) ≤ σ²(F*)²`, even with arbitrary dependence **between tickets and between rounds**. The same Cantelli expression and exact integer predicate in §§3.1–3.2 therefore apply with `F=F*` and `C=E*`. The set must be global to the Pool: calculating a separate bound for each Beacon round against the same (E^*), and then treating those bounds as if each round had separate capital, would reuse both capital and risk budget.
+`E[S*] = μF*` and `Var(S*) ≤ σ²(F*)²`, even with arbitrary dependence **between tickets and between rounds**. The same Cantelli expression and exact integer predicate in §§3.1–3.2 therefore apply with `F=F*` and `C=E*`. The set must be global to the Pool: calculating a separate bound for each Beacon round against the same (E^*), and then treating those bounds as if each round had separate capital, would reuse both capital and risk budget. The source supports this perimeter: MintPolicy binds each new ticket's `pdPrizePoolHash` to the configured B1 PrizePool hash, and `atomicPoolReservationValid` requires the single Pool input/output to increase the aggregate `ppUnresolvedReserve` by exactly that ticket's price. B1 `effectivePool` then subtracts that one aggregate reserve. Thus multiple rounds using the same configured pool hash share one ledger-accounted reserve, not separate per-round balances.
 
 The fixed-set Reveal-path result also extends without a new proof assumption about round labels. Compute:
 
