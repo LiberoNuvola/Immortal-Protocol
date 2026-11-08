@@ -9,6 +9,7 @@ import {
 } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { createHash } from 'node:crypto'
+import { hostname } from 'node:os'
 
 import {
   PRE_SNAPSHOT_INDEX_SCHEMA_VERSION,
@@ -56,6 +57,9 @@ function pointEqual(left, right) {
 }
 
 async function syncDirectory(path) {
+  // Node does not expose a portable directory-handle fsync on Windows.
+  // Journal file contents are still fsynced; Linux/macOS also sync directory entries.
+  if (process.platform === 'win32') return
   const handle = await open(path, 'r')
   try {
     await handle.sync()
@@ -79,21 +83,69 @@ async function writeAtomicFile(path, content) {
   await syncDirectory(dirname(path))
 }
 
+async function reclaimStaleWriterLock(directory, lockPath) {
+  const reaperPath = lockPath + '.reaper'
+  let reaper
+  try {
+    reaper = await open(reaperPath, 'wx', 0o600)
+  } catch (error) {
+    if (error && error.code === 'EEXIST') {
+      fail('PRE_SNAPSHOT_JOURNAL_LOCK_RECOVERY_BUSY', 'Another process is checking the journal writer lock')
+    }
+    throw error
+  }
+
+  try {
+    let metadata
+    try {
+      metadata = JSON.parse(await readFile(lockPath, 'utf8'))
+    } catch (_) {
+      fail('PRE_SNAPSHOT_JOURNAL_LOCK_UNVERIFIABLE', 'The writer lock is unreadable; manual inspection is required')
+    }
+    if (!metadata || metadata.format !== PRE_SNAPSHOT_JOURNAL_FORMAT ||
+        !Number.isSafeInteger(metadata.pid) || metadata.pid <= 0 ||
+        metadata.hostname !== hostname()) {
+      fail('PRE_SNAPSHOT_JOURNAL_LOCK_UNVERIFIABLE', 'The writer lock owner cannot be verified on this host')
+    }
+
+    try {
+      process.kill(metadata.pid, 0)
+      fail('PRE_SNAPSHOT_JOURNAL_LOCKED', 'Another live process holds this PRE snapshot journal')
+    } catch (error) {
+      if (error.code !== 'ESRCH') throw error
+    }
+
+    await unlink(lockPath)
+    await syncDirectory(directory)
+  } finally {
+    await reaper.close().catch(() => {})
+    await unlink(reaperPath).catch(() => {})
+    await syncDirectory(directory)
+  }
+}
+
 async function acquireWriterLock(directory) {
   const lockPath = join(directory, 'writer.lock')
   let handle
   try {
     handle = await open(lockPath, 'wx', 0o600)
   } catch (error) {
-    if (error && error.code === 'EEXIST') {
-      fail('PRE_SNAPSHOT_JOURNAL_LOCKED', 'Another writer holds this PRE snapshot journal')
+    if (!error || error.code !== 'EEXIST') throw error
+    await reclaimStaleWriterLock(directory, lockPath)
+    try {
+      handle = await open(lockPath, 'wx', 0o600)
+    } catch (retryError) {
+      if (retryError && retryError.code === 'EEXIST') {
+        fail('PRE_SNAPSHOT_JOURNAL_LOCKED', 'Another writer acquired this PRE snapshot journal')
+      }
+      throw retryError
     }
-    throw error
   }
   try {
     await handle.writeFile(canonicalJson({
       format: PRE_SNAPSHOT_JOURNAL_FORMAT,
       pid: process.pid,
+      hostname: hostname(),
       startedAt: new Date().toISOString()
     }) + '\n', 'utf8')
     await handle.sync()
