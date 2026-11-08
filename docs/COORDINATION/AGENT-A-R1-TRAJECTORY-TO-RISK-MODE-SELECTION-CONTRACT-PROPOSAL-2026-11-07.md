@@ -413,3 +413,127 @@ Therefore this section specifies the desired trust boundary and future conforman
 7. Run adversarial, differential, resource and on-chain conformance tests before any deployment consideration.
 
 **Disposition:** permissionless/automatic/trustless selection is recorded as a hard target constraint. The resolver, proof-carrying statistical verifier, atomic risk-budget state and removal of the current configured signer dependency are not implemented or qualified. No risk appetite, alpha, Z, threshold, confidence level, combination formula or new guarantee is approved by this section.
+
+
+## 11. State/action/trajectory resolver contract — explicit applicability matrix (2026-11-08)
+
+This section turns the proposal's resolution sequence into an auditable state/action contract. It separates (a) facts already determined by source and current profile, (b) analytical relevance stated in the economic algorithm, and (c) binding mode/policy choices that still require specification authority. It does not silently turn a relevance statement into an approved numerical test.
+
+### 11.1 Resolver signature and authority
+
+The target resolver is a deterministic pure function over one exact candidate transition:
+
+~~~text
+T = (S_pre, action, S_candidate)
+mode = ResolveRiskMode(
+    profile_id,
+    profile_version,
+    risk_policy_hash,
+    state_commitment(S_pre),
+    action_commitment(action),
+    candidate_commitment(S_candidate),
+    derived_trajectory_id,
+    authenticated_trajectory_facts,
+    evidence_manifest
+)
+~~~
+
+The resolver MUST derive the trajectory identity from the authenticated transition and profile. A caller-supplied trajectory label, RiskMode, operating class, alpha, confidence level, cohort membership or budget is never accepted as authority.
+
+Minimum bound inputs:
+
+- application/profile identity and immutable version;
+- canonical pre-state and exact candidate post-state commitments;
+- action/redeemer family and exact economic effect;
+- derived trajectory ID and definition version;
+- relevant obligation/exposure perimeter, asset/unit basis and time horizon;
+- current deterministic protection rule and whether it is mandatory for this trajectory;
+- statistical model/profile reference, population and risk epoch where applicable;
+- authenticated source/freshness/completeness evidence and evidence digest;
+- policy version / hash that defines the applicability mapping.
+
+The resolver output is also bound to these same objects. Changing the candidate, profile, state, action, horizon, epoch or evidence invalidates the result and requires recomputation.
+
+### 11.2 Analysis applicability is not the same thing as a funding formula
+
+Use these meanings:
+
+- **D (Worst-Case Analysis):** calculate the profile's deterministic bounded exposure and enforce every deterministic floor marked mandatory for this trajectory.
+- **S (Statistical Risk Analysis):** calculate the selected, profile-qualified distribution/horizon/risk criterion and preserve its distinct evidence. It is only an admission constraint where the profile explicitly says so; otherwise it may be monitoring/reporting evidence.
+- **D+S (Combined):** both analyses are independently required for the same trajectory. Their outputs remain separately typed. No sum, substitution, maximum, or other combination is inferred unless a separate rule declares units, horizon, perimeter, role and non-overlap.
+- **UNRESOLVED / FAIL-CLOSED:** no unique authorized mapping or required evidence exists. The system does not ask the caller to pick a mode. New exposure is not admitted under a profile that requires the unresolved analysis.
+
+A mode describes which analyses must be performed; it is not an amount of ProtectedCapital, a budget, or permission to skip the Economic Gate / Ω viability.
+
+### 11.3 Current PRE-RICH action/trajectory applicability matrix
+
+| Candidate action / derived trajectory | Source-supported current rule | Statistical relevance | Resolver disposition today |
+|---|---|---|---|
+| **Issue / Sale — new Pending ticket while its Registry is BeaconPending** | PRE-RICH V1 requires deterministic WCE = 500 × aggregate unresolved face exposure, atomic B1 face reservation, solvency, EEV/liquidity and viability checks. ECONOMIC-ALGORITHM.md also explicitly lists “evaluate statistical reserve” in the Sale sequence. | S is expressly relevant to Sale, but current sources do not settle whether the statistic is report-only or a separately binding sale criterion, nor its Z/confidence/horizon/epoch acceptance rule. | D is mandatory. S applicability is declared/relevant but its binding role is unresolved. Do not claim a complete D+S admission or silently omit the documented statistical evaluation. Current production implements D only; record this as a source-to-implementation gap pending policy clarification. |
+| **Issue / Sale — a new ticket when any relevant outcome is already knowable** | V1 deterministic rule remains mandatory; current Issue commitment binds to BeaconPending. | Unconditional Classic-6 moments cannot be restarted for the old Pending set. A new statistical epoch may include only newly enrolled tickets whose Registry is still BeaconPending at a common freeze, with old epochs separately funded, or use a proven conditional model. | D mandatory. S is unresolved until a conditional-history / epoch-allocation contract is verified. No unconditional rolling re-admission. |
+| **Reveal — derive result and crystallize a win** | Verify commitment/beacon, derive result, check exact pre-transition B1 affordability, release that ticket's unresolved reserve/exposure and add the actual payout as an immutable known liability. | A pre-existing sealed statistical epoch may continue to cover its original whole set; do not recalculate unconditional moments only over the remaining Pending tickets after observing an outcome. | D mandatory for transition/liability. No new mode switch on the revealed ticket; retain the epoch's existing statistical evidence only under its original terms. |
+| **Claim — settle an already crystallized payout** | Verify owner/right, frozen payout/value and single settlement; reduce the known liability exactly once. | The payout is no longer an unresolved random variable. Statistical payout estimation cannot discount or defer the known claim. | D / exact accounting. S is not applicable to the already crystallized liability. |
+| **Expire — close an expired unresolved right** | Apply the ticket's frozen expiry rule; remove the right/reserve exactly once under the canonical transition. | An expired ticket is no longer a future payout right. Its removal does not authorize resetting the risk epoch or recycling its ε; the remaining epoch's treatment follows the epoch contract. | D / exact lifecycle accounting. No fresh statistical draw or budget reset. |
+| **FundTreasury / fund or pay Jackpot** | Preserve source-qualified value, exact FundingNeed, locked Jackpot and all known liabilities; Economic Gate / viability remain mandatory. | Classic-6 payout moments do not describe Treasury source quality, liquidation or the Jackpot state machine. Any other stochastic model must match the actual trajectory and be separately authorized. | D mandatory. No automatic Classic-6 S mode. |
+| **EEV / executable-liquidity deterioration** | Verified EEV, executable liquidity, freshness, obligation completeness, post-state solvency and Ω viability govern the candidate. | The ticket payout PMF is not a market-liquidity or liquidation model. Statistical/stress evidence may be required only if the profile declares a matching asset/liquidity trajectory model and horizon. | D mandatory; S remains profile-specific and cannot be inferred from Classic-6. |
+| **ACTIVE / QUIESCENT / RECOVERY or class contraction** | Existing class hysteresis, lifecycle transition and universal QNE/Ω requirements remain distinct and mandatory. | Authenticated indicators may be inputs to a future profile-owned regime predicate; statistical evidence cannot create QNE or authorize a non-viable successor. | D / universal viability mandatory. Any S-based trigger or recovery condition needs a versioned predicate, evidence contract and hysteresis rule. |
+| **PRE-RICH Arb Agent candidate trade** | Separate user mandate, Solo/Pool principal, open exposure, EEV and safety perimeter. | D3 proposes an always-on floor plus post-protection dynamic intensity / RiskEnvelope. It is not the Game's prize-payout PMF. | Separate application profile/resolver. Never inherit Game's Pool, Jackpot, 500× or statistical epoch. |
+
+This matrix does not assign one universal mode to an action name. Exact candidate facts and the applicable profile policy remain inputs. It does establish that Claim/Expire are not fresh payout draws, Reveal crystallizes a known liability, and the Classic-6 cohort model cannot be reused as a liquidity model.
+
+### 11.4 Deterministic resolution algorithm
+
+The resolver MUST execute the following ordered steps and return a bound assessment or a typed failure:
+
+1. **Authenticate profile.** Check the profile ID/version, policy hash and activation interval. Reject unknown, stale, superseded or unapproved policy.
+2. **Commit the candidate.** Bind exact canonical pre-state, action/redeemer, candidate post-state, asset/unit basis and observation references.
+3. **Derive trajectory.** Compute the trajectory family from the transition and its verified facts. Never trust a caller's trajectory ID or RiskMode.
+4. **Resolve required analyses.** Evaluate the profile's applicability predicates over the derived trajectory facts. The mapping must yield exactly one required-analysis set. No match, ambiguous overlap, or conflicting rules produces UNRESOLVED / FAIL-CLOSED.
+5. **Preserve mandatory D.** If the profile marks a deterministic floor mandatory, calculate it from canonical state/profile and verify it exactly. No statistical result can lower or switch it off.
+6. **Verify S where selected.** Require the exact model, population/epoch, horizon, confidence/tail criterion, dependence or conditional-information contract, integer precision, freshness and proof/witness. A Monte Carlo point estimate or unauthenticated signed value is not sufficient.
+7. **Keep outputs separate.** Produce D and S results as separate typed evidence. Apply an arithmetic combination only under an explicit versioned rule.
+8. **Run universal admissibility.** Evaluate protected obligations, EEV, executable liquidity, Economic Gate, A_safe and every required Ω successor for this exact candidate.
+9. **Commit atomically.** Bind mode, profile, policy/model versions, evidence digest, budget/epoch state and candidate state in the same concurrency/replay-safe admission boundary. If the exact state changes, recompute.
+
+### 11.5 Automatic state change, hysteresis and immutable commitments
+
+The selection is automatic because every transition re-evaluates the same public, versioned predicate over its newly authenticated state and candidate trajectory. It is not automatic because an AI, keeper, user or relayer chooses a convenient enum.
+
+A future selector may change the required analysis as verified state changes, but only as follows:
+
+- transition guards and operating-regime predicates are committed in the profile/policy version;
+- any high/low hysteresis relationship and its evidence inputs are declared by that policy; no numerical thresholds are invented by this proposal;
+- the new mode applies to the new candidate transition/new cohort only;
+- existing tickets retain the guarantee, model, epoch and expiry terms bound at admission;
+- contraction/quiescence may block new exposure but cannot erase Reveal/Claim/Expire rights or bypass Ω/QNE;
+- recovery requires fresh authenticated evidence and a fresh successful resolver/Gate evaluation; no caller may request a recovery mode directly.
+
+Current PRE-RICH KA/KC/KD values govern the Game's ticket-class hysteresis, not the missing RiskMode thresholds. D3 C0–C3 remains a separate Arb Agent design. Neither is silently reused as the RiskMode state classifier.
+
+### 11.6 Permissionless verifier target
+
+A permissionless implementation can allow any participant to derive and submit a candidate assessment, but the canonical verifier—not the submitter—must enforce the same result:
+
+- policy and model versions are public, immutable for the commitment and content-addressed;
+- inputs are ledger-authenticated or proven against authenticated references;
+- any party can generate the deterministic calculation / statistical witness;
+- on-chain verification binds the witness to the exact profile, pre-state, action, candidate, cohort and epoch;
+- the admission transition atomically reserves the required eligible capital and global/epoch risk budget;
+- competing, stale, replayed or partially updated candidates fail;
+- no exclusive signer, backend assertion or caller-supplied RiskMode can decide admissibility.
+
+Current code does not meet this target: the bridge accepts deterministic-only and is not wired to Admission; the Gate has no statistical mode or intensity fields; and the current Issue path retains a configured Ed25519 authority binding. This section is a target contract, not a claim of present permissionless production behavior.
+
+### 11.7 Decisions still reserved to specification authority
+
+The following are not derivable from the resolver mechanics and must be explicitly decided before activation:
+
+1. For PRE-RICH Issue, whether the documented statistical-reserve evaluation is monitoring-only or a binding second sale criterion; do not infer this from the phrase “evaluate statistical reserve” alone.
+2. Which statistical construction is normative for the Game trajectory: the historical Nμ + Zσ√N, the research Cantelli bound, or another explicitly specified model. They are not interchangeable.
+3. The applicable population, pre-outcome epoch freeze, horizon, global/lifetime ε, treatment of BeaconReady tickets, conditional-information assumptions and capital ring-fencing.
+4. Whether a future PRE-RICH Game profile may replace the current per-ticket 500× pathwise payout guarantee with a probabilistic criterion for new commitments. Such a version would be a different guarantee; V1 remains unchanged.
+5. Which verified state predicates govern mode/regime transitions, high/low hysteresis and recovery; no thresholds or α values are selected here.
+6. The proof format, integer/resource budget and atomic on-chain state needed to verify the selector permissionlessly.
+7. The separate PRE-RICH Arb Agent policy/mandate authority, if its D3 intensity design is ever implemented.
+
+**Disposition:** the resolver's structure and applicability boundaries are now explicit; the binding PRE-RICH statistical sale role, statistical model, state predicates, thresholds, epoch/global-budget state and on-chain verifier remain OPEN. No selector or mode switch is implemented by this proposal.
