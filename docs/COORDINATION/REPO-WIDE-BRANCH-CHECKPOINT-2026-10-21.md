@@ -924,3 +924,29 @@ Further source review of `Economic.oraclePriceFor` and `PRE-RICH/onchain/Genesis
 **Next source qualification gate:** recover the exact Preprod Oracle State singleton minting policy, holding/update address, credential/validator and update transaction; show that publisher-field substitution, unsigned price update, stale/future quote, malformed datum and replay cannot become an accepted price. Until then the current publisher check is a configured identity comparison, not a complete proof of source authenticity.
 
 Detail: [source memo §47.6–47.7](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md#476-publisher-identity-field-versus-proof-of-publisher-authorization). No code, schema, tests or ledger state changed.
+
+## 2026-11-08 — Agent B: governance PRE snapshot and BeaconTarget trustless prerequisites
+
+**Research artifact:** [AGENT-B-GOVERNANCE-PRE-SNAPSHOT-AND-BEACON-TARGET-TRUSTLESS-GAP-2026-11-08.md](AGENT-B-GOVERNANCE-PRE-SNAPSHOT-AND-BEACON-TARGET-TRUSTLESS-GAP-2026-11-08.md)  
+**Exact reviewed HEAD:** `fdc9f8f3533efffdbf4bf8f69ded7ae8b7bc1d65`  
+**Artifact commit:** `1a9e3d649ea71f4e91d3b804d3cc9c76982ce951`  
+**Artifact blob:** `ac45a5dcf381898df55362eea0afe407820ea5ac`  
+**Classification:** DESIGN / SOURCE AUDIT — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY.
+
+### Findings
+
+- Chain-neutral GOV canonical replay and SHA-256 commitments exist, but they do not prove PRE snapshot truth/completeness or actor credential provenance. Haskell snapshots still contain supplied entity/weight pairs; no Cardano governance validator/configuration carrier is exported.
+- The frozen GOV-16/17/18 contract remains linear PRE weight, voting-start snapshot, direct non-recursive delegation, 25% quorum and strict >50% ordinary approval. No ADA/DRep, custody, PRE lock/escrow or reward-snapshot substitution is proposed.
+- Candidate PRE snapshot mechanisms were compared. An on-ledger Merkle-sum balance commitment would require every PRE balance movement to pass through a mandatory update path and would serialize transfers through shared state. A custom Mithril-style PRE snapshot artifact is the most promising non-custodial research candidate, but it is not a standard Mithril artifact or current repository feature; it needs a custom complete PRE balance tree, on-chain verifiable certificate relation and explicit stake-threshold/genesis-key trust model. Not selected.
+- The current `BeaconTarget` is caller-supplied. Materios `OrinqReceipts::Anchors` takes caller-supplied `anchor_id`; observed Orynq `SHA256(rootHash || manifestHash)` is producer convention, not adopted round-to-anchor protocol law. A storage proof alone does not prove that anchor is canonical for a PRE-RICH round.
+- The semantic meaning of `mainchainRef` is unresolved and must not be guessed. B1 publisher may publish for an already-determined target; it cannot select it. B3-A finality/authority/ancestry, B3-B storage/value and B3-C Cardano verification remain separate proof gates.
+- Factory STT remains a uniqueness/replay-prevention candidate only. No per-round privileged signer is permitted.
+
+### Next gates
+
+1. Select and specify an acceptable authentic/complete PRE snapshot proof that preserves the existing non-custodial linear-PRE voting rules.
+2. Define Cardano-credential binding for GOV `EntityId`, vote/delegation authorization and the complete GOV-16/17/18 canonical state/configuration transition.
+3. Define the exact semantic meaning of `BeaconTarget.mainchainRef` and the canonical Materios checkpoint/round-to-AnchorRecord relation.
+4. Then measure the complete governance/Factory/Registry verifier design, including Cardano resource and transaction-size feasibility.
+
+No code, ABI, workflow, tests, CI, wallet, transaction, deployment, token identity, voting rule, target formula, publisher role or ledger state was changed or executed. Issue #43 remains release-blocking; Issue #37 first-ticket gates remain independent.
