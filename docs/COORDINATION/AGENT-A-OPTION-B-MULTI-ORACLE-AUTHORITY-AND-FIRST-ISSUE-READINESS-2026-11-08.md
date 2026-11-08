@@ -64,8 +64,8 @@ Therefore the current production MintPolicy cannot prove that its scalar was der
 The target is the exact Cardano Preprod tUSDM unit already accepted by the specification authority for the narrow physical-accounting role:
 
 - policy: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`;
-- asset name: `0014df1074555344`;
-- full unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df1074555344`.
+- asset name: `0014df10745553444d`;
+- full unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
 
 That identity acceptance does not establish USD parity, redemption or a market price. Option B remains the adopted conversion approach: USD/USDM must be verified separately.
 
