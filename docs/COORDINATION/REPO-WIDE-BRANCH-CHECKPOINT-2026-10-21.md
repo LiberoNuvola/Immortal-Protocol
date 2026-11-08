@@ -1345,3 +1345,38 @@ No other path is in the slot. Any expansion requires an updated checkpoint autho
 ### Slot return condition
 
 Agent A holds the exclusive shared-branch write slot until the bounded patch is committed and both required verification tracks have completed with recorded evidence. Agent A then returns the slot; Agent B may resume M1-A repository writes if runtime evidence or a code defect requires them. The M1-A local runtime remains separately dependent on WSL2.
+
+
+## 2026-11-08 — Agent A P0 Governance closed; Agent B M1-A lane resumed
+
+**P0 issue:** [#50 — Reject delegation after vote to prevent governance weight double-counting](https://github.com/LiberoNuvola/Immortal-Protocol/issues/50).  
+**Final P0 source SHA:** `e25f9d16bcd9468e636fa5fd8bd3951103ff5b1a`.  
+**P0 verification:** Governance Standalone #42470854065 SUCCESS; Haskell Semantic Conformance #42470854087 SUCCESS; Kernel Invalid-Class Fail-Closed #42470854035 SUCCESS. All three job records were rechecked as completed/success. The exact direct and canonical replay regression messages were present in the logs.  
+**Disposition:** Issue #50 closed; P0 acceptance criteria COMPLETE; Agent A explicitly returned the shared-branch write slot (issue comment 6721439831).
+
+### Bounded P0 implementation review
+
+The P0 change is limited to the three authorized Governance paths:
+- `IMMORTAL/governance/Governance.hs`: `DelegationSet` now rejects a delegator already present in proposal votes, in addition to the existing rejection for a delegate who has already voted.
+- `IMMORTAL/governance/GovernanceConformanceTest.hs`: direct `applyEvent` regressions prove reject-without-mutation, preserve delegation-before-vote, preserve vote-after-delegation rejection, and conserve opposing vote weights.
+- `IMMORTAL/governance/GovernanceCanonicalReplayTest.hs`: canonical typed lifecycle fixture with recomputed commitments rejects vote-then-delegate and accepts valid delegate-then-vote with 120/120 participating/eligible weight.
+
+The branch was compared with the final P0 SHA; one later documentation-only commit adds Agent A's multi-oracle/first-Issue readiness note. No later Governance source change was observed. No GOV-18 threshold, one-hop delegation, timing, snapshot, abstention, V3, Reveal, Claim, Expire, EEV, 500× or Preprod Issue semantics were changed.
+
+### Agent B — M1-A slot RESUMED
+
+- Agent B resumes the previously assigned M1-A scope: `audit/cardano-integration/**` and `docs/COORDINATION/AGENT-B-M1-A-*`.
+- Existing software gate: CI #42467432784 — 78/78 Node tests and M1-A syntax checks PASS.
+- Runtime gate remains OPEN: no cardano-node/cardano-testnet, Ogmios or Kupo runtime has yet been launched; no M1TEST fixture has been prepared, signed, submitted or verified.
+- Agent B will assess a bounded GitHub-hosted ephemeral private-testnet workflow as an alternative to requiring the user's WSL2. It may use only the existing ephemeral M1TEST fixture, magic 4242, generated local testnet wallet and temporary node keys. It must not use production PRE policy/name, credentials, wallet keys, Preprod or Mainnet.
+- A hosted-runner PASS can establish only local two-node/two-Ogmios/two-Kupo plumbing agreement at an exact point; it does not establish independent operators, trustlessness, PRE distribution, or Issue #37 first-Preprod admission.
+- Do not upload node secrets, generated signing keys, seed/mnemonic, credentials or the full private testnet directory. Preserve sanitized logs, versions, point and digest evidence only.
+- If the runner cannot satisfy the pinned stack/resource requirements, classify the run as blocked/failed; do not weaken point, asset, or replica checks to manufacture PASS.
+
+### Independent workstreams retained
+
+Agent A's R1 and multi-oracle specification/research remains documentation-only until separate normative authority and evidence are established. Issue #37 first PRE-RICH V1 Preprod Issue remains independently blocked by USD/USDM source qualification, EV1–EV7/current EEV and deployment approval, and deployment-bound R1/Kc/Ω evidence. M1-A local testnet acceptance does not bypass any of those gates.
+
+### Shared-branch serialization after handoff
+
+Agent A has returned the shared write slot. Agent B owns the next bounded M1-A implementation lane under the path scope above. Commits remain serialized; fetch the current branch state before each write, use only the owned paths, and never force-push or overwrite concurrent work.
