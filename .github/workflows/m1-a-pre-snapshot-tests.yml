@@ -19,6 +19,8 @@ on:
       - "audit/cardano-integration/preSnapshotDualReplicaRunner.test.mjs"
       - "audit/cardano-integration/preSnapshotKupoParity.mjs"
       - "audit/cardano-integration/preSnapshotKupoParity.test.mjs"
+      - "audit/cardano-integration/preSnapshotKupoHttp.mjs"
+      - "audit/cardano-integration/preSnapshotKupoHttp.test.mjs"
       - "audit/cardano-integration/package.json"
   workflow_dispatch:
 
@@ -67,3 +69,4 @@ jobs:
           node --check preSnapshotReplicaConformance.mjs
           node --check preSnapshotDualReplicaRunner.mjs
           node --check preSnapshotKupoParity.mjs
+          node --check preSnapshotKupoHttp.mjs
