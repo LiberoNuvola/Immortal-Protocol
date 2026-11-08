@@ -346,7 +346,7 @@ async function submit(config) {
     startedAt: new Date().toISOString()
   }
   try {
-    await writeFile(submittedPath, JSON.stringify(attempt, null, 2), { mode: 0o600, flag: 'wx' })
+    await writeFile(submittedPath, JSON.stringify(attempt, null, 2), {
       mode: 0o600,
       flag: 'wx'
     })
