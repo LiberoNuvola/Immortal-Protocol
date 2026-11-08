@@ -1234,3 +1234,37 @@ The 2-node local runbook in this branch is presently a **zero-state plumbing smo
 - **Not run:** CI does not invoke cardano-cli or execute keygen/build/sign/submit. No testnet node, Ogmios or Kupo was started. Agent B did not prepare or submit M1TEST. Live non-zero verification remains open until the user executes the optional local runbook steps and captures both-node + Kupo evidence. M1TEST is not production PRE and does not change production PRE policy identity.
 
 **Status:** M1-A software tests 78/78 PASS; guarded local non-zero fixture helper CODE PRESENT / CLI execution NOT RUN; real 2-node + 2-Ogmios + 2-Kupo conformance OPEN; PRE production distribution qualification OPEN; M1-C Mithril and M2 Plutus NOT STARTED. No Preprod/Mainnet transactions or IMMORTAL/PRE-RICH protocol/economic/governance semantics changed.
+
+
+## 2026-11-08 — A/B write-slot allocation
+
+**Verified branch HEAD before this coordination entry:** `0f9af2b7d62a9e3776e696d52e6fb4caeda20a3b`  
+**Scope:** coordination-only authorization. No protocol, economic, validator, workflow or ledger changes are authorized by this entry.
+
+### Agent A — R1 economic specification slot OPEN
+
+- **Owner:** Agent A.
+- **Exclusive write scope:** `docs/COORDINATION/AGENT-A-*` and specifically owned A-R1 research/decision artifacts.
+- **Authorized work:** continue the existing RiskMode resolver contract, statistical Sale decision packet, Cantelli/cohort lifecycle analysis, global lifetime-risk allocation, and permissionless/automatic verification requirements.
+- **Non-authorizations:** no edits to B-owned reports; no production Haskell/Aiken/TypeScript source, V3, Reveal, B1 datum/redeemer, economic constants, 500×, ProtectedCapital, EEV source, deployment or admission semantics. No `ε`, `Z`, horizon, confidence, quorum, alpha, risk appetite or policy choice is to be promoted from research to normative policy without explicit specification-authority decision.
+- **Dependency:** Agent A does not need to wait for M1-A local runtime execution to continue this bounded documentation/specification work.
+
+### Agent B — M1-A local indexer slot OPEN
+
+- **Owner:** Agent B.
+- **Exclusive write scope:** `audit/cardano-integration/**` for M1-A reducer/indexer/runtime conformance and `docs/COORDINATION/AGENT-B-M1-A-*` for its runbook and evidence reports.
+- **Authorized work:** proceed with the guarded private-testnet M1TEST preparation/runtime validation, two-node/two-Ogmios/two-Kupo evidence, WAL recovery/rollback and exact-point replica/Kupo comparison.
+- **Non-authorizations:** no PRE production key or asset use in the private fixture; no Preprod/Mainnet transaction; no changes to V3/Reveal semantics, production economic rules, governance or first-Issue admission. `--submit-local-private-testnet` remains a separate explicit operation requiring verified magic 4242, the exact local node1 socket and the existing double opt-in.
+- **External dependency:** local CLI/runtime steps requiring the user's WSL2 are not represented as completed until their output/evidence is supplied and independently checked.
+
+### Agent B — R1 independent review remains READ-ONLY
+
+Agent B may review Agent A's owned R1 documents and the already-existing kernel/admission interfaces, but must not edit Agent A's files or source code during that review. The current `RiskProtectionBridge` remains fail-closed for statistical/combined modes and is not production-wired; `EconomicGate` has no statistical mode, alpha, risk-budget or RiskEnvelope input. This review does not authorize integration.
+
+### Shared-branch serialization
+
+The scopes above are path-disjoint ownership rules, **not a GitHub branch lock or a transactional lease**. Because both agents work against the same shared branch, commits must be serialized: before each push/contents update, fetch the current branch HEAD; rebase/fast-forward owned work onto it; never force-push or overwrite another agent's intervening commit. The central checkpoint remains coordinator-owned.
+
+### First PRE-RICH Issue remains independent
+
+Issue #37 remains blocked by current USD/USDM source qualification, current EEV/deployment approval and deployment-bound R1/Kc/Ω evidence. M1-A local fixture conformance and the statistical-cohort research do not close or bypass those gates.
