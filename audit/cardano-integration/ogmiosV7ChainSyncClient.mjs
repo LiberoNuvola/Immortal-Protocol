@@ -18,13 +18,17 @@ class ChainSyncError extends Error {
   }
 }
 
-function parseMessage(data) {
+export function parseOgmiosV7Json(data) {
   const raw = Buffer.isBuffer(data) ? data.toString('utf8') : String(data)
   try {
     return JSONBig.parse(raw)
   } catch (error) {
     throw new ChainSyncError('OGMIOS_INVALID_JSON', error.message, true)
   }
+}
+
+function parseMessage(data) {
+  return parseOgmiosV7Json(data)
 }
 
 function delay(milliseconds) {
