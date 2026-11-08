@@ -398,6 +398,8 @@ export async function createPreSnapshotJournal({
     let sequence = 0
     let lastHash = '0'.repeat(64)
     let closed = false
+    let closing = false
+    let closePromise = null
     let poisoned = false
     let queue = Promise.resolve()
 
@@ -426,6 +428,11 @@ export async function createPreSnapshotJournal({
     }
 
     const enqueue = operation => {
+      if (closing || closed) {
+        return Promise.reject(Object.assign(new Error('PRE_SNAPSHOT_JOURNAL_CLOSING'), {
+          code: 'PRE_SNAPSHOT_JOURNAL_CLOSING'
+        }))
+      }
       const result = queue.then(operation)
       queue = result.catch(() => {})
       return result
@@ -436,6 +443,7 @@ export async function createPreSnapshotJournal({
       manifestPath: files.manifestPath,
       journalPath: files.journalPath,
       async getState() {
+        await queue
         if (closed) fail('PRE_SNAPSHOT_JOURNAL_CLOSED')
         return state
       },
@@ -448,6 +456,7 @@ export async function createPreSnapshotJournal({
         return enqueue(() => appendEvent({ type: 'rollback', point: detachedPoint }))
       },
       async getStatus() {
+        await queue
         return Object.freeze({
           closed,
           poisoned,
@@ -459,10 +468,15 @@ export async function createPreSnapshotJournal({
         })
       },
       async close() {
+        if (closePromise) return closePromise
         if (closed) return
-        await queue
-        closed = true
-        await lock.release()
+        closing = true
+        closePromise = (async () => {
+          await queue
+          closed = true
+          await lock.release()
+        })()
+        return closePromise
       }
     })
   } catch (error) {
@@ -480,6 +494,8 @@ export async function openPreSnapshotJournal({ directory }) {
     let sequence = existing.sequence
     let lastHash = existing.lastHash
     let closed = false
+    let closing = false
+    let closePromise = null
     let poisoned = false
     let queue = Promise.resolve()
 
@@ -508,6 +524,11 @@ export async function openPreSnapshotJournal({ directory }) {
     }
 
     const enqueue = operation => {
+      if (closing || closed) {
+        return Promise.reject(Object.assign(new Error('PRE_SNAPSHOT_JOURNAL_CLOSING'), {
+          code: 'PRE_SNAPSHOT_JOURNAL_CLOSING'
+        }))
+      }
       const result = queue.then(operation)
       queue = result.catch(() => {})
       return result
@@ -518,6 +539,7 @@ export async function openPreSnapshotJournal({ directory }) {
       manifestPath: existing.manifestPath,
       journalPath: existing.journalPath,
       async getState() {
+        await queue
         if (closed) fail('PRE_SNAPSHOT_JOURNAL_CLOSED')
         return state
       },
@@ -528,6 +550,7 @@ export async function openPreSnapshotJournal({ directory }) {
         return enqueue(() => appendEvent({ type: 'rollback', point }))
       },
       async getStatus() {
+        await queue
         return Object.freeze({
           closed,
           poisoned,
@@ -539,10 +562,15 @@ export async function openPreSnapshotJournal({ directory }) {
         })
       },
       async close() {
+        if (closePromise) return closePromise
         if (closed) return
-        await queue
-        closed = true
-        await lock.release()
+        closing = true
+        closePromise = (async () => {
+          await queue
+          closed = true
+          await lock.release()
+        })()
+        return closePromise
       }
     })
   } catch (error) {
