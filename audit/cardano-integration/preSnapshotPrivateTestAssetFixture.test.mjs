@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path'
 
 import {
   selectLargestFundedUtxo,
+  serializeFixtureSubmissionMarker,
   sumFixtureAssetQuantity,
   validatePrivateTestFixtureConfig
 } from './preSnapshotPrivateTestAssetFixture.mjs'
@@ -15,6 +16,44 @@ const config = () => ({
   nodeConfigPath: '/home/test/immortal-m1/state/cardano-testnet/configuration.yaml',
   walletIndex: 1,
   workDirectory: '/home/test/immortal-m1/state/cardano-testnet/m1-fixtures/pre-token'
+})
+
+test('keeps every private fixture submission marker parseable at recovery boundaries', () => {
+  const txId = 'ab'.repeat(32)
+  const assetUnit = 'cd'.repeat(28) + '.4d3154455354'
+  const policyId = 'cd'.repeat(28)
+  const markers = [
+    {
+      status: 'SUBMISSION_ATTEMPT_STARTED',
+      networkMagic: 4242,
+      assetUnit,
+      tokenAmount: '100',
+      startedAt: '2026-11-08T12:00:00.000Z'
+    },
+    {
+      status: 'SIGNED_READY_TO_SUBMIT',
+      networkMagic: 4242,
+      assetUnit,
+      tokenAmount: '100',
+      startedAt: '2026-11-08T12:00:00.000Z',
+      txId
+    },
+    {
+      status: 'SUBMITTED_PRIVATE_TESTNET',
+      networkMagic: 4242,
+      txId,
+      policyId,
+      assetUnit,
+      tokenAmount: '100',
+      submittedAt: '2026-11-08T12:01:00.000Z'
+    }
+  ]
+
+  for (const marker of markers) {
+    const serialized = serializeFixtureSubmissionMarker(marker)
+    assert.ok(serialized.endsWith('\\n'))
+    assert.deepEqual(JSON.parse(serialized), marker)
+  }
 })
 
 test('accepts only the documented private magic, node1 socket and testnet-local workdir', () => {
