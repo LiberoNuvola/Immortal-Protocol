@@ -161,3 +161,71 @@ A Cantelli-bound profile would be a distinct probabilistic application guarantee
 - [Earlier cash-flow / first-passage sensitivity](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704380744)
 
 **Disposition:** mathematical candidate identified; production use blocked by randomness qualification, B1 Reveal-path/capital derivation, application-policy approval and on-chain resource evidence. No source code, test, parameter, profile, 500× rule, V3/Reveal semantics, wallet, deployment or ledger state changed.
+
+## 8. Multi-round shared-pool aggregation and adaptive-Issue boundary
+
+### 8.1 Multiple active rounds can be one static risk perimeter
+
+For a single B1 PrizePool, the relevant static set is not one Beacon round at a time. At a qualified admission boundary, define (U^*) as **all Pending tickets backed by that same Pool across every active BeaconTarget / round**. Include every unresolved ticket exactly once, whatever its round or Beacon status; already-Revealed payouts are represented in crystallised pending liabilities and are not added again as unresolved random payout. Pending tickets that may later Expire can remain in the set: including their potential payout is conservative.
+
+Let:
+
+- (F^* = \sum_{i\in U^*} P_i), the aggregate unresolved face value;
+- (E^*) be the authenticated B1 `effectivePool` at the same ledger cut, after crystallised pending liabilities, the full unresolved face reserve and locked Jackpot are deducted;
+- (S^* = \sum_{i\in U^*} X_i), the aggregate potential payout of that complete fixed set.
+
+If every ticket in (U^*) has the same canonical Classic-6 marginal distribution, then:
+
+`E[S*] = μF*` and `Var(S*) ≤ σ²(F*)²`, even with arbitrary dependence **between tickets and between rounds**. The same Cantelli expression and exact integer predicate in §§3.1–3.2 therefore apply with `F=F*` and `C=E*`. The set must be global to the Pool: calculating a separate bound for each Beacon round against the same (E^*), and then treating those bounds as if each round had separate capital, would reuse both capital and risk budget.
+
+The fixed-set Reveal-path result also extends without a new proof assumption about round labels. Compute:
+
+```text
+R_max(U*) = Σ_i max(0, X_i − P_i) + max_i min(X_i, P_i)
+          ≤ S*
+```
+
+over **all** pending tickets in the shared Pool, regardless of BeaconTarget. If the set is frozen and no new Issue or other Pool-draining outflow occurs while it resolves, `S* ≤ E*` is sufficient for every Reveal/Expire ordering across all those rounds. Cantelli on `Pr(S* > E*)` then gives one conservative upper bound for any B1 pre-Reveal affordability failure of that whole static multi-round set. This is one joint risk perimeter, not one independent allowance per round.
+
+For different game/profile versions, the common Classic-6 moments cannot be silently reused. A possible dependence-robust generalization is to bind a valid marginal mean `μ_i` and standard-deviation upper bound `σ_i` to each ticket/profile and use:
+
+```text
+M = Σ_i P_i μ_i
+V_upper = (Σ_i P_i σ_i)^2
+Pr(S > E) ≤ V_upper / (V_upper + (E − M)^2),  when E > M
+```
+
+This still allows arbitrary cross-ticket dependence, but only if each bound is valid for the relevant information set. A common, authenticated dominating moment envelope is another possible input. Neither heterogeneous-profile calculation nor its exact integer implementation has been built or benchmarked.
+
+### 8.2 The fixed-set theorem does not authorize rolling re-admission
+
+The multi-round extension is **static**. All tickets in (U^*) must belong to one pre-specified admission set whose marginal laws remain valid at the point the risk guarantee is established; the set is then resolved without additions or other Pool outflows. The commitment-before-Beacon property supports an unconditional marginal model at the appropriate pre-publication boundary, subject to the unresolved Beacon qualification.
+
+It is not sound to take a later on-chain state after some Beacon results have become available to ticket holders, remove tickets already Revealed/Expired, and simply reapply the original unconditional `μ, σ` to whatever remains Pending. The remaining set and its information state can be outcome-selected. In particular, arbitrary dependence permits a ticket's conditional distribution to change sharply after another ticket is observed: as a simple limiting case, if two ticket multipliers are perfectly dependent (`Y₂=Y₁`), observing the first payout makes the second payout known, even though both had the same unconditional Classic-6 marginal. A marginal-only Cantelli calculation at that later state would incorrectly treat the second outcome as fresh.
+
+For a rolling/adaptive admission design, the needed object is a **conditional** moment contract over the full adversarial information history (H_t), including information available privately to ticket holders and any permitted selection / withholding behaviour. If such a contract could establish, almost surely,
+
+```text
+M_t = Σ_(i in U_t) P_i μ_i(H_t)
+V_t ≤ (Σ_(i in U_t) P_i σ_i(H_t))^2
+E_t > M_t
+```
+
+then conditional Cantelli would bound the next risk event by `V_t / (V_t + (E_t − M_t)^2)`. Current code and evidence do not provide these conditional moments, do not let the Pool inspect ticket-holder private information, and do not establish that an already-Ready ticket remains a fresh marginal draw at a later admission boundary. The formula is a statement of the missing proof obligation, not an available implementation.
+
+### 8.3 One lifetime risk budget and non-overlapping capital
+
+Repeatedly granting the same `ε` to every Issue, every round or every state refresh would not define a global/lifetime ceiling. A possible specification contract would have to choose either:
+
+1. one frozen aggregate admission set and one `ε_global` for the entire shared-Pool resolution; or
+2. a versioned sequence of risk epochs with conditional event bounds `ε_j`, where `Σ_j ε_j ≤ ε_global` (or a separately proven global supermartingale / alpha-spending construction).
+
+For overlapping epochs sharing one Pool, their capital budgets must also be demonstrably disjoint / ring-fenced, with `Σ_j C_j` no greater than genuinely available capital, or they must be covered by one joint aggregate bound. Merely recording per-cohort values `C_j` or `ε_j` while allowing them to reference the same unpartitioned `effectivePool` is not sufficient. No epsilon-allocation rule, capital-tranche mechanism, supermartingale, or conditional-randomness proof is currently specified or implemented.
+
+### 8.4 Exact disposition
+
+**Resolved at research level:** a fixed, pre-specified set of tickets spanning multiple active Beacon rounds and sharing one B1 Pool can use one dependence-robust aggregate Cantelli bound and one global Reveal-path lemma, provided the common marginal model is valid for that set.
+
+**Still open:** admission of new tickets after any relevant outcomes are available; conditioning on adversarial/private information; heterogeneous profile versions; risk-budget spending over the protocol lifetime; non-overlapping capital allocation for overlapping epochs; and authenticated derivation of `E*`. A dynamic Issue rule cannot be called safe or permissionless/trustless from the static result alone.
+
+No production code, tests, profile, risk parameter, 500× rule, RiskProtectionBridge, V3/Reveal semantics, authority, wallet, deployment or ledger state changed in this addendum.
