@@ -613,6 +613,8 @@ export function createPersistentOgmiosIndexHandlers(journal) {
 export function createPersistentOgmiosV7ChainSyncClient({ journal, ...clientOptions }) {
   const handlers = createPersistentOgmiosIndexHandlers(journal)
   const observerOnIntersection = clientOptions.onIntersection
+  const observerOnRollForward = clientOptions.onRollForward
+  const observerOnRollBackward = clientOptions.onRollBackward
   return createOgmiosV7ChainSyncClient({
     ...clientOptions,
     ...handlers,
@@ -620,6 +622,18 @@ export function createPersistentOgmiosV7ChainSyncClient({ journal, ...clientOpti
       await handlers.onIntersection(point, tip)
       if (typeof observerOnIntersection === 'function') {
         await observerOnIntersection(point, tip)
+      }
+    },
+    onRollForward: async (block, tip) => {
+      await handlers.onRollForward(block, tip)
+      if (typeof observerOnRollForward === 'function') {
+        await observerOnRollForward(block, tip)
+      }
+    },
+    onRollBackward: async (point, tip) => {
+      await handlers.onRollBackward(point, tip)
+      if (typeof observerOnRollBackward === 'function') {
+        await observerOnRollBackward(point, tip)
       }
     }
   })
