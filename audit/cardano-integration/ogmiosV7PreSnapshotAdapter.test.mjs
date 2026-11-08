@@ -240,3 +240,99 @@ test('chain-sync response decoder handles forward and backward result envelopes'
   assert.equal(backward.direction, 'backward')
   assert.deepEqual(backward.point, PRE_SNAPSHOT_ORIGIN_POINT)
 })
+
+
+test('ChainSync client serializes requests and waits for index commit before requesting next block', async () => {
+  const { EventEmitter } = await import('node:events')
+  const { createOgmiosV7ChainSyncClient } = await import('./ogmiosV7ChainSyncClient.mjs')
+
+  class FakeWebSocket extends EventEmitter {
+    constructor() {
+      super()
+      this.OPEN = 1
+      this.CONNECTING = 0
+      this.readyState = this.CONNECTING
+      this.sentMethods = []
+      queueMicrotask(() => {
+        this.readyState = this.OPEN
+        this.emit('open')
+      })
+    }
+
+    send(payload, callback) {
+      const request = JSON.parse(payload)
+      this.sentMethods.push(request.method)
+      if (callback) callback(null)
+      queueMicrotask(() => {
+        if (this.readyState !== this.OPEN) return
+        if (request.method === 'findIntersection') {
+          this.emit('message', Buffer.from(JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'findIntersection',
+            result: { intersection: 'origin', tip: 'origin' },
+            id: request.id
+          })))
+          return
+        }
+        if (request.method === 'nextBlock') {
+          this.emit('message', Buffer.from(JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'nextBlock',
+            result: {
+              direction: 'forward',
+              tip: { id: '90'.repeat(32), slot: 1, height: 0 },
+              block: {
+                type: 'praos',
+                era: 'conway',
+                id: '90'.repeat(32),
+                ancestor: 'genesis',
+                height: 0,
+                slot: 1,
+                transactions: []
+              }
+            },
+            id: request.id
+          })))
+        }
+      })
+    }
+
+    close() {
+      if (this.readyState === 3) return
+      this.readyState = 3
+      queueMicrotask(() => this.emit('close', 1000, Buffer.from('closed')))
+    }
+  }
+
+  let state = createPreSnapshotIndex({
+    networkId: 'cardano-private-testnet-m1',
+    asset: { policyIdHex, assetNameHex },
+    anchorPoint: PRE_SNAPSHOT_ORIGIN_POINT,
+    utxos: []
+  })
+  let forwardCount = 0
+  let stopPromise = null
+  let client
+
+  client = createOgmiosV7ChainSyncClient({
+    url: 'ws://127.0.0.1:1337',
+    WebSocketImpl: FakeWebSocket,
+    getIndexState: async () => state,
+    onRollForward: async normalizedBlock => {
+      state = applyPreSnapshotBlock(state, normalizedBlock)
+      forwardCount += 1
+      queueMicrotask(() => { stopPromise = client.stop() })
+    },
+    onRollBackward: async () => {
+      assert.fail('unexpected rollback in the one-block client test')
+    },
+    reconnectDelayMs: 1
+  })
+
+  await client.start()
+  if (stopPromise) await stopPromise
+  assert.equal(forwardCount, 1)
+  assert.equal(state.currentPoint.hash, '90'.repeat(32))
+  assert.equal(client.isRunning, false)
+  assert.equal(client.lastError, null)
+})
