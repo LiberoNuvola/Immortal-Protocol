@@ -1,7 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { EventEmitter } from 'node:events'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   isPreSnapshotRemoteTipAtOrAfterTarget,
+  runPreSnapshotDualReplicaConformance,
   validatePreSnapshotDualReplicaConfig
 } from './preSnapshotDualReplicaRunner.mjs'
 
@@ -94,4 +99,90 @@ test('requires each connected remote tip to reach the externally fixed target', 
   assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget('origin', origin), true)
   assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget('origin', target), false)
   assert.equal(isPreSnapshotRemoteTipAtOrAfterTarget(null, target), false)
+})
+
+test('live runner requires two ChainSync intersections and freezes an exact dual replica match', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-a-dual-runner-'))
+  const sockets = []
+  class FakeWebSocket extends EventEmitter {
+    constructor(url) {
+      super()
+      this.url = url
+      this.OPEN = 1
+      this.CONNECTING = 0
+      this.readyState = this.CONNECTING
+      this.sentMethods = []
+      sockets.push(this)
+      queueMicrotask(() => {
+        this.readyState = this.OPEN
+        this.emit('open')
+      })
+    }
+
+    send(payload, callback) {
+      const request = JSON.parse(payload)
+      this.sentMethods.push(request.method)
+      callback?.(null)
+      if (request.method === 'findIntersection') {
+        assert.ok(Array.isArray(request.params?.points))
+        queueMicrotask(() => {
+          if (this.readyState !== this.OPEN) return
+          this.emit('message', Buffer.from(JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'findIntersection',
+            result: { intersection: 'origin', tip: 'origin' },
+            id: request.id
+          })))
+        })
+      }
+      // Deliberately hold nextBlock open. The runner should complete from the
+      // committed intersection state, then close both sessions cleanly.
+    }
+
+    close() {
+      if (this.readyState === 3) return
+      this.readyState = 3
+      queueMicrotask(() => this.emit('close', 1000, Buffer.from('test close')))
+    }
+  }
+
+  try {
+    const value = {
+      networkId: 'cardano-private-testnet-m1',
+      asset: { ...asset },
+      anchorPoint: { ...origin },
+      expectedPoint: { ...origin },
+      timeoutMs: 2000,
+      pollIntervalMs: 50,
+      initialUtxos: [],
+      replicas: [
+        {
+          id: 'node-a',
+          nodeInstanceId: 'cardano-node-a',
+          url: 'ws://127.0.0.1:1337',
+          journalDirectory: join(directory, 'node-a')
+        },
+        {
+          id: 'node-b',
+          nodeInstanceId: 'cardano-node-b',
+          url: 'ws://127.0.0.1:1338',
+          journalDirectory: join(directory, 'node-b')
+        }
+      ]
+    }
+
+    const result = await runPreSnapshotDualReplicaConformance(value, {
+      WebSocketImpl: FakeWebSocket
+    })
+
+    assert.equal(result.status, 'PASS')
+    assert.equal(result.code, 'REPLICA_SNAPSHOT_EXACT_MATCH')
+    assert.equal(result.canonicalBytesEqual, true)
+    assert.equal(sockets.length, 2)
+    assert.ok(sockets.every(socket => socket.sentMethods.includes('findIntersection')))
+    assert.ok(sockets.every(socket => socket.sentMethods.includes('nextBlock')))
+    assert.ok(sockets.every(socket => socket.readyState === 3))
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
 })
