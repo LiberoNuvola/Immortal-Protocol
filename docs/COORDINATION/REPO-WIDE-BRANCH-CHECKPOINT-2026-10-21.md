@@ -615,3 +615,54 @@ The workflow now marks all three Haskell V2 EXPIRE traces `continue-on-error: tr
 **State:** workflow change committed and read-back verified. The new push-triggered run on `32961d2` is pending; its result must be inspected before closing this CI separation task.
 
 No validator/source semantics, V3 carrier, Reveal economics, ABI, economic constants, EEV/USDM authority, or deployment path changed. No Preprod/Mainnet action or wallet signature occurred.
+
+## 2026-11-08 — Agent A: dual-layer / RiskMode / PRE-RICH cohort-policy reconciliation
+
+**Scope:** coordination and research disposition only. No production implementation, test, workflow, parameter, V3/Reveal, wallet or ledger action.
+
+### Recovered model — three distinct mechanisms, not one global switch
+
+1. **D3 — dynamic operating intensity:** the 2 Nov Library design is explicitly non-normative and belongs to PRE-RICH Arb Agent, not Scratch & Win. It describes an always-on deterministic floor (`ProtectedCapital`, `A_safe`, admissible `Ω`) plus a state-dependent discretionary budget above the floor:
+   `S_res = max(0, EEV - ProtectedCapital - L_dedicated)`,
+   `B_t = α_t(S_res, class_t, stats_t) × S_res`,
+   `Notional ≤ min(B_t, RiskEnvelope)`.
+   C0–C3, hysteresis and Quiescence regulate Arb Agent operating intensity. Agent capital, open exposure and Solo/Pool accounting remain separate from Game PrizePool, Jackpot and ticket liabilities.
+2. **IMMORTAL R1 — trajectory-specific analytical RiskMode:** the Canonical Economic Register supports selecting Worst-Case Analysis, Statistical Risk Analysis, or both according to an authenticated trajectory/profile. The mechanisms are distinct, not automatically additive or interchangeable. No universal replacement formula or global binary switch is canonical. A user, DApp, relayer or caller cannot choose a weaker analysis for convenience.
+3. **PRE-RICH Game statistical cohort profile:** this is a separate application-policy proposal, not an implementation consequence of D3 or the R1 enum. It would define a new probabilistic guarantee for a specific immutable cohort. It requires an explicit specification-authority decision before implementation.
+
+### Capacity frontier — research only
+
+For the exact Classic-6 two-row ticket PMF, Genesis tickets at P=1 USDM, independent ticket outcomes, no extra obligations and a hypothetical **4,000 USDM already eligible and ring-fenced in PrizePool**:
+
+| Lifetime cohort tail ceiling | Maximum unresolved tickets (research) |
+|---:|---:|
+| 0.1% | 3,579 |
+| 0.5% | 4,028 |
+| 1.0% | 4,248 |
+
+These are probabilistic cohort capacities, not 500× guarantees and not currently admissible limits. A Gaussian moment shortcut with Z=3.09 is not an adequate substitute: at N=4,114 the exact finite-distribution tail was about 0.658913%, not 0.1%. Mixed ticket classes require class-aware distributions, not average-price scaling.
+
+### Current production capital and admission boundary
+
+- PRE-RICH V1 still applies deterministic unresolved-ticket WCE = 500 × Σ(P_i × N_i). With 4,000 USDM of **actual eligible PrizePool liquidity**, the pure Genesis limit is 8 unresolved tickets.
+- The 4,000 Genesis bootstrap is a PRE Treasury threshold; it does not establish a 4,000 USDM PrizePool balance. The inspected Issue transaction pays the sale settlement basket to Treasury and preserves B1 PrizePool physical Value / total liquidity on TicketIssued. Current Issue-time Pool receipt allocation is therefore f=0.
+- No production authenticated Treasury→PrizePool funding path was established in the reviewed source set. Historical f=25/50/60% simulation scenarios are not current capacity evidence.
+- `ppUnresolvedReserve` remains face-price accounting (ΣP_i); deterministic WCE is derived separately; statistical cohort/path assessment is a third distinct object. Do not rename or repurpose the datum field as a statistical reserve.
+
+### Agent B independent review — 8 Nov 2026
+
+Agent B's independent source cross-review on HEAD `07248f8664c4651a5538903b43c3f6f41c435f18` confirms:
+- the actual PRE-RICH V1 Issue/B1 path fixes the 500× floor and does not accept RiskMode input;
+- RiskProtectionBridge remains deterministic-only and fail-closed for StatisticalOnly / DeterministicAndStatistical; it is not wired into PreRichEconomicAdmission;
+- R1 remains incomplete as an authenticated state/action/policy/evidence resolver; the R1/Kc/Ω certificate remains missing;
+- the current Issue-admission path still has a configured signed-authority dependency and must not be described as fully permissionless/trustless;
+- the first real Preprod Issue remains BLOCKED under Issue #37.
+
+### Disposition / next gate
+
+The dual-layer concept is recovered, but its D3 form is an Arb Agent design. For Scratch & Win, capacity above the deterministic 8-ticket illustration is possible only as a separately approved statistical cohort guarantee, or with additional real eligible capital / a qualified deterministic backstop. It cannot be obtained while simultaneously claiming the unchanged unconditional 500× guarantee on the same 4,000 USDM pool.
+
+Before any implementation, specification authority must decide whether PRE-RICH Game may adopt a statistical cohort profile and, if so, its lifetime/global ε, eligible-capital perimeter, cohort/model/horizon/dependence contract, path-risk criterion, transition/recovery policy, and immutable version binding. Until then V1 remains unchanged and fail-closed.
+
+**Evidence:** [Agent A capacity analysis](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704197472) · [cash-flow / class-mix extension](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704380744) · [Issue/Pool/Treasury source trace](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704392984) · [statistical cohort policy contract](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704450038) · [Agent B independent review](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6717575698) · [D3 source note](https://app.notion.com/p/3d9c4454d6d581e680d5e5d3f3a9df79?pvs=204).
+
