@@ -1004,3 +1004,28 @@ No production code, test, workflow, CI, wallet, transaction, deployment, PRE ide
 3. M2: verify a real recursive certificate proof in minimal Plutus V3 and measure actual CEK/memory/transaction envelope before any protocol decision.
 
 No code, tests, workflows, CI runs, Mithril network, certificate, wallet action, transaction, Preprod/Mainnet query, governance rule or ledger state was changed or executed. V3, Reveal, Issue #37, Issue #43 and Issue #49 remain separate and untouched.
+
+
+## 2026-11-08 — Agent B: M1-A local Cardano node / Ogmios / Kupo execution profile
+
+**Execution profile:** [AGENT-B-M1-A-LOCAL-NODE-INDEXER-EXECUTION-PROFILE-2026-11-08.md](AGENT-B-M1-A-LOCAL-NODE-INDEXER-EXECUTION-PROFILE-2026-11-08.md)  
+**Baseline HEAD:** `401085bbb2aca9152e12e6f456c4ac3dadcbca2d`  
+**Artifact commit:** `401085bbb2aca9152e12e6f456c4ac3dadcbca2d`  
+**Artifact blob:** `f2ae89cb87be1811bbaece4bbb120f401eb3798a`  
+**Classification:** TEST-ENVIRONMENT DESIGN — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY.
+
+### M1-A profile
+
+- The first prototype baseline to evaluate is cardano-node `11.0.1` + Ogmios `7.0.0` + Kupo `2.12.x`; upstream compatibility tables align these versions, but the local private-testnet config still needs a real smoke test.
+- Two independently operated local Cardano nodes each get their own Ogmios bridge and custom chain-sync indexer. No remote/shared holder-list API or project publisher is authoritative.
+- Ogmios transports full blocks from local Node-to-Client ChainSync and exposes explicit roll-forward/rollback; indexers persist exact `(slot, headerHash)` points and commit state before advancing cursors.
+- Kupo is a local, independent filtered-UTxO comparison only. Disable `--prune-utxo`; compare only at a proven common point. It is not a certificate source or Plutus proof.
+- The parser must apply Alonzo+ phase-2-invalid transaction semantics, distinguishing ordinary inputs from collateral inputs and preserving valid collateral-return outputs; unknown era/input-source shapes fail closed.
+- Compare full replay, whole-UTxO bootstrap plus incremental index, and Kupo where point-specific history allows. Require exact TxIn/address/quantity-set equality, not merely equal total supply.
+- Existing repository reuse: `ws@8.18.3` is already pinned in `audit/cardano-integration`; the Haskell `YaciUTxO` parser only decodes materialized Yaci UTxO JSON and is not a Node-to-Client full-block indexer.
+
+### Acceptance and status
+
+M1-A is only an indexer-correctness gate. It requires two node replicas, full-replay parity, phase-2/collateral handling, idempotent reconnect, atomic rollback/recovery and pinned resource evidence. A simulated rollback alone is not a node-level fork demonstration. No private testnet, Ogmios, Kupo, indexer, source code, tests, workflow, CI, certificate, wallet, transaction or ledger query was run/created in this documentation pass.
+
+M1-C Mithril certification and M2 Plutus verification remain separate. Production entity identity, eligibility, PRE policy/name, snapshot-point selection and stake-threshold acceptance remain undecided. V3, Reveal, Issue #37, Issue #43 and Issue #49 are untouched.
