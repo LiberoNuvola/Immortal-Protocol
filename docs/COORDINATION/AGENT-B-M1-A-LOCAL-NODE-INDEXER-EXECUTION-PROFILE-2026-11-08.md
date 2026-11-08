@@ -322,3 +322,21 @@ Official pins inspected:
 - v7.0.0 TypeScript schema: https://raw.githubusercontent.com/CardanoSolutions/ogmios/v7.0.0/clients/TypeScript/packages/schema/src/index.ts
 - v7.0.0 ChainSynchronization client: https://github.com/CardanoSolutions/ogmios/blob/v7.0.0/clients/TypeScript/packages/client/src/ChainSynchronization/Client.ts
 - v7.0.0 ChainSynchronization handlers: https://github.com/CardanoSolutions/ogmios/blob/v7.0.0/clients/TypeScript/packages/client/src/ChainSynchronization/nextBlock.ts
+
+
+## 14. Final static review of v7 client/test contract
+
+The ChainSync request builder now matches the upstream v7 schema exactly: `findIntersection` carries `params.points`; `nextBlock` has no `params` field. Request IDs are mirrored and matched before callbacks proceed. The fake-WebSocket test asserts this omission and confirms the next request is not sent until the reducer callback has completed.
+
+The intersection-point bound now reserves one slot for the `"origin"` fallback when the local index is genesis-anchored, even when `maxIntersectionPoints = 1`; a dedicated test covers this boundary.
+
+Final authored test inventory:
+- `preSnapshotUtxoIndex.test.mjs`: 12 cases;
+- `ogmiosV7PreSnapshotAdapter.test.mjs`: 13 cases, including one-block fake-WebSocket sequencing and adapter-to-reducer normal/collateral integration;
+- total: **25 authored tests; 0 executed**.
+
+Package commands:
+- `npm run test:pre-snapshot-index`
+- `npm run test:ogmios-v7-adapter`
+
+No local repository checkout/dependency installation was available for executing these tests. Static GitHub content verification is not a substitute for Node test execution or a live Ogmios/Cardano-node test.
