@@ -463,3 +463,79 @@ The proposal defines:
 The canonical Economic Register was rechecked: it states that the applicable profile supplies parameters and that IMMORTAL owns admissibility; trajectory-dependent selection is not a convenience choice by DApp, Adapter or user. It deliberately does not freeze a universal addition formula or a universal rule that one model replaces the other.
 
 **Disposition:** proposal ready for authority review; no executable selector, new mode behavior, combination rule, numerical parameter or production integration is adopted. Existing RiskProtectionBridge behavior remains deterministic-only / fail-closed for the other two modes.
+
+
+## 13. Agent A — synthesis: trajectory RiskMode, statistical cohort proof and adaptive intensity (2026-11-08)
+
+This section reconciles three related but distinct mechanisms. They may coexist in one future profile, but none can be used as a substitute for the others.
+
+### 13.1 Two independent axes, not one global toggle
+
+**Axis 1 — required risk-analysis mechanisms for a candidate trajectory.** The IMMORTAL Canonical Economic Register and the typed RiskProtectionBridge describe the three analytical modes:
+
+- DeterministicWorstCaseOnly
+- StatisticalOnly
+- DeterministicAndStatistical
+
+The mode is a **profile-owned result of authenticated state + candidate action + trajectory facts + versioned policy**. It is not a caller preference, frontend setting, relayer parameter, or a free global switch. A state change can change the resolver's result only when the profile policy explicitly maps that verified state/trajectory to another required analysis mode.
+
+The bridge currently accepts only DeterministicWorstCaseOnly; its other two modes fail closed, and it is not connected to PreRichEconomicAdmission. PRE-RICH V1 Issue continues to require the deterministic 500× unresolved-ticket WCE. Therefore no production mode transition or probabilistic sale capacity is currently available.
+
+**Axis 2 — operating intensity / discretionary allocation after protection.** The recovered D3 note (Testo incollato(20261102-204028).txt) describes a second layer: compute a residual surplus after the applicable protection and dedicated obligations, then bound new discretionary notional by a state-dependent budget and a separate RiskEnvelope. This is an intensity/allocation controller, not a risk-analysis mode. It may reduce or cap optional new exposure; it cannot reduce ProtectedCapital, enlarge the safe action set, or bypass the Economic Gate / viability.
+
+D3 is explicitly the **PRE-RICH Arb Agent** design with a separate Solo/Pool mandate and capital perimeter. Its S_res, α_t, RiskEnvelope and C0–C3 regimes are not Scratch & Win Game semantics. The PRE-RICH Game class hysteresis (KA=8, KC=4, KD=4) and PRE_GENESIS/GENESIS/ACTIVE/QUIESCENT lifecycle are separate controllers. Any Game-specific intensity layer requires its own policy and capital/obligation definitions; no D3 coefficient or regime is imported here.
+
+### 13.2 Where the new Cantelli result belongs
+
+The dependence-robust Cantelli predicate in the companion audit is a candidate **Statistical Risk Analysis** for one frozen, pre-outcome set of Pending tickets across all Beacon rounds sharing one B1 PrizePool. It is not:
+
+- the deterministic WCE;
+- a ProtectedCapital or ReserveProtection component;
+- the D3 α_t value or adaptive notional budget;
+- a per-round limit that can be repeated against the same Pool;
+- an unconditional rolling test for future Issues after ticket outcomes become available.
+
+It supplies a candidate statistical constraint for a precisely defined population, horizon, tail ceiling and profile version. Its use would require the authority to freeze at least the PMF/profile version, pre-outcome cohort membership, aggregate shared-Pool perimeter, global ε, Beacon/randomness assumptions, conditional-information boundary, exact integer precision and evidence provenance. The same global ε and the same Pool capital cannot be restarted independently for each round or Issue.
+
+The previously documented Nμ + Zσ√N expression and the new Cantelli bound are two different statistical constructions. They must not be merged, treated as equivalent, or selected opportunistically from whichever yields a larger ticket count. The authority must choose a declared statistical criterion and version for a particular trajectory.
+
+### 13.3 The capacity trade-off is explicit
+
+At the same hypothetical C=4,000 USDM initial shared B1 pre-Reveal EffectivePool:
+
+- **Current V1 deterministic floor:** 500× WCE permits 8 Genesis tickets.
+- **Research-only Cantelli candidate:** a single frozen multi-round set gives total aggregate ceilings 18 / 42 / 59 at global ε=0.1% / 0.5% / 1.0%, under the stated common marginal and pre-outcome assumptions.
+
+The second row is **not an increase available while retaining the same 500× pathwise WCE for every unresolved ticket**. If both constraints are required for the same exposure, the deterministic WCE remains binding and the statistical condition cannot raise the admissible count above it. Reaching a larger probabilistic capacity would require a separate, explicit PRE-RICH Game profile decision about whether the payout trajectory is governed by a statistical tail guarantee instead of the current per-ticket 500× deterministic reservation, while all other mandatory IMMORTAL invariants and known liabilities remain protected. Such a profile would offer a probabilistic guarantee, **not** the current unconditional 500× solvency guarantee. No such decision has been made.
+
+This is the decisive distinction: a dynamic intensity calculation cannot mathematically turn 8 into 18 while the same 500× exposure remains fully protected. The governing risk requirement for the payout trajectory must be explicitly changed before such a capacity can be authorized.
+
+### 13.4 Candidate trajectory contract — research mapping, no policy selection
+
+| Candidate trajectory | Current V1 treatment | Future statistical / intensity relevance |
+|---|---|---|
+| Issue: new Pending ticket, before its Beacon becomes Ready | Deterministic WCE 500×, atomic shared-Pool face reserve, EEV/liquidity Gate and viability; deterministic-only bridge | Only a future profile may authorize another required analysis. Freeze the full multi-round risk set before outcomes are available. A statistical-only payout rule would be a different guarantee and explicit policy change. |
+| Issue after another relevant outcome is public/privately knowable | Current V1 deterministic rule remains the authority | Do not restart unconditional moments. Require conditional moments over adversarial information, or a formally allocated risk epoch / global construction. |
+| Reveal | Release unresolved WCE/face reserve under current rules and crystallize the actual payout as a known liability | Statistical evidence may describe the remaining portfolio only under the applicable frozen/conditional model; it cannot reduce the actual payout liability or change Reveal ordering rules. |
+| Claim / Expire | Exact settlement / expiry lifecycle and rights remain authoritative | Statistical or intensity logic cannot erase a crystallized liability, alter expiry rights, or bypass the lifecycle transition. |
+| EEV/liquidity deterioration, regime change, quiescence | Existing source, freshness, Gate, A_safe, Ω and lifecycle constraints apply | A future profile may specify contraction/no-new-exposure or another analysis mode; it must be trajectory-bound and cannot itself manufacture an R1/QNE successor witness. |
+
+### 13.5 Required separation in any future typed interface
+
+A future RiskAssessment / ProtectionRequirement / intensity output should preserve independent fields and evidence for:
+
+1. deterministic mandatory floor and its profile-derived amount;
+2. statistical assessment, with distribution/marginal model, population, horizon, tail criterion, dependence/conditional-information assumptions, rounding and evidence digest;
+3. trajectory-to-mode policy version and the authenticated state/action commitment that selected it;
+4. optional intensity budget / RiskEnvelope, its source, capital perimeter and policy version;
+5. global risk-budget epoch / allocation identifier and proof that capital and ε are not double-counted;
+6. the final Economic Gate and universal viability result for the exact same candidate.
+
+The current interfaces do not yet carry this complete contract. RiskProtectionBridge remains a deterministic-only scaffold, PreRichEconomicAdmission has no statistical input, and the Economic Gate has no α_t / RiskEnvelope input. This is a mapping gap, not permission to add fields or alter production semantics without the required decisions.
+
+### 13.6 Disposition
+
+- The remembered state/trajectory-dependent model selection corresponds to the typed RiskMode architecture; the remembered dynamic/intensity behavior is a separate second axis.
+- Static, pre-outcome, multi-round Cantelli aggregation is now mathematically recorded as a candidate statistical assessment.
+- Dynamic adaptive Issue after outcomes are knowable, the PRE-RICH Game-specific intensity model, global lifetime ε, exact capital qualification, Beacon qualification, typed Gate integration and authority decisions remain open.
+- Current V1 deterministic 500×, ProtectedCapital, V3/Reveal, RiskProtectionBridge fail-closed behavior, QNE/R1 and first-Issue blockers remain unchanged.
