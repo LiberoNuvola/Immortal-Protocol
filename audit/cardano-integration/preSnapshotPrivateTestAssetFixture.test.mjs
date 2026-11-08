@@ -65,6 +65,22 @@ test('refuses non-generated wallet numbers and workdirs outside private testnet 
   )
 })
 
+
+test('accepts a descendant workdir but rejects parent traversal outside testnet root', () => {
+  const value = config()
+  assert.equal(
+    validatePrivateTestFixtureConfig(value).workDirectory,
+    resolve(value.workDirectory)
+  )
+  assert.throws(
+    () => validatePrivateTestFixtureConfig({
+      ...value,
+      workDirectory: join(value.testnetRoot, '..', 'repository', 'audit')
+    }),
+    /M1_FIXTURE_WORKDIR_MUST_BE_PRIVATE_TESTNET_LOCAL/
+  )
+})
+
 test('selects the largest funded UTxO and ignores malformed or underfunded rows', () => {
   const found = selectLargestFundedUtxo({
     ['11'.repeat(32) + '#0']: { value: { lovelace: '7000000' } },
