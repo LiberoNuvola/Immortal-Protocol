@@ -665,4 +665,24 @@ The dual-layer concept is recovered, but its D3 form is an Arb Agent design. For
 Before any implementation, specification authority must decide whether PRE-RICH Game may adopt a statistical cohort profile and, if so, its lifetime/global ε, eligible-capital perimeter, cohort/model/horizon/dependence contract, path-risk criterion, transition/recovery policy, and immutable version binding. Until then V1 remains unchanged and fail-closed.
 
 **Evidence:** [Agent A capacity analysis](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704197472) · [cash-flow / class-mix extension](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704380744) · [Issue/Pool/Treasury source trace](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704392984) · [statistical cohort policy contract](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6704450038) · [Agent B independent review](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6717575698) · [D3 source note](https://app.notion.com/p/3d9c4454d6d581e680d5e5d3f3a9df79?pvs=204).
+## 2026-11-08 — Agent A: permissionless automatic selector target
 
+The R1 proposal now records a separate target contract for the required permissionless / automatic / trustless architecture. This does not claim current production conformance.
+
+### Hard target constraints
+
+- Any user/keeper/relayer may submit a candidate; no caller may choose RiskMode, policy version, risk budget or evidence validity.
+- The selector is deterministic and profile/trajectory-bound over authenticated pre-state, action, post-state/projection, policy and evidence commitments. Required analysis is chosen before results are evaluated; there is no fallback to a weaker mode after failure.
+- Off-chain statistical computation is acceptable only when any party can generate a witness/proof that the canonical verifier can validate. A backend scalar, enum or single signer assertion is insufficient. If the statistical proof cannot fit the target ledger/resource envelope, that mode remains unavailable.
+- Cohort/global risk-budget allocation must be atomic and concurrency/replay safe. A reference-only read of a budget UTxO is not a lock.
+- Ticket/cohort terms are immutable; automatic regime changes apply to new Issue/new cohorts only. Existing ticket rights and crystallised liabilities remain unchanged.
+- Quiescence stops new exposure but preserves existing Reveal/Claim/Expire/settlement.
+- D3 Arb Agent intensity remains separate from PRE-RICH Game statistical cohort policy.
+
+### Current limitation confirmed
+
+Agent B's review records a configured Ed25519 authority binding in the current Issue-admission path and confirms RiskProtectionBridge is not wired into PreRichEconomicAdmission. Consequently production is not yet fully permissionless/trustless and statistical/combined modes remain fail-closed. Removing that dependency requires a separate proof-backed design; no signer substitution is authorised.
+
+**Proposal update:** [Agent A R1 trajectory-to-RiskMode contract, §10](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md) · [Agent B independent review](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6717575698).
+
+**Status:** design target recorded; no implementation, parameter, risk appetite, policy approval, code test, V3/Reveal, wallet, deployment or ledger change.
