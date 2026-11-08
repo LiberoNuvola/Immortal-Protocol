@@ -686,3 +686,38 @@ Agent B's review records a configured Ed25519 authority binding in the current I
 **Proposal update:** [Agent A R1 trajectory-to-RiskMode contract, §10](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-R1-TRAJECTORY-TO-RISK-MODE-SELECTION-CONTRACT-PROPOSAL-2026-11-07.md) · [Agent B independent review](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6717575698).
 
 **Status:** design target recorded; no implementation, parameter, risk appetite, policy approval, code test, V3/Reveal, wallet, deployment or ledger change.
+## 2026-11-08 — Agent A: dependence-robust statistical bound / Reveal-path audit
+
+**Research artifact:** [AGENT-A-CANTELLI-COHORT-BOUND-AND-REVEAL-PATH-AUDIT-2026-11-08.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-A-CANTELLI-COHORT-BOUND-AND-REVEAL-PATH-AUDIT-2026-11-08.md)  
+**Commit:** `d53925aa14b4eef67c34891596e8ab3477c55e8f`  
+**Scope:** mathematical/source feasibility only; no implementation or policy approval.
+
+### New mathematical candidate
+
+From the exact Classic-6 ticket PMF:
+- `μ = 20799/32000 = 0.64996875`
+- `E[Y²] = 180693501/4000000`
+- `σ² = 9164987571/204800000 ≈ 44.7509158740`
+
+For ticket prices `P_i`, unresolved face amount `F = ΣP_i`, and aggregate payout `S = ΣP_iY_i`, Cauchy–Schwarz gives `Var(S) ≤ σ²F²` without assuming cross-ticket independence, provided each ticket retains the canonical marginal payout distribution. Cantelli therefore gives an upper bound:
+`Pr(S>C) ≤ σ²F² / (σ²F² + (C−μF)²)`, for `C>μF`.
+
+For a rational ceiling `ε=a/b), the static-cohort bound is exactly checkable by integer arithmetic:
+`D = 32000C − 20799F > 0`
+`5(b−a)9164987571F² ≤ aD²`
+
+Under a hypothetical 4,000-USDM *total payout budget* and Genesis-only cohort, the resulting dependence-robust upper-bound capacities are 18 / 42 / 59 at ε of 0.1% / 0.5% / 1.0%, respectively. These are mathematical sensitivities only, not approved ticket limits, not current Pool capital and not an unconditional 500× guarantee. No Plutus resource benchmark has been run.
+
+### Blocking source findings
+
+- Issue commits the player secret before the matching BeaconRegistry leaves `BeaconPending`; Reveal later receives that secret and derives the result from the public Beacon. This supports a commit-before-beacon requirement, but does not prove Beacon entropy, unpredictability or resistance to publisher grinding.
+- `BeaconRegistry.hs` explicitly does not independently verify the external Materios receipt; it validates the configured relayer signature and deterministic Beacon derivation. The marginal PMF therefore remains conditional on an unclosed randomness trust boundary.
+- B1 `TicketRevealed` checks the payout against the **pre-transition** effective Pool, then increases pending liabilities, releases face-price reserve and preserves physical liquidity. The available amount changes with Reveal order. A terminal cohort-tail inequality alone does not establish that every permitted Reveal/Expire path remains admissible.
+- Once the Beacon is Ready, the ticket holder can compute the result before submitting Reveal; Reveal order is therefore a strategic path variable. Withholding a losing ticket does not increase the sum of its fixed outcomes, but reserve-release timing and the pre-Reveal affordability check must be modelled.
+- The cohort budget `C` has not been reconciled to physical PrizePool Value, pending liabilities, face-price reserve, Jackpot, safety capital and the existing pre-Reveal check. It must not be equated to gross Treasury bootstrap or gross Pool Value.
+
+### Disposition
+
+The Cantelli predicate is a promising constant-size integer verifier for a **static fixed cohort**, but it is not yet an admissible Issue rule. Next gates are: (1) formal B1 Reveal/Expire path-risk event and capital derivation, (2) independent Beacon/marginal-randomness qualification, (3) exact-integer reference/property tests, and (4) Plutus CEK / full-transaction resource measurement. Only then should the specification authority consider a new statistical profile and lifetime/global ε.
+
+PRE-RICH V1, deterministic 500×, current RiskProtectionBridge fail-closed behavior, V3/Reveal semantics, deployment and first-Issue gates remain unchanged. No code or tests were modified or executed by this research update.
