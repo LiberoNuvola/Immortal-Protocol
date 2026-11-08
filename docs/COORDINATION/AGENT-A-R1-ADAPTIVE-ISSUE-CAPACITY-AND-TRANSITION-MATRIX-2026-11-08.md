@@ -191,6 +191,33 @@ For comparison, Agent A's prior table held C = 4,000 USDM as the already-net B1 
 
 Neither table means the Treasury's 4,000-USDM bootstrap is 4,000 USDM of B1 payout liquidity. The Genesis PRE Treasury bootstrap and the B1 PrizePool are distinct perimeters. Actual E* must be observed, qualified and derived from the exact B1 Pool state.
 
+### 6.1b Ticket-ladder sensitivity and mixed-price admission
+
+The candidate profile's bound is on aggregate face value F, not on a fixed number of tickets. Under the same assumptions, the exact maximum aggregate face values before integer ticket-price rounding are:
+
+| Whole-cohort ceiling ε | Maximum aggregate face value F | Simplified V1 WCE face-value cap |
+|---:|---:|---:|
+| 0.1% | 18.77 USDM | 8 USDM |
+| 0.5% | 41.65 USDM | 8 USDM |
+| 1.0% | 58.64 USDM | 8 USDM |
+
+For a homogeneous class, ticket count is the integer floor of the corresponding face-value frontier divided by that class price. This gives the following view against the current ladder:
+
+| Ticket price P | V1 500× count | Candidate at 0.1% | Candidate at 0.5% | Candidate at 1.0% |
+|---:|---:|---:|---:|---:|
+| 1 USDM | 8 | 18 | 41 | 58 |
+| 2 USDM | 4 | 9 | 20 | 29 |
+| 3 USDM | 2 | 6 | 13 | 19 |
+| 5 USDM | 1 | 3 | 8 | 11 |
+| 10 USDM | 0 | 1 | 4 | 5 |
+| 25 USDM | 0 | 0 | 1 | 2 |
+| 50 USDM | 0 | 0 | 0 | 1 |
+| 100 USDM | 0 | 0 | 0 | 0 |
+
+The mixed-price cohort must use one aggregate F = ΣPᵢ across **all** active classes and rounds sharing the Pool. It is invalid to calculate each class against the full G or to give each class a separate ε while reusing the same capital. These homogeneous rows are a capacity illustration, not eight independent class budgets.
+
+The exact frontier values above were obtained by integer search over the rational Cantelli predicate, with C = G − F and G = 400,000 USDM sub-units. The resulting capacities are conditional on G truly being free headroom after all other non-cohort obligations and on the ticket marginal / randomness assumptions. They are not executable sale limits or current V1 capacities.
+ 
 ### 6.2 What the increase means — and does not mean
 
 The higher count is a probabilistic upper-bound guarantee for the **whole fixed cohort**, not a deterministic promise that every ticket can pay 500×. It bounds the probability that aggregate payouts exceed the cohort's pre-Reveal available Pool headroom, subject to the canonical ticket marginal distribution.
