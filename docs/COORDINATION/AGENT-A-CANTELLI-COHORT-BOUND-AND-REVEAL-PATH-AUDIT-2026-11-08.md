@@ -96,15 +96,31 @@ Thus the available amount changes by `effectivePool_after = effectivePool_before
 
 The player secret is supplied to Reveal. Once the Beacon is Ready, the ticket holder can compute that ticket's deterministic result before submitting Reveal, so Reveal timing/order is a strategic path variable. Selectively expiring a losing ticket does not increase the sum of its fixed payouts (a loss is zero), but it can alter the timing of reserve releases.
 
-**A conservative path-safety lemma is available for one fixed cohort.** Let `E0` be the exact B1 `effectivePool` after all tickets in that cohort have been issued and before its first Reveal. Let `S = ΣX_i` be the sum of the fixed possible payouts of every ticket in that cohort. If `S ≤ E0`, then every permitted ordering of Reveal and Pending Expire passes the B1 pre-Reveal payout-affordability check:
+**An exact fixed-cohort Reveal-order requirement can be derived.** Let `E0` be the B1 `effectivePool` after all tickets in the cohort have been issued and before its first Reveal. For a fixed payout vector `X_i` and ticket prices `P_i`, the minimum initial amount required so that every possible Reveal ordering passes B1's pre-transition affordability check is:
 
-- Before a Reveal of ticket k, let `R` be the tickets already revealed. The current effective pool is `E = E0 − Σ_{i∈R}X_i + Σ_{i∈R}P_i + Σ_{j expired}P_j`.
-- Since all payouts are non-negative and `S ≤ E0`, the next payout satisfies `X_k ≤ E0 − Σ_{i∈R}X_i ≤ E`.
-- Expiry releases face reserve and therefore only increases `E`; it cannot make this bound worse.
+```text
+R_max = max over permutations π and prefixes k of
+        [ X_(π_k) + Σ_(j<k)(X_(π_j) − P_(π_j)) ]
 
-Thus, for this fixed cohort with no additional Pool-draining Issue or other outflow during the resolution sequence, the event of any pre-Reveal affordability failure is contained in `S > E0`. The Cantelli bound applied with `C = E0` is therefore a conservative upper bound on **B1 pre-Reveal payout-affordability failures across all Reveal/Expire orderings** for that fixed cohort, not merely a terminal accounting check. It may be loose because face-reserve releases can make some sequences succeed even when `S > E0`.
+      = Σ_i max(0, X_i − P_i) + max_i min(X_i, P_i)
+```
 
-This lemma does not automatically cover overlapping cohorts, other round admissions, a new model version, external Pool outflows, or a global lifetime risk budget. Such events must be included in one shared perimeter or allocated/proved without double-spending the same capital or risk budget.
+For any prefix, previous tickets with positive net payout `X_i−P_i` increase the required starting capital; tickets with non-positive net payout do not make a later Reveal harder. The maximum is attained by putting all positive-net tickets before the current ticket that maximizes the remaining term. This yields the closed form above. An exploratory permutation check over 600 randomly generated fixed-cohort vectors with up to six tickets matched the closed form against full permutation enumeration; this was not a repository test or a formal implementation test.
+
+The path requirement is bounded by total eventual payout:
+```text
+R_max
+  = Σ_i max(0, X_i−P_i) + max_i min(X_i,P_i)
+  ≤ Σ_i [max(0, X_i−P_i) + min(X_i,P_i)]
+  = Σ_i X_i
+  = S
+```
+
+Therefore `S ≤ E0` is a simple sufficient condition for every permitted Reveal order and Pending Expire interleaving to pass the B1 pre-Reveal payout-affordability check. At each Reveal, prior payouts have been deducted and prior face reserves released; an Expire releases additional face reserve. Since the current payout plus all previous payouts cannot exceed `S`, it remains affordable from `E0` or the larger current effective pool.
+
+For this fixed cohort, no additional Pool-draining Issue or other outflow during resolution, the event `R_max > E0` is contained in `S > E0`. Cantelli applied with `C=E0` therefore conservatively upper-bounds **B1 pre-Reveal payout-affordability failures across all Reveal/Expire orderings**. The bound may be loose because reserve releases can make some sequences succeed even when `S > E0`.
+
+This does not automatically cover overlapping cohorts, other round admissions, new Issue interleavings, model-version changes, external Pool outflows, or a global lifetime risk budget. Those events must be included in one shared perimeter or allocated/proved without double-spending the same capital or risk budget.
 
 For the illustrative table in §3.2, `C=4,000 USDM` must therefore mean the B1 pre-Reveal `effectivePool` (or a stricter value after other protected obligations), **after** pending liabilities, all unresolved face-price reserves and locked Jackpot are deducted. It is not gross Pool liquidity, Treasury bootstrap, or an independently available 4,000-USDM balance. This exact capital mapping still requires a qualified authenticated state and the wider IMMORTAL protection contract.
 
