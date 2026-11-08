@@ -14,6 +14,7 @@
     "test:pre-snapshot-replicas": "node --test preSnapshotReplicaConformance.test.mjs",
     "test:pre-snapshot-dual-runner": "node --test preSnapshotDualReplicaRunner.test.mjs",
     "test:pre-snapshot-kupo": "node --test preSnapshotKupoParity.test.mjs",
-    "test:pre-snapshot-kupo-http": "node --test preSnapshotKupoHttp.test.mjs"
+    "test:pre-snapshot-kupo-http": "node --test preSnapshotKupoHttp.test.mjs",
+    "kupo:audit": "node preSnapshotKupoAudit.mjs"
   }
 }
