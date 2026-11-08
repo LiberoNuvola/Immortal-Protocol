@@ -191,8 +191,19 @@ async function runOgmiosSession({
     validateTipOrOrigin(intersection.tip)
 
     const currentState = await getIndexState()
-    const matchedPoint = resolveOgmiosV7RollbackPoint(intersection.intersection, currentState)
-    if (onIntersection) await onIntersection(matchedPoint, intersection.tip)
+    let matchedPoint
+    try {
+      matchedPoint = resolveOgmiosV7RollbackPoint(intersection.intersection, currentState)
+    } catch (error) {
+      throw new ChainSyncError('OGMIOS_INTERSECTION_RESOLUTION_FAILED', error.message, true)
+    }
+    if (onIntersection) {
+      try {
+        await onIntersection(matchedPoint, intersection.tip)
+      } catch (error) {
+        throw new ChainSyncError('OGMIOS_INTERSECTION_CALLBACK_FAILED', error.message, true)
+      }
+    }
 
     while (!isStopped()) {
       const result = await rpc('nextBlock')
