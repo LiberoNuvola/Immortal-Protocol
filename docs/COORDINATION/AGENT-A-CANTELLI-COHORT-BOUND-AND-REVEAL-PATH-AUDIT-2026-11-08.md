@@ -115,8 +115,9 @@ For the illustrative table in §3.2, `C=4,000 USDM` must therefore mean the B1 p
 **Does not solve:**
 
 - the trustworthiness of each ticket's marginal randomness distribution or the Beacon's conditional unpredictability;
-- the first-passage / adversarial Reveal-order condition and the current pre-Reveal liquidity guard;
-- definition and proof of the eligible cohort payout budget `C` from the exact B1 Pool state;
+- an exact/tight path-risk model: the sufficient condition `S ≤ E0` is conservative and only covers a fixed cohort with no additional Pool-draining Issue or other outflow during resolution;
+- application of the same bound across overlapping cohorts, new Issue interleavings, different model versions or a shared lifetime risk budget;
+- a qualified derivation of `C=E0` from authenticated B1 Pool state plus any additional IMMORTAL protected-capital requirements;
 - lifetime risk-budget allocation across multiple cohorts, model versioning, concurrency and replay;
 - preservation of the separate deterministic floor for known liabilities, Jackpot, fees, safety capital and any mandatory backstop;
 - the fact that PRE-RICH V1 still enforces 500× and `RiskProtectionBridge` is not wired into production admission.
