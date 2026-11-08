@@ -102,7 +102,7 @@ The player secret is supplied to Reveal. Once the Beacon is Ready, the ticket ho
 - Since all payouts are non-negative and `S ≤ E0`, the next payout satisfies `X_k ≤ E0 − Σ_{i∈R}X_i ≤ E`.
 - Expiry releases face reserve and therefore only increases `E`; it cannot make this bound worse.
 
-Thus, for this fixed cohort with no additional Pool-draining Issue or other outflow during the resolution sequence, the event of any pre-Reveal affordability failure is contained in `S > E0`. The Cantelli bound applied with `C = E0` is therefore a conservative upper bound on **all Reveal/Expire ordering failures**, not merely a terminal accounting check. It may be loose because face-reserve releases can make some sequences succeed even when `S > E0`.
+Thus, for this fixed cohort with no additional Pool-draining Issue or other outflow during the resolution sequence, the event of any pre-Reveal affordability failure is contained in `S > E0`. The Cantelli bound applied with `C = E0` is therefore a conservative upper bound on **B1 pre-Reveal payout-affordability failures across all Reveal/Expire orderings** for that fixed cohort, not merely a terminal accounting check. It may be loose because face-reserve releases can make some sequences succeed even when `S > E0`.
 
 This lemma does not automatically cover overlapping cohorts, other round admissions, a new model version, external Pool outflows, or a global lifetime risk budget. Such events must be included in one shared perimeter or allocated/proved without double-spending the same capital or risk budget.
 
@@ -126,7 +126,7 @@ A Cantelli-bound profile would be a distinct probabilistic application guarantee
 
 ## 6. Required next feasibility gates
 
-1. Formalise the exact Reveal/Expire path-risk event from the B1 state transition, including adversarial ordering and the pre-transition affordability check.
+1. Extend the fixed-cohort sufficiency lemma to overlapping rounds/cohorts, new-Issue interleavings and all other permitted Pool transitions; bind the common capital perimeter and risk-budget composition.
 2. Qualify the Beacon's source, unpredictability, bias resistance, ticket commitment timing and per-ticket marginal distribution against the actual configured Registry / Materios authority boundary.
 3. Derive `C` from authenticated physical PrizePool value after all obligations, with face-price reserve and payout budget accounted for exactly once.
 4. Implement a standalone reference calculator and exact-integer property tests; compare it with the exact convolution under independence and adversarial-dependence test cases. These tests were not run in this research note.
