@@ -190,6 +190,25 @@ test('rollback point maps slot/id to retained block number and current point ded
   ])
 })
 
+test('intersection candidates always reserve the origin fallback when genesis anchored', () => {
+  const state = createPreSnapshotIndex({
+    networkId: 'cardano-private-testnet-m1',
+    asset: { policyIdHex, assetNameHex },
+    anchorPoint: PRE_SNAPSHOT_ORIGIN_POINT,
+    utxos: []
+  })
+  const afterOne = applyPreSnapshotBlock(state, decodeOgmiosV7Block({
+    type: 'praos',
+    era: 'conway',
+    id: '71'.repeat(32),
+    ancestor: 'genesis',
+    height: 0,
+    slot: 1,
+    transactions: []
+  }, state.currentPoint))
+  assert.deepEqual(getOgmiosV7IntersectionPoints(afterOne, 1), ['origin'])
+})
+
 test('rollback to Ogmios origin resolves only when the index is anchored at origin', () => {
   const state = createPreSnapshotIndex({
     networkId: 'cardano-private-testnet-m1',
