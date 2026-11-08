@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import {
+  chmod,
   mkdir,
   readFile,
   readdir,
@@ -118,7 +119,7 @@ export function sumFixtureAssetQuantity(utxoDocument, assetUnit) {
   for (const output of Object.values(utxoDocument)) {
     const quantity = output?.value?.[assetUnit]
     if (quantity === undefined) continue
-    if (!(typeof quantity === 'string' && /^\d+$/.test(quantity)) &&
+    if (!(typeof quantity === 'string' && /^(0|[1-9][0-9]*)$/.test(quantity)) &&
         !(typeof quantity === 'number' && Number.isSafeInteger(quantity) && quantity >= 0)) {
       fail('M1_FIXTURE_ASSET_QUANTITY_INVALID')
     }
@@ -190,6 +191,7 @@ async function queryWalletUtxos(config, address) {
 async function prepare(config) {
   await assertPrivateRuntime(config)
   await mkdir(config.workDirectory, { recursive: true })
+  await chmod(config.workDirectory, 0o700)
   const existing = await readdir(config.workDirectory)
   if (existing.length > 0) fail('M1_FIXTURE_WORKDIR_NOT_EMPTY')
 
@@ -344,7 +346,7 @@ async function submit(config) {
     startedAt: new Date().toISOString()
   }
   try {
-    await writeFile(submittedPath, JSON.stringify(attempt, null, 2) + '\\n', {
+    await writeFile(submittedPath, JSON.stringify(attempt, null, 2), { mode: 0o600, flag: 'wx' })
       mode: 0o600,
       flag: 'wx'
     })
@@ -384,7 +386,7 @@ async function submit(config) {
     submittedAt: new Date().toISOString()
   }
   await writeFile(
-    join(config.workDirectory, 'submitted.json'),
+    submittedPath,
     JSON.stringify(submitted, null, 2) + '\n',
     { mode: 0o600 }
   )
