@@ -8,6 +8,7 @@
   },
   "scripts": {
     "preprod:wallet": "node preprod-wallet-utxo.mjs",
-    "test:pre-snapshot-index": "node --test preSnapshotUtxoIndex.test.mjs"
+    "test:pre-snapshot-index": "node --test preSnapshotUtxoIndex.test.mjs ogmiosV7PreSnapshotAdapter.test.mjs",
+    "test:ogmios-v7-adapter": "node --test ogmiosV7PreSnapshotAdapter.test.mjs"
   }
 }
