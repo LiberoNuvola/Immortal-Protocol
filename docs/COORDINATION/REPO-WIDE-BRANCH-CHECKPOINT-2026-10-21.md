@@ -1076,8 +1076,36 @@ No code, tests, workflows, constants, profile, V3/Reveal semantics, oracle schem
 
 ### Remaining gap
 
-This is a reducer, **not yet a running Cardano indexer**. No Ogmios WebSocket client/decoder, durable cursor/database, local cardano-node topology, UTxO bootstrap, full replay, Kupo comparison, real chain rollback, resource measurement or M1 ledger evidence exists yet. Tests have not been run because no local repository checkout is available in this environment; do not report a pass. Ogmios adapter work must normalize the exact v7 schema and preserve `inputSource`, including failed phase-2 collateral semantics, before feeding the reducer.
+This is a reducer plus an Ogmios v7 normalization adapter and reconnecting WebSocket ChainSync client; it is **not yet a running Cardano node indexer**. Durable cursor/database, local cardano-node topology, UTxO bootstrap, full replay, Kupo comparison, real chain rollback and resource measurements remain open. Tests are authored but not run in this environment; do not report a pass. Ogmios v7 requires `Transaction.spends` (`inputs` or `collaterals`); an earlier checkpoint sentence saying `inputSource` was incorrect and is superseded by the v7 schema erratum in the M1-A profile.
 
 **M1-A status:** reducer implementation present; node ingestion and ledger conformance open. M1-C custom Mithril certificate and M2 Plutus proof verification remain future independent gates.
 
 No production governance rules, PRE asset identity, GOV entity mapping, voting eligibility, voting snapshot point, V3, Reveal, B1 EEV, Issue #37, Issue #43, Issue #49, workflow, wallet, transaction, deployment or ledger state changed.
+
+
+## 2026-11-08 — Agent B: Ogmios v7 decoder and reconnecting ChainSync client added
+
+**Sources:**
+- `audit/cardano-integration/ogmiosV7PreSnapshotAdapter.mjs`
+- `audit/cardano-integration/ogmiosV7ChainSyncClient.mjs`
+- `audit/cardano-integration/ogmiosV7PreSnapshotAdapter.test.mjs`
+- Package commands in `audit/cardano-integration/package.json`
+
+### Implementation
+
+- Added a v7-specific block/transaction adapter. It maps Praos headers, chain points, output references, addresses, nested multi-asset values, mint and collateral-return outputs into the normalized PRE reducer input.
+- The exact v7 transaction discriminator is required `spends: "inputs" | "collaterals"`. **Correction:** an earlier M1-A profile/checkpoint sentence used the wrong field name `inputSource`; it is not the v7 transaction field. The v7 schema and upstream TypeScript client were inspected directly.
+- Added Bech32 Shelley address decoding with checksum validation and Base58 Byron raw-byte decoding. Byron CBOR/checksum validation remains an explicit hardening limitation; it must be closed before a production completeness claim.
+- Added rollback mapping from Ogmios `{slot,id}` / `origin` to the exact retained local point including block number. Intersection candidate selection includes a bounded origin fallback when the index is genesis-anchored.
+- Added a reconnecting ChainSync WebSocket client with JSON-RPC request-ID matching, BigInt-safe JSON parsing, one outstanding `nextBlock` request and callback completion/backpressure before the next request. Protocol/decoder/callback errors stop fail-closed; transport errors attempt reconnect using the current retained index history.
+- Added end-to-end synthetic test coverage connecting Ogmios-decoded normal mint and collateral-return transactions to the PRE reducer.
+
+### Test and qualification status
+
+- Reducer suite: 12 tests written.
+- Ogmios adapter/client suite: 13 tests written.
+- Total: **25 tests authored, none executed** in this environment. The package scripts are `npm run test:pre-snapshot-index` and `npm run test:ogmios-v7-adapter`.
+- The dependency `@cardanosolutions/json-bigint@1.0.1` is pinned in the isolated `audit/cardano-integration/package.json`. The root `package-lock.json` is not an npm workspace lock for that isolated sub-package; no root lock change was made.
+- No real WebSocket endpoint, Cardano node, private testnet, Kupo or Mithril network was contacted or started. Persistent cursor/database, atomic journal, crash recovery and true node-level rollback remain unimplemented.
+
+**Disposition:** reducer + adapter + ChainSync client code present; static/synthetic tests authored but not run; live M1-A ledger integration/conformance remains OPEN. M1-C and M2 are not started. No V3, Reveal, GOV-16/17/18, B1/EEV, Issue #37, Issue #43 or Issue #49 protocol semantics changed.
