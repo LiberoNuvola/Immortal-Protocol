@@ -840,3 +840,29 @@ The contract binds a future RiskDecision to the exact Issue action and state tra
 **Next gates:** policy authority decision; Beacon/randomness qualification; authenticated Pool capital and C_other disjointness; permissionless append/freeze state machine; removal or explicit governance of configured signer/relayer dependencies; exact-integer reference/property tests and Plutus/transaction resource benchmarks.
 
 No production code, test, workflow, RiskMode, V1 500×, V3/Reveal, datum/redeemer ABI, oracle, wallet, deployment or ledger state was changed or run by this proposal.
+
+
+## 2026-11-08 — Agent B: Cardano cohort accumulator / freeze feasibility
+
+**Proposal:** [AGENT-B-CARDANO-COHORT-ACCUMULATOR-FREEZE-FEASIBILITY-2026-11-08.md](AGENT-B-CARDANO-COHORT-ACCUMULATOR-FREEZE-FEASIBILITY-2026-11-08.md)  
+**Exact baseline reviewed:** \`f62ed27d4f985e30686adabcd76adcadcf4c502c\`  
+**Proposal commit:** \`4433fada252edcfa2a86ae31b274dbfb6c86c1e0\`  
+**Classification:** READ-ONLY FEASIBILITY / NON-NORMATIVE.
+
+### Findings
+
+- A Cardano UTxO cohort accumulator is technically possible, but every eligible Issue must atomically append to it; off-chain lists or a bare Merkle root do not prove cohort completeness.
+- The current MintPolicy, B1 \`TicketIssued\` and PrizeValidator paths do not require/update a cohort state. The current Registry reads select the first payment-ScriptHash match and do not authenticate a unique per-round identity.
+- Issue #43's B0/Yaci evidence has characterized fake-Ready and reference-order findings. Issue #49 must resolve per-round identity/publisher binding and the unique Registry read contract before Registry state can guard a statistical freeze.
+- A freeze barrier must be enforced by every per-round RegistryPublish validator, not just by an off-chain observer. Its objective trigger must prevent both premature third-party freeze and privileged-only control.
+- The minimal safe shape is one OPEN/FROZEN cohort per global B1 Pool, with new Issue paused while that epoch resolves. Continuous Issue across overlapping cohorts requires a ledger-enforced capital partition and B1 payout ownership rules that do not exist in the current Pool datum/validator.
+- The current B1 500× floor remains mandatory; no statistical capacity increase follows from an accumulator alone.
+
+### Next dependencies
+
+1. Issue #49 authenticated per-round Registry design and separate implementation authorization.
+2. Explicit cohort freeze/liveness policy.
+3. Qualified capital predicate and non-overlap/lifetime-risk contract.
+4. Accumulator encoding/implementation and native-ledger adversarial conformance, including CEK/transaction-size measurements.
+
+No code, tests, workflow, ABI, B1/Registry/Prize/MintPolicy/V3/Reveal semantics, policy parameter, economic constant, deployment, wallet or ledger state changed or executed.
