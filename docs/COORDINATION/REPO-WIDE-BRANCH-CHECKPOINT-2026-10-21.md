@@ -866,3 +866,33 @@ No production code, test, workflow, RiskMode, V1 500×, V3/Reveal, datum/redeeme
 4. Accumulator encoding/implementation and native-ledger adversarial conformance, including CEK/transaction-size measurements.
 
 No code, tests, workflow, ABI, B1/Registry/Prize/MintPolicy/V3/Reveal semantics, policy parameter, economic constant, deployment, wallet or ledger state changed or executed.
+
+
+## 2026-11-08 — Agent B: Issue #49 trustless Factory readiness / governance and target dependency audit
+
+**Research artifact:** [AGENT-B-ISSUE49-TRUSTLESS-FACTORY-READINESS-2026-11-08.md](AGENT-B-ISSUE49-TRUSTLESS-FACTORY-READINESS-2026-11-08.md)  
+**Exact reviewed HEAD:** `0cc3e4f077e5f6544dfeff2894f42b805121f49c`  
+**Artifact commit:** `77b7f23a3cec42f4a72b7b54572a492de4a758ba`  
+**Artifact blob:** `d360a6cb729b1d6a858d7841056572bf8eee9c63`  
+**Classification:** DESIGN / READINESS AUDIT — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY.
+
+### Disposition
+
+- A single Factory STT per game/deployment namespace remains the preferred candidate for unique per-round identity and replay prevention; separate Registry UTxOs can coexist.
+- The STT authenticates identity issuance but does **not** authenticate the selected target or prove application governance adoption.
+- The protocol-owner clarification rejects any privileged per-round opener signature, including RoundDefinitionAuthority, B1 publisher, relayer, keeper, maintainer, administrator, or off-chain service.
+- The current governance Haskell snapshot/event model is not a Cardano-verifiable canonical governance state. PRE voting snapshot authenticity and denominator completeness remain unproven, and the exported Plutus script set contains no governance validator/state carrier.
+- The deterministic rule for the complete `BeaconTarget`, especially `mainchainRef`, remains unspecified/unproven. B1 publisher may publish an observation for an already-determined target; it cannot choose the target.
+- A candidate acyclic hash dependency is documented: independent Registry hash → Factory STT parameterized by Registry hash → consumers parameterized by Registry and Factory IDs. This is a design candidate only; actual multipurpose purpose handling, script hashes, CEK and transaction-size evidence remain mandatory.
+- Existing seven-field Registry datum can remain the first candidate ABI by carrying identity in Value, provided Factory creation authenticates the publisher field and RegistryPublish preserves identity plus complete Value.
+- Legacy Registry outputs without the identity token must fail closed. Existing live ticket compatibility needs an inventory and separately reviewed migration/legacy path.
+- Issue #43 remains release-blocking. Issue #37 first-Issue gates are unaffected.
+
+### Next gates
+
+1. Design and independently review a Cardano-verifiable governance/genesis/configuration state, including authentic and complete PRE snapshot proof under the existing non-custodial voting rules.
+2. Specify deterministic, authenticated derivation of the full BeaconTarget before B1 publication.
+3. Reproduce current Haskell V2 artifact sizes and establish Factory/Registry hash topology and CEK/transaction-size feasibility before implementation.
+4. Obtain a separately authorized implementation slot with exact HEAD and bounded paths.
+
+No code, ABI, tests, workflow, CI run, wallet action, transaction, deployment, or ledger state was changed or executed by this audit.
