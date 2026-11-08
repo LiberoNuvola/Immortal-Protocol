@@ -732,7 +732,7 @@ PRE-RICH V1, deterministic 500×, current RiskProtectionBridge fail-closed behav
 
 ### Static result across active Beacon rounds
 
-The risk set for a shared B1 PrizePool is the union of **all Pending tickets across all active BeaconTarget / rounds**, counted once. For a pre-specified fixed set (U^*), aggregate face value (F^* = ΣP_i), authenticated initial B1 (E^*) and aggregate potential payout (S^* = ΣX_i), the same Classic-6 Cantelli bound applies if every ticket retains the canonical marginal law. Cauchy–Schwarz supports arbitrary dependence between tickets and between rounds. Do not compute separate per-round limits against the same Pool as if each round had its own capital.
+The risk set for a shared B1 PrizePool is the union of **all Pending tickets across all active BeaconTarget / rounds**, counted once, provided that the set membership was fixed before any corresponding outcome became available to an adversarial ticket holder. For a pre-specified fixed set (U^*), aggregate face value (F^* = ΣP_i), authenticated initial B1 (E^*) and aggregate potential payout (S^* = ΣX_i), the same Classic-6 Cantelli bound applies if every ticket retains the canonical marginal law. Source cross-check: MintPolicy binds every new ticket to the configured B1 PrizePool hash, while `atomicPoolReservationValid` increments the single Pool's aggregate `ppUnresolvedReserve` by that ticket's price. Cauchy–Schwarz supports arbitrary dependence between tickets and between rounds. Do not compute separate per-round limits against the same Pool as if each round had its own capital.
 
 The exact fixed-set Reveal path requirement also aggregates over all rounds:
 
