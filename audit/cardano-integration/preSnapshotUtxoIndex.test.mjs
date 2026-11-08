@@ -229,7 +229,7 @@ test('unknown validity, wrong parent, unknown rollback point and malformed asset
   const initial = bootstrap([utxo('90'.repeat(32), 0, '01aa', 100)])
   const next = point(1, 0, '91')
   assert.throws(() => applyPreSnapshotBlock(initial, block(origin, next, [
-    tx({ id: '92'.repeat(32), spends: undefined, outputs: [] })
+    { ...tx({ id: '92'.repeat(32), outputs: [] }), spends: undefined }
   ])), /UNKNOWN_TRANSACTION_SPENDS/)
   assert.throws(() => applyPreSnapshotBlock(initial, block(point(0, 0, '93'), next, [])), /BLOCK_PARENT_MISMATCH/)
   assert.throws(() => rollbackPreSnapshotIndex(initial, point(9, 9, '94')), /ROLLBACK_POINT_NOT_RETAINED/)
