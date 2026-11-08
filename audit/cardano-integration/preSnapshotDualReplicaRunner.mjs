@@ -181,6 +181,7 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
   const establishedSessions = new Set()
   const latestTips = new Map()
   let report = null
+  let comparisonProducedByLiveSessions = false
 
   try {
     for (const replica of config.replicas) {
@@ -276,20 +277,40 @@ export async function runPreSnapshotDualReplicaConformance(configValue) {
     }
 
     await Promise.all(clients.map(client => client.stop()))
-    // Re-read after stopping to make the reported comparison a stable local view.
-    if (report.status === 'PASS' || report.status === 'FAIL') {
-      const [stateA, stateB] = await Promise.all([
-        journals[0].getState(),
-        journals[1].getState()
-      ])
-      const finalComparison = comparePreSnapshotReplicaStates({
-        replicaA: { id: config.replicas[0].id, state: stateA },
-        replicaB: { id: config.replicas[1].id, state: stateB },
-        expectedNetworkId: config.networkId,
-        expectedAsset: config.asset,
-        expectedPoint: config.expectedPoint
-      })
-      if (finalComparison.status !== 'WAITING') report = finalComparison
+    // A result is eligible for finalization only if it was reached after both
+    // current sessions intersected and neither session was invalidated.
+    if (comparisonProducedByLiveSessions) {
+      const sessionsStillValid = config.replicas.every(replica =>
+        establishedSessions.has(replica.id) &&
+        isPreSnapshotRemoteTipAtOrAfterTarget(latestTips.get(replica.id), config.expectedPoint)
+      )
+      if (!sessionsStillValid) {
+        report = Object.freeze({
+          status: 'FAIL',
+          code: 'DUAL_REPLICA_SESSION_LOST_BEFORE_FREEZE',
+          previousComparison: report,
+          observedErrors: Object.fromEntries(observedErrors)
+        })
+      } else {
+        const [stateA, stateB] = await Promise.all([
+          journals[0].getState(),
+          journals[1].getState()
+        ])
+        const finalComparison = comparePreSnapshotReplicaStates({
+          replicaA: { id: config.replicas[0].id, state: stateA },
+          replicaB: { id: config.replicas[1].id, state: stateB },
+          expectedNetworkId: config.networkId,
+          expectedAsset: config.asset,
+          expectedPoint: config.expectedPoint
+        })
+        report = finalComparison.status === 'WAITING'
+          ? Object.freeze({
+              status: 'FAIL',
+              code: 'DUAL_REPLICA_TARGET_NOT_STABLE_AT_FREEZE',
+              comparison: finalComparison
+            })
+          : finalComparison
+      }
     }
 
     return report
