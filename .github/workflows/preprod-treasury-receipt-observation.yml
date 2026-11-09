@@ -54,17 +54,17 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Locate the latest successful prior Treasury observation artifact
-        id: prior-observation
+        id: prior_observation
         env:
           GH_TOKEN: ${{ github.token }}
         run: node audit/cardano-integration/find-prior-treasury-observation.mjs
 
       - name: Download previous Treasury snapshot
-        if: steps.prior-observation.outputs.found == 'true'
+        if: steps.prior_observation.outputs.found == 'true'
         uses: actions/download-artifact@v4
         with:
-          name: ${{ steps.prior-observation.outputs.artifact_name }}
-          run-id: ${{ steps.prior-observation.outputs.run_id }}
+          name: ${{ steps.prior_observation.outputs.artifact_name }}
+          run-id: ${{ steps.prior_observation.outputs.run_id }}
           github-token: ${{ github.token }}
           path: audit/preprod-evidence/previous-observation
 
@@ -155,11 +155,11 @@ jobs:
       - name: Reconcile current snapshot against prior retained observation
         if: success()
         env:
-          PREVIOUS_OBSERVATION_FOUND: ${{ steps.prior-observation.outputs.found }}
-          PREVIOUS_OBSERVATION_RUN_ID: ${{ steps.prior-observation.outputs.run_id }}
-          PREVIOUS_OBSERVATION_HEAD_SHA: ${{ steps.prior-observation.outputs.head_sha }}
-          PREVIOUS_OBSERVATION_ARTIFACT_NAME: ${{ steps.prior-observation.outputs.artifact_name }}
-          PREVIOUS_OBSERVATION_ARTIFACT_DIGEST: ${{ steps.prior-observation.outputs.artifact_digest }}
+          PREVIOUS_OBSERVATION_FOUND: ${{ steps.prior_observation.outputs.found }}
+          PREVIOUS_OBSERVATION_RUN_ID: ${{ steps.prior_observation.outputs.run_id }}
+          PREVIOUS_OBSERVATION_HEAD_SHA: ${{ steps.prior_observation.outputs.head_sha }}
+          PREVIOUS_OBSERVATION_ARTIFACT_NAME: ${{ steps.prior_observation.outputs.artifact_name }}
+          PREVIOUS_OBSERVATION_ARTIFACT_DIGEST: ${{ steps.prior_observation.outputs.artifact_digest }}
         run: |
           if [ "$PREVIOUS_OBSERVATION_FOUND" = "true" ]; then
             node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
