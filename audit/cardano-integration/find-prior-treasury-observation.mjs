@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 
+import { appendFile } from 'node:fs/promises'
+
 const repository = process.env.GITHUB_REPOSITORY
 const token = process.env.GH_TOKEN
 const runId = String(process.env.GITHUB_RUN_ID ?? '')
 const branch = process.env.GITHUB_REF_NAME ?? 'work/immortal-green-closure'
 const apiRoot = process.env.GITHUB_API_URL ?? 'https://api.github.com'
+const outputPath = process.env.GITHUB_OUTPUT
 
-if (!repository || !token || !runId) {
+if (!repository || !token || !runId || !outputPath) {
   throw new Error('TREASURY_PRIOR_OBSERVATION_GITHUB_CONTEXT_MISSING')
 }
 
@@ -58,10 +61,12 @@ const output = selected ? {
   artifact_name: '',
   artifact_digest: '',
 }
+const outputLines = []
 for (const [key, value] of Object.entries(output)) {
   if (/[\r\n]/.test(String(value))) throw new Error('TREASURY_PRIOR_OBSERVATION_OUTPUT_INVALID')
-  console.log(key + '=' + value)
+  outputLines.push(key + '=' + value)
 }
+await appendFile(outputPath, outputLines.join('\n') + '\n', 'utf8')
 console.log(JSON.stringify({
   priorSuccessfulObservationFound: Boolean(selected),
   priorRunId: selected?.run.id ?? null,

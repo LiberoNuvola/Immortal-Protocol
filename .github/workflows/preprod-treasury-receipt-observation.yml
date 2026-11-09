@@ -53,6 +53,11 @@ jobs:
       - name: Install repository dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Syntax-check Treasury snapshot reconciliation scripts
+        run: |
+          node --check audit/cardano-integration/find-prior-treasury-observation.mjs
+          node --check audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs
+
       - name: Locate the latest successful prior Treasury observation artifact
         id: prior_observation
         env:
