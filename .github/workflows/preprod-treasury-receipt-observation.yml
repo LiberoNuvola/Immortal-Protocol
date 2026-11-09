@@ -64,6 +64,290 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node audit/cardano-integration/find-prior-treasury-observation.mjs
 
+      - name: Validate prior observation selector outputs
+        env:
+          PRIOR_FOUND: ${{ steps.prior_observation.outputs.found }}
+          PRIOR_RUN_ID: ${{ steps.prior_observation.outputs.run_id }}
+          PRIOR_HEAD_SHA: ${{ steps.prior_observation.outputs.head_sha }}
+          PRIOR_ARTIFACT_NAME: ${{ steps.prior_observation.outputs.artifact_name }}
+          PRIOR_ARTIFACT_DIGEST: ${{ steps.prior_observation.outputs.artifact_digest }}
+        run: |
+          case "$PRIOR_FOUND" in
+            true)
+              test -n "$PRIOR_RUN_ID"
+              test -n "$PRIOR_HEAD_SHA"
+              test -n "$PRIOR_ARTIFACT_NAME"
+              printf '%s' "$PRIOR_HEAD_SHA" | grep -Eq '^[0-9a-f]{40}        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.prior_observation.outputs.artifact_name }}
+          run-id: ${{ steps.prior_observation.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: audit/preprod-evidence/previous-observation
+
+      - name: Restore deployment identity manifests only
+        uses: actions/download-artifact@v4
+        with:
+          name: immortal-preprod-eev-approved
+          run-id: 39552468679
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: audit/preprod-evidence
+
+      - name: Remove historical qualification and approval artifacts
+        run: |
+          rm -f audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json
+          rm -f audit/preprod-evidence/preprod-direct-usdm-qualification.json
+          rm -f audit/preprod-evidence/preprod-direct-usdm-source-set.json
+          test -s "$PC_CENSUS_DEPLOYMENT_MANIFEST"
+          test -s "$PC_CENSUS_ORACLE_STATE_MANIFEST"
+
+      - name: Run focused deployment identity and receipt journal tests
+        run: |
+          node --test audit/cardano-integration/preprod-protected-capital-deployment-identity.test.mjs
+          node --test audit/cardano-integration/treasury-receipt-journal.test.mjs
+
+      - name: Validate deployment identity and re-derive current topology
+        run: |
+          node --import=tsx/esm audit/cardano-integration/preprod-protected-capital-census.mjs
+
+      - name: Export exact observer pins from validated deployment manifests
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFile, appendFile } from 'node:fs/promises'
+          const deployment = JSON.parse(await readFile(process.env.PC_CENSUS_DEPLOYMENT_MANIFEST, 'utf8'))
+          const oracleManifest = JSON.parse(await readFile(process.env.PC_CENSUS_ORACLE_STATE_MANIFEST, 'utf8'))
+          const oracle = deployment.oracleConfiguration
+          const state = oracleManifest.oracleState
+          const topology = deployment.topology
+          const assets = deployment.assets
+          if (!oracle || !state || !topology || !assets) throw new Error('DEPLOYMENT_IDENTITY_FIELDS_MISSING')
+          const pairs = [
+            ['VITE_ORACLE_PUBLISHER_PKH', oracle.publisherPkh, /^[0-9a-f]{56}$/i],
+            ['VITE_ORACLE_STATE_POLICY_ID', oracle.statePolicyId, /^[0-9a-f]{56}$/i],
+            ['VITE_ORACLE_STATE_TOKEN_NAME_HEX', oracle.stateTokenNameHex, /^(?:[0-9a-f]{2}){1,32}$/i],
+            ['VITE_B1_POOL_TOKEN_POLICY_ID', assets.poolTokenPolicyId, /^[0-9a-f]{56}$/i],
+            ['VITE_B1_POOL_TOKEN_NAME_HEX', assets.poolTokenNameHex, /^(?:[0-9a-f]{2}){1,32}$/i],
+            ['VITE_TICKET_POLICY_ID', topology.ticketPolicyId, /^[0-9a-f]{56}$/i],
+          ]
+          for (const [key, value, pattern] of pairs) {
+            if (typeof value !== 'string' || !pattern.test(value)) throw new Error('INVALID_DEPLOYMENT_PIN:' + key)
+          }
+          if (oracle.publisherPkh.toLowerCase() !== state.publisherPkh.toLowerCase() ||
+              oracle.statePolicyId.toLowerCase() !== state.policyId.toLowerCase() ||
+              oracle.stateTokenNameHex.toLowerCase() !== state.tokenNameHex.toLowerCase()) {
+            throw new Error('ORACLE_DEPLOYMENT_MANIFESTS_DISAGREE')
+          }
+          if (assets.poolTokenPolicyId.toLowerCase() + assets.poolTokenNameHex.toLowerCase() !==
+              assets.poolUnit.toLowerCase()) {
+            throw new Error('B1_POOL_UNIT_DOES_NOT_MATCH_DEPLOYMENT_PINS')
+          }
+          if (oracle.statePolicyId.toLowerCase() + oracle.stateTokenNameHex.toLowerCase() !==
+              state.unit.toLowerCase()) {
+            throw new Error('ORACLE_STATE_UNIT_DOES_NOT_MATCH_DEPLOYMENT_PINS')
+          }
+          await appendFile(process.env.GITHUB_ENV, pairs.map(([key, value]) => key + '=' + value.toLowerCase()).join('\n') + '\n')
+          console.log(JSON.stringify({
+            pinSource: 'identity manifests loaded and cross-checked by current ProtectedCapital census',
+            manifestAuthorityCryptographicallyVerified: false,
+            oraclePublisherPkh: oracle.publisherPkh,
+            oracleStateUnit: state.unit,
+            poolSingletonUnit: assets.poolUnit,
+            ticketPolicyId: topology.ticketPolicyId,
+            treasuryScriptHash: topology.treasuryHash,
+            historicalScanFromBlockHeightInclusive: 0,
+            note: 'Pins are deployment identity inputs for read-only observation, not authenticated authority or settlement permission.'
+          }, null, 2))
+          NODE
+
+      - name: Check Treasury observer syntax
+        run: node --check audit/cardano-integration/observe-preprod-treasury-receipts.mjs
+
+      - name: Observe full Treasury history through current Preprod tip
+        env:
+          TREASURY_RECEIPT_FROM_BLOCK_HEIGHT: "0"
+          KOIOS_REQUEST_DELAY_MS: "120"
+          TREASURY_RECEIPT_JOURNAL_OUTPUT: audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
+        run: node audit/cardano-integration/observe-preprod-treasury-receipts.mjs
+
+      - name: Reconcile current snapshot against prior retained observation
+        if: success()
+        env:
+          PREVIOUS_OBSERVATION_FOUND: ${{ steps.prior_observation.outputs.found }}
+          PREVIOUS_OBSERVATION_RUN_ID: ${{ steps.prior_observation.outputs.run_id }}
+          PREVIOUS_OBSERVATION_HEAD_SHA: ${{ steps.prior_observation.outputs.head_sha }}
+          PREVIOUS_OBSERVATION_ARTIFACT_NAME: ${{ steps.prior_observation.outputs.artifact_name }}
+          PREVIOUS_OBSERVATION_ARTIFACT_DIGEST: ${{ steps.prior_observation.outputs.artifact_digest }}
+        run: |
+          if [ "$PREVIOUS_OBSERVATION_FOUND" = "true" ]; then
+            node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
+              audit/preprod-evidence/previous-observation/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          else
+            node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
+              --baseline \
+              audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          fi
+
+      - name: Upload read-only Treasury and identity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-treasury-receipt-journal-${{ github.sha }}
+          path: |
+            audit/preprod-evidence/preprod-direct-usdm-deployment.json
+            audit/preprod-evidence/preprod-oracle-state-deployment.json
+            audit/preprod-evidence/preprod-protected-capital-census.json
+            audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
+            audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          if-no-files-found: warn
+          retention-days: 30
+
+              case "$PRIOR_ARTIFACT_NAME" in
+                preprod-treasury-receipt-journal-*) ;;
+                *) echo "TREASURY_PRIOR_ARTIFACT_NAME_INVALID"; exit 1 ;;
+              esac
+              if [ -n "$PRIOR_ARTIFACT_DIGEST" ]; then
+                printf '%s' "$PRIOR_ARTIFACT_DIGEST" | grep -Eq '^sha256:[0-9a-f]{64}        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.prior_observation.outputs.artifact_name }}
+          run-id: ${{ steps.prior_observation.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: audit/preprod-evidence/previous-observation
+
+      - name: Restore deployment identity manifests only
+        uses: actions/download-artifact@v4
+        with:
+          name: immortal-preprod-eev-approved
+          run-id: 39552468679
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: audit/preprod-evidence
+
+      - name: Remove historical qualification and approval artifacts
+        run: |
+          rm -f audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json
+          rm -f audit/preprod-evidence/preprod-direct-usdm-qualification.json
+          rm -f audit/preprod-evidence/preprod-direct-usdm-source-set.json
+          test -s "$PC_CENSUS_DEPLOYMENT_MANIFEST"
+          test -s "$PC_CENSUS_ORACLE_STATE_MANIFEST"
+
+      - name: Run focused deployment identity and receipt journal tests
+        run: |
+          node --test audit/cardano-integration/preprod-protected-capital-deployment-identity.test.mjs
+          node --test audit/cardano-integration/treasury-receipt-journal.test.mjs
+
+      - name: Validate deployment identity and re-derive current topology
+        run: |
+          node --import=tsx/esm audit/cardano-integration/preprod-protected-capital-census.mjs
+
+      - name: Export exact observer pins from validated deployment manifests
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFile, appendFile } from 'node:fs/promises'
+          const deployment = JSON.parse(await readFile(process.env.PC_CENSUS_DEPLOYMENT_MANIFEST, 'utf8'))
+          const oracleManifest = JSON.parse(await readFile(process.env.PC_CENSUS_ORACLE_STATE_MANIFEST, 'utf8'))
+          const oracle = deployment.oracleConfiguration
+          const state = oracleManifest.oracleState
+          const topology = deployment.topology
+          const assets = deployment.assets
+          if (!oracle || !state || !topology || !assets) throw new Error('DEPLOYMENT_IDENTITY_FIELDS_MISSING')
+          const pairs = [
+            ['VITE_ORACLE_PUBLISHER_PKH', oracle.publisherPkh, /^[0-9a-f]{56}$/i],
+            ['VITE_ORACLE_STATE_POLICY_ID', oracle.statePolicyId, /^[0-9a-f]{56}$/i],
+            ['VITE_ORACLE_STATE_TOKEN_NAME_HEX', oracle.stateTokenNameHex, /^(?:[0-9a-f]{2}){1,32}$/i],
+            ['VITE_B1_POOL_TOKEN_POLICY_ID', assets.poolTokenPolicyId, /^[0-9a-f]{56}$/i],
+            ['VITE_B1_POOL_TOKEN_NAME_HEX', assets.poolTokenNameHex, /^(?:[0-9a-f]{2}){1,32}$/i],
+            ['VITE_TICKET_POLICY_ID', topology.ticketPolicyId, /^[0-9a-f]{56}$/i],
+          ]
+          for (const [key, value, pattern] of pairs) {
+            if (typeof value !== 'string' || !pattern.test(value)) throw new Error('INVALID_DEPLOYMENT_PIN:' + key)
+          }
+          if (oracle.publisherPkh.toLowerCase() !== state.publisherPkh.toLowerCase() ||
+              oracle.statePolicyId.toLowerCase() !== state.policyId.toLowerCase() ||
+              oracle.stateTokenNameHex.toLowerCase() !== state.tokenNameHex.toLowerCase()) {
+            throw new Error('ORACLE_DEPLOYMENT_MANIFESTS_DISAGREE')
+          }
+          if (assets.poolTokenPolicyId.toLowerCase() + assets.poolTokenNameHex.toLowerCase() !==
+              assets.poolUnit.toLowerCase()) {
+            throw new Error('B1_POOL_UNIT_DOES_NOT_MATCH_DEPLOYMENT_PINS')
+          }
+          if (oracle.statePolicyId.toLowerCase() + oracle.stateTokenNameHex.toLowerCase() !==
+              state.unit.toLowerCase()) {
+            throw new Error('ORACLE_STATE_UNIT_DOES_NOT_MATCH_DEPLOYMENT_PINS')
+          }
+          await appendFile(process.env.GITHUB_ENV, pairs.map(([key, value]) => key + '=' + value.toLowerCase()).join('\n') + '\n')
+          console.log(JSON.stringify({
+            pinSource: 'identity manifests loaded and cross-checked by current ProtectedCapital census',
+            manifestAuthorityCryptographicallyVerified: false,
+            oraclePublisherPkh: oracle.publisherPkh,
+            oracleStateUnit: state.unit,
+            poolSingletonUnit: assets.poolUnit,
+            ticketPolicyId: topology.ticketPolicyId,
+            treasuryScriptHash: topology.treasuryHash,
+            historicalScanFromBlockHeightInclusive: 0,
+            note: 'Pins are deployment identity inputs for read-only observation, not authenticated authority or settlement permission.'
+          }, null, 2))
+          NODE
+
+      - name: Check Treasury observer syntax
+        run: node --check audit/cardano-integration/observe-preprod-treasury-receipts.mjs
+
+      - name: Observe full Treasury history through current Preprod tip
+        env:
+          TREASURY_RECEIPT_FROM_BLOCK_HEIGHT: "0"
+          KOIOS_REQUEST_DELAY_MS: "120"
+          TREASURY_RECEIPT_JOURNAL_OUTPUT: audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
+        run: node audit/cardano-integration/observe-preprod-treasury-receipts.mjs
+
+      - name: Reconcile current snapshot against prior retained observation
+        if: success()
+        env:
+          PREVIOUS_OBSERVATION_FOUND: ${{ steps.prior_observation.outputs.found }}
+          PREVIOUS_OBSERVATION_RUN_ID: ${{ steps.prior_observation.outputs.run_id }}
+          PREVIOUS_OBSERVATION_HEAD_SHA: ${{ steps.prior_observation.outputs.head_sha }}
+          PREVIOUS_OBSERVATION_ARTIFACT_NAME: ${{ steps.prior_observation.outputs.artifact_name }}
+          PREVIOUS_OBSERVATION_ARTIFACT_DIGEST: ${{ steps.prior_observation.outputs.artifact_digest }}
+        run: |
+          if [ "$PREVIOUS_OBSERVATION_FOUND" = "true" ]; then
+            node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
+              audit/preprod-evidence/previous-observation/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          else
+            node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
+              --baseline \
+              audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          fi
+
+      - name: Upload read-only Treasury and identity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-treasury-receipt-journal-${{ github.sha }}
+          path: |
+            audit/preprod-evidence/preprod-direct-usdm-deployment.json
+            audit/preprod-evidence/preprod-oracle-state-deployment.json
+            audit/preprod-evidence/preprod-protected-capital-census.json
+            audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
+            audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          if-no-files-found: warn
+          retention-days: 30
+
+              fi
+              ;;
+            false)
+              test -z "$PRIOR_RUN_ID"
+              test -z "$PRIOR_HEAD_SHA"
+              test -z "$PRIOR_ARTIFACT_NAME"
+              test -z "$PRIOR_ARTIFACT_DIGEST"
+              ;;
+            *)
+              echo "TREASURY_PRIOR_OBSERVATION_SELECTOR_OUTPUT_MISSING_OR_INVALID"
+              exit 1
+              ;;
+          esac
+
       - name: Download previous Treasury snapshot
         if: steps.prior_observation.outputs.found == 'true'
         uses: actions/download-artifact@v4
