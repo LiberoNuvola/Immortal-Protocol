@@ -169,6 +169,13 @@ function sameUtxoValue(left, right) {
     )
 }
 
+function compareAssetUnits(left, right) {
+  if (left.unit === right.unit) return 0
+  if (left.unit === 'lovelace') return -1
+  if (right.unit === 'lovelace') return 1
+  return left.unit.localeCompare(right.unit)
+}
+
 /**
  * Build read-only TicketSale receipt events from Koios transaction facts.
  *
@@ -416,7 +423,7 @@ export function buildTicketSaleReceiptJournal({
     outputRefs: custodyOutputRefs.sort(),
     totalsByAsset: [...custodyTotals.entries()]
       .map(([unit, quantity]) => ({ unit, quantity: quantity.toString() }))
-      .sort((a, b) => a.unit.localeCompare(b.unit)),
+      .sort(compareAssetUnits),
     interpretation: 'RAW_PHYSICAL_CUSTODY_ONLY_NO_CATEGORY_CREDIT_NO_EEV_VALUATION',
   }
 
@@ -453,7 +460,7 @@ export function buildTicketSaleReceiptJournal({
         })),
         receiptInputTotalsByAsset: [...receiptInputTotals.entries()]
           .map(([unit, quantity]) => ({ unit, quantity: quantity.toString() }))
-          .sort((a, b) => a.unit.localeCompare(b.unit)),
+          .sort(compareAssetUnits),
         inputs: tx.inputs.map((input) => ({
           inputRef: input.ref,
           address: input.address,
