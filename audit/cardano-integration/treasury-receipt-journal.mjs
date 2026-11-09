@@ -389,10 +389,16 @@ export function buildTicketSaleReceiptJournal({
   const receiptRefs = new Set(receiptEvents.map((event) => event.receiptRef))
   for (const row of treasuryOutputMap.values()) {
     if (!receiptRefs.has(row.ref)) {
+      const output = outputsByRef.get(row.ref)
+      if (!output) fail('TREASURY_JOURNAL_NON_SALE_SOURCE_OUTPUT_MISSING_' + row.ref)
       nonSaleTreasuryOutputs.push({
         outputRef: row.ref,
+        address: output.address,
+        paymentCredential: output.paymentCredential,
         blockHeight: row.blockHeight,
         isSpent: row.isSpent,
+        lovelace: output.lovelace,
+        nativeAssets: output.assets,
         reason: 'NO_EXACT_TICKET_POLICY_MINT_LINK_IN_OBSERVED_TRANSACTION_SET',
       })
     }
@@ -527,6 +533,374 @@ export function buildTicketSaleReceiptJournal({
   }
 }
 
+
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return '[' + value.map(canonicalJson).join(',') + ']'
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map((key) =>
+      JSON.stringify(key) + ':' + canonicalJson(value[key])
+    ).join(',') + '}'
+  }
+  return JSON.stringify(value)
+}
+
+function journalSnapshotMeta(snapshot, label) {
+  if (!snapshot || typeof snapshot !== 'object') fail('TREASURY_RECONCILE_' + label + '_SNAPSHOT_INVALID')
+  if (snapshot.schema !== 'PRE-RICH-TREASURY-TICKET-SALE-RECEIPT-JOURNAL-v1') {
+    fail('TREASURY_RECONCILE_' + label + '_SCHEMA_MISMATCH')
+  }
+  if (typeof snapshot.network !== 'string' || snapshot.network.length === 0 ||
+      !snapshot.treasuryIdentity || typeof snapshot.treasuryIdentity.address !== 'string' ||
+      typeof snapshot.treasuryIdentity.paymentCredential !== 'string' ||
+      !HASH_28.test(snapshot.treasuryIdentity.paymentCredential) ||
+      !HASH_28.test(String(snapshot.ticketPolicyId ?? '')) ||
+      !snapshot.b1PrizePoolIdentity || typeof snapshot.b1PrizePoolIdentity.address !== 'string' ||
+      !HASH_28.test(String(snapshot.b1PrizePoolIdentity.paymentCredential ?? ''))) {
+    fail('TREASURY_RECONCILE_' + label + '_DEPLOYMENT_IDENTITY_INVALID')
+  }
+  const observation = snapshot.observation
+  const tip = observation?.snapshotTip
+  if (!observation || observation.fromBlockHeightInclusive !== 0 ||
+      !tip || !HASH_32.test(String(tip.hash ?? '')) ||
+      !Number.isSafeInteger(Number(tip.blockHeight)) || Number(tip.blockHeight) < 0 ||
+      !observation.derivedTopology || typeof observation.derivedTopology !== 'object' ||
+      !observation.artifactFingerprints || typeof observation.artifactFingerprints !== 'object' ||
+      Array.isArray(observation.artifactFingerprints)) {
+    fail('TREASURY_RECONCILE_' + label + '_OBSERVATION_METADATA_INVALID')
+  }
+  if (!Array.isArray(snapshot.receiptEvents) ||
+      !Array.isArray(snapshot.nonSaleTreasuryOutputs) ||
+      !snapshot.treasuryCustody || !Array.isArray(snapshot.treasuryCustody.outputRefs) ||
+      !Array.isArray(snapshot.treasuryCustody.totalsByAsset)) {
+    fail('TREASURY_RECONCILE_' + label + '_JOURNAL_COMPONENTS_INVALID')
+  }
+  if (snapshot.treasuryCustody.canonicalAddress !== snapshot.treasuryIdentity.address ||
+      snapshot.treasuryCustody.state !== 'OBSERVED_CURRENT_UTXO_SNAPSHOT') {
+    fail('TREASURY_RECONCILE_' + label + '_CUSTODY_IDENTITY_INVALID')
+  }
+  return {
+    tipHash: String(tip.hash).toLowerCase(),
+    tipHeight: Number(tip.blockHeight),
+    topology: observation.derivedTopology,
+    artifactFingerprints: observation.artifactFingerprints,
+  }
+}
+
+function normalizedJournalAssets(assets, code) {
+  if (!Array.isArray(assets)) fail(code + '_ASSETS_MISSING')
+  const seen = new Set()
+  const normalized = assets.map((asset) => {
+    const unit = String(asset?.unit ?? '').toLowerCase()
+    const quantity = integerString(asset?.quantity, code + '_QUANTITY_INVALID')
+    if (!/^[0-9a-f]{56}(?:[0-9a-f]{2}){0,64}$/.test(unit) ||
+        BigInt(quantity) <= 0n || seen.has(unit)) {
+      fail(code + '_ASSET_INVALID')
+    }
+    seen.add(unit)
+    return { unit, quantity }
+  })
+  normalized.sort(compareAssetUnits)
+  return normalized
+}
+
+function snapshotOutputRecords(snapshot, label, { requireValues }) {
+  const records = new Map()
+  for (const event of snapshot.receiptEvents) {
+    const ref = String(event?.receiptRef ?? '')
+    if (!ref || event.eventId !== ref ||
+        event.transactionHash + '#' + event.outputIndex !== ref ||
+        !Number.isSafeInteger(Number(event.block?.height)) ||
+        Number(event.block.height) < 0 || Number(event.block.height) > Number(snapshot.observation.snapshotTip.blockHeight) ||
+        typeof event.lifecycle?.isSpent !== 'boolean' ||
+        typeof event.lifecycle?.state !== 'string') {
+      fail('TREASURY_RECONCILE_' + label + '_RECEIPT_EVENT_INVALID')
+    }
+    if (event.treasury?.address !== snapshot.treasuryIdentity.address ||
+        String(event.treasury?.paymentCredential ?? '').toLowerCase() !== String(snapshot.treasuryIdentity.paymentCredential).toLowerCase()) {
+      fail('TREASURY_RECONCILE_' + label + '_RECEIPT_OUTPUT_IDENTITY_MISMATCH_' + ref)
+    }
+    if (records.has(ref)) fail('TREASURY_RECONCILE_' + label + '_DUPLICATE_OUTPUT_REF_' + ref)
+    const lovelace = integerString(event.treasury.outputValueLovelace, 'TREASURY_RECONCILE_' + label + '_LOVELACE_INVALID')
+    if (BigInt(lovelace) < 0n) fail('TREASURY_RECONCILE_' + label + '_LOVELACE_NEGATIVE')
+    records.set(ref, {
+      ref,
+      kind: 'receipt',
+      blockHeight: Number(event.block.height),
+      isSpent: event.lifecycle.isSpent,
+      lifecycle: event.lifecycle,
+      lovelace,
+      nativeAssets: normalizedJournalAssets(event.treasury.nativeAssets, 'TREASURY_RECONCILE_' + label + '_RECEIPT'),
+      event,
+    })
+  }
+
+  for (const row of snapshot.nonSaleTreasuryOutputs) {
+    const ref = String(row?.outputRef ?? '')
+    if (!ref || !Number.isSafeInteger(Number(row.blockHeight)) ||
+        Number(row.blockHeight) < 0 || Number(row.blockHeight) > Number(snapshot.observation.snapshotTip.blockHeight) ||
+        typeof row.isSpent !== 'boolean' ||
+        row.address !== snapshot.treasuryIdentity.address ||
+        String(row.paymentCredential ?? '').toLowerCase() !== String(snapshot.treasuryIdentity.paymentCredential).toLowerCase()) {
+      fail('TREASURY_RECONCILE_' + label + '_NON_SALE_OUTPUT_INVALID')
+    }
+    if (records.has(ref)) fail('TREASURY_RECONCILE_' + label + '_DUPLICATE_OUTPUT_REF_' + ref)
+    let lovelace = null
+    let nativeAssets = null
+    if (row.lovelace !== undefined && row.nativeAssets !== undefined) {
+      lovelace = integerString(row.lovelace, 'TREASURY_RECONCILE_' + label + '_NON_SALE_LOVELACE_INVALID')
+      if (BigInt(lovelace) < 0n) fail('TREASURY_RECONCILE_' + label + '_NON_SALE_LOVELACE_NEGATIVE')
+      nativeAssets = normalizedJournalAssets(row.nativeAssets, 'TREASURY_RECONCILE_' + label + '_NON_SALE')
+    } else if (requireValues) {
+      fail('TREASURY_RECONCILE_' + label + '_NON_SALE_VALUE_DETAILS_MISSING_' + ref)
+    }
+    records.set(ref, {
+      ref,
+      kind: 'non-sale',
+      blockHeight: Number(row.blockHeight),
+      isSpent: row.isSpent,
+      reason: row.reason,
+      lovelace,
+      nativeAssets,
+      event: null,
+    })
+  }
+  return records
+}
+
+function validateCustodySnapshot(snapshot, records, label, { requireCompleteValues }) {
+  const refs = snapshot.treasuryCustody.outputRefs.map((ref) => String(ref))
+  if (new Set(refs).size !== refs.length) fail('TREASURY_RECONCILE_' + label + '_CUSTODY_DUPLICATE_OUTPUT_REF')
+  const expectedRefs = [...records.values()].filter((row) => !row.isSpent).map((row) => row.ref).sort()
+  const actualRefs = [...refs].sort()
+  if (canonicalJson(actualRefs) !== canonicalJson(expectedRefs) ||
+      Number(snapshot.treasuryCustody.unspentOutputCount) !== expectedRefs.length) {
+    fail('TREASURY_RECONCILE_' + label + '_CUSTODY_OUTPUT_SET_MISMATCH')
+  }
+  const totals = new Map()
+  for (const row of snapshot.treasuryCustody.totalsByAsset) {
+    const unit = String(row?.unit ?? '').toLowerCase()
+    const quantity = integerString(row?.quantity, 'TREASURY_RECONCILE_' + label + '_CUSTODY_TOTAL_INVALID')
+    if (!unit || BigInt(quantity) < 0n || totals.has(unit)) {
+      fail('TREASURY_RECONCILE_' + label + '_CUSTODY_TOTAL_INVALID')
+    }
+    totals.set(unit, BigInt(quantity))
+  }
+  const complete = [...records.values()].every((row) =>
+    row.lovelace !== null && Array.isArray(row.nativeAssets)
+  )
+  if (complete || requireCompleteValues) {
+    const derived = new Map()
+    const add = (unit, quantity) => {
+      derived.set(unit, (derived.get(unit) ?? 0n) + BigInt(quantity))
+    }
+    for (const row of records.values()) {
+      if (row.isSpent) continue
+      if (row.lovelace === null || !Array.isArray(row.nativeAssets)) {
+        fail('TREASURY_RECONCILE_' + label + '_CUSTODY_VALUE_DETAILS_INCOMPLETE')
+      }
+      add('lovelace', row.lovelace)
+      for (const asset of row.nativeAssets) add(asset.unit, asset.quantity)
+    }
+    const expected = [...derived.entries()]
+      .filter(([, quantity]) => quantity !== 0n)
+      .map(([unit, quantity]) => ({ unit, quantity: quantity.toString() }))
+      .sort(compareAssetUnits)
+    const actual = [...totals.entries()]
+      .filter(([, quantity]) => quantity !== 0n)
+      .map(([unit, quantity]) => ({ unit, quantity: quantity.toString() }))
+      .sort(compareAssetUnits)
+    if (canonicalJson(actual) !== canonicalJson(expected)) {
+      fail('TREASURY_RECONCILE_' + label + '_CUSTODY_TOTAL_VALUE_MISMATCH')
+    }
+  }
+  return { totals, complete }
+}
+
+function immutableReceiptProjection(event) {
+  const projection = JSON.parse(JSON.stringify(event))
+  delete projection.lifecycle
+  if (projection.block) {
+    delete projection.block.confirmations
+    delete projection.block.confirmationProvider
+  }
+  return projection
+}
+
+function resolvedReceiptLifecycle(lifecycle) {
+  return [
+    'SPENT_RETAINED_IN_TREASURY_CUSTODY',
+    'SPENT_WITH_B1_PRIZEPOOL_OUTPUT',
+    'SPENT_OUTSIDE_TREASURY_CUSTODY',
+  ].includes(lifecycle?.state) && typeof lifecycle?.consumingTransactionHash === 'string'
+}
+
+function compareReceiptLifecycle(previous, current, ref) {
+  if (!previous.isSpent && !current.isSpent) {
+    if (canonicalJson(previous) !== canonicalJson(current)) {
+      fail('TREASURY_RECONCILE_RECEIPT_UNSPENT_LIFECYCLE_CHANGED_' + ref)
+    }
+    return { newlySpent: false, newlyResolved: false }
+  }
+  if (previous.isSpent && !current.isSpent) {
+    fail('TREASURY_RECONCILE_RECEIPT_SPEND_REGRESSION_' + ref)
+  }
+  if (previous.isSpent && resolvedReceiptLifecycle(previous) &&
+      (!resolvedReceiptLifecycle(current) || canonicalJson(previous) !== canonicalJson(current))) {
+    fail('TREASURY_RECONCILE_RECEIPT_CONSUMER_LINK_REGRESSION_' + ref)
+  }
+  if (current.isSpent && !resolvedReceiptLifecycle(current) &&
+      !['SPENT_CONSUMER_PENDING', 'SPENT_CONSUMER_NOT_RECONSTRUCTED'].includes(current.state)) {
+    fail('TREASURY_RECONCILE_RECEIPT_SPENT_STATE_INVALID_' + ref)
+  }
+  return {
+    newlySpent: !previous.isSpent && current.isSpent,
+    newlyResolved: previous.isSpent && !resolvedReceiptLifecycle(previous) && resolvedReceiptLifecycle(current),
+  }
+}
+
+/**
+ * Reconcile two independently produced full-history Treasury snapshots.
+ *
+ * This is a deterministic evidence comparator, not a persistence service, a
+ * ledger-finality proof, a category ledger, or spending authority. The caller
+ * must retain and supply the previous snapshot artifact on the next run.
+ */
+export function reconcileTreasuryJournalSnapshots({ previous, current }) {
+  const priorMeta = journalSnapshotMeta(previous, 'PREVIOUS')
+  const currentMeta = journalSnapshotMeta(current, 'CURRENT')
+  if (previous.network !== current.network ||
+      canonicalJson(previous.treasuryIdentity) !== canonicalJson(current.treasuryIdentity) ||
+      String(previous.ticketPolicyId).toLowerCase() !== String(current.ticketPolicyId).toLowerCase() ||
+      canonicalJson(previous.b1PrizePoolIdentity) !== canonicalJson(current.b1PrizePoolIdentity) ||
+      canonicalJson(priorMeta.topology) !== canonicalJson(currentMeta.topology)) {
+    fail('TREASURY_RECONCILE_DEPLOYMENT_IDENTITY_OR_TOPOLOGY_CHANGED')
+  }
+  if (currentMeta.tipHeight < priorMeta.tipHeight) fail('TREASURY_RECONCILE_TIP_REGRESSION')
+  if (currentMeta.tipHeight === priorMeta.tipHeight && currentMeta.tipHash !== priorMeta.tipHash) {
+    fail('TREASURY_RECONCILE_SAME_HEIGHT_TIP_HASH_CHANGED')
+  }
+
+  const previousRecords = snapshotOutputRecords(previous, 'PREVIOUS', { requireValues: false })
+  const currentRecords = snapshotOutputRecords(current, 'CURRENT', { requireValues: true })
+  const previousCustody = validateCustodySnapshot(previous, previousRecords, 'PREVIOUS', { requireCompleteValues: false })
+  const currentCustody = validateCustodySnapshot(current, currentRecords, 'CURRENT', { requireCompleteValues: true })
+
+  const previousEvents = mapUnique(previous.receiptEvents, (event) => event.receiptRef, 'TREASURY_RECONCILE_PREVIOUS_DUPLICATE_RECEIPT')
+  const currentEvents = mapUnique(current.receiptEvents, (event) => event.receiptRef, 'TREASURY_RECONCILE_CURRENT_DUPLICATE_RECEIPT')
+  const newlySpentReceiptRefs = []
+  const newlyResolvedReceiptRefs = []
+  for (const [ref, priorEvent] of previousEvents) {
+    const nextEvent = currentEvents.get(ref)
+    if (!nextEvent) fail('TREASURY_RECONCILE_RECEIPT_DISAPPEARED_' + ref)
+    if (canonicalJson(immutableReceiptProjection(priorEvent)) !== canonicalJson(immutableReceiptProjection(nextEvent))) {
+      fail('TREASURY_RECONCILE_RECEIPT_IMMUTABLE_EVIDENCE_CHANGED_' + ref)
+    }
+    const transition = compareReceiptLifecycle(priorEvent.lifecycle, nextEvent.lifecycle, ref)
+    if (transition.newlySpent) newlySpentReceiptRefs.push(ref)
+    if (transition.newlyResolved) newlyResolvedReceiptRefs.push(ref)
+  }
+
+  const historicalBackfillReceiptRefs = []
+  const addedReceiptRefs = []
+  for (const [ref, event] of currentEvents) {
+    if (previousEvents.has(ref)) continue
+    if (Number(event.block.height) <= priorMeta.tipHeight) historicalBackfillReceiptRefs.push(ref)
+    else addedReceiptRefs.push(ref)
+  }
+
+  const newlyDiscoveredHistoricalOutputRefs = []
+  for (const [ref, oldRow] of previousRecords) {
+    const nextRow = currentRecords.get(ref)
+    if (!nextRow) fail('TREASURY_RECONCILE_TREASURY_OUTPUT_DISAPPEARED_' + ref)
+    if (oldRow.kind !== nextRow.kind || oldRow.blockHeight !== nextRow.blockHeight) {
+      fail('TREASURY_RECONCILE_TREASURY_OUTPUT_IDENTITY_CHANGED_' + ref)
+    }
+    if (oldRow.kind === 'non-sale' && oldRow.reason !== nextRow.reason) {
+      fail('TREASURY_RECONCILE_NON_SALE_CLASSIFICATION_CHANGED_' + ref)
+    }
+    if (oldRow.isSpent && !nextRow.isSpent) fail('TREASURY_RECONCILE_TREASURY_OUTPUT_SPEND_REGRESSION_' + ref)
+    if (oldRow.lovelace !== null && (oldRow.lovelace !== nextRow.lovelace ||
+        canonicalJson(oldRow.nativeAssets) !== canonicalJson(nextRow.nativeAssets))) {
+      fail('TREASURY_RECONCILE_TREASURY_OUTPUT_VALUE_CHANGED_' + ref)
+    }
+  }
+  for (const [ref, row] of currentRecords) {
+    if (!previousRecords.has(ref) && row.blockHeight <= priorMeta.tipHeight) {
+      newlyDiscoveredHistoricalOutputRefs.push(ref)
+    }
+  }
+
+  const previousCustodyRefs = new Set(previous.treasuryCustody.outputRefs)
+  const currentCustodyRefs = new Set(current.treasuryCustody.outputRefs)
+  const removedCustodyOutputRefs = [...previousCustodyRefs].filter((ref) => !currentCustodyRefs.has(ref)).sort()
+  const addedCustodyOutputRefs = [...currentCustodyRefs].filter((ref) => !previousCustodyRefs.has(ref)).sort()
+  for (const ref of removedCustodyOutputRefs) {
+    const row = currentRecords.get(ref)
+    if (!row || !row.isSpent) fail('TREASURY_RECONCILE_CUSTODY_OUTPUT_REMOVED_WITHOUT_SPEND_EVIDENCE_' + ref)
+  }
+  for (const ref of addedCustodyOutputRefs) {
+    const row = currentRecords.get(ref)
+    if (!row || row.isSpent) fail('TREASURY_RECONCILE_CUSTODY_OUTPUT_ADDED_BUT_MARKED_SPENT_' + ref)
+  }
+
+  const allUnits = new Set([...previousCustody.totals.keys(), ...currentCustody.totals.keys()])
+  const custodyDeltaByAsset = [...allUnits]
+    .map((unit) => ({
+      unit,
+      delta: ((currentCustody.totals.get(unit) ?? 0n) - (previousCustody.totals.get(unit) ?? 0n)).toString(),
+    }))
+    .filter((row) => BigInt(row.delta) !== 0n)
+    .sort(compareAssetUnits)
+
+  const artifactFingerprintsChanged =
+    canonicalJson(priorMeta.artifactFingerprints) !== canonicalJson(currentMeta.artifactFingerprints)
+  const historicalBackfill = historicalBackfillReceiptRefs.length > 0 ||
+    newlyDiscoveredHistoricalOutputRefs.length > 0
+  const sameTip = currentMeta.tipHeight === priorMeta.tipHeight && currentMeta.tipHash === priorMeta.tipHash
+
+  let disposition = 'STRUCTURAL_RECONCILIATION_ONLY_TIP_ANCESTRY_UNPROVEN'
+  if (sameTip) disposition = 'SAME_TIP_SNAPSHOT_RECONCILED'
+  if (historicalBackfill) disposition = 'HISTORICAL_BACKFILL_REQUIRES_REVIEW'
+  if (artifactFingerprintsChanged) disposition = 'DEPLOYMENT_ARTIFACT_FINGERPRINT_CHANGE_REQUIRES_REVIEW'
+
+  return {
+    schema: 'PRE-RICH-TREASURY-CROSS-SNAPSHOT-RECONCILIATION-v1',
+    disposition,
+    chainContinuity: sameTip ? 'SAME_TIP_HASH_MATCHED' : 'PRIOR_TIP_ANCESTRY_NOT_PROVEN_BY_THIS_RECONCILER',
+    previousSnapshot: { blockHeight: priorMeta.tipHeight, blockHash: priorMeta.tipHash },
+    currentSnapshot: { blockHeight: currentMeta.tipHeight, blockHash: currentMeta.tipHash },
+    eventDelta: {
+      priorReceiptCount: previousEvents.size,
+      currentReceiptCount: currentEvents.size,
+      addedReceiptRefs: addedReceiptRefs.sort(),
+      historicalBackfillReceiptRefs: historicalBackfillReceiptRefs.sort(),
+      newlySpentReceiptRefs: newlySpentReceiptRefs.sort(),
+      newlyResolvedReceiptRefs: newlyResolvedReceiptRefs.sort(),
+    },
+    treasuryOutputDelta: {
+      addedCustodyOutputRefs,
+      removedCustodyOutputRefs,
+      newlyDiscoveredHistoricalOutputRefs: newlyDiscoveredHistoricalOutputRefs.sort(),
+    },
+    custodyDeltaByAsset,
+    evidenceQuality: {
+      previousCustodyOutputValuesComplete: previousCustody.complete,
+      currentCustodyOutputValuesComplete: currentCustody.complete,
+      deploymentArtifactFingerprintsChanged: artifactFingerprintsChanged,
+      ledgerFinalityEstablished: false,
+      previousTipAncestryVerified: sameTip,
+      categoryPostingPerformed: false,
+      spendAuthorizationGranted: false,
+    },
+    limitations: [
+      'This comparison is deterministic but stateless; the caller must retain and supply the previous snapshot artifact.',
+      'A higher current tip does not prove that the previous tip is an ancestor; this function does not verify full Cardano header-chain continuity.',
+      'Provider responses are indexed observation evidence, not an independent ledger proof or finality certificate.',
+      'Custody deltas are raw asset-unit differences only; no USDM valuation, category posting, EEV claim or spend authority is inferred.',
+    ],
+  }
+}
 
 /**
  * Reconstruct all canonical Treasury outputs from the complete address_txs

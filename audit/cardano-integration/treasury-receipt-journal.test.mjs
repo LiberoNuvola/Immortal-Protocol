@@ -105,6 +105,47 @@ function fixture({ transactions = [saleTx()], treasuryOutputs = [addressOutput()
   })
 }
 
+function withSnapshot(journal, { height = 100, hash = 'a0'.repeat(32), artifactFingerprints = { 'loadValidator.ts': 'ab'.repeat(32) } } = {}) {
+  journal.observation = {
+    provider: 'Koios',
+    fromBlockHeightInclusive: 0,
+    snapshotTip: { blockHeight: height, hash },
+    derivedTopology: {
+      treasuryAddress: TREASURY,
+      treasuryPaymentCredential: TREASURY_CREDENTIAL,
+      b1PrizePoolAddress: POOL,
+      b1PrizePoolPaymentCredential: POOL_CREDENTIAL,
+      ticketPolicyId: TICKET_POLICY,
+      oraclePublisherPkh: '77'.repeat(28),
+      oracleStatePolicyId: '88'.repeat(28),
+      oracleStateTokenNameHex: '01',
+      poolTokenPolicyId: '99'.repeat(28),
+      poolTokenNameHex: '02',
+      prizeTable: [1, 2, 3, 5, 10, 25, 50, 100],
+    },
+    artifactFingerprints,
+  }
+  return journal
+}
+
+function saleAt({ hash = 'a4'.repeat(32), height = 101, blockHash = 'f4'.repeat(32), slot = 910, timestamp = 1_700_000_100, ticketName = '505245524943480002' } = {}) {
+  return saleTx({
+    tx_hash: hash,
+    block_hash: blockHash,
+    block_height: height,
+    absolute_slot: slot,
+    tx_timestamp: timestamp,
+    tx_block_index: 1,
+    outputs: [
+      txOutput(hash, 0, POOL, POOL_CREDENTIAL, '5000000'),
+      txOutput(hash, 1, TREASURY, TREASURY_CREDENTIAL, '1100000', [
+        { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '500000' },
+      ]),
+    ],
+    assets_minted: [{ policy_id: TICKET_POLICY, asset_name: ticketName, quantity: '1' }],
+  })
+}
+
 test('reconciles full Treasury custody including unclassified inflows by exact asset unit', () => {
   const otherTxHash = 'a3'.repeat(32)
   const otherTx = {
@@ -650,6 +691,186 @@ test('derives a consolidated receipt batch total only from the exact receipt inp
   assert.equal(batch.inputs.length, 3)
   assert.equal(batch.receiptInputTotalsByAsset.find((entry) => entry.unit === 'lovelace').quantity, '3300000')
   assert.equal(batch.receiptInputTotalsByAsset.find((entry) => entry.unit === PAYMENT_POLICY + '5553444d').quantity, '2000000')
+})
+
+
+test('reconciles an identical repeated full-history snapshot idempotently', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const current = withSnapshot(fixture({ observedAt: '2026-11-05T12:05:00.000Z' }), { height: 100, hash: 'a0'.repeat(32) })
+  const result = reconcileTreasuryJournalSnapshots({ previous, current })
+  assert.equal(result.disposition, 'SAME_TIP_SNAPSHOT_RECONCILED')
+  assert.deepEqual(result.eventDelta.addedReceiptRefs, [])
+  assert.deepEqual(result.custodyDeltaByAsset, [])
+  assert.equal(result.evidenceQuality.ledgerFinalityEstablished, false)
+})
+
+test('reconciles a later TicketSale as an append-only receipt event and exact custody delta', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const hash = 'a4'.repeat(32)
+  const current = withSnapshot(fixture({
+    transactions: [saleTx(), saleAt({ hash, height: 101 })],
+    treasuryOutputs: [
+      addressOutput(),
+      addressOutput({ tx_hash: hash, tx_index: 1, block_height: 101, block_time: 1_700_000_100 }),
+    ],
+  }), { height: 101, hash: 'a1'.repeat(32) })
+  const result = reconcileTreasuryJournalSnapshots({ previous, current })
+  assert.deepEqual(result.eventDelta.addedReceiptRefs, [hash + '#1'])
+  assert.deepEqual(result.eventDelta.historicalBackfillReceiptRefs, [])
+  assert.equal(result.chainContinuity, 'PRIOR_TIP_ANCESTRY_NOT_PROVEN_BY_THIS_RECONCILER')
+  assert.deepEqual(result.custodyDeltaByAsset, [
+    { unit: 'lovelace', delta: '1100000' },
+    { unit: PAYMENT_POLICY + '5553444d', delta: '500000' },
+  ])
+})
+
+test('reconciles a receipt from unspent to spent only when its current history carries the consumer', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [receiptInput()],
+    outputs: [],
+    assets_minted: [],
+  }
+  const current = withSnapshot(fixture({
+    transactions: [saleTx(), consumer],
+    treasuryOutputs: [addressOutput({ is_spent: true })],
+  }), { height: 101, hash: 'a1'.repeat(32) })
+  const result = reconcileTreasuryJournalSnapshots({ previous, current })
+  assert.deepEqual(result.eventDelta.newlySpentReceiptRefs, [TX + '#' + RECEIPT_INDEX])
+  assert.deepEqual(result.treasuryOutputDelta.removedCustodyOutputRefs, [TX + '#' + RECEIPT_INDEX])
+  assert.deepEqual(result.custodyDeltaByAsset, [
+    { unit: 'lovelace', delta: '-2200000' },
+    { unit: PAYMENT_POLICY + '5553444d', delta: '-1500000' },
+  ])
+})
+
+test('resolves a previously unknown receipt consumer without changing receipt identity', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture({
+    treasuryOutputs: [addressOutput({ is_spent: true })],
+  }), { height: 100, hash: 'a0'.repeat(32) })
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [receiptInput()],
+    outputs: [txOutput(CONSUMER_TX, 0, POOL, POOL_CREDENTIAL, '2200000')],
+    assets_minted: [],
+  }
+  const current = withSnapshot(fixture({
+    transactions: [saleTx(), consumer],
+    treasuryOutputs: [addressOutput({ is_spent: true })],
+  }), { height: 101, hash: 'a1'.repeat(32) })
+  const result = reconcileTreasuryJournalSnapshots({ previous, current })
+  assert.deepEqual(result.eventDelta.newlyResolvedReceiptRefs, [TX + '#' + RECEIPT_INDEX])
+})
+
+test('fails closed if a previously observed receipt disappears from a later full-history snapshot', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const current = withSnapshot(fixture({ transactions: [saleTx({ assets_minted: [] })] }), { height: 101, hash: 'a1'.repeat(32) })
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current }), /RECEIPT_DISAPPEARED/)
+})
+
+test('fails closed if immutable receipt Value changes under the same output reference', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const altered = saleTx({
+    outputs: [
+      txOutput(TX, 0, POOL, POOL_CREDENTIAL, '5000000'),
+      txOutput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL, '2200001', [
+        { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '1500000' },
+      ]),
+    ],
+  })
+  const current = withSnapshot(fixture({ transactions: [altered] }), { height: 101, hash: 'a1'.repeat(32) })
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current }), /IMMUTABLE_EVIDENCE_CHANGED/)
+})
+
+test('fails closed on tip regression or same-height tip hash change', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const regressed = withSnapshot(fixture(), { height: 99, hash: '99'.repeat(32) })
+  const forked = withSnapshot(fixture(), { height: 100, hash: 'ff'.repeat(32) })
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current: regressed }), /TIP_REGRESSION/)
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current: forked }), /SAME_HEIGHT_TIP_HASH_CHANGED/)
+})
+
+test('flags late-discovered historical receipts for explicit review rather than silently backfilling', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 105, hash: 'a5'.repeat(32) })
+  const hash = 'a4'.repeat(32)
+  const current = withSnapshot(fixture({
+    transactions: [saleTx(), saleAt({ hash, height: 101 })],
+    treasuryOutputs: [
+      addressOutput(),
+      addressOutput({ tx_hash: hash, tx_index: 1, block_height: 101, block_time: 1_700_000_100 }),
+    ],
+  }), { height: 106, hash: 'a6'.repeat(32) })
+  const result = reconcileTreasuryJournalSnapshots({ previous, current })
+  assert.deepEqual(result.eventDelta.historicalBackfillReceiptRefs, [hash + '#1'])
+  assert.equal(result.disposition, 'HISTORICAL_BACKFILL_REQUIRES_REVIEW')
+})
+
+test('rejects a previously spent receipt that reappears as unspent', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [receiptInput()],
+    outputs: [],
+    assets_minted: [],
+  }
+  const previous = withSnapshot(fixture({
+    transactions: [saleTx(), consumer],
+    treasuryOutputs: [addressOutput({ is_spent: true })],
+  }), { height: 101, hash: 'a1'.repeat(32) })
+  const current = withSnapshot(fixture(), { height: 102, hash: 'a2'.repeat(32) })
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current }), /SPEND_REGRESSION/)
+})
+
+test('validates the current custody totals against exact per-output values', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const current = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  current.treasuryCustody.totalsByAsset = [{ unit: 'lovelace', quantity: '999' }]
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current }), /CUSTODY_TOTAL_VALUE_MISMATCH/)
+})
+
+test('requires deployment identity and topology to remain exactly bound across snapshots', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture(), { height: 100, hash: 'a0'.repeat(32) })
+  const current = withSnapshot(fixture(), { height: 101, hash: 'a1'.repeat(32) })
+  current.observation.derivedTopology.treasuryPaymentCredential = 'aa'.repeat(28)
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current }), /IDENTITY_OR_TOPOLOGY_CHANGED/)
+})
+
+test('fails closed if a previously observed Treasury UTxO disappears without spend evidence', async () => {
+  const { reconcileTreasuryJournalSnapshots } = await import('./treasury-receipt-journal.mjs')
+  const previous = withSnapshot(fixture({
+    transactions: [saleTx({ assets_minted: [] })],
+  }), { height: 100, hash: 'a0'.repeat(32) })
+  const current = withSnapshot(fixture({ transactions: [] , treasuryOutputs: [] }), { height: 101, hash: 'a1'.repeat(32) })
+  assert.throws(() => reconcileTreasuryJournalSnapshots({ previous, current }), /TREASURY_OUTPUT_DISAPPEARED/)
 })
 
 test('rejects non-positive asset quantities in a Treasury output', () => {

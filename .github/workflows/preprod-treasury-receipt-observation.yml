@@ -11,6 +11,8 @@ on:
       - "audit/cardano-integration/observe-preprod-treasury-receipts.mjs"
       - "audit/cardano-integration/treasury-receipt-journal.mjs"
       - "audit/cardano-integration/treasury-receipt-journal.test.mjs"
+      - "audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs"
+      - "audit/cardano-integration/find-prior-treasury-observation.mjs"
       - "audit/cardano-integration/preprod-protected-capital-census.mjs"
       - "audit/cardano-integration/preprod-protected-capital-deployment-identity.mjs"
       - "audit/cardano-integration/preprod-protected-capital-deployment-identity.test.mjs"
@@ -50,6 +52,21 @@ jobs:
 
       - name: Install repository dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Locate the latest successful prior Treasury observation artifact
+        id: prior-observation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node audit/cardano-integration/find-prior-treasury-observation.mjs
+
+      - name: Download previous Treasury snapshot
+        if: steps.prior-observation.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.prior-observation.outputs.artifact_name }}
+          run-id: ${{ steps.prior-observation.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: audit/preprod-evidence/previous-observation
 
       - name: Restore deployment identity manifests only
         uses: actions/download-artifact@v4
@@ -135,6 +152,27 @@ jobs:
           TREASURY_RECEIPT_JOURNAL_OUTPUT: audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
         run: node audit/cardano-integration/observe-preprod-treasury-receipts.mjs
 
+      - name: Reconcile current snapshot against prior retained observation
+        if: success()
+        env:
+          PREVIOUS_OBSERVATION_FOUND: ${{ steps.prior-observation.outputs.found }}
+          PREVIOUS_OBSERVATION_RUN_ID: ${{ steps.prior-observation.outputs.run_id }}
+          PREVIOUS_OBSERVATION_HEAD_SHA: ${{ steps.prior-observation.outputs.head_sha }}
+          PREVIOUS_OBSERVATION_ARTIFACT_NAME: ${{ steps.prior-observation.outputs.artifact_name }}
+          PREVIOUS_OBSERVATION_ARTIFACT_DIGEST: ${{ steps.prior-observation.outputs.artifact_digest }}
+        run: |
+          if [ "$PREVIOUS_OBSERVATION_FOUND" = "true" ]; then
+            node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
+              audit/preprod-evidence/previous-observation/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          else
+            node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
+              --baseline \
+              audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
+              audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+          fi
+
       - name: Upload read-only Treasury and identity evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -145,5 +183,6 @@ jobs:
             audit/preprod-evidence/preprod-oracle-state-deployment.json
             audit/preprod-evidence/preprod-protected-capital-census.json
             audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
+            audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
           if-no-files-found: warn
           retention-days: 30
