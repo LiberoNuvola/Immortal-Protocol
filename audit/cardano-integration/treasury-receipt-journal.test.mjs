@@ -39,6 +39,19 @@ function txInput(txHash, txIndex, address, credential) {
   }
 }
 
+function receiptInput({
+  txHash = TX,
+  txIndex = RECEIPT_INDEX,
+  lovelace = '2200000',
+  assets = [{ policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '1500000' }],
+} = {}) {
+  return {
+    ...txInput(txHash, txIndex, TREASURY, TREASURY_CREDENTIAL),
+    value: lovelace,
+    asset_list: assets,
+  }
+}
+
 function saleTx(overrides = {}) {
   const base = {
     tx_hash: TX,
@@ -251,7 +264,7 @@ test('links a spent receipt to the unique consuming transaction and retained Tre
     tx_timestamp: 1_700_000_100,
     tx_block_index: 1,
     valid_contract: true,
-    inputs: [txInput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL)],
+    inputs: [receiptInput()],
     outputs: [
       txOutput(CONSUMER_TX, 0, TREASURY, TREASURY_CREDENTIAL, '2200000'),
     ],
@@ -287,11 +300,49 @@ test('rejects an output marked unspent when a supplied transaction consumes it',
     tx_timestamp: 1_700_000_100,
     tx_block_index: 1,
     valid_contract: true,
-    inputs: [txInput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL)],
+    inputs: [receiptInput()],
     outputs: [],
     assets_minted: [],
   }
   assert.throws(() => fixture({ transactions: [saleTx(), consumer] }), /UNSPENT_OUTPUT_HAS_CONSUMER/)
+})
+
+test('rejects a consumer input whose lovelace differs from the original receipt output', () => {
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [receiptInput({ lovelace: '2200001' })],
+    outputs: [],
+    assets_minted: [],
+  }
+  assert.throws(
+    () => fixture({ treasuryOutputs: [addressOutput({ is_spent: true })], transactions: [saleTx(), consumer] }),
+    /TREASURY_JOURNAL_CONSUMER_INPUT_VALUE_MISMATCH/,
+  )
+})
+
+test('rejects a consumer input whose native-asset basket differs from the original receipt output', () => {
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [receiptInput({ assets: [{ policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '1499999' }] })],
+    outputs: [],
+    assets_minted: [],
+  }
+  assert.throws(
+    () => fixture({ treasuryOutputs: [addressOutput({ is_spent: true })], transactions: [saleTx(), consumer] }),
+    /TREASURY_JOURNAL_CONSUMER_INPUT_VALUE_MISMATCH/,
+  )
 })
 
 test('rejects impossible multiple consumers for one output reference', () => {
@@ -303,7 +354,7 @@ test('rejects impossible multiple consumers for one output reference', () => {
     tx_timestamp: 1_700_000_100 + blockHeight,
     tx_block_index: 1,
     valid_contract: true,
-    inputs: [txInput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL)],
+    inputs: [receiptInput()],
     outputs: [],
     assets_minted: [],
   })
@@ -349,7 +400,7 @@ test('derives spent state by following valid consuming transaction inputs', asyn
     tx_timestamp: 1_700_000_100,
     tx_block_index: 1,
     valid_contract: true,
-    inputs: [txInput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL)],
+    inputs: [receiptInput()],
     outputs: [
       txOutput(CONSUMER_TX, 0, TREASURY, TREASURY_CREDENTIAL, '2200000'),
     ],
@@ -367,7 +418,31 @@ test('derives spent state by following valid consuming transaction inputs', asyn
   assert.equal(continuation.is_spent, false)
 })
 
-test('fails closed on an output with Treasury credential but non-canonical address', async () => {
+test('rejects a spent Treasury input whose Value differs from its originating output', async () => {
+  const { deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
+  const consumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f2'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [receiptInput({ assets: [{ policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '1499999' }] })],
+    outputs: [],
+    assets_minted: [],
+  }
+  assert.throws(
+    () => deriveTreasuryAddressOutputs({
+      treasuryAddress: TREASURY,
+      treasuryPaymentCredential: TREASURY_CREDENTIAL,
+      transactions: [saleTx(), consumer],
+    }),
+    /TREASURY_JOURNAL_SPENT_INPUT_VALUE_MISMATCH/,
+  )
+})
+
+test('fails closed on an output with Treasury credential but non-canonical address', async () =>
   const { deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
   const tx = saleTx({
     outputs: [
@@ -430,7 +505,7 @@ test('classifies a receipt consumed by a Treasury-to-PrizePool transfer and pres
     tx_timestamp: 1_700_000_100,
     tx_block_index: 1,
     valid_contract: true,
-    inputs: [txInput(TX, RECEIPT_INDEX, TREASURY, TREASURY_CREDENTIAL)],
+    inputs: [receiptInput()],
     outputs: [
       txOutput(CONSUMER_TX, 0, POOL, POOL_CREDENTIAL, '2200000', [
         { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '1500000' },
@@ -456,7 +531,71 @@ test('classifies a receipt consumed by a Treasury-to-PrizePool transfer and pres
   }])
 })
 
-test('rejects non-positive asset quantities in a Treasury output', () => {
+test('derives a consolidated receipt batch total only from the exact receipt inputs consumed', () => {
+  const secondSaleHash = 'a2'.repeat(32)
+  const secondPoolInputHash = 'b2'.repeat(32)
+  const secondSale = saleTx({
+    tx_hash: secondSaleHash,
+    block_hash: 'f3'.repeat(32),
+    block_height: 101,
+    absolute_slot: 910,
+    tx_timestamp: 1_700_000_100,
+    inputs: [
+      txInput(secondPoolInputHash, 0, POOL, POOL_CREDENTIAL),
+      txInput('c2'.repeat(32), 0, 'addr_test1buyer2', '55'.repeat(28)),
+    ],
+    outputs: [
+      txOutput(secondSaleHash, 0, POOL, POOL_CREDENTIAL, '5000000'),
+      txOutput(secondSaleHash, 1, TREASURY, TREASURY_CREDENTIAL, '1100000', [
+        { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '500000' },
+      ]),
+    ],
+    assets_minted: [
+      { policy_id: TICKET_POLICY, asset_name: '505245524943480002', quantity: '1' },
+    ],
+  })
+  const batchConsumer = {
+    tx_hash: CONSUMER_TX,
+    block_hash: 'f4'.repeat(32),
+    block_height: 102,
+    absolute_slot: 920,
+    tx_timestamp: 1_700_000_200,
+    tx_block_index: 1,
+    valid_contract: true,
+    inputs: [
+      receiptInput(),
+      receiptInput({
+        txHash: secondSaleHash,
+        txIndex: 1,
+        lovelace: '1100000',
+        assets: [{ policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '500000' }],
+      }),
+      txInput('d2'.repeat(32), 0, 'addr_test1batcher', '55'.repeat(28)),
+    ],
+    outputs: [
+      txOutput(CONSUMER_TX, 0, POOL, POOL_CREDENTIAL, '3300000', [
+        { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '2000000' },
+      ]),
+    ],
+    assets_minted: [],
+  }
+  const journal = fixture({
+    treasuryOutputs: [
+      addressOutput({ is_spent: true }),
+      addressOutput({ tx_hash: secondSaleHash, tx_index: 1, block_height: 101, block_time: 1_700_000_100, is_spent: true }),
+    ],
+    transactions: [saleTx(), secondSale, batchConsumer],
+  })
+  assert.equal(journal.consumingTransactions.length, 1)
+  const batch = journal.consumingTransactions[0]
+  assert.deepEqual(batch.consumedReceiptRefs, [TX + '#' + RECEIPT_INDEX, secondSaleHash + '#1'].sort())
+  assert.equal(batch.consumedReceiptInputs.length, 2)
+  assert.equal(batch.inputs.length, 3)
+  assert.equal(batch.receiptInputTotalsByAsset.find((entry) => entry.unit === 'lovelace').quantity, '3300000')
+  assert.equal(batch.receiptInputTotalsByAsset.find((entry) => entry.unit === PAYMENT_POLICY + '5553444d').quantity, '2000000')
+})
+
+test('rejects non-positive asset quantities in a Treasury output', () =>
   const tx = saleTx({
     outputs: [
       txOutput(TX, 0, POOL, POOL_CREDENTIAL, '5000000'),

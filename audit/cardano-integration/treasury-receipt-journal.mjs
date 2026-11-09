@@ -161,6 +161,14 @@ function mapUnique(rows, keyOf, duplicateCode) {
   return map
 }
 
+function sameUtxoValue(left, right) {
+  return left.lovelace === right.lovelace
+    && left.assets.length === right.assets.length
+    && left.assets.every((asset, index) =>
+      asset.unit === right.assets[index].unit && asset.quantity === right.assets[index].quantity
+    )
+}
+
 /**
  * Build read-only TicketSale receipt events from Koios transaction facts.
  *
@@ -200,6 +208,13 @@ export function buildTicketSaleReceiptJournal({
     (tx) => tx.txHash,
     'TREASURY_JOURNAL_DUPLICATE_TX_INFO',
   )
+  const outputsByRef = new Map()
+  for (const tx of txMap.values()) {
+    for (const output of tx.outputs) {
+      if (outputsByRef.has(output.ref)) fail('TREASURY_JOURNAL_DUPLICATE_TX_OUTPUT_REF_' + output.ref)
+      outputsByRef.set(output.ref, output)
+    }
+  }
 
   const receiptEvents = []
   const nonSaleTreasuryOutputs = []
@@ -323,6 +338,11 @@ export function buildTicketSaleReceiptJournal({
       if (input.address !== treasuryAddress || input.paymentCredential !== expected.treasuryPaymentCredential) {
         fail('TREASURY_JOURNAL_CONSUMER_INPUT_IDENTITY_MISMATCH_' + input.ref)
       }
+      const originOutput = outputsByRef.get(input.ref)
+      if (!originOutput) fail('TREASURY_JOURNAL_RECEIPT_SOURCE_OUTPUT_MISSING_' + input.ref)
+      if (!sameUtxoValue(input, originOutput)) {
+        fail('TREASURY_JOURNAL_CONSUMER_INPUT_VALUE_MISMATCH_' + input.ref)
+      }
       const prior = spendingTxByReceipt.get(input.ref) ?? []
       prior.push(tx.txHash)
       spendingTxByReceipt.set(input.ref, prior)
@@ -382,9 +402,36 @@ export function buildTicketSaleReceiptJournal({
   const consumingTransactions = [...consumersByTx.entries()]
     .map(([transactionHash, consumedReceiptRefs]) => {
       const tx = txMap.get(transactionHash)
+      const consumedRefSet = new Set(consumedReceiptRefs)
+      const consumedReceiptInputs = tx.inputs.filter((input) => consumedRefSet.has(input.ref))
+      const receiptInputTotals = new Map()
+      const addReceiptInputAmount = (unit, quantity) => {
+        receiptInputTotals.set(unit, (receiptInputTotals.get(unit) ?? 0n) + BigInt(quantity))
+      }
+      for (const input of consumedReceiptInputs) {
+        addReceiptInputAmount('lovelace', input.lovelace)
+        for (const asset of input.assets) addReceiptInputAmount(asset.unit, asset.quantity)
+      }
       return {
         transactionHash,
         consumedReceiptRefs: consumedReceiptRefs.sort(),
+        consumedReceiptInputs: consumedReceiptInputs.map((input) => ({
+          inputRef: input.ref,
+          address: input.address,
+          paymentCredential: input.paymentCredential,
+          lovelace: input.lovelace,
+          nativeAssets: input.assets,
+        })),
+        receiptInputTotalsByAsset: [...receiptInputTotals.entries()]
+          .map(([unit, quantity]) => ({ unit, quantity: quantity.toString() }))
+          .sort((a, b) => a.unit.localeCompare(b.unit)),
+        inputs: tx.inputs.map((input) => ({
+          inputRef: input.ref,
+          address: input.address,
+          paymentCredential: input.paymentCredential,
+          lovelace: input.lovelace,
+          nativeAssets: input.assets,
+        })),
         retainedTreasuryOutputRefs: tx.outputs
           .filter((output) => output.paymentCredential === expected.treasuryPaymentCredential && output.address === treasuryAddress)
           .map((output) => output.ref)
@@ -502,13 +549,23 @@ export function deriveTreasuryAddressOutputs({
   // A consuming input must preserve the identity of the referenced canonical
   // Treasury output. A matching out-ref with contradictory provider metadata
   // is not accepted as spend-lineage evidence.
-  const canonicalOutputRefs = new Set(outputs.map((row) => row.tx_hash + '#' + row.tx_index))
+  const canonicalOutputsByRef = new Map()
+  for (const row of outputs) {
+    const sourceTx = sourceTxByHash.get(row.tx_hash)
+    const sourceOutput = sourceTx?.outputs.find((output) => output.ref === row.tx_hash + '#' + row.tx_index)
+    if (!sourceOutput) fail('TREASURY_JOURNAL_DERIVED_OUTPUT_SOURCE_REF_MISSING_' + row.tx_hash + '#' + row.tx_index)
+    canonicalOutputsByRef.set(sourceOutput.ref, sourceOutput)
+  }
   for (const tx of txRows) {
     if (!tx.validContract) continue
     for (const input of tx.inputs) {
-      if (!canonicalOutputRefs.has(input.ref)) continue
+      const originOutput = canonicalOutputsByRef.get(input.ref)
+      if (!originOutput) continue
       if (input.address !== treasuryAddress || input.paymentCredential !== credential) {
         fail('TREASURY_JOURNAL_SPENT_INPUT_IDENTITY_MISMATCH_' + input.ref)
+      }
+      if (!sameUtxoValue(input, originOutput)) {
+        fail('TREASURY_JOURNAL_SPENT_INPUT_VALUE_MISMATCH_' + input.ref)
       }
     }
   }
