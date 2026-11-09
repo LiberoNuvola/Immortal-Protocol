@@ -442,7 +442,7 @@ test('rejects a spent Treasury input whose Value differs from its originating ou
   )
 })
 
-test('fails closed on an output with Treasury credential but non-canonical address', async () =>
+test('fails closed on an output with Treasury credential but non-canonical address', async () => {
   const { deriveTreasuryAddressOutputs } = await import('./treasury-receipt-journal.mjs')
   const tx = saleTx({
     outputs: [
