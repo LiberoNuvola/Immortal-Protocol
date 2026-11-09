@@ -595,7 +595,7 @@ test('derives a consolidated receipt batch total only from the exact receipt inp
   assert.equal(batch.receiptInputTotalsByAsset.find((entry) => entry.unit === PAYMENT_POLICY + '5553444d').quantity, '2000000')
 })
 
-test('rejects non-positive asset quantities in a Treasury output', () =>
+test('rejects non-positive asset quantities in a Treasury output', () => {
   const tx = saleTx({
     outputs: [
       txOutput(TX, 0, POOL, POOL_CREDENTIAL, '5000000'),
