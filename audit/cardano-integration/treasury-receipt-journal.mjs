@@ -391,6 +391,35 @@ export function buildTicketSaleReceiptJournal({
     }
   }
 
+  // Reconcile the current physical Treasury custody from every unspent
+  // canonical Treasury output, not only outputs classified as TicketSale.
+  const custodyTotals = new Map()
+  const custodyOutputRefs = []
+  const addCustodyAmount = (unit, quantity) => {
+    custodyTotals.set(unit, (custodyTotals.get(unit) ?? 0n) + BigInt(quantity))
+  }
+  for (const row of treasuryOutputMap.values()) {
+    if (row.isSpent) continue
+    const output = outputsByRef.get(row.ref)
+    if (!output) fail('TREASURY_JOURNAL_CUSTODY_SOURCE_OUTPUT_MISSING_' + row.ref)
+    if (output.address !== treasuryAddress || output.paymentCredential !== expected.treasuryPaymentCredential) {
+      fail('TREASURY_JOURNAL_CUSTODY_SOURCE_IDENTITY_MISMATCH_' + row.ref)
+    }
+    custodyOutputRefs.push(row.ref)
+    addCustodyAmount('lovelace', output.lovelace)
+    for (const asset of output.assets) addCustodyAmount(asset.unit, asset.quantity)
+  }
+  const treasuryCustody = {
+    state: 'OBSERVED_CURRENT_UTXO_SNAPSHOT',
+    canonicalAddress: treasuryAddress,
+    unspentOutputCount: custodyOutputRefs.length,
+    outputRefs: custodyOutputRefs.sort(),
+    totalsByAsset: [...custodyTotals.entries()]
+      .map(([unit, quantity]) => ({ unit, quantity: quantity.toString() }))
+      .sort((a, b) => a.unit.localeCompare(b.unit)),
+    interpretation: 'RAW_PHYSICAL_CUSTODY_ONLY_NO_CATEGORY_CREDIT_NO_EEV_VALUATION',
+  }
+
   const consumersByTx = new Map()
   for (const event of receiptEvents) {
     const consumerHash = event.lifecycle.consumingTransactionHash
@@ -470,6 +499,7 @@ export function buildTicketSaleReceiptJournal({
     receiptEvents,
     consumingTransactions,
     nonSaleTreasuryOutputs,
+    treasuryCustody,
     summary: {
       treasuryOutputCount: treasuryOutputMap.size,
       ticketSaleReceiptCount: receiptEvents.length,

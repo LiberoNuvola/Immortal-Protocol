@@ -105,9 +105,55 @@ function fixture({ transactions = [saleTx()], treasuryOutputs = [addressOutput()
   })
 }
 
+test('reconciles full Treasury custody including unclassified inflows by exact asset unit', () => {
+  const otherTxHash = 'a3'.repeat(32)
+  const otherTx = {
+    tx_hash: otherTxHash,
+    block_hash: 'f5'.repeat(32),
+    block_height: 99,
+    absolute_slot: 890,
+    tx_timestamp: 1_699_999_900,
+    tx_block_index: 0,
+    valid_contract: true,
+    inputs: [txInput('b3'.repeat(32), 0, 'addr_test1sender', '55'.repeat(28))],
+    outputs: [
+      txOutput(otherTxHash, 0, TREASURY, TREASURY_CREDENTIAL, '1000000', [
+        { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '500000' },
+        { policy_id: '66'.repeat(28), asset_name: '414243', quantity: '9' },
+      ]),
+    ],
+    assets_minted: [],
+  }
+  const journal = fixture({
+    transactions: [saleTx(), otherTx],
+    treasuryOutputs: [
+      addressOutput(),
+      addressOutput({
+        tx_hash: otherTxHash,
+        tx_index: 0,
+        block_height: 99,
+        block_time: 1_699_999_900,
+      }),
+    ],
+  })
+  assert.equal(journal.receiptEvents.length, 1)
+  assert.equal(journal.nonSaleTreasuryOutputs.length, 1)
+  assert.equal(journal.treasuryCustody.unspentOutputCount, 2)
+  assert.deepEqual(journal.treasuryCustody.totalsByAsset, [
+    { unit: 'lovelace', quantity: '3200000' },
+    { unit: PAYMENT_POLICY + '5553444d', quantity: '2000000' },
+    { unit: '66'.repeat(28) + '414243', quantity: '9' },
+  ])
+})
+
 test('recognizes an exact TicketSale receipt and leaves category posting unassigned', () => {
   const journal = fixture()
   assert.equal(journal.schema, 'PRE-RICH-TREASURY-TICKET-SALE-RECEIPT-JOURNAL-v1')
+  assert.deepEqual(journal.treasuryCustody.totalsByAsset, [
+    { unit: 'lovelace', quantity: '2200000' },
+    { unit: PAYMENT_POLICY + '5553444d', quantity: '1500000' },
+  ])
+  assert.equal(journal.treasuryCustody.unspentOutputCount, 1)
   assert.equal(journal.receiptEvents.length, 1)
   const receipt = journal.receiptEvents[0]
   assert.equal(receipt.receiptRef, TX + '#' + RECEIPT_INDEX)
@@ -127,6 +173,17 @@ test('recognizes an exact TicketSale receipt and leaves category posting unassig
   assert.equal(receipt.spendAuthorization, false)
   assert.equal(journal.summary.categoryCredits, 0)
   assert.equal(journal.summary.spendAuthorizations, 0)
+})
+
+test('repeated observations preserve an identical deterministic receipt event identity and payload', () => {
+  const first = fixture({ observedAt: '2026-11-05T12:00:00.000Z' })
+  const second = fixture({ observedAt: '2026-11-05T12:05:00.000Z' })
+  assert.equal(first.receiptEvents[0].eventId, second.receiptEvents[0].eventId)
+  assert.deepEqual(first.receiptEvents, second.receiptEvents)
+})
+
+test('rejects duplicate transaction facts as a conflicting or replayed observation', () => {
+  assert.throws(() => fixture({ transactions: [saleTx(), saleTx()] }), /DUPLICATE_TX_INFO/)
 })
 
 test('does not classify a Treasury inflow without the exact ticket policy mint', () => {
@@ -570,10 +627,10 @@ test('derives a consolidated receipt batch total only from the exact receipt inp
         lovelace: '1100000',
         assets: [{ policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '500000' }],
       }),
-      txInput('d2'.repeat(32), 0, 'addr_test1batcher', '55'.repeat(28)),
+      { ...txInput('d2'.repeat(32), 0, 'addr_test1batcher', '55'.repeat(28)), value: '400000' },
     ],
     outputs: [
-      txOutput(CONSUMER_TX, 0, POOL, POOL_CREDENTIAL, '3300000', [
+      txOutput(CONSUMER_TX, 0, POOL, POOL_CREDENTIAL, '3500000', [
         { policy_id: PAYMENT_POLICY, asset_name: '5553444d', quantity: '2000000' },
       ]),
     ],
