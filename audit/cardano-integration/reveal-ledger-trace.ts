@@ -1151,35 +1151,34 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         } finally {
           providerWithEvaluation.evaluateTx = originalEvaluateTx
         }
-        if (!rejection) {
-          throw new Error(scenario.id + ' expected final Reveal rejection was not observed')
-        }
-        // Yaci's Conway error embeds the full Plutus script as base64 after
-        // "Base64-encoded script bytes". Do not scan that opaque payload for
-        // generic substrings such as "fee", "unit" or "budget": a byte string
-        // can contain those words by chance. Classify only the structured
-        // ledger-error header before the script payload.
-        const rejectionHeader = rejection.split(/Base64-encoded script bytes:/i, 1)[0]
-        const phase2LedgerFailure =
-          /ValidationTagMismatch\s*\(\s*IsValid True\s*\)/i.test(rejectionHeader) &&
-          /PlutusFailure/i.test(rejectionHeader)
-        const explicitResourceFailure =
-          /Max transaction size of \d+ exceeded|FeeTooSmallUTxO|InsufficientCollateral|ExUnitsTooBig|ExecutionUnitsTooBig|TransactionTooLarge|ValueNotConserved|BadInputsUTxO|MissingScriptWitnesses|NoCollateralInputs|CollateralTooSmall/i.test(rejectionHeader)
-        if (!phase2LedgerFailure || explicitResourceFailure) {
+        // A provider submission error is not evidence that an invalid
+        // transaction was included by the ledger. In particular,
+        // ValidationTagMismatch(IsValid True) means the submitted envelope
+        // declared the script phase valid while execution failed. It is a
+        // harness representation failure, not a qualified Reveal rejection.
+        // Keep this queue gate fail-closed until the signed candidate is
+        // re-enveloped with CML is_valid=false, submitted as raw CBOR, and
+        // collateral consumption is observed on-chain.
+        if (rejection) {
+          const rejectionHeader = rejection.split(/Base64-encoded script bytes:/i, 1)[0]
           throw new Error(
-            scenario.id + ' rejection is not a qualified Plutus phase-2 ledger rejection: ' +
+            scenario.id +
+            ' negative Reveal is NOT qualified: submission returned an error instead of ledger inclusion of an is_valid=false transaction with collateral accounting. ' +
+            'No expected-phase2-ledger-rejection classification is permitted. Provider error: ' +
             rejectionHeader.slice(0, 1600),
           )
         }
-        console.log(JSON.stringify({
-          revealQueueDiag: 'expected-phase2-ledger-rejection',
-          scenarioId: scenario.id,
-          stepIndex,
-          classified: 'ValidationTagMismatch/PlutusFailure',
-          explicitResourceFailure: false,
-          transaction: summary,
-          rejectionHeader: rejectionHeader.slice(0, 1600),
-        }))
+        if (!txHash) {
+          throw new Error(
+            scenario.id + ' negative Reveal has no transaction hash; ledger inclusion is unproven',
+          )
+        }
+        await lucid.awaitTx(txHash)
+        throw new Error(
+          scenario.id +
+          ' negative Reveal was submitted as an ordinary valid transaction and reached the ledger; ' +
+          'this harness path cannot qualify the expected invalid-transaction/collateral outcome',
+        )
         const stillUnspentPrize = await lucid.utxosAt(scripts.prizeAddress as string)
         const stillUnspentPool = await lucid.utxosAt(poolAddress)
         const preservedPrize = stillUnspentPrize.find((u) => ref(u) === ref(prizeInput))
