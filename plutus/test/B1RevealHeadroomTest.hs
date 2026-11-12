@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NumericUnderscores #-}
 
 -- Direct CEK characterization of the canonical B1PrizePool Plutus V2 validator.
 -- Synthetic ScriptContext only: this is not a native-ledger or Preprod test.
