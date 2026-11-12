@@ -2148,3 +2148,130 @@ describe('P0.3: Expiry Finality', () => {
   })
 })
 
+
+
+
+// ============================================================
+// 9. Reveal headroom characterization
+//
+// This is an arithmetic characterization of the current pre-Reveal
+// affordability predicate in B1PrizePool.hs and PrizeValidator.hs.
+// It is a PURE MIRROR test: it does not execute either Plutus validator.
+// All values use one consistent integer accounting unit.
+// ============================================================
+
+describe('B1 Reveal headroom characterization (pure mirror; not Plutus execution)', () => {
+  type RevealTrace = {
+    price: number
+    payout: number
+    effectivePoolBefore: number
+    precheckPasses: boolean
+    postStateSolvent: boolean
+  }
+
+  function simulateMaximumPayoutSequence(
+    totalLiquidity: number,
+    prices: readonly number[],
+  ): { trace: RevealTrace[]; finalState: B1PrizePoolState } {
+    let state = makeState({
+      ppTotalLiquidity: totalLiquidity,
+      ppUnresolvedReserve: prices.reduce((sum, price) => sum + price, 0),
+      ppUnresolvedTicketCount: prices.length,
+    })
+    const trace: RevealTrace[] = []
+
+    for (const price of prices) {
+      const payout = 500 * price
+      const effectivePoolBefore = effectivePool(state)
+      const precheckPasses =
+        payout >= 0 && payout <= effectivePoolBefore
+
+      // Deliberately calculate the candidate post-state even when the
+      // precheck fails, so the test can distinguish the two predicates.
+      const next = applyTicketRevealed(state, price, payout)
+      trace.push({
+        price,
+        payout,
+        effectivePoolBefore,
+        precheckPasses,
+        postStateSolvent: solvencyOk(next),
+      })
+      state = next
+    }
+
+    return { trace, finalState: state }
+  }
+
+  it('at the exact 500x boundary, seven 1-USDM maximum reveals pass but the eighth precheck fails', () => {
+    const { trace, finalState } =
+      simulateMaximumPayoutSequence(4_000, Array<number>(8).fill(1))
+
+    assert.ok(trace.slice(0, 7).every((step) => step.precheckPasses))
+    assert.equal(trace[7].effectivePoolBefore, 499)
+    assert.equal(trace[7].payout, 500)
+    assert.equal(trace[7].precheckPasses, false)
+
+    // The hypothetical post-state still satisfies the aggregate 500x
+    // solvency equation. The current validator's stricter precheck is the
+    // predicate that prevents this final transition.
+    assert.ok(trace.every((step) => step.postStateSolvent))
+    assert.equal(finalState.ppPendingLiabilities, 4_000)
+    assert.equal(finalState.ppUnresolvedReserve, 0)
+    assert.ok(solvencyOk(finalState))
+  })
+
+  it('one ticket price of additional headroom supports all eight maximum reveals', () => {
+    const { trace, finalState } =
+      simulateMaximumPayoutSequence(4_001, Array<number>(8).fill(1))
+
+    assert.ok(trace.every((step) => step.precheckPasses))
+    assert.equal(trace[7].effectivePoolBefore, 500)
+    assert.equal(finalState.ppPendingLiabilities, 4_000)
+    assert.equal(finalState.ppUnresolvedReserve, 0)
+    assert.equal(effectivePool(finalState), 1)
+    assert.ok(solvencyOk(finalState))
+  })
+
+  it('mixed 1-USDM / 100-USDM tickets need the largest ticket price as order-independent headroom', () => {
+    const orders = [
+      [1, 100],
+      [100, 1],
+    ] as const
+    const exactWce = 500 * (1 + 100)
+    const requiredHeadroom = Math.max(...orders[0])
+
+    for (const order of orders) {
+      const exactBoundary =
+        simulateMaximumPayoutSequence(exactWce, order)
+      assert.equal(exactBoundary.trace[0].precheckPasses, true)
+      assert.equal(exactBoundary.trace[1].precheckPasses, false)
+      assert.ok(exactBoundary.trace.every((step) => step.postStateSolvent))
+
+      const buffered =
+        simulateMaximumPayoutSequence(exactWce + requiredHeadroom, order)
+      assert.ok(buffered.trace.every((step) => step.precheckPasses))
+      assert.ok(buffered.trace.every((step) => step.postStateSolvent))
+    }
+  })
+
+  it('the boundary is specific to the all-maximum path: a smaller earlier payout can leave enough for the final maximum payout', () => {
+    let state = makeState({
+      ppTotalLiquidity: 1_000,
+      ppUnresolvedReserve: 2,
+      ppUnresolvedTicketCount: 2,
+    })
+
+    const firstPayout = 499
+    assert.ok(firstPayout <= effectivePool(state))
+    state = applyTicketRevealed(state, 1, firstPayout)
+    assert.equal(effectivePool(state), 500)
+
+    const finalMaximumPayout = 500
+    assert.ok(finalMaximumPayout <= effectivePool(state))
+    state = applyTicketRevealed(state, 1, finalMaximumPayout)
+
+    assert.equal(state.ppPendingLiabilities, 999)
+    assert.equal(state.ppUnresolvedReserve, 0)
+    assert.ok(solvencyOk(state))
+  })
+})
