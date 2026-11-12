@@ -878,6 +878,10 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
       )
     }
   }
+  const assetsFingerprint = (assets: Record<string, bigint>) =>
+    Object.entries(assets)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([unit, quantity]) => [unit, quantity.toString()])
   const poolAdaFeeBuffer = 10_000_000n
   const persistTransactions = () => {
     writeFileSync(
@@ -1011,6 +1015,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
       if (nextReserve < 0n || nextCount < 0n) {
         throw new Error(scenario.id + ' would underflow Pending reserve/count')
       }
+      const inputPrizeDatumCbor = Data.to(ticket.inputDatum)
       const inputPoolDatumCbor = Data.to(
         poolDatum(scripts.prizeHash, scenario.liquidity, currentReserve, currentCount, currentLiabilities),
       )
@@ -1018,6 +1023,12 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         poolDatum(scripts.prizeHash, scenario.liquidity, nextReserve, nextCount, nextLiabilities),
       )
       const outputPrizeDatumCbor = Data.to(ticket.outputDatum)
+      if (prizeInput.datum !== inputPrizeDatumCbor) {
+        throw new Error(scenario.id + ' Prize input datum differs from canonical Pending fixture')
+      }
+      if (currentPool.datum !== inputPoolDatumCbor) {
+        throw new Error(scenario.id + ' B1 Pool input datum differs from the observed evolving state')
+      }
       const prizeRedeemer = Data.to(c(1, [ticket.secretHex]))
       const poolRedeemer = Data.to(c(2, [ticket.price]))
       const poolAdaBefore = BigInt(currentPool.assets.lovelace ?? 0n)
@@ -1119,11 +1130,21 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         }
         const stillUnspentPrize = await lucid.utxosAt(scripts.prizeAddress as string)
         const stillUnspentPool = await lucid.utxosAt(poolAddress)
-        if (
-          !stillUnspentPrize.some((u) => ref(u) === ref(prizeInput)) ||
-          !stillUnspentPool.some((u) => ref(u) === ref(currentPool))
-        ) {
+        const preservedPrize = stillUnspentPrize.find((u) => ref(u) === ref(prizeInput))
+        const preservedPool = stillUnspentPool.find((u) => ref(u) === ref(currentPool))
+        if (!preservedPrize || !preservedPool) {
           throw new Error(scenario.id + ' rejected Reveal consumed an input UTxO')
+        }
+        if (preservedPrize.datum !== inputPrizeDatumCbor || preservedPool.datum !== inputPoolDatumCbor) {
+          throw new Error(scenario.id + ' rejected Reveal changed an original input datum')
+        }
+        if (
+          JSON.stringify(assetsFingerprint(preservedPrize.assets)) !==
+            JSON.stringify(assetsFingerprint(prizeInput.assets)) ||
+          JSON.stringify(assetsFingerprint(preservedPool.assets)) !==
+            JSON.stringify(assetsFingerprint(currentPool.assets))
+        ) {
+          throw new Error(scenario.id + ' rejected Reveal changed an original input Value')
         }
         rejectedAt = stepIndex
       } else {
@@ -1223,6 +1244,17 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         if (!nextPrize || !currentPool) {
           throw new Error(scenario.id + ' successful Reveal output observation is incomplete')
         }
+        if (nextPrize.datum !== outputPrizeDatumCbor || currentPool.datum !== outputPoolDatumCbor) {
+          throw new Error(scenario.id + ' observed Reveal output datum differs from the signed candidate output')
+        }
+        if (
+          JSON.stringify(assetsFingerprint(nextPrize.assets)) !==
+            JSON.stringify(assetsFingerprint(prizeInput.assets)) ||
+          JSON.stringify(assetsFingerprint(currentPool.assets)) !==
+            JSON.stringify(assetsFingerprint(poolOutputAssets))
+        ) {
+          throw new Error(scenario.id + ' observed Reveal output Value differs from the expected token/ADA movement')
+        }
         acceptedCount += 1
         currentReserve = nextReserve
         currentLiabilities = nextLiabilities
@@ -1254,15 +1286,19 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           secretHex: ticket.secretHex,
           consumed: {
             prizeRef: consumedPrizeRef,
-            prizeDatumCbor: prizeInput.datum ?? null,
+            prizeDatumCbor: inputPrizeDatumCbor,
+            prizeAssets: assetsFingerprint(prizeInput.assets),
             poolRef: consumedPoolRef,
             poolDatumCbor: inputPoolDatumCbor,
+            poolAssets: assetsFingerprint(currentPool.assets),
           },
           produced: {
             prizeRef: ref(nextPrize),
             prizeDatumCbor: outputPrizeDatumCbor,
+            prizeAssets: assetsFingerprint(nextPrize.assets),
             poolRef: ref(currentPool),
             poolDatumCbor: outputPoolDatumCbor,
+            poolAssets: assetsFingerprint(currentPool.assets),
           },
           signedTxCbor: signedCbor,
           tx: summary,
@@ -1288,9 +1324,11 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         secretHex: ticket.secretHex,
         consumed: {
           prizeRef: consumedPrizeRef,
-          prizeDatumCbor: prizeInput.datum ?? null,
+          prizeDatumCbor: inputPrizeDatumCbor,
+          prizeAssets: assetsFingerprint(prizeInput.assets),
           poolRef: consumedPoolRef,
           poolDatumCbor: inputPoolDatumCbor,
+          poolAssets: assetsFingerprint(currentPool.assets),
         },
         candidateOutput: {
           prizeDatumCbor: outputPrizeDatumCbor,
