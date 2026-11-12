@@ -5,23 +5,6 @@
 module Main where
 
 import Prelude
-  ( Bool (False, True)
-  , IO
-  , Integer
-  , String
-  , error
-  , mapM_
-  , not
-  , putStrLn
-  , show
-  , sum
-  , (++)
-  , (==)
-  , (>=)
-  , (-)
-  , (+)
-  , (*)
-  )
 
 import qualified Data.ByteString as BS
 import qualified PlutusTx
@@ -146,7 +129,7 @@ prizeDatum price nonce status payout =
     , pdRow2Tier = 0
     }
 
-scriptOut :: ScriptHash -> Value -> PlutusTx.BuiltinData -> TxOut
+scriptOut :: ScriptHash -> Value -> Builtins.BuiltinData -> TxOut
 scriptOut hash value datum =
   TxOut
     (Address (ScriptCredential hash) Nothing)
@@ -195,11 +178,6 @@ makeRevealContext before inputPrize outputPrize after =
         (TxId (rawBytes [43]))
   in ScriptContext info (Spending poolRef)
 
-applyB1Validator
-  :: B1PrizePoolDatum
-  -> B1PrizePoolAction
-  -> ScriptContext
-  -> PlutusTx.CompiledCode PlutusTx.BuiltinUnit
 applyB1Validator datum action context =
   let
     configured0 =
