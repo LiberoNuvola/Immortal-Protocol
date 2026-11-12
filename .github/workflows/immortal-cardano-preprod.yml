@@ -367,6 +367,7 @@ jobs:
           if-no-files-found: warn
 
 
+  # This is read-only provenance evidence, not deployment or Issue approval.
   preprod-b1-script-provenance:
     # Independent read-only gate: re-derive the current parameterized Prize and
     # B1 Pool addresses from the same acquired-ledger-state evidence packet.
