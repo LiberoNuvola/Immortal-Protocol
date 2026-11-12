@@ -832,14 +832,51 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
     scripts.prizeValidator as Script,
   )
 
-  const budgetTemplates = new Map<string, Array<{
-    tag: number
-    index: number
-    mem: string
-    steps: string
-  }>>()
+  const budgetTemplates = new Map<string, {
+    prize: { mem: string; steps: string }
+    pool: { mem: string; steps: string }
+  }>()
   const queueTransactions: any[] = []
   const scenarioResults: any[] = []
+  const spendInputRoleOrder = (prize: UTxO, pool: UTxO): Array<'prize' | 'pool'> => {
+    const refs = [
+      { role: 'prize' as const, txHash: prize.txHash.toLowerCase(), index: prize.outputIndex },
+      { role: 'pool' as const, txHash: pool.txHash.toLowerCase(), index: pool.outputIndex },
+    ]
+    refs.sort((a, b) => {
+      if (a.txHash < b.txHash) return -1
+      if (a.txHash > b.txHash) return 1
+      return a.index - b.index
+    })
+    return refs.map((entry) => entry.role)
+  }
+  const spendInputRefsFromCbor = (cborHex: string): string[] => {
+    const inputs = CML.Transaction.from_cbor_hex(cborHex).body().inputs()
+    const refs: string[] = []
+    for (let i = 0; i < Number(inputs.len()); i += 1) {
+      const input = inputs.get(i)
+      refs.push(
+        input.transaction_id().to_hex().toLowerCase() + '#' + Number(input.index()),
+      )
+    }
+    return refs
+  }
+  const assertExactSpendInputs = (
+    cborHex: string,
+    prize: UTxO,
+    pool: UTxO,
+    scenarioId: string,
+  ) => {
+    const actual = spendInputRefsFromCbor(cborHex).sort()
+    const expected = [ref(prize), ref(pool)].map((value) => value.toLowerCase()).sort()
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      throw new Error(
+        scenarioId + ' requires exactly Prize + Pool spending inputs; got ' +
+        JSON.stringify({ actual, expected }),
+      )
+    }
+  }
+  const poolAdaFeeBuffer = 10_000_000n
   const persistTransactions = () => {
     writeFileSync(
       'audit/yaci-evidence/reveal-queue-transactions.jsonl',
@@ -894,7 +931,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
       poolAddress,
       { kind: 'inline', value: Data.to(poolDatum(scripts.prizeHash, scenario.liquidity, faceTotal, BigInt(tickets.length), 0n)) },
       {
-        lovelace: 8_000_000n,
+        lovelace: 200_000_000n,
         [poolUnit]: 1n,
         [liquidityUnit]: scenario.liquidity,
       },
@@ -964,6 +1001,8 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
       if (!ticket || !prizeInput) {
         throw new Error(scenario.id + ' reveal order references missing nonce ' + nonce)
       }
+      const consumedPrizeRef = ref(prizeInput)
+      const consumedPoolRef = ref(currentPool)
       const nextReserve = currentReserve - ticket.price
       const nextLiabilities = currentLiabilities + ticket.payout
       const nextCount = currentCount - 1n
@@ -979,6 +1018,17 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
       const outputPrizeDatumCbor = Data.to(ticket.outputDatum)
       const prizeRedeemer = Data.to(c(1, [ticket.secretHex]))
       const poolRedeemer = Data.to(c(2, [ticket.price]))
+      const poolAdaBefore = BigInt(currentPool.assets.lovelace ?? 0n)
+      if (poolAdaBefore <= poolAdaFeeBuffer + 5_000_000n) {
+        throw new Error(scenario.id + ' Pool ADA fee buffer would breach a safe continuing output')
+      }
+      // Test-only ADA funds fees/change from the Pool input. The B1 Reveal
+      // predicate preserves the authority NFT and economic datum fields; ADA
+      // is not the USDM liquidity measure and is not changed in the Pool datum.
+      const poolOutputAssets = {
+        ...currentPool.assets,
+        lovelace: poolAdaBefore - poolAdaFeeBuffer,
+      }
       const builder = lucid
         .newTx()
         .readFrom([prizeReference.bound, poolReference.bound])
@@ -992,7 +1042,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         .pay.ToContract(
           poolAddress,
           { kind: 'inline', value: outputPoolDatumCbor },
-          currentPool.assets,
+          poolOutputAssets,
         )
         .addSigner(address)
         .validTo(Number(queueValidTo()))
@@ -1008,18 +1058,22 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
 
       if (expectedReject) {
         const template = budgetTemplates.get(ticket.price.toString())
-        if (!template || template.length !== 2) {
+        if (!template) {
           throw new Error(
             scenario.id + ' has no qualified positive-twin ExUnits template for price ' +
             ticket.price.toString(),
           )
         }
+        const roleOrder = spendInputRoleOrder(prizeInput, currentPool)
         const originalEvaluateTx = providerWithEvaluation.evaluateTx
         try {
-          providerWithEvaluation.evaluateTx = async () => template.map((r) => ({
-            redeemer_tag: (['spend', 'mint', 'certificate', 'withdrawal', 'vote', 'propose'] as const)[r.tag] ?? 'unknown',
-            redeemer_index: r.index,
-            ex_units: { mem: Number(r.mem), steps: Number(r.steps) },
+          providerWithEvaluation.evaluateTx = async () => roleOrder.map((role, index) => ({
+            redeemer_tag: 'spend',
+            redeemer_index: index,
+            ex_units: {
+              mem: Number(template[role].mem),
+              steps: Number(template[role].steps),
+            },
           }))
           builtTx = await builder.complete({ localUPLCEval: false })
           const unsignedCbor = builtTx.toCBOR()
@@ -1030,6 +1084,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
               unsignedBytes + ' > maxTxSize ' + maxTxSize,
             )
           }
+          assertExactSpendInputs(unsignedCbor, prizeInput, currentPool, scenario.id)
           signedTx = await builtTx.sign.withWallet().complete({ localUPLCEval: false })
           signedCbor = signedTx.toCBOR()
           const signedBytes = Buffer.from(signedCbor, 'hex').length
@@ -1079,6 +1134,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
             unsignedBytes + ' > ' + maxTxSize,
           )
         }
+        assertExactSpendInputs(unsignedCbor, prizeInput, currentPool, scenario.id)
         measuredExUnits = await evaluateYaciTx(unsignedCbor, [])
         summary = describeTx(unsignedCbor)
         const coverage = measuredExUnits.map((measured) => {
@@ -1109,15 +1165,30 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
             JSON.stringify(coverage),
           )
         }
-        budgetTemplates.set(
-          ticket.price.toString(),
-          summary.redeemers.map((r: any) => ({
-            tag: r.tag,
-            index: r.index,
-            mem: String(r.mem),
-            steps: String(r.steps),
-          })),
-        )
+        const roleOrder = spendInputRoleOrder(prizeInput, currentPool)
+        const byRole: {
+          prize?: { mem: string; steps: string }
+          pool?: { mem: string; steps: string }
+        } = {}
+        for (let index = 0; index < roleOrder.length; index += 1) {
+          const assigned = summary.redeemers.find(
+            (r: any) => r.tag === 0 && r.index === index,
+          )
+          if (!assigned) {
+            throw new Error(scenario.id + ' lacks assigned spend ExUnits for ' + roleOrder[index])
+          }
+          byRole[roleOrder[index]] = {
+            mem: String(assigned.mem),
+            steps: String(assigned.steps),
+          }
+        }
+        if (!byRole.prize || !byRole.pool) {
+          throw new Error(scenario.id + ' could not attribute positive ExUnits by validator role')
+        }
+        budgetTemplates.set(ticket.price.toString(), {
+          prize: byRole.prize,
+          pool: byRole.pool,
+        })
         budgetSource = 'measured Yaci CEK execution for this positive twin'
         signedTx = await builtTx.sign.withWallet().complete({ localUPLCEval: false })
         signedCbor = signedTx.toCBOR()
@@ -1162,8 +1233,8 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           payoutUsdmSubunits: ticket.payout.toString(),
           rowTiers: [ticket.row1Tier, ticket.row2Tier],
           symbols: ticket.symbols,
-          consumedPrizeRef: ref(prizeInput),
-          consumedPoolRef: ref(nextPoolUtxos.find((u) => u.txHash === txHash && u.assets[poolUnit] === 1n) as UTxO),
+          consumedPrizeRef,
+          consumedPoolRef,
           producedPrizeRef: ref(nextPrize),
           producedPoolRef: ref(currentPool),
         })
@@ -1180,9 +1251,9 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           symbols: ticket.symbols,
           secretHex: ticket.secretHex,
           consumed: {
-            prizeRef: ref(prizeInput),
+            prizeRef: consumedPrizeRef,
             prizeDatumCbor: prizeInput.datum ?? null,
-            poolRef: ref(poolUtxos.find((u) => u.txHash === bootstrapHash && u.assets[poolUnit] === 1n) as UTxO),
+            poolRef: consumedPoolRef,
             poolDatumCbor: inputPoolDatumCbor,
           },
           produced: {
@@ -1214,9 +1285,9 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         symbols: ticket.symbols,
         secretHex: ticket.secretHex,
         consumed: {
-          prizeRef: ref(prizeInput),
+          prizeRef: consumedPrizeRef,
           prizeDatumCbor: prizeInput.datum ?? null,
-          poolRef: ref(currentPool),
+          poolRef: consumedPoolRef,
           poolDatumCbor: inputPoolDatumCbor,
         },
         candidateOutput: {
@@ -1315,6 +1386,8 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
     productionUsdmQualified: false,
     maxTxSize,
     subunitsPerUsdm: 100,
+    poolAdaFeeBufferPerRevealLovelace: poolAdaFeeBuffer.toString(),
+    feeFundingNote: 'Test-only ADA is removed from each continuing Pool output to fund fee/change; the USDM test asset and B1 economic datum are unchanged.',
     transactionEvidenceFile: 'audit/yaci-evidence/reveal-queue-transactions.jsonl',
     requiredCases: [
       '8x1-USDM exact 4000-USDM WCE: seven maximum Reveals accepted, eighth rejected',
