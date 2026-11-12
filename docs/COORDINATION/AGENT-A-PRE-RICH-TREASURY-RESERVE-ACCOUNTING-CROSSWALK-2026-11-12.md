@@ -750,3 +750,57 @@ Compare against the current baseline:
 A size win alone is insufficient. Any candidate must preserve the validator decision surface and fit the **complete** publication transaction under 16,384 bytes with a meaningful safety margin (proposed target: at most 16,128 bytes). If cost, log semantics, compiler reproducibility or any transition behavior regresses, reject the candidate.
 
 This is a compiler/build experiment only. It is **not** permission to alter the production PrizeValidator build, remove diagnostic traces, change V1 500×/WCE, adjust ABI, switch V3 semantics, or deploy a new script. The production source remains unchanged until a separately reviewed candidate is proven.
+
+
+## 17. Plinth conservative-optimisation trial — intermediate CI evidence (2026-11-12)
+
+This section supersedes the “not implemented/measured” status of the compiler hypothesis in §16. It records only the exact evidence currently available; the workflow is still running at the time of this update.
+
+### Baseline versus trial source
+
+- **Baseline**: commit `ad4b66757e78940ed52a2fcf31f142d718860866` has Plutus V2 target version `1.0.0` and does **not** enable `conservative-optimisation`. Its measured parameterized PrizeValidator was 16,443 bytes and its reference-script publication transaction was 16,540 bytes; the latter exceeded the 16,384-byte transaction limit by 156 bytes.
+- **Trial**: commit `e08e8127a19487dd82d100cc8b4c9a6ab5d3f15d` adds only `{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:conservative-optimisation #-}` to `plutus/PrizeValidator.hs`, retaining target version `1.0.0`. The Haskell validator logic, action predicates, applied parameters and datum/redeemer ABI are unchanged in this commit.
+- The trial is a compiler-option comparison on the shared working branch, not a separate production deployment. The exact script bytes, hash and publication transaction size for the trial still need to be captured in its evidence packet.
+
+At the pinned Plutus revision, conservative optimisation implies `preserve-logging` together with its documented restrictions on relaxed floating, constant inlining, fixed-point inlining and simplifier evaluation of builtins. This must remain bound to the exact compiler pin in any reproducible comparison.
+
+### Verified run steps
+
+**Workflow:** [IMMORTAL Cardano Integration Lab #43202287858](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43202287858)  
+**Tested code HEAD:** `e08e8127a19487dd82d100cc8b4c9a6ab5d3f15d`  
+**Job:** `devnet-integration`, still `in_progress` at this crosswalk update.
+
+The following exact steps report success:
+- canonical B1 / PrizeValidator shared-TxInfo Reveal CEK suite;
+- isolated Aiken V3 Reveal ledger trace;
+- Haskell V2 Pending Expire ledger trace;
+- Haskell V2 Revealed Loss Expire ledger trace;
+- Haskell V2 Revealed Win Expire ledger trace;
+- Aiken Prize + Haskell B1PrizePool Claim ledger trace.
+
+The three Haskell V2 Expire steps completing is material evidence that the trial Prize reference script was publishable and its respective local-Yaci Expire fixtures were built, signed, submitted and observed. Thus the original pre-submission size blocker no longer prevents those three specific fixtures in this run. This is not yet the exact serialized-size measurement, nor proof of a 256-byte margin.
+
+### Remaining evidence
+
+At the time of this update:
+- native Yaci UTxO decoder conformance is still running;
+- the P2.8 Cardano-ledger evidence gate has not run;
+- the resource-footprint step has not run;
+- no final evidence artifact or JEV registry has been produced for this workflow.
+
+Consequently, the following remain unverified for the trial: exact parameterized script bytes; SHA-256 and Cardano script hash; complete Prize reference-script publication transaction CBOR length; measured ExUnits/budgets; resource-audit comparison; P2.8 outcome; and final JEV disposition. A successful Expire fixture proves the publication path worked for that test, but does not establish its size margin. The target in §16 (complete publication transaction ≤16,128 bytes) remains a useful margin threshold, not yet demonstrated.
+
+**Disposition:** compiler-option trial has been executed and its relevant Reveal/Expire/Claim CI steps pass; size and full P2.8/evidence qualification remain pending. Do not call this a production release, deployment, or Preprod qualification. No V1 500×/WCE, Haskell validator predicate, Aiken V3 semantics, datum/redeemer ABI, economic rule, deployment or ledger authority was changed.
+
+## 18. Aiken V3 Reveal candidate — source parity and multi-ticket evidence gap
+
+Agent B's source review identifies the same pre-state affordability predicate in the isolated Aiken Reveal candidate:
+
+- `poc/aiken-reveal-parity/lib/immortal/reveal_transition.ak` derives payout from the canonical Aiken GameRules and calls `reveal_pool_transition_is_valid`.
+- `poc/aiken-reveal-parity/lib/immortal/reveal_context_guards.ak` requires `payout <= old_pool.total_liquidity - old_pool.pending_liabilities - old_pool.unresolved_reserve - old_pool.locked_jackpot`, then verifies the liability increase, reserve decrease, unchanged liquidity and one-ticket count decrement.
+
+This is a source-level finding in the isolated parity candidate, not proof that this Aiken candidate is deployed as the production validator. The current active local-Yaci Reveal trace constructs and submits one Prize + one B1 Pool transition for one ticket. The Aiken unit fixtures also test individual old/new Pool transitions. Neither exercises a sequence of eight 500× Reveals over the same evolving Pool state.
+
+The missing characterization is therefore a local-Yaci sequential queue test: eight Pending $1 tickets at exact 4,000-USDM WCE, all-max Reveal sequence, with a +1-USDM control; mixed $1/$100 prices in both reveal orders with the corresponding +$100 control; and a LOSS-before-max control. Each step must consume the preceding Pool UTxO and produce the next one, retaining exact transaction CBOR, execution budgets and input/output references. This test characterizes current behavior only; it must not silently change the affordability predicate.
+
+**Disposition:** Aiken V3 candidate source-level old-state predicate confirmed; current one-ticket local-Yaci Reveal PASS remains valid but does not prove multi-ticket all-max Reveal liveness. No release-aware affordability candidate is approved or implemented. Preserve the current 500×/WCE and Reveal semantics pending separately reviewed evidence and decision.
