@@ -1143,42 +1143,197 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           }
           summary = describeTx(signedCbor)
           budgetSource = 'same-price positive Yaci twin with assigned 1% margin'
-          try {
-            txHash = await signedTx.submit()
-          } catch (error) {
-            rejection = error instanceof Error ? error.message : String(error)
-          }
         } finally {
           providerWithEvaluation.evaluateTx = originalEvaluateTx
         }
-        // A provider submission error is not evidence that an invalid
-        // transaction was included by the ledger. In particular,
-        // ValidationTagMismatch(IsValid True) means the submitted envelope
-        // declared the script phase valid while execution failed. It is a
-        // harness representation failure, not a qualified Reveal rejection.
-        // Keep this queue gate fail-closed until the signed candidate is
-        // re-enveloped with CML is_valid=false, submitted as raw CBOR, and
-        // collateral consumption is observed on-chain.
-        if (rejection) {
-          const rejectionHeader = rejection.split(/Base64-encoded script bytes:/i, 1)[0]
-          throw new Error(
-            scenario.id +
-            ' negative Reveal is NOT qualified: submission returned an error instead of ledger inclusion of an is_valid=false transaction with collateral accounting. ' +
-            'No expected-phase2-ledger-rejection classification is permitted. Provider error: ' +
-            rejectionHeader.slice(0, 1600),
-          )
-        }
-        if (!txHash) {
-          throw new Error(
-            scenario.id + ' negative Reveal has no transaction hash; ledger inclusion is unproven',
-          )
-        }
-        await lucid.awaitTx(txHash)
-        throw new Error(
-          scenario.id +
-          ' negative Reveal was submitted as an ordinary valid transaction and reached the ledger; ' +
-          'this harness path cannot qualify the expected invalid-transaction/collateral outcome',
+
+        // Preserve the exact signed body and witnesses; only flip the
+        // transaction validity bit required by the Cardano phase-2 failure
+        // envelope. The body hash and witness-set CBOR must remain identical.
+        const signedCandidate = CML.Transaction.from_cbor_hex(signedCbor)
+        const candidateBody = signedCandidate.body()
+        const candidateWitnesses = signedCandidate.witness_set()
+        const candidateAuxiliaryData = signedCandidate.auxiliary_data()
+        const invalidEnvelope = CML.Transaction.new(
+          candidateBody,
+          candidateWitnesses,
+          false,
+          candidateAuxiliaryData ?? undefined,
         )
+        if (invalidEnvelope.is_valid() !== false) {
+          throw new Error(scenario.id + ' CML did not preserve is_valid=false on the negative envelope')
+        }
+        const invalidCbor = invalidEnvelope.to_cbor_hex()
+        const invalidBytes = Buffer.from(invalidCbor, 'hex').length
+        if (invalidBytes > maxTxSize) {
+          throw new Error(
+            scenario.id + ' invalid-envelope CBOR exceeds maxTxSize: ' +
+            invalidBytes + ' > ' + maxTxSize,
+          )
+        }
+        const invalidSummary = describeTx(invalidCbor)
+        if (invalidSummary.bodyHash !== summary.bodyHash) {
+          throw new Error(scenario.id + ' CML invalid-envelope conversion changed the signed body hash')
+        }
+        if (candidateWitnesses.to_cbor_hex() !== invalidEnvelope.witness_set().to_cbor_hex()) {
+          throw new Error(scenario.id + ' CML invalid-envelope conversion changed the witness set')
+        }
+
+        // Fail closed unless the signed body has explicit, wallet-controlled
+        // ADA collateral and a coherent total-collateral / return plan.
+        const bodyAny = candidateBody as any
+        if (typeof bodyAny.collateral !== 'function' ||
+            typeof bodyAny.total_collateral !== 'function' ||
+            typeof bodyAny.collateral_return !== 'function') {
+          throw new Error(scenario.id + ' pinned CML lacks the required collateral inspection API')
+        }
+        const collateralInputs = bodyAny.collateral()
+        if (!collateralInputs || typeof collateralInputs.len !== 'function' || collateralInputs.len() < 1) {
+          throw new Error(scenario.id + ' negative Reveal has no explicit collateral inputs')
+        }
+        const walletUtxosBefore = await lucid.utxosAt(address)
+        const collateralRefs: string[] = []
+        let collateralLovelace = 0n
+        for (let i = 0; i < collateralInputs.len(); i += 1) {
+          const collateralInput = collateralInputs.get(i)
+          const collateralRef = collateralInput.transaction_id().to_hex() + '#' +
+            Number(collateralInput.index())
+          if (collateralRefs.includes(collateralRef)) {
+            throw new Error(scenario.id + ' duplicate collateral input: ' + collateralRef)
+          }
+          collateralRefs.push(collateralRef)
+          const collateralUtxo = walletUtxosBefore.find((utxo) => ref(utxo) === collateralRef)
+          if (!collateralUtxo) {
+            throw new Error(scenario.id + ' collateral input is not present in the connected wallet: ' + collateralRef)
+          }
+          const collateralUnits = Object.keys(collateralUtxo.assets)
+          if (collateralUnits.some((unit) => unit !== 'lovelace')) {
+            throw new Error(scenario.id + ' collateral input is not ADA-only: ' + collateralRef)
+          }
+          collateralLovelace += collateralUtxo.assets.lovelace ?? 0n
+        }
+        const maxCollateralInputs = Number((protocolParameters as any).maxCollateralInputs)
+        const collateralPercentage = Number((protocolParameters as any).collateralPercentage)
+        if (!Number.isSafeInteger(maxCollateralInputs) || maxCollateralInputs < 1 ||
+            collateralInputs.len() > maxCollateralInputs) {
+          throw new Error(scenario.id + ' collateral input count exceeds active protocol parameters')
+        }
+        if (!Number.isSafeInteger(collateralPercentage) || collateralPercentage < 1) {
+          throw new Error(scenario.id + ' active collateral percentage is unavailable')
+        }
+        const minimumCollateral = (
+          BigInt(summary.fee) * BigInt(collateralPercentage) + 99n
+        ) / 100n
+        const totalCollateralValue = bodyAny.total_collateral()
+        const totalCollateral = totalCollateralValue == null
+          ? collateralLovelace
+          : BigInt(totalCollateralValue.toString())
+        const collateralReturn = bodyAny.collateral_return()
+        if (collateralLovelace < minimumCollateral ||
+            totalCollateral < minimumCollateral ||
+            totalCollateral > collateralLovelace) {
+          throw new Error(scenario.id + ' collateral amount is insufficient or inconsistent: ' +
+            JSON.stringify({
+              collateralLovelace: collateralLovelace.toString(),
+              totalCollateral: totalCollateral.toString(),
+              minimumCollateral: minimumCollateral.toString(),
+            }))
+        }
+        const expectedCollateralReturn = collateralLovelace - totalCollateral
+        let collateralReturnAddress: string | null = null
+        if (expectedCollateralReturn > 0n) {
+          if (!collateralReturn) {
+            throw new Error(scenario.id + ' excess collateral has no collateral-return output')
+          }
+          collateralReturnAddress = collateralReturn.address().to_bech32()
+          if (collateralReturnAddress !== address) {
+            throw new Error(scenario.id + ' collateral return does not return to the connected wallet')
+          }
+          const returnedLovelace = BigInt(collateralReturn.amount().coin().toString())
+          if (returnedLovelace !== expectedCollateralReturn) {
+            throw new Error(scenario.id + ' collateral-return lovelace mismatch: expected ' +
+              expectedCollateralReturn.toString() + ', got ' + returnedLovelace.toString())
+          }
+        } else if (collateralReturn) {
+          throw new Error(scenario.id + ' unexpected collateral-return output when all collateral is consumed')
+        }
+
+        // Submit raw CBOR to Yaci's node submission boundary, not the
+        // Blockfrost-compatible Store/evaluator endpoint.
+        const submitResponse = await fetch('http://127.0.0.1:8090/api/submit/tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/cbor' },
+          body: Buffer.from(invalidCbor, 'hex'),
+        })
+        const submitBody = await submitResponse.text()
+        if (!submitResponse.ok) {
+          throw new Error(scenario.id + ' invalid-envelope raw Yaci submission failed (HTTP ' +
+            submitResponse.status + '): ' + submitBody.slice(0, 1600))
+        }
+        txHash = invalidSummary.bodyHash
+        console.log(JSON.stringify({
+          revealQueueDiag: 'negative-invalid-envelope-submitted',
+          scenarioId: scenario.id,
+          stepIndex,
+          txHash,
+          bodyHashPreserved: true,
+          witnessSetPreserved: true,
+          isValid: false,
+          collateralRefs,
+          collateralLovelace: collateralLovelace.toString(),
+          totalCollateral: totalCollateral.toString(),
+          expectedCollateralReturn: expectedCollateralReturn.toString(),
+          collateralReturnAddress,
+          submitHttpStatus: submitResponse.status,
+          submitResponse: submitBody.slice(0, 500),
+          transaction: invalidSummary,
+        }))
+
+        await lucid.awaitTx(txHash)
+        const indexedTxResponse = await fetch(API + '/txs/' + txHash)
+        if (!indexedTxResponse.ok) {
+          throw new Error(scenario.id + ' invalid transaction was not indexed by Yaci Store: HTTP ' +
+            indexedTxResponse.status)
+        }
+        const indexedTx = await indexedTxResponse.json() as Record<string, unknown>
+        const walletUtxosAfter = await lucid.utxosAt(address)
+        const stillUnspentCollateral = collateralRefs.filter((collateralRef) =>
+          walletUtxosAfter.some((utxo) => ref(utxo) === collateralRef),
+        )
+        if (stillUnspentCollateral.length > 0) {
+          throw new Error(scenario.id + ' ledger inclusion did not consume collateral inputs: ' +
+            stillUnspentCollateral.join(', '))
+        }
+        if (expectedCollateralReturn > 0n) {
+          const collateralReturnIndex = candidateBody.outputs().len()
+          const returnedUtxo = walletUtxosAfter.find((utxo) =>
+            utxo.txHash === txHash && utxo.outputIndex === collateralReturnIndex,
+          )
+          if (!returnedUtxo ||
+              returnedUtxo.assets.lovelace !== expectedCollateralReturn ||
+              Object.keys(returnedUtxo.assets).some((unit) => unit !== 'lovelace')) {
+            throw new Error(scenario.id + ' expected collateral-return UTxO is not observable with exact value')
+          }
+        }
+        const stillUnspentPrize = await lucid.utxosAt(scripts.prizeAddress as string)
+        const stillUnspentPool = await lucid.utxosAt(poolAddress)
+        const preservedPrize = stillUnspentPrize.find((u) => ref(u) === ref(prizeInput))
+        const preservedPool = stillUnspentPool.find((u) => ref(u) === ref(currentPool))
+        if (!preservedPrize || !preservedPool) {
+          throw new Error(scenario.id + ' phase-2 rejected Reveal did not preserve Prize and Pool inputs')
+        }
+        if (preservedPrize.datum !== inputPrizeDatumCbor || preservedPool.datum !== inputPoolDatumCbor) {
+          throw new Error(scenario.id + ' phase-2 rejected Reveal changed an original input datum')
+        }
+        if (
+          JSON.stringify(assetsFingerprint(preservedPrize.assets)) !==
+            JSON.stringify(assetsFingerprint(prizeInput.assets)) ||
+          JSON.stringify(assetsFingerprint(preservedPool.assets)) !==
+            JSON.stringify(assetsFingerprint(currentPool.assets))
+        ) {
+          throw new Error(scenario.id + ' phase-2 rejected Reveal changed an original input Value')
+        }
+        rejectedAt = stepIndex
       } else {
         builtTx = await builder.complete({ localUPLCEval: false })
         const unsignedCbor = builtTx.toCBOR()
