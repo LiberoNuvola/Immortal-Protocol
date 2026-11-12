@@ -1,7 +1,7 @@
 name: IMMORTAL Cardano Integration Lab
 
 concurrency:
-  group: -github-workflows-immortal-cardano-lab-yml-${{ github.ref }}
+  group: ${{ github.event_name == 'push' && contains(github.event.head_commit.message || '', '[run-reveal-queue]') && format('immortal-reveal-queue-{0}', github.ref) || format('-github-workflows-immortal-cardano-lab-yml-{0}', github.ref) }}
   cancel-in-progress: true
 
 on:
@@ -412,7 +412,7 @@ jobs:
 
       - name: Execute opt-in sequential Aiken V3 Reveal headroom queue characterization
         id: aiken_reveal_queue
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.run_reveal_queue_characterization == true && steps.aiken-reveal-build.outcome == 'success'
+        if: always() && ((github.event_name == 'workflow_dispatch' && inputs.run_reveal_queue_characterization == true) || (github.event_name == 'push' && contains(github.event.head_commit.message || '', '[run-reveal-queue]'))) && steps.aiken-reveal-build.outcome == 'success'
         env:
           IMMORTAL_REVEAL_AIKEN_V3: "1"
           IMMORTAL_REVEAL_QUEUE_CHARACTERIZATION: "1"
