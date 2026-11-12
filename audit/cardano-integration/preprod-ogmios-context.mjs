@@ -145,8 +145,12 @@ async function acquireConsistentLedgerState() {
     const tipResponse = await rpc('queryNetwork/tip')
     const point = normalizeLedgerPoint(tipResponse, 'OGMIOS_NETWORK_TIP')
     try {
+      // This configured Ogmios v7 endpoint uses the ledger point shape
+      // { slot, id } for acquireLedgerState (matching its queryNetwork/tip
+      // response); the human-facing API guide's { slot, hash } alias is not
+      // accepted by this deployed endpoint.
       const acquired = await rpc('acquireLedgerState', {
-        point: { slot: point.slot, hash: point.hash },
+        point: { slot: point.slot, id: point.hash },
       })
       // Mark immediately so even a malformed acknowledgement is released in finally.
       ledgerStateAcquired = true
