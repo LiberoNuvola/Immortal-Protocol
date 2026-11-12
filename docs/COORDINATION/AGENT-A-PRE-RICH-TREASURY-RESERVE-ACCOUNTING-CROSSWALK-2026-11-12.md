@@ -444,3 +444,125 @@ Until those decisions and corresponding evidence exist, Treasury Reserve is a pr
 - Do not make a first-Issue, ticket-sale, reserve-spend or deployment claim from this research note.
 
 **Overall status: TREASURY RESERVE CATEGORY INTENT EXISTS / AUTHENTICATED RESERVE LEDGER AND AVAILABLE BALANCE NOT PROVEN / RESERVE-TO-RESERVEPROTECTION MAPPING NOT PROVEN / TREASURY→B1 PHYSICAL SETTLEMENT NOT YET QUALIFIED / V1 500× UNCHANGED / B1 WCE-ADMISSION VS PRE-REVEAL HEADROOM MISMATCH CONFIRMED AT SOURCE LEVEL / FIX AND ADVERSARIAL CONFORMANCE OPEN.**
+
+
+## 12. Reveal headroom resolution candidates — technical assessment, not a decision
+
+This section separates the confirmed source predicate from possible resolutions. It does not authorize a change to V1, WCE, either validator, datum/redeemer ABI, deployment or on-chain state.
+
+### 12.1 Exact transition equation
+
+For the consumed B1 Pool state, define:
+
+- L = ppTotalLiquidity;
+- C = ppPendingLiabilities;
+- F = ppUnresolvedReserve, the face-price sum of all Pending tickets;
+- J = ppLockedJackpot;
+- p = pdPriceUsdm of the exact consumed Pending PrizeDatum;
+- x = validator-computed payout for that ticket.
+
+The current pre-Reveal predicate in both plutus/B1PrizePool.hs and plutus/PrizeValidator.hs is:
+
+x <= L - C - F - J
+
+The same transaction releases the exact ticket face reserve and crystallizes the payout:
+
+- L' = L;
+- C' = C + x;
+- F' = F - p;
+- J' = J.
+
+Therefore the post-transition effective pool is:
+
+effectivePool' = L - (C + x) - (F - p) - J
+
+and a release-aware affordability condition is:
+
+x <= (L - C - F - J) + p
+
+which is exactly equivalent to:
+
+effectivePool' >= 0.
+
+The p term must come only from the consumed PrizeDatum. B1 independently checks that the TicketRevealed redeemer price equals the consumed PrizeDatum price and that the reserve decrement is exact; the PrizeValidator already has the same consumed PrizeDatum available. A caller-supplied amount or an unrelated datum/output price is not acceptable.
+
+### 12.2 Why the release-aware condition preserves the V1 amount-solvency bound
+
+For the current B1 legacy projection, the generic SafetyCapital, ReserveProtection and MandatoryFutureCosts fields are zero. The B1 pre-state solvency invariant therefore includes:
+
+L >= C + 500 F + J
+
+The PrizeValidator derives x from the canonical game rules, whose normal payout is capped at:
+
+0 <= x <= 500 p
+
+and the consumed ticket is one member of the Pending set, so 0 < p <= F.
+
+After Reveal, the protected-capital requirement is:
+
+C + x + 500(F - p) + J
+
+Because x <= 500p, this is no greater than C + 500F + J, already covered by the pre-state solvency invariant. The existing B1 validator also explicitly checks solvencyInvariant on the continuing datum.
+
+The release-aware affordability predicate is likewise implied by the same pre-state bound:
+
+(L - C - F - J) + p >= 499 F + p >= 500 p >= x
+
+where the middle inequality follows from F >= p.
+
+So, under the inspected V1 assumptions, changing the two duplicated pre-Reveal checks from x <= effectivePool_pre to x <= effectivePool_pre + p does not increase the aggregate normal payout bound, weaken the 500× WCE invariant, or allow an under-solvent Pool to enter Reveal. It removes the extra one-ticket face-reserve obstruction created by checking affordability before accounting for the exact reserve release that occurs in that same atomic transaction.
+
+This is an algebraic/source-level argument, not an execution proof. It must be validated against the compiled canonical Plutus V2 scripts and the same ledger transaction context before adoption.
+
+### 12.3 Candidate comparison
+
+| Candidate | What it changes | Assessment |
+|---|---|---|
+| A. Release-aware Reveal affordability | In both B1 and PrizeValidator, check the exact payout against pre-state effectivePool plus the consumed ticket's exact face reserve; retain pre/post solvencyInvariant, exact reserve/liability deltas and 500× payout cap. | Preferred candidate for the next technical proof. It aligns the affordability predicate with the atomic transition already specified in both validators. No new datum field, capital category, WCE coefficient or Treasury assumption is needed. It does change the Reveal precondition and validator scripts, so it remains unselected while the current Reveal semantics are frozen. |
+| B. Add admission headroom | Keep the current pre-Reveal check and require new Pending cohorts to hold WCE plus a further headroom amount, ideally the maximum price in the exact Pending set. | Preserves the existing Reveal predicate, but B1 datum stores only aggregate face reserve and count—not the maximum Pending price. A fixed global 100-USDM margin could be conservative but would change TicketIssued admission/capital utilization and require a transition/migration analysis for already-Pending tickets. It does not repair an already-admitted exact-boundary cohort. |
+| C. Treasury Reserve / ReserveProtection funding | Introduce a separately authenticated capital source or protected component. | Not presently available: no Treasury Reserve → v3ReserveProtection or B1 datum mapping is implemented. It would require a new custody, category, non-overlap and representation proof. It must not be used as a relabeling of ppUnresolvedReserve or as an accounting-only substitute for a physical Pool transfer. |
+
+Candidate A is the smallest conceptual correction because it does not invent new reserve capital or change the 500× maximum. It is not an approved policy choice and is not an instruction to implement while the freeze remains in force.
+
+### 12.4 Required dual-validator ledger matrix before any decision
+
+The next test must spend the exact Prize input and exact B1 PrizePool input in one transaction, evaluating the canonical Haskell Plutus V2 PrizeValidator and B1PrizePool validator against the same TxInfo. Pure TypeScript mirrors and isolated Aiken/V3 stubs do not satisfy this requirement.
+
+1. Homogeneous exact boundary: 8 Pending tickets at 1 USDM, L - C - J = 4,000 USDM, all eight payout at 500×. The current precheck should reproduce the seventh-pass/eighth-fail baseline; a candidate A build should accept all eight sequential Reveals while preserving pre/post solvency.
+2. Mixed prices and order: one 1-USDM and one 100-USDM Pending ticket at exact WCE, tested in both Reveal orders. Both candidate orders must complete; a below-cap first payout must retain the previously characterized behavior.
+3. Negative controls: pre-state WCE insolvency; malformed or mismatched consumed-ticket price; inexact reserve decrement; inexact liability increment; wrong continuing Prize/Pool datum; payout above 500×; duplicate/missing Pool or Prize inputs/outputs. Every invalid twin must reject.
+4. Claim interleavings: Reveal then Claim, and Claim between subsequent Reveals. Confirm that Pool liquidity and crystallized liability decline by the same paid amount, that effectivePool does not gain artificial headroom from Claim, and that the 500× invariant remains true.
+5. Pending Expire interleavings: expire one Pending ticket before/between Reveals; prove exact face-reserve/count release, reduced remaining WCE and no new crystallized liability.
+6. Revealed Expire interleavings: expire an unclaimed Revealed ticket before/between further Reveals; prove exact liability release and the resulting effective-pool increase.
+7. Execution integrity: use the same authenticated asset/Oracle perimeter as the selected B1 fixture; assert exact Value continuity and datum accounting, collect both redeemer outcomes, execution units, transaction CBOR size and reproducible evidence packet.
+
+No item in this matrix has been established by the current four pure-mirror characterization tests.
+
+### 12.5 CI evidence update — run #43177763646
+
+The push-triggered workflow completed with job-level devnet-integration: success on commit 5b5285ed8d9328f0e911c17ec39755397ce184b8.
+
+The repository test log records 192 tests passed, 0 failed. It includes the four new checks under the suite explicitly named “B1 Reveal headroom characterization (pure mirror; not Plutus execution)”:
+- exact 4,000-USDM boundary: seven maximum reveals pass and the eighth precheck fails;
+- 4,001 USDM supports all eight;
+- mixed 1/100-USDM prices need the maximum ticket price as order-independent headroom;
+- the all-maximum qualification (a prior 499 payout can leave capacity for a later 500 payout).
+
+This verifies the arithmetic characterization in the repository test runner. It does not execute either canonical Reveal validator on the ledger, and it does not implement Candidate A.
+
+Sub-check qualification: the generated JEV verification registry records HASKELL_PENDING_EXPIRE_OUTCOME, HASKELL_REVEALED_LOSS_EXPIRE_OUTCOME and HASKELL_REVEALED_WIN_EXPIRE_OUTCOME as failure, even though the diagnostic workflow steps completed and the overall job succeeded. Those Haskell V2 Expire outcomes must not be represented as PASS; their cause needs a separate inspection of the linked step evidence. The Aiken/V3 and pure-mirror results do not override those classifications.
+
+Run: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43177763646  
+Agent B characterization commit: https://github.com/LiberoNuvola/Immortal-Protocol/commit/5b5285ed8d9328f0e911c17ec39755397ce184b8
+
+### 12.6 Current disposition
+
+- Source-level mismatch: CONFIRMED.
+- Four-case pure mirror characterization: PASS (192/192 repository pure suite).
+- Canonical dual-validator maximum-Reveal ledger sequence: NOT RUN / NOT PROVEN.
+- Candidate A: TECHNICALLY PREFERRED FOR THE NEXT PROOF / NOT APPROVED / NOT IMPLEMENTED.
+- Candidate B: AVAILABLE AS A MORE CONSERVATIVE ADMISSION DESIGN / NOT SPECIFIED.
+- Treasury Reserve or ReserveProtection as a fix: NOT AVAILABLE ON CURRENT REPRESENTATION.
+- V1 500×, WCE amount bound, datum/redeemer ABI, V3, current Reveal semantics, deployment and ledger state: UNCHANGED.
+
+This section is a non-normative engineering assessment only.
