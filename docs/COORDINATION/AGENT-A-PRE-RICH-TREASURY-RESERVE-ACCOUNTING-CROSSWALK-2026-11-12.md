@@ -841,6 +841,32 @@ Required cases and expected classification under the current pre-state predicate
 
 Use the repository's USDM subunit convention consistently when constructing liquidity, face-value reserve and payout amounts. Do not use a price or payout approximation in the fixture.
 
+### Exact fixture arithmetic and canonical max-payout generation
+
+All monetary values below are integer USDM sub-units at 100 sub-units per USDM. The test must assert these constants before bootstrapping:
+
+- $1 ticket: `p = 100`; maximum payout `500p = 50,000` ($500).
+- $100 ticket: `p = 10,000`; maximum payout `500p = 5,000,000` ($50,000).
+
+For eight $1 tickets at exact WCE:
+
+- Initial liquidity `L = 400,000` ($4,000), unresolved reserve `F = 800`, pending liabilities `C = 0`, count `8`.
+- After `k` accepted maximum Reveals: `C = 50,000k`, `F = 100(8-k)`, and the current pre-state effective pool is `L-C-F = 399,200 - 49,900k`.
+- At `k=6`, effective pool is 99,800 and the seventh maximum payout is affordable.
+- At `k=7`, effective pool is 49,900; the eighth maximum payout of 50,000 is rejected by the existing predicate.
+- With +$1 liquidity, `L = 400,100`; after seven maximum Reveals effective pool is exactly 50,000, so the eighth is expected to pass.
+
+For one $1 and one $100 ticket at exact WCE:
+
+- Initial `L = 5,050,000` ($50,500), `F = 10,100`, `C=0`.
+- If $100 is revealed first, its 5,000,000 payout leaves effective pool 49,900, so the $1 maximum payout of 50,000 is rejected.
+- If $1 is revealed first, its 50,000 payout leaves effective pool 4,990,000, so the $100 maximum payout of 5,000,000 is rejected.
+- With +$100 liquidity, `L = 5,060,000`; both orders are expected to pass (the second payout has exactly 50,000 or 5,000,000 available, respectively).
+
+For the LOSS-before-maximum control, use eight $1 tickets and exact $4,000 WCE. Reveal six maximum winners, then a canonical LOSS (zero payout), then the final maximum winner. The LOSS releases the remaining 100-subunit unresolved reserve without adding liability, moving effective pool from 99,800 to 99,900 before the final 50,000 payout; the final Reveal should pass. This control demonstrates that the current predicate is state-dependent, not a blanket ban on later tickets.
+
+The test must not fabricate a Revealed datum. Generate each fixture through the existing `deriveBeacon` → `deriveTicketSeed` → `deriveSymbolsSeed` → `generateSymbols` → `classifyRowTier` → `rowPayoutTotal` pipeline, then compute the corresponding player/ticket commitments and PrizeDatum fields. For a maximum payout, find a deterministic nonce whose two canonical row tiers yield `rowPayoutTotal(...) === 500 * priceUsdm`; a tier-5 row plus any positive second row is sufficient under the existing table. Record the chosen nonce, symbols, row tiers, commitment and payout in the evidence. For the LOSS control, require both row tiers to be zero and payout exactly zero. Keep nonce search bounded and fail closed if a qualifying vector is not found; never substitute a hand-authored payout.
+
 ### Evidence and rejection classification
 
 For each step capture consumed and produced Prize/Pool outrefs, exact old/new datums, signed transaction CBOR and byte count, measured ExUnits per redeemer, Yaci submission/validation outcome, and the Pool state after observation. The final expected rejection must be a genuine script/ledger validation rejection, not a Lucid completion, transaction-size, fee or ExUnits failure. Use a qualified budget for the negative twin, verify that the prior Prize and Pool UTxOs remain unspent, and classify any build/evaluation/resource failure separately. Keep the queue trace opt-in and report expected negative assertions as characterization results rather than silently changing the general lab's pass semantics.
