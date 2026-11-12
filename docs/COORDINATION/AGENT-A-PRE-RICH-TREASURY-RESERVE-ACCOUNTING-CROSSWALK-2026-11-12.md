@@ -146,7 +146,31 @@ To guarantee that every possible Reveal ordering can complete even when every ti
 E_free >= 500 × F + max(P_i)
 ```
 
-This is a direct algebraic consequence of the current pre-state check and the frozen 500× payout cap. It assumes all prices, liabilities and Pool accounting values use the same B1 USDM sub-unit scale. A loss, a smaller payout or an expiry is less demanding than the all-maximum path. A Claim reduces both ppTotalLiquidity and ppPendingLiabilities by the same amount, so it does not replenish this net headroom.
+This is a direct algebraic consequence of the current pre-state check and the frozen 500× payout cap. It assumes all prices, liabilities and Pool accounting values use the same B1 USDM sub-unit scale.
+
+For an arbitrary mixed outcome path, define q as the aggregate face price of prior tickets already revealed, X as their aggregate crystallized payout, and x_i as the actual payout of the next ticket priced at p_i. The exact current precheck is:
+
+```
+x_i <= E_free - F + q - X
+```
+
+Equivalently, the precheck passes iff:
+
+```
+E_free >= F - q + X + x_i
+```
+
+The all-maximum sequence substitutes X = 500q and x_i = 500p_i, yielding the stricter condition derived above. If an earlier ticket pays less than 500×, X is smaller and more effectivePool remains for later Reveals. This is why the finding is specific to the all-maximum path and not a blanket denial of later Reveal.
+
+#### Reveal / Claim / Expire interleavings
+
+- **Claim:** B1 Claim decreases `ppTotalLiquidity` and `ppPendingLiabilities` by the same claimed amount. Therefore `E_free = ppTotalLiquidity - ppPendingLiabilities - ppLockedJackpot` is unchanged. Claim settles a known liability but does not create additional net Reveal headroom for the remaining Pending set.
+- **Pending Expire:** removes that ticket's face price from F without paying a prize or reducing Pool liquidity. The remaining cohort WCE and the set of possible final ticket prices must be recomputed for the smaller Pending set. Expiry cannot increase the required all-maximum headroom; for the frozen ticket ladder (1–100 USDM), removing even a small ticket also frees its 500× exposure from the WCE requirement.
+- **Revealed-ticket Expire:** under the current B1 path, releases the exact unclaimed crystallized payout liability while Pool liquidity is unchanged. This increases `E_free` by the released liability and can improve later Reveal headroom. It is not equivalent to Claim, which transfers assets and reduces both liquidity and liability.
+
+These are state-accounting consequences of the inspected B1 transitions. They do not replace a complete transaction-level interleaving test across the Prize and B1 validators.
+
+A loss, a smaller payout or an expiry is less demanding than the all-maximum path. A Claim does not replenish this net headroom.
 
 #### Exact Genesis illustration
 
