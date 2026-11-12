@@ -4935,3 +4935,74 @@ Therefore the run #44 result `STALE` is a **current DApp settlement blocker**, i
 This pass also searched public Slack messages for the exact authority endpoint, `issue-admission`, signed Issue authority and PRE-RICH producer terms; no public-channel results were found. Private channels/DMs were not searched because that connector path requires separate user consent.
 
 No code behavior, Oracle datum, EEV artifact, deployment, approval, wallet, transaction or ledger state was changed by this clarification.
+
+
+## 44.62 — AGENT B F4 — REGISTRY REFERENCE AUTHENTICITY FAILURE ACROSS ISSUE AND SYNCBEACON — 2026-11-12
+
+This section records a current-branch source/CEK cross-read of the Registry findings. It supplements §§44.59–44.61; it does not reopen the already-decided trust hierarchy and does not authorize a schema or validator edit.
+
+### Confirmed consumer-side failures
+
+1. **Positive-price Issue/MintPolicy accepts a buyer-created Pending Registry reference.**
+   - Current `plutus/MintPolicy.hs` `readRegistry` returns the first reference input whose payment credential is the configured Registry ScriptHash.
+   - `newPrizeDatumValid` checks the referenced datum's target, round and `BeaconPending` status, but does not require a Registry state token, canonical full address, unique matching reference, authenticated initial creation, frozen trust mode/evidence, or independently anchored relayer authority.
+   - Current `plutus/test/BeaconRegistryAdversarialTest.hs` evaluates the real compiled positive-price MintPolicy CEK with a Pending Registry reference whose `brRelayerPkh` is the buyer; the Registry is not spent and BeaconRegistry is not invoked. It explicitly records acceptance. This is CEK characterization, not yet a native Yaci Issue submission.
+
+2. **SyncBeacon accepts an unauthenticated Ready-shaped Registry reference.**
+   - The existing JEV/local-Yaci adversarial lane records `AIKEN_SYNC_BEACON_FAKE_READY_ACCEPTED=true`, which is a security-property failure.
+   - The fake Registry is created as an ordinary output at the Registry payment script credential; the Registry UTxO is not spent and the BeaconRegistry validator is not executed.
+   - The current SyncBeacon consumer accepts the copied Ready-shaped fields. A reference input supplies data; it does not execute the referenced spending validator.
+
+3. **Both consumers are ambiguous on multiple references and under-bind the address.**
+   - Haskell `MintPolicy.readRegistry` and `PrizeValidator.readRegistry` stop at the first matching payment ScriptHash.
+   - Aiken `sync_beacon_transaction.ak::read_registry` uses `list.find` on the payment credential and returns the first match.
+   - The adversarial CEK characterization also accepts two matching Registry references and accepts a lookalike address with the same payment ScriptHash but a different staking credential. Payment ScriptHash equality alone is not canonical Registry identity.
+
+4. **The current nominated relayer field is not an authority root.**
+   - `BeaconRegistry.validatePublish` does check that `brRelayerPkh` signed, derives the Beacon from the supplied context, enforces one own input and one continuing output, and preserves target/round/relayer fields.
+   - However, the seven-field `BeaconRegistryDatum` has no authenticated singleton identity, and the initial Pending datum is not constrained by an on-chain creation policy. A user can create a Pending-shaped output and nominate their own PKH; checking that same PKH at Publish does not authenticate who was entitled to choose it.
+   - The validator's Pending→Ready checks only execute when the Registry UTxO is actually spent. They do not protect a consumer that merely reads an arbitrary reference output.
+
+### Root cause
+
+The consumers currently treat a decodable datum at a matching payment ScriptHash as if it were a canonical Registry state. Cardano reference-input semantics do not run the referenced validator. Therefore, a script credential plus datum constructor/status/round/target is not proof of an authenticated Registry lifecycle.
+
+A unique state token alone is necessary but not sufficient unless its complete lifecycle is constrained:
+- it must be minted only by the canonical initial-creation policy/state transition;
+- it must be placed in the canonical Registry UTxO with the initial Pending datum;
+- the Registry validator must require exactly one token in the unique consumed Registry input and exactly one in its unique continuing output, with no burn/reissue route;
+- the immutable token identity must bind the canonical round identity;
+- every consumer must require exactly one matching Registry reference, exact canonical Registry address (including staking credential where applicable), exactly one correct state token in that UTxO, the expected round/target and status, and the frozen trust/evidence commitment;
+- readers must reject zero or multiple matches, malformed matching datums, wrong token quantity/policy/name, wrong credential/address and duplicate-round anchors. Never select the first match.
+
+The nominated publisher/relayer authority must also be bound independently of a freely-created Pending datum. Its authorization must derive from the selected trust mode and an authenticated configuration/proof/attestation boundary; it cannot be self-nominated by the transaction that creates Pending.
+
+### Reconciliation with the accepted trust policy and §§44.60–44.61
+
+Preserve the existing normative priority exactly: **B3_VERIFIED → B2_ATTESTED → B1_AUTHORIZED**. Descend only after the stronger tier has a specific reproducible qualification failure; record attempted tiers, failure codes and evidence digests; freeze the selected mode and evidence for the round; never silently downgrade. Do not ask the user to choose this hierarchy again.
+
+The prior technical direction in §§44.60–44.61 remains the smallest-delta direction to evaluate: extend the existing Registry with a canonical round identity/anchor and frozen trust/evidence commitment, together with an on-chain one-round/one-anchor invariant. The round-counter/singleton or per-round one-shot-seed approaches remain candidates for the missing uniqueness rule. Do not assume a deterministic token name alone makes an anchor unique, and do not reuse the Genesis carrier token or identity for BeaconRegistry without a separately specified binding.
+
+The trust commitment must be consistently enforced by round creation, the initial-anchor mint/creation boundary, BeaconRegistry Pending→Ready, MintPolicy Issue, SyncBeacon, and the ticket commitment/Reveal verification interface. The existing ticket commitment is recomputed on both Issue and Reveal; changing only Issue is invalid. Any commitment/schema compatibility work remains gated by the versioned migration plan and explicit authorization already required by §44.60/§44.61.
+
+### Required adversarial acceptance matrix
+
+- Buyer creates Pending with buyer-selected relayer and attempts positive-price Issue using it: reject at ledger.
+- Buyer creates a Ready-shaped non-derived datum without spending canonical Registry state: reject at SyncBeacon.
+- Two Registry references with the same payment ScriptHash, including one valid and one malformed/lookalike: reject as ambiguous; do not use ordering.
+- Same payment ScriptHash with wrong staking credential/full address: reject.
+- Wrong/missing/duplicated Registry state token, wrong token policy/name/quantity, token in a non-canonical output, attempted burn/reissue: reject.
+- Duplicate Pending anchors for one canonical round: impossible to create or unusable by Issue and SyncBeacon.
+- Valid canonical Pending→Ready transition: token/value/round/target/trust/evidence commitment remains bound; only the selected mode's independently authenticated authorization can publish.
+- Issue consumes only the exact canonical Pending anchor; SyncBeacon consumes only the exact canonical Ready anchor.
+- B3→B2→B1 fallback is accepted only with the frozen, reproducible qualification record; missing evidence, failed verifier, timeout or unavailability never silently downgrades.
+
+These cases must be exercised across the actual Haskell and Aiken consumers that remain in the selected live path, first in CEK/unit fixtures and then with native local-Yaci transactions that classify script rejection separately from builder/resource failure.
+
+### Disposition
+
+- Registry-backed positive-price Issue trust boundary: **BLOCKED**.
+- SyncBeacon Registry authenticity and ambiguity: **BLOCKED**.
+- Canonical one-round/one-Registry anchor and independently bound publisher authority: **NOT IMPLEMENTED / DECISION-DESIGN GATE OPEN**.
+- B3→B2→B1 trust policy: **ALREADY DECIDED / PRESERVE**.
+- No Haskell/Aiken validator, datum ABI, ticket commitment, economics, V3 carrier or deployment was changed in this audit.
