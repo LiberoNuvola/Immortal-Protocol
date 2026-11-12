@@ -109,6 +109,10 @@ jobs:
           cabal test economic-admission-tests --enable-tests --test-show-details=direct
           cabal test beacon-registry-adversarial-tests --enable-tests --test-show-details=direct
 
+      - name: Execute B1 Reveal headroom through canonical Plutus V2 CEK
+        working-directory: plutus
+        run: cabal test b1-reveal-headroom-tests --enable-tests --test-show-details=direct
+
       - name: Save Cabal/Plutus build state
         if: always() && steps.plutus-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
