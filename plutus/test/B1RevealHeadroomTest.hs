@@ -129,7 +129,7 @@ prizeDatum price nonce status payout =
     , pdRow2Tier = 0
     }
 
-scriptOut :: ScriptHash -> Value -> Builtins.BuiltinData -> TxOut
+scriptOut :: ScriptHash -> Value -> PlutusTx.BuiltinData -> TxOut
 scriptOut hash value datum =
   TxOut
     (Address (ScriptCredential hash) Nothing)
