@@ -1376,6 +1376,9 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         continue
       }
 
+      // Re-derive the serialized spending-input plan after the failed submit;
+      // the evidence record must use this CBOR-derived scope, not the temporary
+      // construction-time ExUnits callback's local variables.
       const rejectedInputPlan = assertQueueSpendingInputs(
         signedCbor,
         prizeInput,
