@@ -47,7 +47,7 @@ This is a corrected chain-spec selection procedure, not proof that the B3-B targ
 
 The public Materios workflow probe on 2026-11-04 also found no GRANDPA justifications in 769 recent blocks and no exposed `grandpa_proveFinality` or `grandpa_subscribeJustifications` RPC method. This is a public RPC capability limitation, not proof that the chain lacks finality. Successful recent storage proofs for a different receipt do not close the exact B3-B historical target.
 
-See [the 2026-11-04 chain-identity and RPC evidence record](docs/research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md) for the upstream fixture/test references and the remaining gates.
+See [the 2026-11-04 chain-identity and RPC evidence record](../research/MATERIOS-B3-B-CHAIN-IDENTITY-AND-RPC-BOUNDARY-2026-11-04.md) for the upstream fixture/test references and the remaining gates.
 
 ## Codespace / node setup
 
