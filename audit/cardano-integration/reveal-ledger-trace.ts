@@ -1009,6 +1009,8 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
       }
       const consumedPrizeRef = ref(prizeInput)
       const consumedPoolRef = ref(currentPool)
+      const consumedPrizeAssets = assetsFingerprint(prizeInput.assets)
+      const consumedPoolAssets = assetsFingerprint(currentPool.assets)
       const nextReserve = currentReserve - ticket.price
       const nextLiabilities = currentLiabilities + ticket.payout
       const nextCount = currentCount - 1n
@@ -1287,10 +1289,10 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           consumed: {
             prizeRef: consumedPrizeRef,
             prizeDatumCbor: inputPrizeDatumCbor,
-            prizeAssets: assetsFingerprint(prizeInput.assets),
+            prizeAssets: consumedPrizeAssets,
             poolRef: consumedPoolRef,
             poolDatumCbor: inputPoolDatumCbor,
-            poolAssets: assetsFingerprint(currentPool.assets),
+            poolAssets: consumedPoolAssets,
           },
           produced: {
             prizeRef: ref(nextPrize),
@@ -1325,10 +1327,10 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         consumed: {
           prizeRef: consumedPrizeRef,
           prizeDatumCbor: inputPrizeDatumCbor,
-          prizeAssets: assetsFingerprint(prizeInput.assets),
+          prizeAssets: consumedPrizeAssets,
           poolRef: consumedPoolRef,
           poolDatumCbor: inputPoolDatumCbor,
-          poolAssets: assetsFingerprint(currentPool.assets),
+          poolAssets: consumedPoolAssets,
         },
         candidateOutput: {
           prizeDatumCbor: outputPrizeDatumCbor,
