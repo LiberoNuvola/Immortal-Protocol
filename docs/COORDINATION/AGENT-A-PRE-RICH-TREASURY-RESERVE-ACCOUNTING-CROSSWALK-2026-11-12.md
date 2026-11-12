@@ -175,7 +175,13 @@ The current TypeScript B1 mirror in src/__tests__/b1-invariants.test.ts does not
 
 The separate PRE-RICH/src/PreRichRevealRefinement.ts does contain the pre-Reveal guard, and src/__tests__/preRichRevealRefinement.test.ts tests an above-pool rejection and a 500× payout with substantial surplus. It does not test the exact WCE boundary, a repeated all-maximum Reveal sequence, mixed ticket prices, or every possible last-ticket ordering.
 
-This is therefore not a live transaction failure or a claim that the implementation has already been tested against this adversarial sequence. The source predicates and arithmetic are clear; exact Plutus/Yaci adversarial conformance remains to be run by an authorized test task.
+Additional existing test artifacts were inspected:
+
+- plutus/test/RevealSchemaFixtures.hs compiles and evaluates PrizeValidator (not B1PrizePool) in a synthetic Plutus V2 CEK context. It exercises a positive reveal, zero-payout loss, a tier-pair grid and a mutation that reduces effectivePool to zero. Its standard fixture has substantial headroom; it does not run a multi-ticket sequence at the exact 500× boundary or prove the B1 PrizePool validator's cumulative path.
+- src/__tests__/immortal-cardano-reveal-emulator-b1.mjs constructs a real single-ticket Prize + B1 Reveal transaction for emulator evaluation. Its default Pool fixture has substantial surplus (1,000,000 liquidity units against small liabilities/reserve) and derives a winning payout, but it does not test a cohort of sequential 500× outcomes at the WCE boundary.
+- src/__tests__/immortal-reveal-conformance.test.ts and the transaction-boundary fixtures check state mapping/deltas; they do not establish the missing full-cohort maximum-payout affordability condition.
+
+This is therefore not a live transaction failure or a claim that the implementation has already been tested against this adversarial sequence. The source predicates and arithmetic are clear; exact dual-validator Plutus/Yaci adversarial conformance remains to be run by an authorized test task.
 
 #### Disposition
 
