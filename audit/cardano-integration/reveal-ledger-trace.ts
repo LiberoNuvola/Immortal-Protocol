@@ -1404,7 +1404,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           poolRef: consumedPoolRef,
           poolDatumCbor: inputPoolDatumCbor,
           poolAssets: consumedPoolAssets,
-          feeFundingInputs: inputPlan.walletInputs,
+          feeFundingInputs: rejectedInputPlan.walletInputs,
         },
         candidateOutput: {
           prizeDatumCbor: outputPrizeDatumCbor,
