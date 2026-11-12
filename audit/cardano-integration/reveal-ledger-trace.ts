@@ -867,11 +867,13 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
     pool: UTxO,
     scenarioId: string,
   ) => {
-    const actual = spendInputRefsFromCbor(cborHex).sort()
-    const expected = [ref(prize), ref(pool)].map((value) => value.toLowerCase()).sort()
+    const actual = spendInputRefsFromCbor(cborHex)
+    const expected = spendInputRoleOrder(prize, pool).map((role) =>
+      (role === 'prize' ? ref(prize) : ref(pool)).toLowerCase(),
+    )
     if (JSON.stringify(actual) !== JSON.stringify(expected)) {
       throw new Error(
-        scenarioId + ' requires exactly Prize + Pool spending inputs; got ' +
+        scenarioId + ' requires exactly the ordered Prize + Pool spending inputs; got ' +
         JSON.stringify({ actual, expected }),
       )
     }
