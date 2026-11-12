@@ -375,7 +375,9 @@ test exact_wce_mixed_ticket_order_rejects_second_maximum_in_both_orders() {
   }
   let high_first = pool_after_reveal(initial, 10_000, 5_000_000)
   let low_first = pool_after_reveal(initial, 100, 50_000)
-  !reveal_pool_transition_is_valid(50_000, #"06", high_first, pool_after_reveal(high_first, 100, 50_000))
+  reveal_pool_transition_is_valid(5_000_000, #"06", initial, high_first)
+    && !reveal_pool_transition_is_valid(50_000, #"06", high_first, pool_after_reveal(high_first, 100, 50_000))
+    && reveal_pool_transition_is_valid(50_000, #"06", initial, low_first)
     && !reveal_pool_transition_is_valid(5_000_000, #"06", low_first, pool_after_reveal(low_first, 10_000, 5_000_000))
 }
 
