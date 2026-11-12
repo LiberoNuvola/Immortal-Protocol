@@ -778,7 +778,7 @@ The following exact steps report success:
 - Haskell V2 Revealed Win Expire ledger trace;
 - Aiken Prize + Haskell B1PrizePool Claim ledger trace.
 
-The three Haskell V2 Expire steps completing is material evidence that the trial Prize reference script was publishable and its respective local-Yaci Expire fixtures were built, signed, submitted and observed. Thus the original pre-submission size blocker no longer prevents those three specific fixtures in this run. This is not yet the exact serialized-size measurement, nor proof of a 256-byte margin.
+The intermediate step summaries initially appeared to indicate that the three Haskell V2 Expire fixtures had completed. That interpretation was incorrect and is explicitly withdrawn: the completed job's builder logs and final JEV inputs show that all three Haskell V2 Expire builders failed before submission because the 16,751-byte publication transaction exceeded the 16,384-byte limit. See §19 for the final measurements and corrected disposition. This interim section must not be used as evidence that any Haskell V2 Expire fixture was submitted or observed.
 
 ### Remaining evidence
 
