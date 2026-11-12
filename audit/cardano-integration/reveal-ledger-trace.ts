@@ -1154,14 +1154,32 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         if (!rejection) {
           throw new Error(scenario.id + ' expected final Reveal rejection was not observed')
         }
-        const validatorRejection = /script|plutus|phase.?2|evaluation|validation|validator/i.test(rejection)
-        const resourceFailure = /max.*size|size.*limit|fee|execution.?unit|ex.?unit|budget|balance|missing input|missing script/i.test(rejection)
-        if (!validatorRejection || resourceFailure) {
+        // Yaci's Conway error embeds the full Plutus script as base64 after
+        // "Base64-encoded script bytes". Do not scan that opaque payload for
+        // generic substrings such as "fee", "unit" or "budget": a byte string
+        // can contain those words by chance. Classify only the structured
+        // ledger-error header before the script payload.
+        const rejectionHeader = rejection.split(/Base64-encoded script bytes:/i, 1)[0]
+        const phase2LedgerFailure =
+          /ValidationTagMismatch\\s*\\(\\s*IsValid True\\s*\\)/i.test(rejectionHeader) &&
+          /PlutusFailure/i.test(rejectionHeader)
+        const explicitResourceFailure =
+          /Max transaction size of \\d+ exceeded|FeeTooSmallUTxO|InsufficientCollateral|ExUnitsTooBig|ExecutionUnitsTooBig|TransactionTooLarge|ValueNotConserved|BadInputsUTxO|MissingScriptWitnesses|NoCollateralInputs|CollateralTooSmall/i.test(rejectionHeader)
+        if (!phase2LedgerFailure || explicitResourceFailure) {
           throw new Error(
-            scenario.id + ' rejection is not a qualified validator/ledger rejection: ' +
-            rejection.slice(0, 1600),
+            scenario.id + ' rejection is not a qualified Plutus phase-2 ledger rejection: ' +
+            rejectionHeader.slice(0, 1600),
           )
         }
+        console.log(JSON.stringify({
+          revealQueueDiag: 'expected-phase2-ledger-rejection',
+          scenarioId: scenario.id,
+          stepIndex,
+          classified: 'ValidationTagMismatch/PlutusFailure',
+          explicitResourceFailure: false,
+          transaction: summary,
+          rejectionHeader: rejectionHeader.slice(0, 1600),
+        }))
         const stillUnspentPrize = await lucid.utxosAt(scripts.prizeAddress as string)
         const stillUnspentPool = await lucid.utxosAt(poolAddress)
         const preservedPrize = stillUnspentPrize.find((u) => ref(u) === ref(prizeInput))
