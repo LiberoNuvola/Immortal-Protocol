@@ -892,3 +892,14 @@ The helper only constructs the next pure `RevealPoolState` using the existing li
 Commits: `bb5e69033995c2f8535aef2d1be660ee68f5033d` (initial supplemental tests), `0958844df09ca4f1bde2f7dfe54bfe2b655d0095` (strengthen mixed exact-WCE test to assert the first Reveal is accepted before checking second-Reveal rejection).
 
 Agente B owns the authoritative opt-in sequential Yaci implementation and has been asked to include these pure tests in its Aiken build. Their compilation status is not yet verified; no passing CI result is claimed here.
+
+### Follow-up controlled Plinth trial started by Agente B (2026-11-12)
+
+Agente B has begun the separately requested no-conservative comparison:
+
+- Trial commit: `894e1f1485d811f96f179a3ce03870ba93767367`
+- Source diff: `plutus/PrizeValidator.hs` replaces the `conservative-optimisation` plugin option with explicit `preserve-logging`; no validator logic or ABI diff is present in this commit.
+- [IMMORTAL Cardano Integration Lab #43249776481](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43249776481) is in progress.
+- The Aiken Reveal pure sequential tests recorded above are present at this tested HEAD and will be exercised by the workflow's `aiken check` step before blueprint export.
+
+This is a compiler-configuration experiment on the shared working branch, not a production deployment or approval to change validator semantics. Exact Haskell V2 script bytes/hash, publication CBOR, full CEK/trace parity and final JEV results remain pending until the run completes.
