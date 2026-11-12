@@ -1179,25 +1179,6 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           ' negative Reveal was submitted as an ordinary valid transaction and reached the ledger; ' +
           'this harness path cannot qualify the expected invalid-transaction/collateral outcome',
         )
-        const stillUnspentPrize = await lucid.utxosAt(scripts.prizeAddress as string)
-        const stillUnspentPool = await lucid.utxosAt(poolAddress)
-        const preservedPrize = stillUnspentPrize.find((u) => ref(u) === ref(prizeInput))
-        const preservedPool = stillUnspentPool.find((u) => ref(u) === ref(currentPool))
-        if (!preservedPrize || !preservedPool) {
-          throw new Error(scenario.id + ' rejected Reveal consumed an input UTxO')
-        }
-        if (preservedPrize.datum !== inputPrizeDatumCbor || preservedPool.datum !== inputPoolDatumCbor) {
-          throw new Error(scenario.id + ' rejected Reveal changed an original input datum')
-        }
-        if (
-          JSON.stringify(assetsFingerprint(preservedPrize.assets)) !==
-            JSON.stringify(assetsFingerprint(prizeInput.assets)) ||
-          JSON.stringify(assetsFingerprint(preservedPool.assets)) !==
-            JSON.stringify(assetsFingerprint(currentPool.assets))
-        ) {
-          throw new Error(scenario.id + ' rejected Reveal changed an original input Value')
-        }
-        rejectedAt = stepIndex
       } else {
         builtTx = await builder.complete({ localUPLCEval: false })
         const unsignedCbor = builtTx.toCBOR()
