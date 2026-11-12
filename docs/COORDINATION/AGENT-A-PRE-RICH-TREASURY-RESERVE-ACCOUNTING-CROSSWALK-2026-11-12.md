@@ -752,45 +752,13 @@ A size win alone is insufficient. Any candidate must preserve the validator deci
 This is a compiler/build experiment only. It is **not** permission to alter the production PrizeValidator build, remove diagnostic traces, change V1 500×/WCE, adjust ABI, switch V3 semantics, or deploy a new script. The production source remains unchanged until a separately reviewed candidate is proven.
 
 
-## 17. Plinth conservative-optimisation trial — intermediate CI evidence (2026-11-12)
+## 17. [SUPERSEDED] Intermediate Plinth trial status — see §19 for final evidence
 
-This section supersedes the “not implemented/measured” status of the compiler hypothesis in §16. It records only the exact evidence currently available; the workflow is still running at the time of this update.
+This section preserves the historical sequence of the compiler-option trial only. Its interim step-summary interpretation was incorrect. Do not use this section as final evidence of Haskell V2 EXPIRE execution or publication.
 
-### Baseline versus trial source
+The intermediate workflow summaries appeared to report successful completion of the Haskell V2 Pending Expire, Revealed Loss Expire and Revealed Win Expire steps. The completed job's builder logs and final JEV inputs subsequently established that all three builders failed before submission because the Prize reference-script publication transaction was 16,751 bytes, exceeding the 16,384-byte limit. The final measurements, artifact identity, JEV outcomes and corrected disposition are recorded in §19.
 
-- **Baseline**: commit `ad4b66757e78940ed52a2fcf31f142d718860866` has Plutus V2 target version `1.0.0` and does **not** enable `conservative-optimisation`. Its measured parameterized PrizeValidator was 16,443 bytes and its reference-script publication transaction was 16,540 bytes; the latter exceeded the 16,384-byte transaction limit by 156 bytes.
-- **Trial**: commit `e08e8127a19487dd82d100cc8b4c9a6ab5d3f15d` adds only `{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:conservative-optimisation #-}` to `plutus/PrizeValidator.hs`, retaining target version `1.0.0`. The Haskell validator logic, action predicates, applied parameters and datum/redeemer ABI are unchanged in this commit.
-- The trial is a compiler-option comparison on the shared working branch, not a separate production deployment. The exact script bytes, hash and publication transaction size for the trial still need to be captured in its evidence packet.
-
-At the pinned Plutus revision, conservative optimisation implies `preserve-logging` together with its documented restrictions on relaxed floating, constant inlining, fixed-point inlining and simplifier evaluation of builtins. This must remain bound to the exact compiler pin in any reproducible comparison.
-
-### Verified run steps
-
-**Workflow:** [IMMORTAL Cardano Integration Lab #43202287858](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43202287858)  
-**Tested code HEAD:** `e08e8127a19487dd82d100cc8b4c9a6ab5d3f15d`  
-**Job:** `devnet-integration`, still `in_progress` at this crosswalk update.
-
-The following exact steps report success:
-- canonical B1 / PrizeValidator shared-TxInfo Reveal CEK suite;
-- isolated Aiken V3 Reveal ledger trace;
-- Haskell V2 Pending Expire ledger trace;
-- Haskell V2 Revealed Loss Expire ledger trace;
-- Haskell V2 Revealed Win Expire ledger trace;
-- Aiken Prize + Haskell B1PrizePool Claim ledger trace.
-
-The intermediate step summaries initially appeared to indicate that the three Haskell V2 Expire fixtures had completed. That interpretation was incorrect and is explicitly withdrawn: the completed job's builder logs and final JEV inputs show that all three Haskell V2 Expire builders failed before submission because the 16,751-byte publication transaction exceeded the 16,384-byte limit. See §19 for the final measurements and corrected disposition. This interim section must not be used as evidence that any Haskell V2 Expire fixture was submitted or observed.
-
-### Remaining evidence
-
-At the time of this update:
-- native Yaci UTxO decoder conformance is still running;
-- the P2.8 Cardano-ledger evidence gate has not run;
-- the resource-footprint step has not run;
-- no final evidence artifact or JEV registry has been produced for this workflow.
-
-Consequently, the following remain unverified for the trial: exact parameterized script bytes; SHA-256 and Cardano script hash; complete Prize reference-script publication transaction CBOR length; measured ExUnits/budgets; resource-audit comparison; P2.8 outcome; and final JEV disposition. A successful Expire fixture proves the publication path worked for that test, but does not establish its size margin. The target in §16 (complete publication transaction ≤16,128 bytes) remains a useful margin threshold, not yet demonstrated.
-
-**Disposition:** compiler-option trial has been executed and its relevant Reveal/Expire/Claim CI steps pass; size and full P2.8/evidence qualification remain pending. Do not call this a production release, deployment, or Preprod qualification. No V1 500×/WCE, Haskell validator predicate, Aiken V3 semantics, datum/redeemer ABI, economic rule, deployment or ledger authority was changed.
+No Haskell V2 EXPIRE fixture from that trial is evidenced as submitted or observed on Yaci. The separate Aiken V3 Reveal, Claim, shared-TxInfo CEK and native UTxO decoder results are independent evidence classes and must not be conflated with Haskell V2 EXPIRE qualification.
 
 ## 18. Aiken V3 Reveal candidate — source parity and multi-ticket evidence gap
 
@@ -852,3 +820,33 @@ The job's separate native Yaci UTxO decoder conformance, P2.8 evidence-gate mach
 - No production compiler option, validator logic, ABI, V1 500×/WCE, Aiken V3 semantics or deployment has been changed by this disposition.
 - Next compiler experiment, if Agente B elects to continue, should be isolated and reproducible: baseline versus no-conservative option with `preserve-logging` explicitly retained, same pinned Plutus/GHC, exact script bytes/hash and complete publication CBOR. Require the full CEK matrix and trace parity, and publication CBOR ≤16,128 bytes before considering it a viable candidate.
 - Separately, the Aiken V3 sequential all-maximum Reveal coverage gap in §18 remains open. The Haskell V2 size trial neither tests nor resolves it.
+
+## 20. Sequential Aiken V3 Reveal queue characterization — implementation handoff (2026-11-12)
+
+### Source and harness boundary
+
+The active `audit/cardano-integration/reveal-ledger-trace.ts` selects the isolated Aiken Plutus V3 Reveal candidate when `IMMORTAL_REVEAL_AIKEN_V3=1`, paired with the real B1PrizePool Plutus V2 validator. Its current fixture bootstraps and submits one Pending Prize + one Pool transition. The Aiken parity candidate's `reveal_pool_transition_is_valid` checks payout against the old Pool state. Neither the current Yaci trace nor the pure Aiken unit fixtures execute a multi-ticket queue over one continuously evolving Pool UTxO.
+
+### Required isolated trace
+
+Add a separate opt-in sequential trace; preserve the existing one-ticket trace as a baseline. Bootstrap one Pool UTxO and unique Pending Prize UTxOs, then for every step consume the immediately preceding Pool UTxO plus exactly one ticket and produce the next Pool UTxO plus the Revealed ticket. Keep the same Aiken V3 candidate / B1 V2 pairing and reference-script binding.
+
+Required cases and expected classification under the current pre-state predicate:
+
+1. Eight $1 tickets at exact $4,000 WCE: first seven all-maximum Reveals accepted; final maximum Reveal rejected.
+2. Same eight-ticket fixture with +$1 liquidity headroom: all eight accepted.
+3. Mixed $1/$100 tickets at exact WCE, both reveal orders: first maximum Reveal accepted; second rejected.
+4. Same mixed fixtures with +$100 headroom, both orders: both accepted.
+5. LOSS-before-maximum control: LOSS accepted, then maximum Reveal accepted if the resulting state retains sufficient headroom.
+
+Use the repository's USDM subunit convention consistently when constructing liquidity, face-value reserve and payout amounts. Do not use a price or payout approximation in the fixture.
+
+### Evidence and rejection classification
+
+For each step capture consumed and produced Prize/Pool outrefs, exact old/new datums, signed transaction CBOR and byte count, measured ExUnits per redeemer, Yaci submission/validation outcome, and the Pool state after observation. The final expected rejection must be a genuine script/ledger validation rejection, not a Lucid completion, transaction-size, fee or ExUnits failure. Use a qualified budget for the negative twin, verify that the prior Prize and Pool UTxOs remain unspent, and classify any build/evaluation/resource failure separately. Keep the queue trace opt-in and report expected negative assertions as characterization results rather than silently changing the general lab's pass semantics.
+
+### Governance boundary
+
+This is a test-coverage handoff only. It does not authorize any change to the affordability predicate, validator semantics, datum/redeemer ABI, V1 500× cap, WCE, V3 carrier, deployment, economic admission or custody. The fixture's 1:1 test liquidity asset is not production USDM qualification. No release-aware Reveal candidate is approved or implemented.
+
+Agente B was asked in Issue #41 comment #6824879166 to acknowledge ownership of this isolated trace and separately close the outstanding Plinth response. Until that coordination is resolved, no overlapping implementation is assumed.
