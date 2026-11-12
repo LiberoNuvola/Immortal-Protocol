@@ -618,3 +618,53 @@ This is still CEK-level synthetic evidence until step 5; it is not Preprod or na
 - Native Yaci/Cardano-ledger dual-validator sequence: **NOT RUN / NOT PROVEN**.
 - Candidate A: **TECHNICALLY PREFERRED FOR THE NEXT PROOF / NOT APPROVED / NOT IMPLEMENTED**.
 - V1 500×, WCE amount bound, datum/redeemer ABI, V3, canonical Reveal semantics, deployment and on-chain state: **UNCHANGED**.
+
+
+## 14. Shared-TxInfo dual-validator CEK characterization — authored, not yet verified
+
+After confirming that the existing PrizeValidator CEK fixture already constructs canonical Reveal inputs (Beacon, player commitment, ticket commitment, symbols, row tiers and payout), Agent A extended the dedicated B1 headroom test suite with a dual-validator characterization.
+
+**Test-only commit:** `42c626d4b0db92716d3db7bedb6b896874995952`  
+**Follow-up type-inference cleanup:** `4b321c63702bdd34ad5f369a4ad3187ec3a470d8`  
+**File:** `plutus/test/B1RevealHeadroomTest.hs`
+
+### Context construction and validator execution
+
+For each Reveal step, the test constructs one typed Plutus V2 `TxInfo` containing:
+- one exact Prize script input and its continuing Prize output;
+- one exact B1 Pool script input and its continuing Pool output;
+- the matching ticket NFT, Pool authority NFT and typed datums.
+
+It then creates two `ScriptContext` values that reuse that same `TxInfo` object, changing only the spending purpose:
+- `Spending prizeRef`: evaluates `PrizeValidator.compiledValidatorFactory`;
+- `Spending poolRef`: evaluates `B1PrizePool.compiledValidatorFactory`.
+
+The PrizeDatum fields and Reveal payout are built with the repository's canonical Beacon and GameRules functions and the current `defaultPrizeTable`; the fixture includes actual canonical tier-5/500× outcomes. This is not a stubbed payout injected into the datum.
+
+### Characterization matrix added
+
+- 8 × 1-USDM tickets, exact 4,000-USDM WCE: both canonical CEK evaluations accept the first seven maximum Reveals and reject the eighth under the current pre-Reveal predicate.
+- 8 × 1-USDM, 4,001 USDM liquidity: both accept all eight maximum Reveals.
+- 1/100-USDM mixed ticket prices at exact WCE, both orders: both validators accept the first maximum Reveal and reject the final one.
+- Mixed prices with the largest ticket price of headroom: both validators accept both Reveals in either order.
+- Canonical zero-payout LOSS followed by a 500× winning Reveal at exact aggregate WCE: both validators accept both transitions.
+
+The sequence builds a new synthetic transaction context for each Reveal transition, updating the Pool datum after each prior step. It does not put multiple Prize spends into one transaction; each actual Reveal transition still has one Prize UTxO and one Pool UTxO consumed.
+
+### Evidence boundary
+
+This is a **shared-TxInfo dual-validator synthetic CEK test**, stronger than testing either validator alone and stronger than a TypeScript mirror. It is not a balanced/serialized Cardano transaction, not a native Cardano-ledger validation, not Yaci, not Preprod, and supplies no native-ledger ExUnits or transaction CBOR evidence.
+
+The new suite has been pushed to the shared branch, but I have not yet verified a successful CI execution of commit `4b321c63702bdd34ad5f369a4ad3187ec3a470d8`. Therefore its status is **AUTHORED / CI RESULT NOT YET VERIFIED**, not PASS.
+
+Claim, Pending Expire and Revealed Expire interleavings are also not yet covered by this shared-TxInfo dual-validator test. They remain separate follow-up cases.
+
+### Updated disposition
+
+- TypeScript pure-mirror characterization: **PASS (192/192 in run #43177763646)**.
+- B1-only canonical Plutus V2 CEK suite: **AUTHORED; first CI attempt compile-blocked; missing NumericUnderscores pragma corrected by Agent B in 7b2bc56; successful post-fix run not yet verified**.
+- PrizeValidator + B1PrizePool shared-TxInfo CEK sequence: **AUTHORED in 42c626d / 4b321c; CI result not yet verified**.
+- Native Yaci/Cardano-ledger dual-validator sequence: **NOT RUN / NOT PROVEN**.
+- Claim / Pending Expire / Revealed Expire dual-validator interleavings: **NOT YET TESTED**.
+- Candidate A release-aware affordability: **NOT APPROVED / NOT IMPLEMENTED**.
+- V1 500×, WCE, datum/redeemer ABI, V3, current Reveal semantics, deployment and on-chain state: **UNCHANGED**.
