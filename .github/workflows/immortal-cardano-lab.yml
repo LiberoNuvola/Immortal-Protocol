@@ -46,6 +46,11 @@ on:
         required: false
         type: boolean
         default: false
+      run_reveal_queue_characterization:
+        description: "Opt in to the sequential Aiken V3 + B1 V2 Reveal headroom queue characterization on local Yaci"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   devnet-integration:
@@ -405,6 +410,14 @@ jobs:
           IMMORTAL_REVEAL_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
 
+      - name: Execute opt-in sequential Aiken V3 Reveal headroom queue characterization
+        id: aiken_reveal_queue
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.run_reveal_queue_characterization == true && steps.aiken-reveal-build.outcome == 'success'
+        env:
+          IMMORTAL_REVEAL_AIKEN_V3: "1"
+          IMMORTAL_REVEAL_QUEUE_CHARACTERIZATION: "1"
+        run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
+
       - name: Execute real FundTreasury canonical Oracle valuation trace
         run: node --import tsx/esm audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts
 
@@ -600,6 +613,7 @@ jobs:
           AIKEN_SYNC_BEACON_VALUE_MUTATION_ACCEPTED: ${{ steps.aiken_sync_beacon_ledger.outputs.continuing_value_mutation_accepted || 'unknown' }}
           AIKEN_PUBLICATION_OUTCOME: ${{ steps.aiken_ref_publish.outcome || 'unknown' }}
           AIKEN_REVEAL_SPEND_OUTCOME: ${{ steps.aiken_reveal_spend.outcome || 'unknown' }}
+          AIKEN_REVEAL_QUEUE_OUTCOME: ${{ steps.aiken_reveal_queue.outcome || 'unknown' }}
           AIKEN_LEDGER_POSITIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.positive_outcome || 'unknown' }}
           AIKEN_LEDGER_NEGATIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.negative_outcome || 'unknown' }}
           CLAIM_TRACE_OUTCOME: ${{ steps.claim_trace.outcome || 'unknown' }}
@@ -885,6 +899,18 @@ jobs:
               limitations: [
                 'This executes the compiled canonical B1PrizePool validator through PlutusTx CEK using synthetic ScriptContext inputs and outputs.',
                 'It is a validator-level CEK characterization only; it is not complete paired PrizeValidator + B1 transaction execution on a Cardano ledger or Preprod evidence.',
+              ],
+            },
+            {
+              checkId: 'AIKEN.REVEAL.V3.QUEUE.HEADROOM.CHARACTERIZATION',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Opt-in sequential Aiken V3 Prize + B1 V2 Reveal queue characterization',
+              stepOutcome: outcome(process.env.AIKEN_REVEAL_QUEUE_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'Opt-in local-Yaci characterization only; ordinary push runs intentionally skip this sequence.',
+                'The accepted transitions and expected final rejections are counted only after signed transactions are submitted to Yaci; negative cases must be size-qualified, supplied with a positive-twin ExUnits budget, and preserve the original inputs.',
+                'The liquidity asset is a 1:1 synthetic test asset and is not production USDM/oracle qualification.',
+                'This is the isolated Aiken V3 Prize candidate paired with canonical B1PrizePool Plutus V2; it is not Preprod/mainnet evidence or a change to the affordability predicate.',
               ],
             },
             {
