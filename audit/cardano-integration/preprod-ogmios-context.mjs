@@ -106,23 +106,40 @@ const pending = new Map()
 function rpc(method, params = {}) {
   return new Promise((resolve, reject) => {
     const id = `immortal-preprod-${nextId++}`
+    const startedAt = Date.now()
+    console.log(`[OGMIOS_RPC_START] method=${method} id=${id}`)
     const timer = setTimeout(() => {
       pending.delete(id)
-      reject(new Error(`Ogmios RPC timeout: ${method}`))
+      const elapsedMs = Date.now() - startedAt
+      console.error(`[OGMIOS_RPC_TIMEOUT] method=${method} id=${id} elapsedMs=${elapsedMs}`)
+      reject(new Error(`Ogmios RPC timeout after ${elapsedMs}ms: ${method}`))
     }, 30000)
-    pending.set(id, { resolve, reject, timer, method })
+    pending.set(id, { resolve, reject, timer, method, startedAt })
     client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id }))
   })
 }
 
 client.on('message', raw => {
   const response = JSON.parse(raw.toString())
-  if (!response.id || !pending.has(response.id)) return
+  if (!response.id || !pending.has(response.id)) {
+    console.warn('[OGMIOS_RPC_UNMATCHED_RESPONSE] ' + JSON.stringify({
+      id: response.id ?? null,
+      method: response.method ?? null,
+      pendingCount: pending.size,
+    }))
+    return
+  }
   const item = pending.get(response.id)
   pending.delete(response.id)
   clearTimeout(item.timer)
-  if (response.error) item.reject(new Error(`Ogmios ${item.method}: ${JSON.stringify(response.error)}`))
-  else item.resolve(response.result)
+  const elapsedMs = Date.now() - item.startedAt
+  if (response.error) {
+    console.error(`[OGMIOS_RPC_ERROR] method=${item.method} id=${response.id} elapsedMs=${elapsedMs} error=${JSON.stringify(response.error)}`)
+    item.reject(new Error(`Ogmios ${item.method}: ${JSON.stringify(response.error)}`))
+  } else {
+    console.log(`[OGMIOS_RPC_OK] method=${item.method} id=${response.id} elapsedMs=${elapsedMs}`)
+    item.resolve(response.result)
+  }
 })
 
 function normalizeLedgerPoint(raw, label) {
