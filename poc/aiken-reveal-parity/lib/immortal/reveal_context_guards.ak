@@ -118,6 +118,17 @@ pub fn reveal_pool_transition_is_valid(
     && new_pool.unresolved_ticket_count == old_pool.unresolved_ticket_count - 1
 }
 
+/// Test-only state constructor for sequential Reveal accounting fixtures.
+/// It mirrors the existing atomic delta; it does not validate a ScriptContext.
+fn pool_after_reveal(old_pool: RevealPoolState, price: Int, payout: Int) -> RevealPoolState {
+  RevealPoolState {
+    ..old_pool,
+    pending_liabilities: old_pool.pending_liabilities + payout,
+    unresolved_reserve: old_pool.unresolved_reserve - price,
+    unresolved_ticket_count: old_pool.unresolved_ticket_count - 1,
+  }
+}
+
 const identity_fixture =
   RevealIdentity {
     ticket_policy: #"a1",
@@ -287,4 +298,133 @@ test pool_rejects_wrong_unresolved_count() {
 test pool_rejects_prize_hash_mismatch() {
   let changed = RevealPoolState { ..pool_after, prize_hash: #"ff" }
   !reveal_pool_transition_is_valid(350, #"06", pool_before, changed)
+}
+
+/// These are pure predicate/accounting tests only. They do not replace the
+/// sequential local-Yaci ledger trace and do not prove transaction construction,
+/// CBOR size, execution budgets, or native-ledger acceptance.
+
+test exact_wce_eight_maximum_reveals_accept_seven_then_reject_eighth() {
+  let p0 = RevealPoolState {
+    total_liquidity: 400_000,
+    pending_liabilities: 0,
+    unresolved_reserve: 800,
+    unresolved_ticket_count: 8,
+    locked_jackpot: 0,
+    jackpot_threshold: 10_000,
+    suspended_classes: 0,
+    prize_hash: #"06",
+  }
+  let p1 = pool_after_reveal(p0, 100, 50_000)
+  let p2 = pool_after_reveal(p1, 100, 50_000)
+  let p3 = pool_after_reveal(p2, 100, 50_000)
+  let p4 = pool_after_reveal(p3, 100, 50_000)
+  let p5 = pool_after_reveal(p4, 100, 50_000)
+  let p6 = pool_after_reveal(p5, 100, 50_000)
+  let p7 = pool_after_reveal(p6, 100, 50_000)
+  let p8 = pool_after_reveal(p7, 100, 50_000)
+  reveal_pool_transition_is_valid(50_000, #"06", p0, p1)
+    && reveal_pool_transition_is_valid(50_000, #"06", p1, p2)
+    && reveal_pool_transition_is_valid(50_000, #"06", p2, p3)
+    && reveal_pool_transition_is_valid(50_000, #"06", p3, p4)
+    && reveal_pool_transition_is_valid(50_000, #"06", p4, p5)
+    && reveal_pool_transition_is_valid(50_000, #"06", p5, p6)
+    && reveal_pool_transition_is_valid(50_000, #"06", p6, p7)
+    && !reveal_pool_transition_is_valid(50_000, #"06", p7, p8)
+}
+
+test exact_wce_eight_maximum_reveals_all_pass_with_one_usdm_headroom() {
+  let p0 = RevealPoolState {
+    total_liquidity: 400_100,
+    pending_liabilities: 0,
+    unresolved_reserve: 800,
+    unresolved_ticket_count: 8,
+    locked_jackpot: 0,
+    jackpot_threshold: 10_000,
+    suspended_classes: 0,
+    prize_hash: #"06",
+  }
+  let p1 = pool_after_reveal(p0, 100, 50_000)
+  let p2 = pool_after_reveal(p1, 100, 50_000)
+  let p3 = pool_after_reveal(p2, 100, 50_000)
+  let p4 = pool_after_reveal(p3, 100, 50_000)
+  let p5 = pool_after_reveal(p4, 100, 50_000)
+  let p6 = pool_after_reveal(p5, 100, 50_000)
+  let p7 = pool_after_reveal(p6, 100, 50_000)
+  let p8 = pool_after_reveal(p7, 100, 50_000)
+  reveal_pool_transition_is_valid(50_000, #"06", p0, p1)
+    && reveal_pool_transition_is_valid(50_000, #"06", p1, p2)
+    && reveal_pool_transition_is_valid(50_000, #"06", p2, p3)
+    && reveal_pool_transition_is_valid(50_000, #"06", p3, p4)
+    && reveal_pool_transition_is_valid(50_000, #"06", p4, p5)
+    && reveal_pool_transition_is_valid(50_000, #"06", p5, p6)
+    && reveal_pool_transition_is_valid(50_000, #"06", p6, p7)
+    && reveal_pool_transition_is_valid(50_000, #"06", p7, p8)
+}
+
+test exact_wce_mixed_ticket_order_rejects_second_maximum_in_both_orders() {
+  let initial = RevealPoolState {
+    total_liquidity: 5_050_000,
+    pending_liabilities: 0,
+    unresolved_reserve: 10_100,
+    unresolved_ticket_count: 2,
+    locked_jackpot: 0,
+    jackpot_threshold: 10_000,
+    suspended_classes: 0,
+    prize_hash: #"06",
+  }
+  let high_first = pool_after_reveal(initial, 10_000, 5_000_000)
+  let low_first = pool_after_reveal(initial, 100, 50_000)
+  !reveal_pool_transition_is_valid(50_000, #"06", high_first, pool_after_reveal(high_first, 100, 50_000))
+    && !reveal_pool_transition_is_valid(5_000_000, #"06", low_first, pool_after_reveal(low_first, 10_000, 5_000_000))
+}
+
+test mixed_ticket_orders_both_pass_with_one_hundred_usdm_headroom() {
+  let initial = RevealPoolState {
+    total_liquidity: 5_060_000,
+    pending_liabilities: 0,
+    unresolved_reserve: 10_100,
+    unresolved_ticket_count: 2,
+    locked_jackpot: 0,
+    jackpot_threshold: 10_000,
+    suspended_classes: 0,
+    prize_hash: #"06",
+  }
+  let high_first = pool_after_reveal(initial, 10_000, 5_000_000)
+  let high_then_low = pool_after_reveal(high_first, 100, 50_000)
+  let low_first = pool_after_reveal(initial, 100, 50_000)
+  let low_then_high = pool_after_reveal(low_first, 10_000, 5_000_000)
+  reveal_pool_transition_is_valid(5_000_000, #"06", initial, high_first)
+    && reveal_pool_transition_is_valid(50_000, #"06", high_first, high_then_low)
+    && reveal_pool_transition_is_valid(50_000, #"06", initial, low_first)
+    && reveal_pool_transition_is_valid(5_000_000, #"06", low_first, low_then_high)
+}
+
+test loss_before_final_maximum_reveal_restores_exact_headroom() {
+  let p0 = RevealPoolState {
+    total_liquidity: 400_000,
+    pending_liabilities: 0,
+    unresolved_reserve: 800,
+    unresolved_ticket_count: 8,
+    locked_jackpot: 0,
+    jackpot_threshold: 10_000,
+    suspended_classes: 0,
+    prize_hash: #"06",
+  }
+  let p1 = pool_after_reveal(p0, 100, 50_000)
+  let p2 = pool_after_reveal(p1, 100, 50_000)
+  let p3 = pool_after_reveal(p2, 100, 50_000)
+  let p4 = pool_after_reveal(p3, 100, 50_000)
+  let p5 = pool_after_reveal(p4, 100, 50_000)
+  let p6 = pool_after_reveal(p5, 100, 50_000)
+  let loss = pool_after_reveal(p6, 100, 0)
+  let final_max = pool_after_reveal(loss, 100, 50_000)
+  reveal_pool_transition_is_valid(50_000, #"06", p0, p1)
+    && reveal_pool_transition_is_valid(50_000, #"06", p1, p2)
+    && reveal_pool_transition_is_valid(50_000, #"06", p2, p3)
+    && reveal_pool_transition_is_valid(50_000, #"06", p3, p4)
+    && reveal_pool_transition_is_valid(50_000, #"06", p4, p5)
+    && reveal_pool_transition_is_valid(50_000, #"06", p5, p6)
+    && reveal_pool_transition_is_valid(0, #"06", p6, loss)
+    && reveal_pool_transition_is_valid(50_000, #"06", loss, final_max)
 }
