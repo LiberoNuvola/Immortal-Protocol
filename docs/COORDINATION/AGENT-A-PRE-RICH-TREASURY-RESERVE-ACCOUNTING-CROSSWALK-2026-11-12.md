@@ -94,37 +94,101 @@ These functions have different purposes and are not interchangeable:
 
 The B1 validator's `solvencyInvariant` passes `ppTotalLiquidity` as the EEV argument to the universal kernel with the legacy B1 projection. This does not make B1's Oracle-valued liquidity amount identical to the separate Direct-USDM physical EEV profile.
 
-### 3.2 Reveal affordability at the exact WCE boundary — open source-level finding
+### 3.2 Reveal affordability at the exact WCE boundary — confirmed source-level mismatch, fix OPEN
 
-The current B1 `TicketRevealed` branch checks `payout <= effectivePool(datum)` **before** applying the same transition's face-reserve release and pending-liability increase. This precondition is stricter than the aggregate WCE inequality at its exact boundary.
+The pre-Reveal affordability condition is present in more than one layer:
 
-For a homogeneous Pending set of (N) tickets at price (P), let (F=N P), let (E) be the B1 liquidity/EEV input in the same accounting unit, and assume no pre-existing liabilities, Jackpot or other deductions. If the first (N-1) tickets each pay their maximum (500P), the effective pool before the final Reveal is:
+- `plutus/B1PrizePool.hs::TicketRevealed` checks `payout <= effectivePool(datum)` before applying the same transition's face-reserve release and pending-liability increase.
+- `plutus/PrizeValidator.hs` independently checks the same bound against the input B1 Pool datum before accepting the Reveal.
+- `PRE-RICH/src/PreRichRevealRefinement.ts` mirrors the same pre-Reveal effective-pool condition.
 
-```text
-effectivePool_before_last = E - 500 × (N - 1) × P - P
+The exact ticket price is bound to the consumed PrizeDatum, and the B1 branch releases that price and increases pending liabilities atomically in the post-state. However, the affordability comparison uses the pre-state effective pool without adding back the face reserve that the same transaction releases.
+
+Define:
+
+```
+F       = Σ P_i                       (all currently Pending ticket face value)
+E_free  = ppTotalLiquidity
+          - ppPendingLiabilities
+          - ppLockedJackpot
+q       = Σ P_j for tickets already revealed at 500×
+p_i     = price of the next ticket to Reveal
 ```
 
-The final maximum payout still requires `effectivePool_before_last >= 500 × P`, hence:
+Immediately before this Reveal, the unresolved face reserve is F - q, and already crystallized liabilities include 500 × q for the all-maximum path. Therefore:
 
-```text
-E >= 500 × F + P
+```
+effectivePool_before = E_free - 500 × q - (F - q)
+                     = E_free - F - 499 × q
 ```
 
-For a mixed-price Pending set, guaranteeing the same all-maximum path for every reveal order requires the corresponding extra margin to cover the largest ticket price that could be last:
+The current validator requires:
 
-```text
+```
+500 × p_i <= E_free - F - 499 × q
+```
+
+or equivalently:
+
+```
+E_free >= F + 499 × q + 500 × p_i
+```
+
+Because q <= F - p_i, the largest requirement for a chosen last ticket is reached when every other Pending ticket has already paid its 500× maximum:
+
+```
+E_free >= 500 × F + p_i
+```
+
+To guarantee that every possible Reveal ordering can complete even when every ticket pays its maximum, the sufficient and necessary headroom across possible last tickets is:
+
+```
 E_free >= 500 × F + max(P_i)
 ```
 
-where `E_free` is measured after the pre-existing pending-liability and locked-Jackpot deductions used by `effectivePool`. This is an arithmetic characterization of the inspected source predicates, not a live transaction test or a selected policy change.
+This is a direct algebraic consequence of the current pre-state check and the frozen 500× payout cap. It assumes all prices, liabilities and Pool accounting values use the same B1 USDM sub-unit scale. A loss, a smaller payout or an expiry is less demanding than the all-maximum path. A Claim reduces both ppTotalLiquidity and ppPendingLiabilities by the same amount, so it does not replenish this net headroom.
 
-Consequences for a purely illustrative 1-USDM homogeneous set with no other obligations:
+#### Exact Genesis illustration
 
-- At EEV/liquidity of 4,000 USDM, the V1 `solvencyInvariant` inequality `E >= 500F` admits 8 Pending tickets.
-- The current pre-Reveal affordability predicate does not, at that exact boundary, demonstrate that all 8 can successively realize 500×: after 7 maximum payouts, `effectivePool` is 499 USDM and the final 500-USDM payout is rejected.
-- The same source predicates require 4,001 USDM for the all-maximum Reveal path of 8 one-USDM tickets; 4,000 USDM supports 7 under that stricter path condition.
+For eight 1-USDM Genesis tickets:
 
-This exposes a potential admission-versus-Reveal headroom mismatch that must be independently reviewed before describing the WCE admission inequality as a complete pathwise payout guarantee. No fix is selected here. Agent B should verify the arithmetic against the exact validator and any alternate transition semantics. Possible policy/implementation treatments must be evaluated separately; do not silently alter WCE, the face reserve, or Reveal.
+- F = 8 USDM;
+- WCE = 500 × F = 4,000 USDM;
+- max(P_i) = 1 USDM;
+- current pre-Reveal path condition = 4,001 USDM.
+
+At exactly 4,000 USDM, the WCE/ProtectedCapital admission inequality accepts eight tickets, but after seven 500-USDM maximum Reveals, the last ticket sees only 499 USDM of effectivePool and its 500-USDM payout is rejected.
+
+The exact-boundary capacity comparison is therefore:
+
+| Qualified B1 accounting liquidity after pending-liability/Jackpot deductions | WCE admission inequality | Full all-maximum Reveal path under current pre-check |
+|---:|---:|---:|
+| 4,000 USDM | 8 tickets | 7 tickets |
+| 5,000 USDM | 10 tickets | 9 tickets |
+| 6,000 USDM | 12 tickets | 11 tickets |
+
+For a homogeneous ticket price P, the two frontiers are respectively floor(E_free / (500P)) and floor((E_free - P) / (500P)). For mixed prices, the WCE admission inequality remains 500F <= E_free, while the current all-order Reveal condition additionally requires max(P_i) headroom.
+
+#### Test-coverage finding
+
+The current TypeScript B1 mirror in src/__tests__/b1-invariants.test.ts does not implement the Plutus pre-Reveal affordability guard inside applyTicketRevealed; its Reveal tests check the post-transition solvency predicate. Its “full lifecycle preserves worst-case solvency” case reveals losses and 1× wins, not an all-500× sequence at the WCE boundary.
+
+The separate PRE-RICH/src/PreRichRevealRefinement.ts does contain the pre-Reveal guard, and src/__tests__/preRichRevealRefinement.test.ts tests an above-pool rejection and a 500× payout with substantial surplus. It does not test the exact WCE boundary, a repeated all-maximum Reveal sequence, mixed ticket prices, or every possible last-ticket ordering.
+
+This is therefore not a live transaction failure or a claim that the implementation has already been tested against this adversarial sequence. The source predicates and arithmetic are clear; exact Plutus/Yaci adversarial conformance remains to be run by an authorized test task.
+
+#### Disposition
+
+The discrepancy is now treated as a concrete source-level accounting/liveness question, not merely an unverified suspicion. It is not an authorization to weaken the Reveal check, change the B1 datum, or add an arbitrary Reserve margin.
+
+Candidate resolution families for independent review (none selected):
+1. make the same-transition face-reserve release available to the payout affordability calculation, by evaluating the exact post-release amount;
+2. retain the current pre-state check and make admission reserve the additional max(P_i) path headroom;
+3. demonstrate that an already-authorized, separately typed protected-capital component necessarily supplies the extra headroom in every valid B1 state.
+
+Any resolution must preserve exact price binding, 500× payout cap, liability-first accounting, non-overlap, and atomic Issue/Reveal/Claim/Expire behavior. No code or policy fix is selected here.
+
+This finding also affects how illustrative WCE capacity may be described: the 8/10/12 values are the current WCE admission frontier, not yet a demonstrated full all-maximum Reveal-liveness frontier.
 
 ### 3.3 The current B1/V3 representation boundary
 
@@ -337,4 +401,4 @@ Until those decisions and corresponding evidence exist, Treasury Reserve is a pr
 - Do not reinterpret the 4,000-USDM Genesis bootstrap as 4,000 USDM of B1 PrizePool tUSDM.
 - Do not make a first-Issue, ticket-sale, reserve-spend or deployment claim from this research note.
 
-**Overall status: TREASURY RESERVE CATEGORY INTENT EXISTS / AUTHENTICATED RESERVE LEDGER AND AVAILABLE BALANCE NOT PROVEN / RESERVE-TO-RESERVEPROTECTION MAPPING NOT PROVEN / TREASURY→B1 PHYSICAL SETTLEMENT NOT YET QUALIFIED / V1 500× UNCHANGED / B1 WCE-ADMISSION VS PRE-REVEAL HEADROOM RECONCILIATION OPEN.**
+**Overall status: TREASURY RESERVE CATEGORY INTENT EXISTS / AUTHENTICATED RESERVE LEDGER AND AVAILABLE BALANCE NOT PROVEN / RESERVE-TO-RESERVEPROTECTION MAPPING NOT PROVEN / TREASURY→B1 PHYSICAL SETTLEMENT NOT YET QUALIFIED / V1 500× UNCHANGED / B1 WCE-ADMISSION VS PRE-REVEAL HEADROOM MISMATCH CONFIRMED AT SOURCE LEVEL / FIX AND ADVERSARIAL CONFORMANCE OPEN.**
