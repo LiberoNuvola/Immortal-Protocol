@@ -534,6 +534,827 @@ const playerSecret = fromHex('01'.repeat(32))
 // payout. Keep the canonical Haskell trace's historical nonce unchanged.
 const fixtureTicketNonce = aikenRevealV3Candidate ? 7n : 1n
 
+async function runSequentialRevealQueueCharacterization(): Promise<void> {
+  if (!aikenRevealV3Candidate) {
+    throw new Error('Sequential Reveal queue characterization requires IMMORTAL_REVEAL_AIKEN_V3=1')
+  }
+  const maxTxSize = Number(protocolParameters.maxTxSize)
+  if (!Number.isSafeInteger(maxTxSize) || maxTxSize <= 0) {
+    throw new Error('Sequential Reveal queue requires an authenticated protocol maxTxSize')
+  }
+
+  // These vectors are the repository's canonical Plutus V2 fixture vectors:
+  // target=(network 0, round 1, mainchain [1,2,3], version [1]),
+  // mcHash=[16], Materios context=[17]. The Aiken V3 Prize candidate derives
+  // every payout itself; the fixture never inserts a claimed payout.
+  const queueGameVersion = new Uint8Array([1])
+  const queueMainchainRef = new Uint8Array([1, 2, 3])
+  const queueMcHash = new Uint8Array([16])
+  const queueMateriosContext = new Uint8Array([17])
+  const queueTarget = {
+    networkId: 0,
+    round: 1,
+    mainchainRef: queueMainchainRef,
+    version: queueGameVersion,
+  }
+  const queueTargetHex = toHex(encodeBeaconTarget(queueTarget))
+  const queueGameVersionHex = toHex(queueGameVersion)
+  const queueMainchainRefHex = toHex(queueMainchainRef)
+  const queueMcHashHex = toHex(queueMcHash)
+  const queueMateriosContextHex = toHex(queueMateriosContext)
+  const queueBeacon = await deriveBeacon(
+    0,
+    1,
+    queueMainchainRef,
+    queueMcHash,
+    queueMateriosContext,
+    queueGameVersion,
+  )
+  const queueBeaconHex = toHex(queueBeacon)
+  const queueIssuedAt = BigInt(Date.now())
+  const queueExpiresAt = queueIssuedAt + 3_600_000n
+  const queueValidTo = () => {
+    const near = BigInt(Date.now()) + 180_000n
+    return near < queueExpiresAt ? near : queueExpiresAt
+  }
+
+  const maxSecretByNonce: Record<number, string> = {
+    7: '000034cf',
+    8: '00002b0e',
+    9: '000073a1',
+    10: '00002322',
+    11: '000056e9',
+    12: '000001db',
+    13: '00002a26',
+    14: '0000302f',
+  }
+  const lossSecretForNonce7 = '00bbccdd'
+
+  const makeQueueTicket = async (
+    scenarioIndex: number,
+    nonce: number,
+    price: bigint,
+    outcome: 'max' | 'loss',
+    poolScriptHash: string,
+  ) => {
+    const ticketName = 'Q' + String(scenarioIndex + 1).padStart(2, '0') + 'T' + String(nonce).padStart(2, '0')
+    const ticketNameHex = toHex(new TextEncoder().encode(ticketName))
+    const secretHex = outcome === 'loss' ? lossSecretForNonce7 : maxSecretByNonce[nonce]
+    if (!secretHex) throw new Error('No canonical secret vector for nonce ' + nonce)
+    if (outcome === 'loss' && nonce !== 7) {
+      throw new Error('The canonical loss vector is only qualified for nonce 7')
+    }
+    const secret = fromHex(secretHex)
+    const playerCommitmentValue = await playerCommitment(1, nonce, secret)
+    const commitment = await ticketCommitment(
+      fromHex(ticketNameHex),
+      playerCommitmentValue,
+      queueGameVersion,
+      nonce,
+      Number(price),
+      fromHex(queueTargetHex),
+    )
+    const ticketSeed = await deriveTicketSeed(1, nonce, secret, queueBeacon, queueGameVersion)
+    const symbolsSeed = await deriveSymbolsSeed(ticketSeed)
+    const symbols = await generateSymbols(symbolsSeed)
+    if (symbols.length !== 6) {
+      throw new Error('Canonical queue fixture generated an invalid symbol count for nonce ' + nonce)
+    }
+    const row1Tier = classifyRowTier(symbols.slice(0, 3))
+    const row2Tier = classifyRowTier(symbols.slice(3, 6))
+    const payoutNumber = rowPayoutTotal(defaultPrizeTable, row1Tier, row2Tier, Number(price))
+    const payout = BigInt(payoutNumber)
+    if (outcome === 'max') {
+      if (
+        payout !== 500n * price ||
+        (row1Tier !== 5 && row2Tier !== 5)
+      ) {
+        throw new Error(
+          'Canonical max vector mismatch for nonce ' + nonce +
+          ': symbols=' + JSON.stringify([...symbols]) +
+          ' rowTiers=' + row1Tier + '/' + row2Tier +
+          ' payout=' + payout.toString() +
+          ' expected=' + (500n * price).toString(),
+        )
+      }
+    } else if (row1Tier !== 0 || row2Tier !== 0 || payout !== 0n) {
+      throw new Error(
+        'Canonical LOSS vector mismatch: symbols=' + JSON.stringify([...symbols]) +
+        ' rowTiers=' + row1Tier + '/' + row2Tier +
+        ' payout=' + payout.toString(),
+      )
+    }
+
+    const digest = await sha256(symbolsSeed)
+    const result = await sha256(
+      new Uint8Array([...field(digest), ...field(symbols)]),
+    )
+    const prizeTier = Math.max(row1Tier, row2Tier)
+    const makeDatum = (revealed: boolean) => c(0, [
+      testPolicyId,
+      ticketNameHex,
+      toHex(playerCommitmentValue),
+      price,
+      toHex(commitment),
+      queueGameVersionHex,
+      BigInt(nonce),
+      revealed ? payout : 0n,
+      '',
+      '',
+      c(revealed ? 1 : 0),
+      revealed ? toHex(result) : '',
+      revealed ? BigInt(prizeTier) : 0n,
+      c(0, [0n, 1n, queueMainchainRefHex, queueGameVersionHex]),
+      c(1),
+      queueBeaconHex,
+      queueMcHashHex,
+      queueMateriosContextHex,
+      poolScriptHash,
+      queueIssuedAt,
+      queueExpiresAt,
+      revealed ? BigInt(row1Tier) : 0n,
+      revealed ? BigInt(row2Tier) : 0n,
+    ])
+    return {
+      nonce,
+      price,
+      outcome,
+      ticketName,
+      ticketNameHex,
+      ticketUnit: testPolicyId + ticketNameHex,
+      secretHex,
+      symbols: [...symbols],
+      row1Tier,
+      row2Tier,
+      prizeTier,
+      payout,
+      playerCommitmentHex: toHex(playerCommitmentValue),
+      commitmentHex: toHex(commitment),
+      inputDatum: makeDatum(false),
+      outputDatum: makeDatum(true),
+    }
+  }
+
+  const scenarios = [
+    {
+      id: 'homogeneous-buffer-plus-1',
+      liquidity: 400_100n,
+      tickets: Array.from({ length: 8 }, (_, i) => ({
+        nonce: 7 + i, price: 100n, outcome: 'max' as const,
+      })),
+      order: [7, 8, 9, 10, 11, 12, 13, 14],
+      rejectAt: null as number | null,
+    },
+    {
+      id: 'mixed-buffer-small-first-plus-100',
+      liquidity: 5_060_000n,
+      tickets: [
+        { nonce: 7, price: 100n, outcome: 'max' as const },
+        { nonce: 8, price: 10_000n, outcome: 'max' as const },
+      ],
+      order: [7, 8],
+      rejectAt: null as number | null,
+    },
+    {
+      id: 'mixed-buffer-large-first-plus-100',
+      liquidity: 5_060_000n,
+      tickets: [
+        { nonce: 7, price: 10_000n, outcome: 'max' as const },
+        { nonce: 8, price: 100n, outcome: 'max' as const },
+      ],
+      order: [7, 8],
+      rejectAt: null as number | null,
+    },
+    {
+      id: 'homogeneous-exact-wce',
+      liquidity: 400_000n,
+      tickets: Array.from({ length: 8 }, (_, i) => ({
+        nonce: 7 + i, price: 100n, outcome: 'max' as const,
+      })),
+      order: [7, 8, 9, 10, 11, 12, 13, 14],
+      rejectAt: 7 as number | null,
+    },
+    {
+      id: 'mixed-exact-small-first',
+      liquidity: 5_050_000n,
+      tickets: [
+        { nonce: 7, price: 100n, outcome: 'max' as const },
+        { nonce: 8, price: 10_000n, outcome: 'max' as const },
+      ],
+      order: [7, 8],
+      rejectAt: 1 as number | null,
+    },
+    {
+      id: 'mixed-exact-large-first',
+      liquidity: 5_050_000n,
+      tickets: [
+        { nonce: 7, price: 10_000n, outcome: 'max' as const },
+        { nonce: 8, price: 100n, outcome: 'max' as const },
+      ],
+      order: [7, 8],
+      rejectAt: 1 as number | null,
+    },
+    {
+      id: 'loss-before-final-maximum',
+      liquidity: 400_000n,
+      tickets: [
+        { nonce: 7, price: 100n, outcome: 'loss' as const },
+        ...[8, 9, 10, 11, 12, 13, 14].map((nonce) => ({
+          nonce, price: 100n, outcome: 'max' as const,
+        })),
+      ],
+      order: [8, 9, 10, 11, 12, 13, 7, 14],
+      rejectAt: null as number | null,
+    },
+  ]
+
+  // Arithmetic invariants are checked before any bootstrap or spend.
+  for (const scenario of scenarios) {
+    const face = scenario.tickets.reduce((sum, ticket) => sum + ticket.price, 0n)
+    if (scenario.id === 'homogeneous-exact-wce' && scenario.liquidity !== 500n * face) {
+      throw new Error('Homogeneous exact-WCE fixture arithmetic mismatch')
+    }
+    if (scenario.id === 'homogeneous-buffer-plus-1' && scenario.liquidity !== 500n * face + 100n) {
+      throw new Error('Homogeneous +1-USDM fixture arithmetic mismatch')
+    }
+    if (
+      scenario.id.startsWith('mixed-exact') &&
+      scenario.liquidity !== 500n * face
+    ) {
+      throw new Error('Mixed exact-WCE fixture arithmetic mismatch: ' + scenario.id)
+    }
+    if (
+      scenario.id.startsWith('mixed-buffer') &&
+      scenario.liquidity !== 500n * face + 10_000n
+    ) {
+      throw new Error('Mixed +100-USDM fixture arithmetic mismatch: ' + scenario.id)
+    }
+  }
+
+  const publication = async (purpose: string, script: Script) => {
+    const tx = await lucid
+      .newTx()
+      .pay.ToAddressWithData(referenceAddress, undefined, { lovelace: 2_000_000n }, script)
+      .complete({ localUPLCEval: false })
+    const signed = await tx.sign.withWallet().complete({ localUPLCEval: false })
+    const publicationCbor = signed.toCBOR()
+    const publicationBytes = Buffer.from(publicationCbor, 'hex').length
+    if (publicationBytes > maxTxSize) {
+      throw new Error(
+        purpose + ' reference publication exceeds maxTxSize: ' +
+        publicationBytes + ' > ' + maxTxSize,
+      )
+    }
+    const hash = await signed.submit()
+    await lucid.awaitTx(hash)
+    const refs = await lucid.utxosAt(referenceAddress)
+    const utxo = refs.find((u) => u.txHash === hash)
+    if (!utxo) throw new Error(purpose + ' reference UTxO was not materialized')
+    const bound = bindPublishedReferenceScript({
+      purpose,
+      publishedTxCbor: publicationCbor,
+      expectedScript: script,
+      referenceAddress,
+      utxo,
+    })
+    return {
+      hash,
+      utxo,
+      bound,
+      bytes: publicationBytes,
+      scriptHash: validatorToScriptHash(script).toLowerCase(),
+      scriptBytes: Buffer.from(script.script, 'hex').length,
+    }
+  }
+
+  const prizeReference = await publication(
+    'PrizeValidator',
+    scripts.prizeValidator as Script,
+  )
+
+  const budgetTemplates = new Map<string, Array<{
+    tag: number
+    index: number
+    mem: string
+    steps: string
+  }>>()
+  const queueTransactions: any[] = []
+  const scenarioResults: any[] = []
+  const persistTransactions = () => {
+    writeFileSync(
+      'audit/yaci-evidence/reveal-queue-transactions.jsonl',
+      queueTransactions.map((entry) => JSON.stringify(entry, jsonReplacer)).join('\n') + '\n',
+    )
+  }
+
+  for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex += 1) {
+    const scenario = scenarios[scenarioIndex]
+    const poolTokenName = 'QPOOL' + String(scenarioIndex + 1).padStart(2, '0')
+    const poolTokenNameHex = toHex(new TextEncoder().encode(poolTokenName))
+    const poolUnit = testPolicyId + poolTokenNameHex
+    const poolScript = buildB1PrizePool(
+      scripts.prizeHash,
+      keyHash,
+      fixtureOracleStatePolicyId,
+      ORACLE_STATE_TOKEN_NAME_HEX,
+      testPolicyId,
+      poolTokenNameHex,
+    ) as Script
+    const poolScriptHash = validatorToScriptHash(poolScript).toLowerCase()
+    const poolAddress = validatorToAddress('Preprod', poolScript)
+    const poolReference = await publication('B1PrizePool', poolScript)
+    const faceTotal = scenario.tickets.reduce((sum, ticket) => sum + ticket.price, 0n)
+    const tickets = await Promise.all(
+      scenario.tickets.map((ticket) =>
+        makeQueueTicket(
+          scenarioIndex,
+          ticket.nonce,
+          ticket.price,
+          ticket.outcome,
+          poolScriptHash,
+        ),
+      ),
+    )
+    const ticketsByNonce = new Map(tickets.map((ticket) => [ticket.nonce, ticket]))
+    if (ticketsByNonce.size !== tickets.length) {
+      throw new Error('Queue fixture contains duplicate ticket nonces: ' + scenario.id)
+    }
+
+    const mintAssets: Record<string, bigint> = {
+      [poolUnit]: 1n,
+      [liquidityUnit]: scenario.liquidity,
+    }
+    for (const ticket of tickets) mintAssets[ticket.ticketUnit] = 1n
+
+    let bootstrapBuilder: any = lucid
+      .newTx()
+      .mintAssets(mintAssets, Data.void())
+      .attach.MintingPolicy(testPolicy)
+    bootstrapBuilder = bootstrapBuilder.pay.ToContract(
+      poolAddress,
+      { kind: 'inline', value: Data.to(poolDatum(scripts.prizeHash, scenario.liquidity, faceTotal, BigInt(tickets.length), 0n)) },
+      {
+        lovelace: 8_000_000n,
+        [poolUnit]: 1n,
+        [liquidityUnit]: scenario.liquidity,
+      },
+    )
+    for (const ticket of tickets) {
+      bootstrapBuilder = bootstrapBuilder.pay.ToContract(
+        scripts.prizeAddress as string,
+        { kind: 'inline', value: Data.to(ticket.inputDatum) },
+        {
+          lovelace: 5_000_000n,
+          [ticket.ticketUnit]: 1n,
+        },
+      )
+    }
+    const bootstrap = await bootstrapBuilder
+      .addSigner(address)
+      .complete({ localUPLCEval: false })
+    const bootstrapSigned = await bootstrap.sign.withWallet().complete({ localUPLCEval: false })
+    const bootstrapCbor = bootstrapSigned.toCBOR()
+    const bootstrapBytes = Buffer.from(bootstrapCbor, 'hex').length
+    if (bootstrapBytes > maxTxSize) {
+      throw new Error(
+        scenario.id + ' bootstrap exceeds maxTxSize: ' + bootstrapBytes + ' > ' + maxTxSize,
+      )
+    }
+    const bootstrapHash = await bootstrapSigned.submit()
+    await lucid.awaitTx(bootstrapHash)
+
+    const prizeUtxos = await waitFor(
+      () => lucid.utxosAt(scripts.prizeAddress as string),
+      (xs) => tickets.every((ticket) =>
+        xs.some((u) => u.assets[ticket.ticketUnit] === 1n && u.txHash === bootstrapHash),
+      ),
+      scenario.id + ' bootstrapped Prize UTxOs',
+    )
+    const poolUtxos = await waitFor(
+      () => lucid.utxosAt(poolAddress),
+      (xs) => xs.some((u) => u.assets[poolUnit] === 1n && u.txHash === bootstrapHash),
+      scenario.id + ' bootstrapped B1 Pool UTxO',
+    )
+    const prizeByNonce = new Map<number, UTxO>(
+      tickets.map((ticket) => [
+        ticket.nonce,
+        prizeUtxos.find((u) =>
+          u.assets[ticket.ticketUnit] === 1n && u.txHash === bootstrapHash,
+        ) as UTxO,
+      ]),
+    )
+    let currentPool = poolUtxos.find((u) =>
+      u.assets[poolUnit] === 1n && u.txHash === bootstrapHash,
+    ) as UTxO
+    if (!currentPool || tickets.some((ticket) => !prizeByNonce.get(ticket.nonce))) {
+      throw new Error(scenario.id + ' initial UTxO materialization is incomplete')
+    }
+
+    let currentReserve = faceTotal
+    let currentLiabilities = 0n
+    let currentCount = BigInt(tickets.length)
+    let acceptedCount = 0
+    let rejectedAt: number | null = null
+    const stepResults: any[] = []
+
+    for (let stepIndex = 0; stepIndex < scenario.order.length; stepIndex += 1) {
+      const nonce = scenario.order[stepIndex]
+      const ticket = ticketsByNonce.get(nonce)
+      const prizeInput = prizeByNonce.get(nonce)
+      if (!ticket || !prizeInput) {
+        throw new Error(scenario.id + ' reveal order references missing nonce ' + nonce)
+      }
+      const nextReserve = currentReserve - ticket.price
+      const nextLiabilities = currentLiabilities + ticket.payout
+      const nextCount = currentCount - 1n
+      if (nextReserve < 0n || nextCount < 0n) {
+        throw new Error(scenario.id + ' would underflow Pending reserve/count')
+      }
+      const inputPoolDatumCbor = Data.to(
+        poolDatum(scripts.prizeHash, scenario.liquidity, currentReserve, currentCount, currentLiabilities),
+      )
+      const outputPoolDatumCbor = Data.to(
+        poolDatum(scripts.prizeHash, scenario.liquidity, nextReserve, nextCount, nextLiabilities),
+      )
+      const outputPrizeDatumCbor = Data.to(ticket.outputDatum)
+      const prizeRedeemer = Data.to(c(1, [ticket.secretHex]))
+      const poolRedeemer = Data.to(c(2, [ticket.price]))
+      const builder = lucid
+        .newTx()
+        .readFrom([prizeReference.bound, poolReference.bound])
+        .collectFrom([prizeInput], prizeRedeemer)
+        .collectFrom([currentPool], poolRedeemer)
+        .pay.ToContract(
+          scripts.prizeAddress as string,
+          { kind: 'inline', value: outputPrizeDatumCbor },
+          prizeInput.assets,
+        )
+        .pay.ToContract(
+          poolAddress,
+          { kind: 'inline', value: outputPoolDatumCbor },
+          currentPool.assets,
+        )
+        .addSigner(address)
+        .validTo(Number(queueValidTo()))
+      const expectedReject = scenario.rejectAt === stepIndex
+      let builtTx: any
+      let measuredExUnits: any = null
+      let budgetSource: string | null = null
+      let signedTx: any
+      let signedCbor = ''
+      let summary: any
+      let txHash: string | null = null
+      let rejection = ''
+
+      if (expectedReject) {
+        const template = budgetTemplates.get(ticket.price.toString())
+        if (!template || template.length !== 2) {
+          throw new Error(
+            scenario.id + ' has no qualified positive-twin ExUnits template for price ' +
+            ticket.price.toString(),
+          )
+        }
+        const originalEvaluateTx = providerWithEvaluation.evaluateTx
+        try {
+          providerWithEvaluation.evaluateTx = async () => template.map((r) => ({
+            redeemer_tag: (['spend', 'mint', 'certificate', 'withdrawal', 'vote', 'propose'] as const)[r.tag] ?? 'unknown',
+            redeemer_index: r.index,
+            ex_units: { mem: Number(r.mem), steps: Number(r.steps) },
+          }))
+          builtTx = await builder.complete({ localUPLCEval: false })
+          const unsignedCbor = builtTx.toCBOR()
+          const unsignedBytes = Buffer.from(unsignedCbor, 'hex').length
+          if (unsignedBytes > maxTxSize) {
+            throw new Error(
+              scenario.id + ' negative twin cannot qualify ledger rejection: CBOR ' +
+              unsignedBytes + ' > maxTxSize ' + maxTxSize,
+            )
+          }
+          signedTx = await builtTx.sign.withWallet().complete({ localUPLCEval: false })
+          signedCbor = signedTx.toCBOR()
+          const signedBytes = Buffer.from(signedCbor, 'hex').length
+          if (signedBytes > maxTxSize) {
+            throw new Error(
+              scenario.id + ' signed negative twin exceeds maxTxSize: ' +
+              signedBytes + ' > ' + maxTxSize,
+            )
+          }
+          summary = describeTx(signedCbor)
+          budgetSource = 'same-price positive Yaci twin with assigned 1% margin'
+          try {
+            txHash = await signedTx.submit()
+          } catch (error) {
+            rejection = error instanceof Error ? error.message : String(error)
+          }
+        } finally {
+          providerWithEvaluation.evaluateTx = originalEvaluateTx
+        }
+        if (!rejection) {
+          throw new Error(scenario.id + ' expected final Reveal rejection was not observed')
+        }
+        const validatorRejection = /script|plutus|phase.?2|evaluation|validation|validator/i.test(rejection)
+        const resourceFailure = /max.*size|size.*limit|fee|execution.?unit|ex.?unit|budget|balance|missing input|missing script/i.test(rejection)
+        if (!validatorRejection || resourceFailure) {
+          throw new Error(
+            scenario.id + ' rejection is not a qualified validator/ledger rejection: ' +
+            rejection.slice(0, 1600),
+          )
+        }
+        const stillUnspentPrize = await lucid.utxosAt(scripts.prizeAddress as string)
+        const stillUnspentPool = await lucid.utxosAt(poolAddress)
+        if (
+          !stillUnspentPrize.some((u) => ref(u) === ref(prizeInput)) ||
+          !stillUnspentPool.some((u) => ref(u) === ref(currentPool))
+        ) {
+          throw new Error(scenario.id + ' rejected Reveal consumed an input UTxO')
+        }
+        rejectedAt = stepIndex
+      } else {
+        builtTx = await builder.complete({ localUPLCEval: false })
+        const unsignedCbor = builtTx.toCBOR()
+        const unsignedBytes = Buffer.from(unsignedCbor, 'hex').length
+        if (unsignedBytes > maxTxSize) {
+          throw new Error(
+            scenario.id + ' positive Reveal exceeds maxTxSize before signing: ' +
+            unsignedBytes + ' > ' + maxTxSize,
+          )
+        }
+        measuredExUnits = await evaluateYaciTx(unsignedCbor, [])
+        summary = describeTx(unsignedCbor)
+        const coverage = measuredExUnits.map((measured) => {
+          const assigned = summary.redeemers.find(
+            (r: any) => r.tag === 0 && r.index === measured.redeemer_index,
+          )
+          return {
+            redeemer_tag: measured.redeemer_tag,
+            redeemer_index: measured.redeemer_index,
+            measured: measured.ex_units,
+            assigned: assigned
+              ? { mem: Number(assigned.mem), steps: Number(assigned.steps) }
+              : null,
+            covered: Boolean(
+              assigned &&
+              Number(assigned.mem) >= measured.ex_units.mem &&
+              Number(assigned.steps) >= measured.ex_units.steps,
+            ),
+          }
+        })
+        if (
+          measuredExUnits.length !== 2 ||
+          coverage.length !== 2 ||
+          coverage.some((item) => !item.covered)
+        ) {
+          throw new Error(
+            scenario.id + ' positive Reveal lacks two fully covered redeemer ExUnits: ' +
+            JSON.stringify(coverage),
+          )
+        }
+        budgetTemplates.set(
+          ticket.price.toString(),
+          summary.redeemers.map((r: any) => ({
+            tag: r.tag,
+            index: r.index,
+            mem: String(r.mem),
+            steps: String(r.steps),
+          })),
+        )
+        budgetSource = 'measured Yaci CEK execution for this positive twin'
+        signedTx = await builtTx.sign.withWallet().complete({ localUPLCEval: false })
+        signedCbor = signedTx.toCBOR()
+        const signedBytes = Buffer.from(signedCbor, 'hex').length
+        if (signedBytes > maxTxSize) {
+          throw new Error(
+            scenario.id + ' signed positive Reveal exceeds maxTxSize: ' +
+            signedBytes + ' > ' + maxTxSize,
+          )
+        }
+        summary = describeTx(signedCbor)
+        txHash = await signedTx.submit()
+        await lucid.awaitTx(txHash)
+        const nextPrizeUtxos = await waitFor(
+          () => lucid.utxosAt(scripts.prizeAddress as string),
+          (xs) => xs.some((u) => u.txHash === txHash && u.assets[ticket.ticketUnit] === 1n),
+          scenario.id + ' revealed Prize output ' + nonce,
+        )
+        const nextPoolUtxos = await waitFor(
+          () => lucid.utxosAt(poolAddress),
+          (xs) => xs.some((u) => u.txHash === txHash && u.assets[poolUnit] === 1n),
+          scenario.id + ' continuing B1 Pool output',
+        )
+        const nextPrize = nextPrizeUtxos.find(
+          (u) => u.txHash === txHash && u.assets[ticket.ticketUnit] === 1n,
+        ) as UTxO
+        currentPool = nextPoolUtxos.find(
+          (u) => u.txHash === txHash && u.assets[poolUnit] === 1n,
+        ) as UTxO
+        if (!nextPrize || !currentPool) {
+          throw new Error(scenario.id + ' successful Reveal output observation is incomplete')
+        }
+        acceptedCount += 1
+        currentReserve = nextReserve
+        currentLiabilities = nextLiabilities
+        currentCount = nextCount
+        stepResults.push({
+          stepIndex,
+          nonce,
+          ticketNameHex: ticket.ticketNameHex,
+          priceUsdmSubunits: ticket.price.toString(),
+          payoutUsdmSubunits: ticket.payout.toString(),
+          rowTiers: [ticket.row1Tier, ticket.row2Tier],
+          symbols: ticket.symbols,
+          consumedPrizeRef: ref(prizeInput),
+          consumedPoolRef: ref(nextPoolUtxos.find((u) => u.txHash === txHash && u.assets[poolUnit] === 1n) as UTxO),
+          producedPrizeRef: ref(nextPrize),
+          producedPoolRef: ref(currentPool),
+        })
+        queueTransactions.push({
+          scenarioId: scenario.id,
+          stepIndex,
+          nonce,
+          expectedOutcome: 'accept',
+          observedOutcome: 'accepted-by-yaci',
+          ticketNameHex: ticket.ticketNameHex,
+          priceUsdmSubunits: ticket.price.toString(),
+          payoutUsdmSubunits: ticket.payout.toString(),
+          rowTiers: [ticket.row1Tier, ticket.row2Tier],
+          symbols: ticket.symbols,
+          secretHex: ticket.secretHex,
+          consumed: {
+            prizeRef: ref(prizeInput),
+            prizeDatumCbor: prizeInput.datum ?? null,
+            poolRef: ref(poolUtxos.find((u) => u.txHash === bootstrapHash && u.assets[poolUnit] === 1n) as UTxO),
+            poolDatumCbor: inputPoolDatumCbor,
+          },
+          produced: {
+            prizeRef: ref(nextPrize),
+            prizeDatumCbor: outputPrizeDatumCbor,
+            poolRef: ref(currentPool),
+            poolDatumCbor: outputPoolDatumCbor,
+          },
+          signedTxCbor: signedCbor,
+          tx: summary,
+          measuredExUnits,
+          budgetSource,
+          yaci: { submitted: true, accepted: true, transactionRef: txHash },
+        })
+        persistTransactions()
+        continue
+      }
+
+      queueTransactions.push({
+        scenarioId: scenario.id,
+        stepIndex,
+        nonce,
+        expectedOutcome: 'reject',
+        observedOutcome: 'rejected-by-yaci-ledger-validation',
+        ticketNameHex: ticket.ticketNameHex,
+        priceUsdmSubunits: ticket.price.toString(),
+        payoutUsdmSubunits: ticket.payout.toString(),
+        rowTiers: [ticket.row1Tier, ticket.row2Tier],
+        symbols: ticket.symbols,
+        secretHex: ticket.secretHex,
+        consumed: {
+          prizeRef: ref(prizeInput),
+          prizeDatumCbor: prizeInput.datum ?? null,
+          poolRef: ref(currentPool),
+          poolDatumCbor: inputPoolDatumCbor,
+        },
+        candidateOutput: {
+          prizeDatumCbor: outputPrizeDatumCbor,
+          poolDatumCbor: outputPoolDatumCbor,
+        },
+        signedTxCbor: signedCbor,
+        tx: summary,
+        measuredExUnits: null,
+        budgetSource,
+        yaci: {
+          submitted: true,
+          accepted: false,
+          transactionRef: null,
+          rejection: rejection.slice(0, 1600),
+          originalInputsPreserved: true,
+        },
+      })
+      persistTransactions()
+      break
+    }
+
+    if (scenario.rejectAt === null && rejectedAt !== null) {
+      throw new Error(scenario.id + ' rejected unexpectedly at step ' + rejectedAt)
+    }
+    if (scenario.rejectAt !== null && rejectedAt !== scenario.rejectAt) {
+      throw new Error(
+        scenario.id + ' expected rejection at step ' + scenario.rejectAt +
+        ' but observed ' + String(rejectedAt),
+      )
+    }
+    if (scenario.rejectAt === null && acceptedCount !== scenario.order.length) {
+      throw new Error(
+        scenario.id + ' accepted only ' + acceptedCount +
+        ' of ' + scenario.order.length + ' expected transitions',
+      )
+    }
+    if (scenario.rejectAt !== null && acceptedCount !== scenario.rejectAt) {
+      throw new Error(
+        scenario.id + ' accepted ' + acceptedCount +
+        ' transitions before the expected rejection; expected ' + scenario.rejectAt,
+      )
+    }
+    scenarioResults.push({
+      scenarioId: scenario.id,
+      liquidityUsdmSubunits: scenario.liquidity.toString(),
+      faceReserveUsdmSubunits: faceTotal.toString(),
+      initialTicketCount: tickets.length,
+      revealOrder: scenario.order,
+      acceptedCount,
+      rejectedAt,
+      expectedDisposition: scenario.rejectAt === null
+        ? 'all-sequential-reveals-accepted'
+        : 'final-expected-reveal-rejected-by-ledger',
+      finalPoolState: {
+        totalLiquidity: scenario.liquidity.toString(),
+        pendingLiabilities: currentLiabilities.toString(),
+        unresolvedReserve: currentReserve.toString(),
+        unresolvedTicketCount: currentCount.toString(),
+      },
+      bootstrapTransaction: {
+        transactionRef: bootstrapHash,
+        cborBytes: bootstrapBytes,
+      },
+      poolScript: {
+        hash: poolScriptHash,
+        scriptBytes: Buffer.from(poolScript.script, 'hex').length,
+        referenceTransaction: poolReference.hash,
+        referenceCborBytes: poolReference.bytes,
+        referenceOutRef: ref(poolReference.utxo),
+      },
+      prizeReference: {
+        transactionRef: prizeReference.hash,
+        cborBytes: prizeReference.bytes,
+        outRef: ref(prizeReference.utxo),
+      },
+      poolNftUnit: poolUnit,
+    })
+  }
+
+  if (scenarioResults.length !== scenarios.length) {
+    throw new Error('Sequential Reveal queue did not produce a complete scenario result set')
+  }
+  const summary = {
+    schema: 'IMMORTAL-REVEAL-QUEUE-HEADROOM-YACI-V1',
+    evidenceClass: 'local-yaci-ledger-characterization',
+    testedCommit: process.env.GITHUB_SHA ?? 'unknown',
+    plutusPair: {
+      prize: 'isolated Aiken Plutus V3 candidate',
+      pool: 'canonical parameterized B1PrizePool Plutus V2',
+      prizeHash: scripts.prizeHash,
+    },
+    network: 'ephemeral-local-yaci-conway',
+    testLiquidityAssetUnit: liquidityUnit,
+    testLiquidityAssetValuation: '1:1 synthetic fixture units; NOT production USDM qualification',
+    productionUsdmQualified: false,
+    maxTxSize,
+    subunitsPerUsdm: 100,
+    transactionEvidenceFile: 'audit/yaci-evidence/reveal-queue-transactions.jsonl',
+    requiredCases: [
+      '8x1-USDM exact 4000-USDM WCE: seven maximum Reveals accepted, eighth rejected',
+      '8x1-USDM plus 1-USDM headroom: all eight maximum Reveals accepted',
+      '1/100-USDM exact WCE: both Reveal orders reject final maximum payout',
+      '1/100-USDM plus 100-USDM headroom: both Reveal orders complete',
+      'six maximum wins, canonical LOSS, final maximum win at exact WCE: all complete',
+    ],
+    scenarios: scenarioResults,
+    allAssertionsPassed: true,
+    governance: {
+      affordabilityPredicateChanged: false,
+      v1FiveHundredXCapChanged: false,
+      wceChanged: false,
+      datumRedeemerAbiChanged: false,
+      v3CarrierChanged: false,
+      deploymentOrOnChainStateChanged: false,
+    },
+  }
+  writeFileSync(
+    'audit/yaci-evidence/reveal-queue-characterization.json',
+    JSON.stringify(summary, jsonReplacer, 2) + '\n',
+  )
+  console.log(JSON.stringify({
+    revealQueueDiag: 'sequential-aiken-v3-b1-v2-characterization-complete',
+    scenarioCount: scenarioResults.length,
+    acceptedTransitions: scenarioResults.reduce((sum, item) => sum + item.acceptedCount, 0),
+    expectedLedgerRejections: scenarioResults.filter((item) => item.rejectedAt !== null).length,
+    evidence: 'audit/yaci-evidence/reveal-queue-characterization.json',
+    transactions: 'audit/yaci-evidence/reveal-queue-transactions.jsonl',
+    productionUsdmQualified: false,
+  }, null, 2))
+}
+
+if (process.env.IMMORTAL_REVEAL_QUEUE_CHARACTERIZATION === '1') {
+  await runSequentialRevealQueueCharacterization()
+  process.exit(0)
+}
+
+
 const beaconValue = await deriveBeacon(
   0,
   0,
