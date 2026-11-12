@@ -712,3 +712,41 @@ No reduction strategy is selected in this crosswalk. Candidate work must preserv
 - Claim / Pending Expire / Revealed Expire dual-validator interleavings: **NOT YET TESTED**.
 - Candidate A release-aware affordability: **NOT APPROVED / NOT IMPLEMENTED**.
 - V1 500×, WCE, datum/redeemer ABI, V3 and current Reveal semantics: **UNCHANGED**.
+
+
+## 16. Plinth compiler-size hypothesis — test candidate only
+
+A source/configuration review found a narrowly scoped potential size-reduction experiment. Current `plutus/PrizeValidator.hs` explicitly enables:
+
+```haskell
+{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:conservative-optimisation #-}
+```
+
+The repository's `cabal.project` pins Plutus to commit `48e9bf08f439e7223de713b5b71696fcd81cffc3`. At that exact upstream revision, `PlutusTx.Options` documents that conservative optimisation implies:
+- `no-relaxed-float-in`;
+- `no-inline-constants`;
+- `no-inline-fix`;
+- `no-simplifier-evaluate-builtins`;
+- `preserve-logging`.
+
+The same pinned source documents that constant inlining can reduce cost slightly but may increase script size when a large constant is used multiple times, and fixed-point inlining may also increase script size. The upstream optimisation guide explicitly recommends comparing builds with conservative optimisation or its implied flags.
+
+Sources pinned to the exact Plutus revision:
+- [Plinth compiler options](https://github.com/IntersectMBO/plutus/blob/48e9bf08f439e7223de713b5b71696fcd81cffc3/doc/docusaurus/docs/delve-deeper/plinth-compiler-options.md)
+- [Other optimization techniques](https://github.com/IntersectMBO/plutus/blob/48e9bf08f439e7223de713b5b71696fcd81cffc3/doc/docusaurus/docs/working-with-scripts/other-optimization-techniques.md)
+- [PlutusTx.Options implementation](https://github.com/IntersectMBO/plutus/blob/48e9bf08f439e7223de713b5b71696fcd81cffc3/plutus-tx-plugin/src/PlutusTx/Options.hs)
+
+### Controlled experiment proposed (not implemented)
+
+Build a test-only PrizeValidator variant with the exact same source logic, Plutus pin and target version `1.0.0`, but without the conservative-optimisation restriction. Keep `preserve-logging` explicitly enabled so trace behavior is not silently changed. Do not change action dispatch, script arguments, datum/redeemer ABI, validators, parameters or economic rules.
+
+Compare against the current baseline:
+1. factory and fully parameterized script byte lengths and hashes;
+2. exact signed/reference-script publication transaction CBOR size;
+3. CEK behavior across the full existing Reveal matrix and canonical negative twins;
+4. Claim, SyncBeacon and Expire branch behavior, traces and execution budgets;
+5. generated artifacts bound to exact source commit and compiler configuration.
+
+A size win alone is insufficient. Any candidate must preserve the validator decision surface and fit the **complete** publication transaction under 16,384 bytes with a meaningful safety margin (proposed target: at most 16,128 bytes). If cost, log semantics, compiler reproducibility or any transition behavior regresses, reject the candidate.
+
+This is a compiler/build experiment only. It is **not** permission to alter the production PrizeValidator build, remove diagnostic traces, change V1 500×/WCE, adjust ABI, switch V3 semantics, or deploy a new script. The production source remains unchanged until a separately reviewed candidate is proven.
