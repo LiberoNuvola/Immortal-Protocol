@@ -27,6 +27,17 @@ on:
       - work/immortal-green-closure
     paths:
       - "audit/cardano-integration/**"
+      - "src/loadValidator.ts"
+      - "src/gameRules.ts"
+      - "src/plutusScripts/**"
+      - "plutus/B1PrizePool.hs"
+      - "plutus/PrizeValidator.hs"
+      - "plutus/BeaconRegistry.hs"
+      - "plutus/GameRules.hs"
+      - "plutus/Types.hs"
+      - "plutus/export/**"
+      - "package.json"
+      - "package-lock.json"
       - "audit/cardano-integration/preprod-conformance-binding.mjs"
       - "audit/cardano-ledger-runner/**"
       - "PRE-RICH/**"
@@ -353,4 +364,52 @@ jobs:
         with:
           name: immortal-real-preprod-reveal-evidence
           path: audit/preprod-evidence/
+          if-no-files-found: warn
+
+
+  preprod-b1-script-provenance:
+    # Independent read-only gate: re-derive the current parameterized Prize and
+    # B1 Pool addresses from the same acquired-ledger-state evidence packet.
+    needs: preprod-context
+    if: ${{ needs.preprod-context.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PREPROD_WALLET_ADDRESS: addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4
+      PREPROD_EVIDENCE_DIR: audit/preprod-evidence
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Setup legacy Lucid runtime
+        uses: ./.github/actions/setup-legacy-lucid
+
+      - name: Download exact Preprod context evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: immortal-cardano-preprod-context
+          path: audit/preprod-evidence
+
+      - name: Re-derive current Plutus V2 topology and compare live script credentials
+        run: node --import tsx/esm audit/cardano-integration/preprod-b1-script-provenance.mjs
+
+      - name: Preserve B1 script provenance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-b1-script-provenance
+          path: |
+            audit/preprod-evidence/preprod-b1-script-provenance.json
+            audit/preprod-evidence/preprod-b1-script-provenance.json.sha256
           if-no-files-found: warn
