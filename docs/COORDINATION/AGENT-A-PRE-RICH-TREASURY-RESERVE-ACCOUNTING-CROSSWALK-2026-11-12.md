@@ -804,3 +804,51 @@ This is a source-level finding in the isolated parity candidate, not proof that 
 The missing characterization is therefore a local-Yaci sequential queue test: eight Pending $1 tickets at exact 4,000-USDM WCE, all-max Reveal sequence, with a +1-USDM control; mixed $1/$100 prices in both reveal orders with the corresponding +$100 control; and a LOSS-before-max control. Each step must consume the preceding Pool UTxO and produce the next one, retaining exact transaction CBOR, execution budgets and input/output references. This test characterizes current behavior only; it must not silently change the affordability predicate.
 
 **Disposition:** Aiken V3 candidate source-level old-state predicate confirmed; current one-ticket local-Yaci Reveal PASS remains valid but does not prove multi-ticket all-max Reveal liveness. No release-aware affordability candidate is approved or implemented. Preserve the current 500×/WCE and Reveal semantics pending separately reviewed evidence and decision.
+
+
+## 19. Final disposition of conservative Plinth trial — Haskell V2 size regression (2026-11-12)
+
+This section supersedes the intermediate inference in §17 that the successful workflow step summaries meant the Haskell V2 EXPIRE fixtures had published and executed successfully. The completed run's explicit JEV inputs and builder logs show otherwise.
+
+### Completed workflow and evidence packet
+
+- Workflow: [IMMORTAL Cardano Integration Lab #43202287858](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43202287858)
+- Tested source: `e08e8127a19487dd82d100cc8b4c9a6ab5d3f15d`
+- Job `devnet-integration`: completed / success (all workflow steps completed).
+- Evidence artifact: [immortal-cardano-lab-evidence](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43202287858/artifacts/13939081532)
+- Artifact SHA-256: `95d67809174a711f0935d2456776a0736735fe3cfe7fa43261234bceedd6f34e`.
+
+A successful workflow job means the harness and its evidence generation completed. It does **not** mean every protocol check passed.
+
+### Actual Plutus V2 size result
+
+For all three Haskell V2 EXPIRE cases, the run records the same PrizeValidator artifact:
+
+- factory bytes: **16,520**
+- parameterized bytes: **16,654**
+- factory SHA-256: `b24a7af259ec76d356b8cd8e51d8da0c5eaf8a7bdb8a5a9a064e6f651e2a49ab`
+- parameterized SHA-256: `709ed21d4489d62e4c1553055134864c60fd9454285c065261c2886625a34893`
+- parameterized Cardano script hash: `54323dea3a02d4d6ccc0a7d3b9425af96607674452c0293c04b36ac4`
+- publication builder CBOR: **16,751 bytes**, against the observed **16,384-byte** maximum; **367 bytes over limit**.
+
+The prior baseline was 16,443 parameterized bytes and 16,540 publication-transaction bytes. Thus this `conservative-optimisation` trial did not reduce the blocker: the parameterized script grew by **211 bytes**, and the publication transaction grew by **211 bytes**. It is a negative compiler-option experiment, not a successful size optimization.
+
+The 12,782-byte / 12,888-byte publication figures in the same job log belong to the **Aiken Plutus V3** Prize reference script (hash `3d907a9928c331e31727735df5d4ff0f7cfa428028661bbe3ed7f1a0`), not the Haskell V2 PrizeValidator. They must not be attributed to the Plinth trial.
+
+### Actual JEV classification
+
+The final JEV registry inputs explicitly set:
+- `HASKELL_PENDING_EXPIRE_OUTCOME: failure`
+- `HASKELL_REVEALED_LOSS_EXPIRE_OUTCOME: failure`
+- `HASKELL_REVEALED_WIN_EXPIRE_OUTCOME: failure`
+
+All three Haskell V2 EXPIRE builders fail at transaction completion before submission with `Max transaction size of 16384 exceeded. Found: 16751`. These are pre-submission size/resource blocks, not Plutus semantic ValidationFailures or native-ledger semantic rejections.
+
+The job's separate native Yaci UTxO decoder conformance, P2.8 evidence-gate machinery, resource-audit generation, pure invariants, shared-TxInfo CEK, Aiken V3 Reveal and Claim traces all complete successfully. The explicit Haskell V2 EXPIRE JEV results remain failures. The overall job conclusion `success` must not be presented as an all-green protocol qualification.
+
+### Corrected disposition
+
+- **Reject this compiler-option setting as a size remedy.** Do not retain it as the solution to the V2 publication blocker.
+- No production compiler option, validator logic, ABI, V1 500×/WCE, Aiken V3 semantics or deployment has been changed by this disposition.
+- Next compiler experiment, if Agente B elects to continue, should be isolated and reproducible: baseline versus no-conservative option with `preserve-logging` explicitly retained, same pinned Plutus/GHC, exact script bytes/hash and complete publication CBOR. Require the full CEK matrix and trace parity, and publication CBOR ≤16,128 bytes before considering it a viable candidate.
+- Separately, the Aiken V3 sequential all-maximum Reveal coverage gap in §18 remains open. The Haskell V2 size trial neither tests nor resolves it.
