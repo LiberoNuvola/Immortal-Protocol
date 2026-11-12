@@ -110,6 +110,7 @@ jobs:
           cabal test beacon-registry-adversarial-tests --enable-tests --test-show-details=direct
 
       - name: Execute B1 Reveal headroom through canonical Plutus V2 CEK
+        id: b1_reveal_headroom_cek
         working-directory: plutus
         run: cabal test b1-reveal-headroom-tests --enable-tests --test-show-details=direct
 
@@ -607,6 +608,7 @@ jobs:
           P28_EVIDENCE_GATE_OUTCOME: ${{ steps.p28_evidence_gate.outcome || 'unknown' }}
           RESOURCE_FOOTPRINT_OUTCOME: ${{ steps.resource_footprint.outcome || 'unknown' }}
           PURE_INVARIANTS_OUTCOME: ${{ steps.pure_invariants.outcome || 'unknown' }}
+          B1_REVEAL_HEADROOM_CEK_OUTCOME: ${{ steps.b1_reveal_headroom_cek.outcome || 'unknown' }}
           ADMISSION_PROVENANCE_OUTCOME: ${{ steps.admission_provenance.outcome || 'unknown' }}
           ROW_TIER_IMMUTABILITY_OUTCOME: ${{ steps.row_tier_immutability.outcome || 'unknown' }}
           CLAIM_SETTLEMENT_BINDING_OUTCOME: ${{ steps.claim_settlement_binding.outcome || 'unknown' }}
@@ -874,6 +876,16 @@ jobs:
               stepOutcome: outcome(process.env.PURE_INVARIANTS_OUTCOME),
               evidenceRefs,
               limitations: ['Pure invariants do not replace native ledger evidence.'],
+            },
+            {
+              checkId: 'P2.8.B1.REVEAL.HEADROOM.CEK',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute canonical B1PrizePool Plutus V2 CEK headroom characterization',
+              stepOutcome: outcome(process.env.B1_REVEAL_HEADROOM_CEK_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This executes the compiled canonical B1PrizePool validator through PlutusTx CEK using synthetic ScriptContext inputs and outputs.',
+                'It is a validator-level CEK characterization only; it is not complete paired PrizeValidator + B1 transaction execution on a Cardano ledger or Preprod evidence.',
+              ],
             },
             {
               checkId: 'P2.8.ADMISSION.PROVENANCE',
