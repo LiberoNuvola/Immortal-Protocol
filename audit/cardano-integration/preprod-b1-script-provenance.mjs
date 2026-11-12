@@ -156,7 +156,7 @@ async function readEvidenceJson(name) {
     bytes: bytes.length,
   }
 
-  const sidecarName = `${name}.sha256`
+  const sidecarName = `${name.replace(/\\.json$/, '')}.sha256`
   const sidecarPath = `${EVIDENCE_DIR}/${sidecarName}`
   const sidecar = (await readFile(sidecarPath, 'utf8')).trim().split(/\s+/)[0]
   addCheck(`input-sha256:${name}`, sidecar === report.inputEvidence[name].sha256, {
