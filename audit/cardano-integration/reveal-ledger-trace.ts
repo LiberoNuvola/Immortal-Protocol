@@ -1558,7 +1558,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         yaci: {
           submitted: true,
           accepted: false,
-          transactionRef: null,
+          transactionRef: txHash,
           rejection: rejection.slice(0, 1600),
           collateral: {
             inputRefs: collateralRefs,
