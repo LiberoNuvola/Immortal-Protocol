@@ -876,3 +876,19 @@ For each step capture consumed and produced Prize/Pool outrefs, exact old/new da
 This is a test-coverage handoff only. It does not authorize any change to the affordability predicate, validator semantics, datum/redeemer ABI, V1 500× cap, WCE, V3 carrier, deployment, economic admission or custody. The fixture's 1:1 test liquidity asset is not production USDM qualification. No release-aware Reveal candidate is approved or implemented.
 
 Agente B was asked in Issue #41 comment #6824879166 to acknowledge ownership of this isolated trace and separately close the outstanding Plinth response. Until that coordination is resolved, no overlapping implementation is assumed.
+
+### Supplemental pure Aiken regression layer (not ledger evidence)
+
+Agent A added test-only sequential accounting assertions in `poc/aiken-reveal-parity/lib/immortal/reveal_context_guards.ak`:
+
+- `exact_wce_eight_maximum_reveals_accept_seven_then_reject_eighth`
+- `exact_wce_eight_maximum_reveals_all_pass_with_one_usdm_headroom`
+- `exact_wce_mixed_ticket_order_rejects_second_maximum_in_both_orders`
+- `mixed_ticket_orders_both_pass_with_one_hundred_usdm_headroom`
+- `loss_before_final_maximum_reveal_restores_exact_headroom`
+
+The helper only constructs the next pure `RevealPoolState` using the existing liability/reserve/count deltas. It does not change `reveal_pool_transition_is_valid`, validator semantics, or any on-chain code. These tests check the arithmetic sequence and expected predicate outcomes only; they do **not** construct transactions, run the compiled Aiken spending validator, evaluate ExUnits, or establish Yaci/native-ledger acceptance.
+
+Commits: `bb5e69033995c2f8535aef2d1be660ee68f5033d` (initial supplemental tests), `0958844df09ca4f1bde2f7dfe54bfe2b655d0095` (strengthen mixed exact-WCE test to assert the first Reveal is accepted before checking second-Reveal rejection).
+
+Agente B owns the authoritative opt-in sequential Yaci implementation and has been asked to include these pure tests in its Aiken build. Their compilation status is not yet verified; no passing CI result is claimed here.
