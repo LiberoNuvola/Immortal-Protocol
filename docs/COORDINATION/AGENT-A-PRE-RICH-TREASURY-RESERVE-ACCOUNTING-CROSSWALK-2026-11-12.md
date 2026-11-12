@@ -566,3 +566,55 @@ Agent B characterization commit: https://github.com/LiberoNuvola/Immortal-Protoc
 - V1 500×, WCE amount bound, datum/redeemer ABI, V3, current Reveal semantics, deployment and ledger state: UNCHANGED.
 
 This section is a non-normative engineering assessment only.
+
+
+## 13. B1 Reveal CEK characterization — current evidence boundary
+
+Agent B added a dedicated Haskell test suite, `plutus/test/B1RevealHeadroomTest.hs`, configured as Cabal target `b1-reveal-headroom-tests` and invoked by the IMMORTAL Cardano Integration Lab before Yaci startup.
+
+### What the new suite actually executes
+
+The fixture applies the real `B1PrizePool.compiledValidatorFactory` and passes a synthetic, typed Plutus V2 `ScriptContext` to `PlutusTx.Test.evaluateCompiledCode`. It executes the canonical B1 `TicketRevealed` branch through the Plutus CEK evaluator; it is not a TypeScript mirror.
+
+It covers:
+- 8 tickets at 1 USDM each and 4,000 USDM liquidity: seven 500× Reveal checks accepted, eighth rejected;
+- 4,001 USDM: all eight accepted;
+- mixed 1/100-USDM prices in both orders at exact WCE, with the final maximum Reveal rejected;
+- the largest-ticket-price headroom for both mixed orders;
+- a zero-payout loss before a later maximum payout at exact WCE.
+
+The amounts are in USDM sub-units (100 = 1 USDM). These fixtures characterize the existing predicate; they do not implement or evaluate Candidate A.
+
+### CI attempt and correction
+
+The first workflow attempt, [IMMORTAL Cardano Integration Lab #43182563437](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43182563437), ended with job conclusion `failure` at step `Execute B1 Reveal headroom through canonical Plutus V2 CEK`.
+
+The diagnostic is a Haskell compile error, not a validator execution result: GHC reported `GHC-62330 Illegal underscores in integer literals` because the test file at that commit did not enable `NumericUnderscores`. The earlier source compilation and universal economic conformance steps passed; the CEK executable itself did not compile, so no CEK case ran. The dependent Aiken/Claim gate also failed because the job stopped before the Aiken setup sequence; the remaining Yaci and P2.8 steps were skipped.
+
+Agent B corrected the test-only source by adding the missing language pragma in commit `7b2bc56da911c0af66517c71a39e5f877679b14f`:
+https://github.com/LiberoNuvola/Immortal-Protocol/commit/7b2bc56da911c0af66517c71a39e5f877679b14f
+
+The current branch source contains that pragma. I have not verified a successful post-fix CI run yet; therefore the CEK suite remains **implemented but not yet CI-validated**. The compile failure must not be reported as a semantic B1 validator failure or as a passing CEK test.
+
+### Remaining gap to the requested dual-validator proof
+
+The new suite evaluates **B1PrizePool only**. Although its synthetic context contains a matching Prize input and continuing Prize output, it does not execute `PrizeValidator` against the same `TxInfo`. Therefore it does not prove the atomic dual-validator transaction.
+
+The next conformance step remains:
+1. construct one shared typed `TxInfo` with exact Prize and B1 Pool inputs and both continuing outputs;
+2. evaluate the current canonical PrizeValidator V2 and B1PrizePool V2 CEK programs independently against their corresponding spending purposes but that same transaction context;
+3. assert both accept/reject outcomes agree for the homogeneous and mixed-price cases;
+4. include payout derivation, exact ticket price binding, reserve/liability deltas, invalid twins, and Claim/Pending-Expire/Revealed-Expire interleavings;
+5. only after synthetic dual-CEK parity, move to native ledger/Yaci or Cardano-ledger evaluation with the exact transaction and context.
+
+This is still CEK-level synthetic evidence until step 5; it is not Preprod or native-ledger evidence.
+
+### Updated disposition
+
+- Source-level WCE/pre-Reveal headroom mismatch: **CONFIRMED**.
+- TypeScript pure-mirror characterization: **PASS (192/192 in run #43177763646)**.
+- B1 canonical Plutus V2 CEK suite: **AUTHORED; FIRST CI ATTEMPT COMPILE-BLOCKED; TEST-ONLY PRAGMA FIX COMMITTED; POST-FIX PASS NOT YET VERIFIED**.
+- PrizeValidator + B1PrizePool evaluated against one shared transaction context: **NOT YET TESTED**.
+- Native Yaci/Cardano-ledger dual-validator sequence: **NOT RUN / NOT PROVEN**.
+- Candidate A: **TECHNICALLY PREFERRED FOR THE NEXT PROOF / NOT APPROVED / NOT IMPLEMENTED**.
+- V1 500×, WCE amount bound, datum/redeemer ABI, V3, canonical Reveal semantics, deployment and on-chain state: **UNCHANGED**.
