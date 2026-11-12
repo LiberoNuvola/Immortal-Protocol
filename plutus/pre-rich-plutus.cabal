@@ -273,6 +273,21 @@ test-suite governance-phase6-tests
         pre-rich-plutus
     default-language: Haskell2010
 
+test-suite b1-reveal-headroom-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: B1RevealHeadroomTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        bytestring,
+        plutus-core ^>=1.67.0.0,
+        plutus-ledger-api ^>=1.67.0.0,
+        plutus-tx ^>=1.67.0.0,
+        plutus-tx-plugin ^>=1.67.0.0,
+        plutus-tx:plutus-tx-testlib,
+        pre-rich-plutus
+    default-language: Haskell2010
+
 test-suite legacy-adapter-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
