@@ -1271,6 +1271,9 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
             submitResponse.status + '): ' + submitBody.slice(0, 1600))
         }
         txHash = invalidSummary.bodyHash
+        // Persist the actual invalid envelope, not the pre-envelope signed candidate.
+        signedCbor = invalidCbor
+        summary = invalidSummary
         console.log(JSON.stringify({
           revealQueueDiag: 'negative-invalid-envelope-submitted',
           scenarioId: scenario.id,
@@ -1295,7 +1298,6 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           throw new Error(scenario.id + ' invalid transaction was not indexed by Yaci Store: HTTP ' +
             indexedTxResponse.status)
         }
-        const indexedTx = await indexedTxResponse.json() as Record<string, unknown>
         const walletUtxosAfter = await lucid.utxosAt(address)
         const stillUnspentCollateral = collateralRefs.filter((collateralRef) =>
           walletUtxosAfter.some((utxo) => ref(utxo) === collateralRef),
@@ -1333,6 +1335,7 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         ) {
           throw new Error(scenario.id + ' phase-2 rejected Reveal changed an original input Value')
         }
+        rejection = 'ledger-included is_valid=false phase-2 rejection; collateral consumed and Prize/Pool preserved'
         rejectedAt = stepIndex
       } else {
         builtTx = await builder.complete({ localUPLCEval: false })
@@ -1557,6 +1560,14 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
           accepted: false,
           transactionRef: null,
           rejection: rejection.slice(0, 1600),
+          collateral: {
+            inputRefs: collateralRefs,
+            inputLovelace: collateralLovelace.toString(),
+            totalCollateral: totalCollateral.toString(),
+            returnedLovelace: expectedCollateralReturn.toString(),
+            returnAddress: collateralReturnAddress,
+            consumed: true,
+          },
           originalInputsPreserved: true,
         },
       })
