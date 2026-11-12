@@ -107,7 +107,7 @@ prizeValue =
   singleton (CurrencySymbol ticketPolicy) (TokenName ticketName) 1
     <> singleton adaSymbol adaToken 5_000_000
 
-poolDatum :: Integer -> Integer -> Integer -> B1PrizePoolDatum
+poolDatum :: Integer -> Integer -> Integer -> Integer -> B1PrizePoolDatum
 poolDatum liquidity liabilities unresolved count =
   B1PrizePoolDatum
     { ppTotalLiquidity = liquidity
