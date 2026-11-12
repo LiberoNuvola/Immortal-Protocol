@@ -431,11 +431,6 @@ makeDualRevealContexts before inputPrize outputPrize after ticketId =
     , ScriptContext sharedInfo (Spending poolRef)
     )
 
-applyPrizeValidator
-  :: PrizeDatum
-  -> Builtins.BuiltinByteString
-  -> ScriptContext
-  -> PlutusTx.CompiledCode Bool
 applyPrizeValidator datum secret context =
   let
     configured0 =
