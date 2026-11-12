@@ -181,6 +181,18 @@ Additional existing test artifacts were inspected:
 - src/__tests__/immortal-cardano-reveal-emulator-b1.mjs constructs a real single-ticket Prize + B1 Reveal transaction for emulator evaluation. Its default Pool fixture has substantial surplus (1,000,000 liquidity units against small liabilities/reserve) and derives a winning payout, but it does not test a cohort of sequential 500× outcomes at the WCE boundary.
 - src/__tests__/immortal-reveal-conformance.test.ts and the transaction-boundary fixtures check state mapping/deltas; they do not establish the missing full-cohort maximum-payout affordability condition.
 
+Agent B independently reviewed this finding at shared-branch source baseline `6c1e4477877ee666fe0567166350636205be7ee3` and confirmed the §3.2 arithmetic against both B1 and PrizeValidator predicates. B found no counterexample to the 500× amount bound under the explicit assumptions that every normal payout is validator-computed and capped at 500×, and every Pending ticket is represented exactly once in the aggregate face exposure. B also confirmed that this amount bound is distinct from full pathwise Reveal affordability. See Agent B's review in [Issue #41 comment 6817708454](https://github.com/LiberoNuvola/Immortal-Protocol/issues/41#issuecomment-6817708454).
+
+Following the review, Agent B added four pure-mirror characterization cases in commit `5b5285ed8d9328f0e911c17ec39755397ce184b8`:
+- eight 1-USDM tickets at 4,000 USDM: first seven 500× prechecks pass; the eighth fails at 499 versus 500;
+- 4,001 USDM supports all eight maximum payouts, with the final precheck exactly 500;
+- tickets priced 1 and 100 USDM fail at exact WCE in either order; 100 USDM of extra headroom supports both orders;
+- an earlier payout of 499 on a 1-USDM ticket can leave enough effectivePool for a later 500 payout at the exact aggregate WCE boundary.
+
+The fourth case is important: this is not a blanket inability to Reveal at the WCE boundary. It is a restriction on the all-maximum sequence, and the outcome path affects whether the later precheck passes. These cases are committed in `src/__tests__/b1-invariants.test.ts` and documented in [Issue #41 comment 6817888729](https://github.com/LiberoNuvola/Immortal-Protocol/issues/41#issuecomment-6817888729). The suite is explicitly a **pure TypeScript mirror**, not Plutus execution.
+
+At the latest run-state check during this update, the push-triggered lab `43177763646` was still `in_progress`; its pure invariant suite step had not yet started. No CI PASS is claimed. Even a successful pure suite will not replace the required dual-validator adversarial Plutus/Yaci evidence.
+
 This is therefore not a live transaction failure or a claim that the implementation has already been tested against this adversarial sequence. The source predicates and arithmetic are clear; exact dual-validator Plutus/Yaci adversarial conformance remains to be run by an authorized test task.
 
 #### Disposition
