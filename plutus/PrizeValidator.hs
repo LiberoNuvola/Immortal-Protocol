@@ -6,6 +6,7 @@
 {-# LANGUAGE ViewPatterns        #-}
 -- PlutusScriptV2 must not use UPLC 1.1.0 `case` on builtin pairs/lists.
 {-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 #-}
+{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:conservative-optimisation #-}
 
 module PrizeValidator
   ( mkValidator
