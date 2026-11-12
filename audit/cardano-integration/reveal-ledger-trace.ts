@@ -1161,10 +1161,10 @@ async function runSequentialRevealQueueCharacterization(): Promise<void> {
         // ledger-error header before the script payload.
         const rejectionHeader = rejection.split(/Base64-encoded script bytes:/i, 1)[0]
         const phase2LedgerFailure =
-          /ValidationTagMismatch\\s*\\(\\s*IsValid True\\s*\\)/i.test(rejectionHeader) &&
+          /ValidationTagMismatch\s*\(\s*IsValid True\s*\)/i.test(rejectionHeader) &&
           /PlutusFailure/i.test(rejectionHeader)
         const explicitResourceFailure =
-          /Max transaction size of \\d+ exceeded|FeeTooSmallUTxO|InsufficientCollateral|ExUnitsTooBig|ExecutionUnitsTooBig|TransactionTooLarge|ValueNotConserved|BadInputsUTxO|MissingScriptWitnesses|NoCollateralInputs|CollateralTooSmall/i.test(rejectionHeader)
+          /Max transaction size of \d+ exceeded|FeeTooSmallUTxO|InsufficientCollateral|ExUnitsTooBig|ExecutionUnitsTooBig|TransactionTooLarge|ValueNotConserved|BadInputsUTxO|MissingScriptWitnesses|NoCollateralInputs|CollateralTooSmall/i.test(rejectionHeader)
         if (!phase2LedgerFailure || explicitResourceFailure) {
           throw new Error(
             scenario.id + ' rejection is not a qualified Plutus phase-2 ledger rejection: ' +
