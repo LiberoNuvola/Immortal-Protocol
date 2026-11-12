@@ -903,3 +903,14 @@ Agente B has begun the separately requested no-conservative comparison:
 - The Aiken Reveal pure sequential tests recorded above are present at this tested HEAD and will be exercised by the workflow's `aiken check` step before blueprint export.
 
 This is a compiler-configuration experiment on the shared working branch, not a production deployment or approval to change validator semantics. Exact Haskell V2 script bytes/hash, publication CBOR, full CEK/trace parity and final JEV results remain pending until the run completes.
+
+### Concurrent CI classification for the follow-up commit
+
+On the same trial HEAD `894e1f1485d811f96f179a3ce03870ba93767367`:
+
+- [IMMORTAL Cardano Integration Lab #43249776481](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43249776481) remains in progress; the job has not yet reached Aiken check/build or the Yaci traces.
+- [IMMORTAL V3 Carrier Fast Ledger Gate #43249776184](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43249776184) completed successfully. This is an independent V3 carrier result, not Plinth evidence.
+- [PRE-RICH Expiry Refinement Conformance #43249776471](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43249776471) failed in the unrelated JS test `preRichExpiryPolicy.test.ts > rejects a non-reversible Lucid slot/time conversion`: the assertion expected an exception, but none was thrown. The concurrent Flux Point DoD job failed on the same test. The only source diff in the trial commit is the Plinth compiler option in `plutus/PrizeValidator.hs`; do not attribute this JS test failure to the compiler experiment without further evidence.
+- Documentation Link Check for the follow-up crosswalk commit `8cb41a65cf21272540a809dad686c1bcf63ccbf2` completed successfully.
+
+These independent CI outcomes do not alter the pending acceptance criteria: await the Cardano lab's exact V2 measurements and Aiken test/trace results before classifying the Plinth trial.
