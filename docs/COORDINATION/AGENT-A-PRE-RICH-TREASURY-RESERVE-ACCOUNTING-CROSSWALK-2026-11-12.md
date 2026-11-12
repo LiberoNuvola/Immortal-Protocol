@@ -94,7 +94,39 @@ These functions have different purposes and are not interchangeable:
 
 The B1 validator's `solvencyInvariant` passes `ppTotalLiquidity` as the EEV argument to the universal kernel with the legacy B1 projection. This does not make B1's Oracle-valued liquidity amount identical to the separate Direct-USDM physical EEV profile.
 
-### 3.2 The current B1/V3 representation boundary
+### 3.2 Reveal affordability at the exact WCE boundary — open source-level finding
+
+The current B1 `TicketRevealed` branch checks `payout <= effectivePool(datum)` **before** applying the same transition's face-reserve release and pending-liability increase. This precondition is stricter than the aggregate WCE inequality at its exact boundary.
+
+For a homogeneous Pending set of (N) tickets at price (P), let (F=N P), let (E) be the B1 liquidity/EEV input in the same accounting unit, and assume no pre-existing liabilities, Jackpot or other deductions. If the first (N-1) tickets each pay their maximum (500P), the effective pool before the final Reveal is:
+
+```text
+effectivePool_before_last = E - 500 × (N - 1) × P - P
+```
+
+The final maximum payout still requires `effectivePool_before_last >= 500 × P`, hence:
+
+```text
+E >= 500 × F + P
+```
+
+For a mixed-price Pending set, guaranteeing the same all-maximum path for every reveal order requires the corresponding extra margin to cover the largest ticket price that could be last:
+
+```text
+E_free >= 500 × F + max(P_i)
+```
+
+where `E_free` is measured after the pre-existing pending-liability and locked-Jackpot deductions used by `effectivePool`. This is an arithmetic characterization of the inspected source predicates, not a live transaction test or a selected policy change.
+
+Consequences for a purely illustrative 1-USDM homogeneous set with no other obligations:
+
+- At EEV/liquidity of 4,000 USDM, the V1 `solvencyInvariant` inequality `E >= 500F` admits 8 Pending tickets.
+- The current pre-Reveal affordability predicate does not, at that exact boundary, demonstrate that all 8 can successively realize 500×: after 7 maximum payouts, `effectivePool` is 499 USDM and the final 500-USDM payout is rejected.
+- The same source predicates require 4,001 USDM for the all-maximum Reveal path of 8 one-USDM tickets; 4,000 USDM supports 7 under that stricter path condition.
+
+This exposes a potential admission-versus-Reveal headroom mismatch that must be independently reviewed before describing the WCE admission inequality as a complete pathwise payout guarantee. No fix is selected here. Agent B should verify the arithmetic against the exact validator and any alternate transition semantics. Possible policy/implementation treatments must be evaluated separately; do not silently alter WCE, the face reserve, or Reveal.
+
+### 3.3 The current B1/V3 representation boundary
 
 The V3 economic state and `PreRichEconomicProjection` carry `v3ReserveProtection` as its own field and project it into the universal economic state.
 
@@ -119,16 +151,17 @@ If:
 - the payout cap is 500×;
 - the validator enforces the payout cap;
 - all Pending ticket commitments are included in the unresolved exposure;
-- and the liability/accounting transitions preserve the invariant,
 
-then a statistical model that underestimates the frequency of large wins does **not** create a normal-game payout obligation greater than the deterministic WCE. The WCE already covers the scenario where every unresolved ticket reaches the maximum permitted payout.
+then the **aggregate maximum payout amount** cannot exceed WCE. A Classic-6 PMF that underestimates the frequency of large wins does not, by itself, increase the maximum permitted normal payout above that amount.
+
+However, this amount-bound statement is not by itself proof that the current B1 Reveal path can execute every possible sequence of maximum outcomes. As described in §3.2, B1 checks each payout against `effectivePool` before releasing that ticket's face-price reserve. At the exact WCE boundary, the final maximum payout may fail this separate precondition. This is a possible source-level admission-versus-Reveal headroom mismatch and remains OPEN for independent review; it must not be hidden by saying that the WCE inequality alone proves full pathwise payout liveness.
 
 Consequently, while V1's 500× protection remains mandatory:
 
 - the statistical model must not reduce WCE;
 - a statistical statistic must not be placed into `ReserveProtection` merely because it is called a reserve;
-- a Treasury Reserve balance is not needed to make the PMF “more conservative” inside the already-enforced payout bound;
-- a Reserve intervention for a normal tail event would duplicate a risk already inside WCE.
+- a Treasury Reserve balance is not a substitute for resolving the admission-versus-Reveal headroom proof;
+- a Reserve intervention for a normal tail-frequency event would not address this distinct pre-Reveal accounting condition.
 
 This does not claim that WCE covers every possible protocol risk. Asset depeg, settlement failure, implementation defects, unrepresented liabilities, unauthorized outflows or compromised randomness/contract assumptions are separate risk classes. They require their own typed obligations, evidence and policy. They must not be silently folded into a generic “statistical tail” Reserve.
 
@@ -189,15 +222,17 @@ No event trigger or amount is selected here.
 
 A Treasury Reserve posting alone does not increase B1 EEV. Nor does moving an asset between internal categories create aggregate value.
 
-For illustration only, assume the exact B1 PrizePool already holds **4,000 USDM of qualified EEV** and no other ProtectedCapital components are present. With 1-USDM tickets:
+For illustration only, assume the exact B1 PrizePool has qualified liquidity/EEV in one consistent USDM accounting unit, with no other obligations or protected components, and every ticket costs 1 USDM:
 
-| Qualified B1 EEV | WCE capacity under V1 |
-|---:|---:|
-| 4,000 USDM | 8 unresolved tickets |
-| 5,000 USDM | 10 unresolved tickets |
-| 6,000 USDM | 12 unresolved tickets |
+| Qualified B1 liquidity/EEV | V1 WCE admission inequality `E ≥ 500N` | All-maximum Reveal path under current pre-check `E ≥ 500N + 1` |
+|---:|---:|---:|
+| 4,000 USDM | 8 tickets | 7 tickets |
+| 5,000 USDM | 10 tickets | 9 tickets |
+| 6,000 USDM | 12 tickets | 11 tickets |
 
-This arithmetic is simply `EEV ≥ 500 × N`, with every other protected term held at zero. It is not a claim about the live Preprod Pool, not an interpretation of the 4,000-USDM Genesis bootstrap, and not a live capacity reading.
+The two columns are deliberately separate. The first is only the `ProtectedCapital` / WCE admission inequality; the second also includes the extra face-reserve margin implied by the current B1 pre-Reveal affordability check. These are source-derived arithmetic frontiers, not a current live capacity reading and not a claim that a real Preprod ticket can be issued or revealed.
+
+This is not an interpretation of the 4,000-USDM Genesis bootstrap. The bootstrap is a separate Treasury admission concept and is not automatically B1 PrizePool liquidity.
 
 If 1,000 USDM already held in Treasury is physically moved to B1:
 
@@ -285,6 +320,7 @@ The specification authority still needs to determine, in a separate decision pro
 6. **Replenishment:** whether a previously used amount is replenished, by which approved inflows and under what conditions.
 7. **`ReserveProtection` mapping:** whether any Treasury category amount corresponds to that V3 protected-capital term, and the proof that the mapping is non-overlapping and representable in the deployed B1 profile.
 8. **Statistical profile:** whether any future profile is S-OBSERVE, S-GATE, S-COHORT or S-HYBRID, and its model, horizon, risk ceiling, lifetime budget and capital allocation. The existing R1 proposals keep this OPEN.
+9. **WCE / Reveal headroom proof:** reconcile the current `EEV >= ProtectedCapital` admission predicate with B1's pre-Release `payout <= effectivePool(datum)` check, including the final Pending ticket, mixed prices and arbitrary Reveal ordering.
 
 Until those decisions and corresponding evidence exist, Treasury Reserve is a protected accounting-intent category without a demonstrated spendable balance/permission; `ReserveProtection` remains a distinct V3/kernel component without a demonstrated Treasury backing map.
 
@@ -301,4 +337,4 @@ Until those decisions and corresponding evidence exist, Treasury Reserve is a pr
 - Do not reinterpret the 4,000-USDM Genesis bootstrap as 4,000 USDM of B1 PrizePool tUSDM.
 - Do not make a first-Issue, ticket-sale, reserve-spend or deployment claim from this research note.
 
-**Overall status: TREASURY RESERVE CATEGORY INTENT EXISTS / AUTHENTICATED RESERVE LEDGER AND AVAILABLE BALANCE NOT PROVEN / RESERVE-TO-RESERVEPROTECTION MAPPING NOT PROVEN / TREASURY→B1 PHYSICAL SETTLEMENT NOT YET QUALIFIED / V1 500× UNCHANGED.**
+**Overall status: TREASURY RESERVE CATEGORY INTENT EXISTS / AUTHENTICATED RESERVE LEDGER AND AVAILABLE BALANCE NOT PROVEN / RESERVE-TO-RESERVEPROTECTION MAPPING NOT PROVEN / TREASURY→B1 PHYSICAL SETTLEMENT NOT YET QUALIFIED / V1 500× UNCHANGED / B1 WCE-ADMISSION VS PRE-REVEAL HEADROOM RECONCILIATION OPEN.**
