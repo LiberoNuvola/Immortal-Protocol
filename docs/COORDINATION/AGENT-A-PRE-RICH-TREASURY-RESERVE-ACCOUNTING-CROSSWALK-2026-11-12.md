@@ -620,7 +620,7 @@ This is still CEK-level synthetic evidence until step 5; it is not Preprod or na
 - V1 500×, WCE amount bound, datum/redeemer ABI, V3, canonical Reveal semantics, deployment and on-chain state: **UNCHANGED**.
 
 
-## 14. Shared-TxInfo dual-validator CEK characterization — authored, not yet verified
+## 14. Shared-TxInfo dual-validator CEK characterization — verified synthetic CEK PASS
 
 After confirming that the existing PrizeValidator CEK fixture already constructs canonical Reveal inputs (Beacon, player commitment, ticket commitment, symbols, row tiers and payout), Agent A extended the dedicated B1 headroom test suite with a dual-validator characterization.
 
@@ -662,9 +662,53 @@ Claim, Pending Expire and Revealed Expire interleavings are also not yet covered
 ### Updated disposition
 
 - TypeScript pure-mirror characterization: **PASS (192/192 in run #43177763646)**.
-- B1-only canonical Plutus V2 CEK suite: **AUTHORED; first CI attempt compile-blocked; missing NumericUnderscores pragma corrected by Agent B in 7b2bc56; successful post-fix run not yet verified**.
-- PrizeValidator + B1PrizePool shared-TxInfo CEK sequence: **AUTHORED in 42c626d / 4b321c; CI result not yet verified**.
+- B1-only canonical Plutus V2 CEK suite: **PASS in run #43193778201**.
+- PrizeValidator + B1PrizePool shared-TxInfo CEK sequence: **PASS in run #43193778201; seven assertions confirmed by job log**.
 - Native Yaci/Cardano-ledger dual-validator sequence: **NOT RUN / NOT PROVEN**.
 - Claim / Pending Expire / Revealed Expire dual-validator interleavings: **NOT YET TESTED**.
 - Candidate A release-aware affordability: **NOT APPROVED / NOT IMPLEMENTED**.
 - V1 500×, WCE, datum/redeemer ABI, V3, current Reveal semantics, deployment and on-chain state: **UNCHANGED**.
+
+
+## 15. Verified CEK result and native Haskell V2 reference-script size blocker
+
+**Verified workflow:** [IMMORTAL Cardano Integration Lab #43193778201](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43193778201)  
+**Tested branch HEAD:** `ad4b66757e78940ed52a2fcf31f142d718860866`  
+**Commit delta from the authored dual-CEK documentation:** exactly one commit, `ad4b667`, modifying only `plutus/test/B1RevealHeadroomTest.hs` (the `poolDatum` type signature correction).  
+**Job:** `devnet-integration — success`  
+**Step:** `Execute B1 Reveal headroom through canonical Plutus V2 CEK — success`  
+**Cabal suite:** `b1-reveal-headroom-tests — PASS`
+
+The job log explicitly records all seven shared-TxInfo assertions as PASS:
+- Eight 1-USDM tickets at exact 4,000-USDM WCE: both validators accept the first seven maximum Reveals and reject the eighth.
+- 4,001 USDM liquidity: both validators accept all eight.
+- Mixed 1/100-USDM prices at exact WCE: both Reveal orders accept the first and reject the final maximum Reveal.
+- Mixed prices with 100 USDM headroom: both Reveal orders complete.
+- Canonical LOSS before a later 500× win: both validators accept both transitions.
+
+The workflow artifact is `immortal-cardano-lab-evidence`, artifact ID `13934152694`, digest `sha256:3a6fe0280353713367949f6892691d1c15077ec9d297942ab4bb634617ba79d4`. This result supersedes the earlier “CI not yet verified” disposition in §14.
+
+### Native Haskell V2 size diagnostic
+
+The same run did **not** establish native Haskell V2 paired Reveal/Expire execution. The reference-script publication diagnostic measured:
+- Parameterized PrizeValidator script: **16,443 bytes**.
+- Reference-script publication transaction: **16,540 bytes**.
+- Cardano maximum transaction size enforced by the builder: **16,384 bytes**.
+- Publication therefore failed by **156 bytes**, during transaction completion, before signing/submission.
+
+The JEV registry consequently records the three Haskell V2 Expire checks as `failure`. The log explicitly classifies a transaction-size/fee failure before submission as a build/resource blocker, not a typed Plutus ValidationFailure or a native ledger rejection. These statuses must not be interpreted as Reveal semantic failures. The active Aiken V3 lifecycle evidence is a separate test lane and does not prove native paired Haskell V2 execution.
+
+The current blocker is a **serialized transaction footprint** problem. A parameterized script that is 16,443 bytes is not by itself proof of ledger rejection; the measured publication transaction is the relevant 16,540-byte object. Any remediation must produce and measure a complete publication transaction below 16,384 bytes, with reproducible script hash and exact source provenance.
+
+No reduction strategy is selected in this crosswalk. Candidate work must preserve current PrizeValidator semantics, script purpose, datum/redeemer ABI and the 500×/WCE/Reveal rules. Do not treat the different legacy/Evolution parameterization hashes as evidence of a size win: the final diagnostic measured both at 16,443 bytes, with different CBOR hashes.
+
+### Updated evidence disposition
+
+- TypeScript pure-mirror characterization: **PASS (192/192 in run #43177763646)**.
+- B1-only and shared-TxInfo dual-validator synthetic CEK characterization: **PASS (run #43193778201)**.
+- Native Haskell V2 Prize reference-script publication: **BLOCKED BEFORE SUBMISSION by 16,540-byte transaction size**.
+- Haskell V2 Pending/Reveal-Loss/Reveal-Win Expire JEV checks: **FAIL / BUILD-RESOURCE BLOCK; not semantic validation failures**.
+- Native Haskell V2 paired Reveal ledger sequence: **NOT YET RUN / NOT PROVEN**.
+- Claim / Pending Expire / Revealed Expire dual-validator interleavings: **NOT YET TESTED**.
+- Candidate A release-aware affordability: **NOT APPROVED / NOT IMPLEMENTED**.
+- V1 500×, WCE, datum/redeemer ABI, V3 and current Reveal semantics: **UNCHANGED**.
