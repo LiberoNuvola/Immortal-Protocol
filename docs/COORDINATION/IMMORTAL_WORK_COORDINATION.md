@@ -5596,3 +5596,19 @@ B2 is not closed until the actual Issue validator enforces the canonical referen
 ### 6. Scope guard
 
 This matrix does not authorize adding B2 fields to `V3EconomicStateAction`, changing `canonicalCarrierBindingMessage`, changing `IssueDecisionInput`, changing a validator parameter/redeemer ABI, regenerating deployment scripts, or changing B2/V3/MintPolicy/Counter/Reveal/500×/economic semantics. Those are implementation choices requiring an explicit design/ABI decision and Agent B/security review. No on-chain code or economic rule was changed by this checkpoint.
+
+
+## 45.76 AGENT A — CROSS-VALIDATOR REFERENCE-INPUT SCAN CONFIRMS B2 IS NOT READ BY ISSUE SCRIPTS (2026-11-13)
+
+**Classification:** branch-source audit; no validator/ABI or protocol semantics changed.
+
+A second pass enumerated the reference-input access in the relevant Plutus scripts on the current branch:
+
+- `plutus/MintPolicy.hs` (blob `0d59fc05b4c11873984fffd10014bd46d8470509`): its `txInfoReferenceInputs` access is in `readRegistry` (lines 236–250), which filters by the supplied Registry payment ScriptHash and decodes a `BeaconRegistryDatum`; the Issue sale predicate calls that helper for Registry validation. No B2 policy/name, B2 datum or class-control read is present in this MintPolicy path.
+- `plutus/PrizeValidator.hs` (blob `45f4158c84587db5a3cd3851f35f0d1472d35700`): its reference-input reader is likewise `readRegistry` (lines 533–542), used by `validateSyncBeacon` (line 559). The inspected validator path does not read B2 control.
+- `PRE-RICH/onchain/V3EconomicStateCarrier.hs` (blob `f2d0beb9aeeddc0e95b21583d846d56786936dec`): no `txInfoReferenceInputs` access exists; its input path resolves its own spent V3 carrier input.
+- `PRE-RICH/onchain/PreRichControlCarrier.hs` (blob `ce5a73dd29894367f031924e5a282935d8d3d66f`): the validator resolves its own B2 input and continuation output. This protects a B2 state transition when B2 is spent; ordinary Issue uses B2 as a reference input and therefore does not execute this spending validator.
+
+This narrows the earlier §45.74 conclusion: across the inspected MintPolicy, Prize and V3 carrier paths, the only reference-input consumer found is the Beacon Registry reader. There is no on-chain B2 reference check hidden in those three execution paths. This is source-level evidence only; it is not a constructed or submitted bypass transaction and does not decide how the existing B2 design should be implemented.
+
+**Disposition:** B2 remains off-chain-bound for ordinary Issue, not independently script-enforced under the current inspected source. The §45.75 matrix remains the closure contract; implementation still requires an explicit design/ABI decision and adversarial CEK + ledger evidence.
