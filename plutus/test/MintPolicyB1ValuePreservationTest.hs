@@ -27,6 +27,7 @@ import PlutusTx.Test.Run.Code
   )
 
 import Beacon (encodeBeaconTarget, ticketCommitment)
+import CounterValidator (compiledValidator as compiledCounterValidator)
 import MintPolicy (compiledPolicyFactory)
 import OracleTypes (OracleStateId (..))
 import Types
@@ -162,20 +163,30 @@ registryDatum =
 scriptAddress :: ScriptHash -> Address
 scriptAddress hash = Address (ScriptCredential hash) Nothing
 
+-- Same payment script hash as the canonical Counter, but a different full
+-- Cardano address due to the added staking credential.
+counterLookalikeAddress :: Address
+counterLookalikeAddress =
+  Address
+    (ScriptCredential counterHash)
+    (Just (StakingHash (PubKeyCredential (PubKeyHash (bytes [201..228])))))
+
 inlineDatum :: ToData a => a -> OutputDatum
 inlineDatum value = OutputDatum (Datum (toBuiltinData value))
 
-output :: ScriptHash -> Value -> OutputDatum -> TxOut
-output hash value datum =
-  TxOut (scriptAddress hash) value datum Nothing
+outputAt :: Address -> Value -> OutputDatum -> TxOut
+outputAt address value datum = TxOut address value datum Nothing
 
-mkTxInfo :: Value -> Value -> TxInfo
-mkTxInfo poolInputValue poolOutputValue =
+output :: ScriptHash -> Value -> OutputDatum -> TxOut
+output hash value datum = outputAt (scriptAddress hash) value datum
+
+mkTxInfo :: Address -> Value -> Value -> TxInfo
+mkTxInfo counterAddress poolInputValue poolOutputValue =
   TxInfo
     { txInfoInputs =
         [ TxInInfo
             (TxOutRef (TxId (bytes [1..32])) 0)
-            (output counterHash mempty (inlineDatum (0 :: Integer)))
+            (outputAt counterAddress mempty (inlineDatum (0 :: Integer)))
         , TxInInfo
             (TxOutRef (TxId (bytes [1..32])) 1)
             (output poolHash poolInputValue (inlineDatum basePoolDatum))
@@ -186,7 +197,7 @@ mkTxInfo poolInputValue poolOutputValue =
             (output registryHash mempty (inlineDatum registryDatum))
         ]
     , txInfoOutputs =
-        [ output counterHash mempty (inlineDatum (1 :: Integer))
+        [ outputAt counterAddress mempty (inlineDatum (1 :: Integer))
         , output prizeHash mempty (inlineDatum prizeDatum)
         , output treasuryHash mempty (OutputDatum (Datum (toBuiltinData ())))
         , output poolHash poolOutputValue (inlineDatum issuedPoolDatum)
@@ -205,12 +216,12 @@ mkTxInfo poolInputValue poolOutputValue =
 -- Apply the real exported script factory and its serialized arguments.
 -- The returned CompiledCode is the same compiled wrapper exported by the
 -- production script exporter; no predicate is reimplemented in this test.
-compiledPolicyFor :: Value -> Value -> CompiledCode BuiltinUnit
-compiledPolicyFor poolInputValue poolOutputValue =
+compiledPolicyFor :: Address -> Value -> Value -> CompiledCode BuiltinUnit
+compiledPolicyFor counterAddress poolInputValue poolOutputValue =
   let
     context =
       ScriptContext
-        (mkTxInfo poolInputValue poolOutputValue)
+        (mkTxInfo counterAddress poolInputValue poolOutputValue)
         (Minting ticketPolicy)
 
     p1 = unsafeApplyCode compiledPolicyFactory (liftCodeDef counterHash)
@@ -227,25 +238,61 @@ compiledPolicyFor poolInputValue poolOutputValue =
 main :: IO ()
 main = do
   assertEvaluatesSuccessfully
-    (compiledPolicyFor poolValue poolValue)
+    (compiledPolicyFor (scriptAddress counterHash) poolValue poolValue)
   putStrLn "PASS: unchanged ADA + complete native-asset basket is accepted"
 
   assertEvaluatesWithError
-    (compiledPolicyFor poolValue (poolValue <> singleton adaSymbol adaToken 1))
+    (compiledPolicyFor (scriptAddress counterHash) poolValue (poolValue <> singleton adaSymbol adaToken 1))
   putStrLn "PASS: changed lovelace quantity is rejected"
 
   assertEvaluatesWithError
     (compiledPolicyFor
+      (scriptAddress counterHash)
       poolValue
       (poolAda <> singleton poolAssetPolicy poolAssetName 8))
   putStrLn "PASS: changed native-asset quantity is rejected"
 
   assertEvaluatesWithError
-    (compiledPolicyFor poolValue poolValueWithSecondAsset)
+    (compiledPolicyFor (scriptAddress counterHash) poolValue poolValueWithSecondAsset)
   putStrLn "PASS: added native asset is rejected"
 
   assertEvaluatesWithError
-    (compiledPolicyFor poolValueWithSecondAsset poolValue)
+    (compiledPolicyFor (scriptAddress counterHash) poolValueWithSecondAsset poolValue)
   putStrLn "PASS: removed native asset is rejected"
+
+  -- The compiled CounterValidator accepts a continuation at the same alternate-
+  -- staking address; its ownAddress equality is internally consistent.
+  let
+    lookalikeRef = TxOutRef (TxId (bytes [201..232])) 0
+    counterValue = singleton adaSymbol adaToken 2000000
+    counterTxInfo =
+      TxInfo
+        { txInfoInputs =
+            [ TxInInfo lookalikeRef
+                (outputAt counterLookalikeAddress counterValue (inlineDatum (0 :: Integer)))
+            ]
+        , txInfoReferenceInputs = []
+        , txInfoOutputs =
+            [ outputAt counterLookalikeAddress counterValue (inlineDatum (1 :: Integer)) ]
+        , txInfoFee = mempty
+        , txInfoMint = mempty
+        , txInfoDCert = []
+        , txInfoWdrl = AssocMap.empty
+        , txInfoValidRange = Interval.always
+        , txInfoSignatories = []
+        , txInfoRedeemers = AssocMap.empty
+        , txInfoData = AssocMap.empty
+        , txInfoId = TxId (bytes [5..36])
+        }
+    counterContext = ScriptContext counterTxInfo (Spending lookalikeRef)
+    counterDatumCode = unsafeApplyCode compiledCounterValidator (liftCodeDef (toBuiltinData (0 :: Integer)))
+    counterRedeemerCode = unsafeApplyCode counterDatumCode (liftCodeDef (toBuiltinData ()))
+    counterContextCode = unsafeApplyCode counterRedeemerCode (liftCodeDef (toBuiltinData counterContext))
+  assertEvaluatesSuccessfully counterContextCode
+  putStrLn "PASS: compiled CounterValidator accepts alternate-stake lookalike continuation"
+
+  assertEvaluatesSuccessfully
+    (compiledPolicyFor counterLookalikeAddress poolValue poolValue)
+  putStrLn "PASS: compiled MintPolicy accepts Counter payment hash at an alternate staking credential"
 
   putStrLn "ALL COMPILED MINTPOLICY B1 VALUE-PRESERVATION TESTS PASSED"

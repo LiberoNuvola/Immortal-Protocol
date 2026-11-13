@@ -114,6 +114,11 @@ jobs:
           cabal test economic-admission-tests --enable-tests --test-show-details=direct
           cabal test beacon-registry-adversarial-tests --enable-tests --test-show-details=direct
 
+      - name: Execute compiled MintPolicy Counter lookalike CEK characterization
+        id: counter_lookalike_cek
+        working-directory: plutus
+        run: cabal test mint-policy-b1-value-preservation-tests --enable-tests --test-show-details=direct
+
       - name: Execute B1 Reveal headroom through canonical Plutus V2 CEK
         id: b1_reveal_headroom_cek
         working-directory: plutus
@@ -386,6 +391,10 @@ jobs:
         id: beacon_registry_b0_yaci
         run: node --import tsx/esm audit/cardano-integration/beacon-registry-adversarial-ledger-trace.ts
 
+      - name: Execute Counter lookalike identity spend characterization on local Yaci
+        id: counter_lookalike_yaci
+        run: node --import tsx/esm audit/cardano-integration/counter-lookalike-ledger-trace.ts
+
       - name: Probe current Yaci cost models with Lucid Evolution
         run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
 
@@ -598,6 +607,8 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           V3_CARRIER_OUTCOME: ${{ steps.jev_v3_carrier.outcome || 'unknown' }}
           BEACON_REGISTRY_B0_YACI_OUTCOME: ${{ steps.beacon_registry_b0_yaci.outcome || 'unknown' }}
+          COUNTER_LOOKALIKE_CEK_OUTCOME: ${{ steps.counter_lookalike_cek.outcome || 'unknown' }}
+          COUNTER_LOOKALIKE_YACI_OUTCOME: ${{ steps.counter_lookalike_yaci.outcome || 'unknown' }}
           REVEAL_OUTCOME: ${{ steps.jev_reveal.outcome || 'unknown' }}
           HASKELL_PENDING_EXPIRE_OUTCOME: ${{ steps.haskell_pending_expire.outcome || 'unknown' }}
           HASKELL_REVEALED_LOSS_EXPIRE_OUTCOME: ${{ steps.haskell_revealed_loss_expire.outcome || 'unknown' }}
@@ -674,6 +685,24 @@ jobs:
                 'This is an adversarial characterization using an ephemeral CI test wallet and synthetic local-devnet data, not a Preprod or mainnet qualification.',
                 'A successful characterization confirms current acceptance of permissionless Pending creation, creator-nominated relayer publication, Registry continuation Value delta and brRound/target-round mismatch; it is not a security approval.',
                 'The trace does not prove external Materios source authenticity, B3 canonicality, or production Registry identity.',
+              ],
+            },
+            {
+              checkId: 'COUNTER.IDENTITY.MINT_POLICY.CEK',
+              requirementRef: 'Agent B / Execute compiled MintPolicy against a Counter input at an alternate staking credential',
+              stepOutcome: outcome(process.env.COUNTER_LOOKALIKE_CEK_OUTCOME),
+              evidenceRefs,
+              limitations: ['This is a compiled Plutus CEK characterization with synthetic ScriptContext values; it is not native-ledger Issue execution.'],
+            },
+            {
+              checkId: 'COUNTER.IDENTITY.LOOKALIKE.YACI',
+              requirementRef: 'Agent B / Spend two ordinary-payment Counter lookalikes on local Yaci while the canonical Counter remains unspent',
+              stepOutcome: outcome(process.env.COUNTER_LOOKALIKE_YACI_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This proves only local-Yaci acceptance of the compiled CounterValidator on alternate-stake addresses and exact-address reader separation.',
+                'It does not execute the Ticket MintPolicy or prove duplicate Ticket NFT supply on the ledger; the paired CEK test covers only the MintPolicy predicate.',
+                'This synthetic local-devnet result is not Preprod/mainnet qualification or an authorization to issue a ticket.',
               ],
             },
             {
