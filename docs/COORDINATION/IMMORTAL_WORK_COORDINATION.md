@@ -5224,3 +5224,90 @@ No theorem that `K* = ∅` is inferred from the local S0 obstruction. Conversely
 The separate Flux test failure was also traced to `deriveCardanoIssueTimeAnchor`: its prior round-trip checked only time→slot after slot→time, allowing a timestamp one millisecond after the actual slot boundary. Commit `1e7becb03537eb218c0c8d67ae8a5a181bf7359f` adds a preceding-millisecond boundary check matching the existing regression test. This narrows the Issue time-anchor validation only; it does not change expiry horizons, economic rules, V3 or Reveal. The focused PRE-RICH Expiry Refinement Conformance #28 passed on the source-fix commit; the broader Flux DoD and Emulator Reveal workflows were still in progress at this documentation snapshot.
 
 **Disposition:** the ticket census is a stronger internal observation tool than the production Issue reader, but it is deliberately not certified for source completeness or full ProtectedCapital. The R1/Kc certificate and current first-Issue authorization remain **MISSING / BLOCKED**.
+
+## 45.71 AGENT A — CURRENT PREPROD ACQUIRED-POINT OBSERVATION AND DIRECT-USDM RECONCILIATION (2026-11-13)
+
+**Evidence workflow:** IMMORTAL Cardano Preprod Context #1034, run `43371927089`, source commit `1e7becb03537eb218c0c8d67ae8a5a181bf7359f`.  
+**Classification:** CURRENT READ-ONLY PREPROD OBSERVATION + CURRENT SCRIPT-PROVENANCE MATCH; NOT EEV DEPLOYMENT APPROVAL, NOT PA1–PA7, NOT R1/Kc.
+
+### 1. One exact acquired ledger state
+
+The authenticated Demeter/Ogmios v7 session acquired one ledger state and queried the wallet, PrizeValidator and B1 Pool UTxOs while that state remained acquired:
+
+- slot: `138864340`;
+- block hash: `19f47d7c91f0e93ebb48166a1cb677f7c74ff96b11b2d3937a8ca3cff7a11a3e`;
+- acquisition and query tip matched exactly;
+- context digest: `e4266d5b73926901499a8f66fb4461b23c9ed1e3575f22f62eacf7a58eb92c58`;
+- PrizeValidator packet digest: `3e4eaf730894ee72ef5d55a59b9b8f93bbb3d7e8adafd6181f6b0bf531f8f2c5`;
+- B1 Pool packet digest: `fa38a1bebec2f2df3384906796ca0a07d2a3519e66b344e2a13dab43a15c5af2`.
+
+The PrizeValidator query returned **zero UTxOs**. The B1 Pool query returned exactly one UTxO, `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`. Unlike the 2026-11-06 Koios/Ogmios observations, these two current address queries are tied to the same acquired ledger point, not merely two nearby tips.
+
+### 2. Address provenance was independently re-derived at that same point
+
+The accompanying `preprod-b1-script-provenance.json` artifact is `PASS`, with 20/20 checks and digest `fa870920a528c735991be70c241fb42c9e96429779cd0a4e5d24e0abd1c6878b`. It binds the exact context/Pool/Prize/wallet packet hashes and the same slot/hash above, then confirms:
+
+- the observed PrizeValidator address and payment credential equal the address/hash derived from the current parameterized Plutus V2 Prize factory;
+- the observed B1 Pool address and payment credential equal the current parameterized Pool factory;
+- the Pool datum's `ppPrizeHash` equals the current derived PrizeValidator hash;
+- the observed Pool UTxO is at that exact Pool script address;
+- the runtime and exported factory artefacts are byte-identical for both scripts;
+- the singleton Pool authority and Oracle State identities are derived from the observed wallet payment-key identity.
+
+This supersedes the earlier *unrevalidated historical-candidate* status for the two payment credentials at this exact point. It does not create a provider attestation or deployment approval, and it does not claim that a ticket was ever minted or that a Reveal was submitted.
+
+### 3. Exact Pool value and eight-field B1 datum
+
+The Pool UTxO carries:
+- 5,000,000 lovelace for the output's ADA component;
+- one configured B1 Pool authority singleton;
+- `1,000,000,000` atomic units of the exact configured Preprod tUSDM asset, unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
+
+The raw inline datum decodes as the current eight-field `B1PrizePoolDatum`, with these values:
+
+| Field | Observed value |
+|---|---:|
+| `ppTotalLiquidity` | 100,000 USDM subunits |
+| `ppPendingLiabilities` | 0 |
+| `ppUnresolvedReserve` | 0 |
+| `ppUnresolvedTicketCount` | 0 |
+| `ppLockedJackpot` | 0 |
+| `ppJackpotThreshold` | 10,000 USDM subunits |
+| `ppSuspendedClasses` | 0 |
+| `ppPrizeHash` | exact current PrizeValidator hash |
+
+Under the already accepted narrow Preprod direct-tUSDM profile (six ledger decimals, 100 IMMORTAL USDM subunits per reference unit), the physical quantity is 1,000 test-tUSDM units = 100,000 USDM subunits = **1,000 RU**. It exactly matches `ppTotalLiquidity`. This is a strong fresh physical EEV observation for the configured B1 Pool UTxO. It is **not** a USD/USDM market quote, proof of peg/redemption, proof of Mainnet asset identity, or a statement about other Treasury balances or the separate 4,000-USDM bootstrap objective.
+
+At this acquired point, zero PrizeValidator UTxOs and zero B1 pending/unresolved counters agree. This supports the current live PrizeValidator L1/L3 population being empty at this point. It does not reconstruct spent Claim/Expire history, prove historical L5 completeness, or make L6 globally empty.
+
+### 4. Remaining evidence and certification boundary
+
+The same script-provenance artifact records the Oracle State timestamp as `2026-10-08T17:38:50.142Z`; this is stale relative to the 2026-11-13 observation and cannot qualify an external USD/USDM source. The exact direct-tUSDM physical profile must remain separate from Oracle valuation.
+
+The run's `IMMORTAL-PREPROD-CONFORMANCE-BINDING-v0.1` is `BOUND` to the source hashes and this observation, and its four executable Reveal-boundary conformance tests passed. Its own classification remains:
+- `ledger_aligned_evaluator_run=false`;
+- `full_end_to_end_equivalence_claim=false`.
+
+The current point narrows two gaps in §45.70: Prize and Pool UTxOs can be queried at a common acquired point, and their current script payment credentials can be re-derived against checked-in factory artefacts. It still does not close:
+- authenticated external-provider/source authority and independent backend assurance;
+- the runtime Issue producer's integration of this census and its point-bound, replayable evidence;
+- historical consumed-ticket/Claim/Expire replay and R7 L5/L6 proofs;
+- L2 funding/lock lifecycle provenance;
+- SafetyCapital, ReserveProtection and MandatoryFutureCosts component provenance and PA1–PA7 disjointness/completeness;
+- USD/USDM Option B source qualification and the fresh human deployment approval;
+- the deployment-bound R1/Kc/Ω certificate and VC1–VC6.
+
+R1 disposition is unchanged: the first S0 Issue still raises WCE by 500 RU without increasing this physical EEV and therefore reduces the unclamped margin by 500 RU. The live 1,000-RU Pool means the first 1-RU class may have deterministic solvency headroom under the existing arithmetic; it does not satisfy the current T-MARGIN/QNE non-erosion condition and is not an Issue authorization.
+
+### 5. Current CI status relevant to the same source snapshot
+
+On source commit `1e7becb`, Flux DoD #690 completed SUCCESS, PRE-RICH Expiry Refinement #28 completed SUCCESS, and the Preprod Context #1034 completed SUCCESS. The Emulator Reveal #1063 completed FAILURE before a Reveal-spending transaction could be built:
+- the script-reference publication transaction for Prize was 16,532 bytes against the canonical 16,384-byte maximum;
+- the diagnostic-only oversized-size probe later passed the publication step, but the B1 value probe intentionally stopped at the price-mismatch guard;
+- the Prize validator diagnostic reported a non-polymorphic CEK instantiation error;
+- negative Reveal cases were inconclusive because they stopped at build;
+- the normal Reveal build then reported `Blockfrost not set. Can't calculate ex units`.
+
+Therefore no real Reveal acceptance/failure semantics are inferred from this run. In particular, the 16,532-byte failure is at the preceding script-publication transaction, not evidence that the Reveal-spending transaction itself exceeded 16,384 bytes.
+
+**Disposition:** Preprod now has a materially stronger common-point physical Pool/ticket observation with current script provenance. It confirms 1,000 RU direct physical tUSDM in the B1 Pool and zero live ticket UTxOs at that exact point, but it does not remove the external valuation, ProtectedCapital producer, R1/Kc/Ω, deployment approval or Reveal execution blockers. No on-chain transaction, wallet signature or deployment was performed by this observation.
