@@ -5078,3 +5078,90 @@ A funded Reserve could potentially be evaluated as a source of that additional p
 - Next: complete the exact-head Haskell run; then keep the Agent A work on the C1 source/provenance producer and the Treasury category ledger evidence contract. Any Reserve-to-Pool use must remain blocked until the category debit and physical source-to-destination transfer are proven.
 
 **Disposition:** Reserve is a separate Treasury accounting intention, not `ReserveProtection` and not immediately spendable Pool liquidity. Its most concrete potential utility identified here is separately authorized Reveal liveness headroom; the current code does not yet implement or authorize that path.
+
+
+## 45.69 AGENT A — C1 PROTECTEDCAPITAL PRODUCER: SIX-COMPONENT SOURCE/PROVENANCE CROSSWALK (2026-11-13)
+
+**Audited source HEAD:** 16a2961118f0288b5f8a5eae58f8f7f8c1418196  
+**Classification:** SOURCE-DERIVED PRODUCER GAP / PROFILE CONFORMANCE AUDIT — NOT CERTIFIED  
+**Owner:** Agent A — PRE-RICH economics, EEV and admission  
+**Scope:** Current direct-USDM Issue reader, V3/B1 reconciliation, signed authority payload and the six ProtectedCapital terms. No change to R7, 500×, V3, Reveal, ABI, Treasury allocation or deployment.
+
+### 1. Executive finding
+
+The current Issue path has an **integrity-bound aggregate ProtectedCapital witness**, but it does not yet have a **PA1–PA7-certified component producer**.
+
+The source chain does the following:
+
+1. The Preprod reader observes the exact Counter, B1 Pool, V3 carrier and B2 control singleton UTxOs.
+2. It decodes the B1 Pool datum and V3 carrier state, requires exact RU/USDM conversion and reconciles the monetary aggregates represented by both.
+3. The signed Issue authority supplies six ProtectedCapital component amounts and a total. The signed payload binds the provenance reference to the V3 carrier reference and the viability certificate to the same carrier/state hash/EEV snapshot.
+4. The Haskell Issue producer independently computes the six numeric terms from the decoded pre-state, including the PRE-RICH 500× WorstCaseExposure, and emits them as V3_PRESTATE_CANONICAL_HASKELL.
+5. The TypeScript authority/provider compares the signed component values against the Haskell-computed values; the runtime checks six non-negative amounts, their sum, and the carrier reference.
+
+These are useful same-state and arithmetic integrity controls. They do **not** prove that every underlying obligation was observed, that the three generic protection amounts have an independently qualified economic source, or that the six amounts represent disjoint commitment populations. The signature authenticates what the configured signer asserted; it does not, by itself, prove the assertion's source authority, exhaustiveness or classification.
+
+### 2. Component-by-component source map
+
+| ProtectedCapital component | Current observable/derivation | What is already checked | Unclosed evidence obligation |
+|---|---|---|---|
+| CrystallizedLiabilities | B1 ppPendingLiabilities and V3 v3CrystallizedLiabilities; B1 sub-units are exactly normalized to RU | Reader reconciles B1 and V3 values on the observed Pool/carrier cut; Haskell recomputes the component from the V3 pre-state | No independent complete population witness for every accepted, unpaid winning Prize obligation; no full L1 ticket-to-aggregate replay in this Issue read path |
+| WorstCaseExposure | Haskell kernel derives PRE-RICH V1 500 × Σ(classPrice × unresolvedCount) from the eight V3 class states | Canonical class IDs/prices, class exposure and aggregates are validated; B1 face reserve/count are cross-checked against V3 after exact unit conversion | The Issue reader does not enumerate the complete live Pending/BeaconReady Prize UTxO population. Aggregate agreement between B1 and V3 is not a separate proof that every ticket is represented exactly once or that neither aggregate omitted a ticket |
+| SafetyCapital | Scalar field on the V3 carrier | Haskell uses the same pre-state scalar; the signed authority value must match the Haskell result; legacy B1 lifting sets it to zero | No typed source, legal/economic perimeter, amount derivation, time horizon or disjointness witness. Do not infer that it is zero in a non-legacy V3 deployment merely because the legacy adapter cannot represent it |
+| ReserveProtection | Scalar field on the V3 carrier | Same carrier/signature/Haskell numeric binding as above; legacy B1 lifting sets it to zero and reverse projection rejects non-zero values | No qualified mapping to a Treasury Reserve custody/category balance, no authorized source debit/posting, and no proof that it is disjoint from WCE, Jackpot, SafetyCapital or other cohort commitments |
+| LockedJackpot | B1 ppLockedJackpot and V3 Jackpot lockedAmount | Reader reconciles B1/V3 amount and Jackpot threshold; Haskell includes the exact V3 locked amount | Candidate L2 mapping still needs proof of the funding/locking lifecycle, binding conditional commitment, no overlap with L1/L3 or another category, and full same-state asset/custody backing |
+| MandatoryFutureCosts | Scalar field on the V3 carrier | Haskell carries the same pre-state amount; signed authority and Haskell output are compared; legacy B1 lifting sets it to zero and reverse projection rejects non-zero values | No complete cost-obligation register, payer/beneficiary/horizon classification, conservative derivation or PA3 proof. The same payment is not yet reconciled against Fs(P), Fr(P), Fc(P) and the Issue cohort so it cannot be shown not to be double-counted |
+
+### 3. Exact integrity boundary — what the types do and do not encode
+
+At the inspected HEAD:
+
+- IssueProtectedCapitalProvenance and ProtectedCapitalProvenance contain one sourceReference, six integer amounts, two accounting inputs (unresolvedReserve, unresolvedTicketCount) and total. They have no per-component source/verification reference, derivation version, timestamp/slot, unit declaration, evidence digest, canonical R7 cell classification or disjointness witness.
+- relayer/signedIssueAuthority.js::validateProtectedCapitalProvenance checks the six named fields, non-negative integers, arithmetic sum and the single source reference. Signature verification binds the payload but does not add the absent component evidence.
+- plutus/export/IssueAdmission.hs::protectedCapitalToJSON derives CrystallizedLiabilities, WorstCaseExposure, SafetyCapital, ReserveProtection, LockedJackpot and MandatoryFutureCosts from the canonical V3 pre-state. Its sourceType is V3_PRESTATE_CANONICAL_HASKELL; this establishes deterministic recomputation from the carrier, not the source authority of the carrier's underlying assertions.
+- relayer/preprodIssueObservationReader.js directly queries Counter, Pool, V3 carrier and B2 control. It reconciles B1/V3 monetary aggregates but does not read the PrizeValidator address or enumerate live ticket UTxOs in this Issue observation.
+- PRE-RICH/src/PreRichCardanoObservationProjection.ts can derive unresolved counts/reserve/exposure from a supplied ticket array and compare those totals with the Pool datum. The existence of that projection does not prove that the current Preprod Issue provider actually supplies it from a complete, authoritative ledger population.
+
+Therefore do not describe the current one-reference/six-amount structure as per-component provenance or as an R7 certificate. It is an authenticated aggregate assertion plus deterministic recomputation and cross-field consistency checks.
+
+### 4. PA1–PA7 consequences
+
+| PA requirement | Current consequence from this source review |
+|---|---|
+| PA1 — profile instantiation | Candidate L1/L2/L3 mapping exists, but SafetyCapital, ReserveProtection and MandatoryFutureCosts remain untyped by canonical commitment cell |
+| PA2 — exhaustive coverage | OPEN: no complete asset/obligation inventory; current Issue reader does not independently enumerate the Prize ticket population or all other protocol obligations |
+| PA3 — disjointness | UNPROVEN: no per-component obligation identity/perimeter witness; mandatory future costs are not fully reconciled against the class cost surface |
+| PA4 — deterministic valuation | PARTIAL: L1/WCE/Jackpot arithmetic exists; three generic fields lack fully instantiated source/valuation contracts |
+| PA5 — permitted transition deltas | PARTIAL: Issue/Reveal/Claim/Expire arithmetic exists, but the full population and source-to-settlement chain is not replayed in one certified inventory |
+| PA6 — L6 empty in executable states | NOT DISCHARGED: aggregate equality and six-term summation cannot detect an omitted commitment that is absent from every submitted input |
+| PA7 — adversarial omitted-commitment review | OPEN: omitted-ticket, hidden-liability, alias/overlap and cost double-counting cases do not yet have a complete producer-level rejection/evidence matrix |
+
+### 5. Minimum closure artifact — evidence contract, not a new economic rule
+
+Before a production producer can be called C1-closed, its evidence packet needs to give each component a separately replayable record, bound to the same canonical observation envelope:
+
+- canonical component ID and R7 classification (L1/L2/L3);
+- non-negative exact integer amount and explicit reference unit;
+- source UTxO/ledger/event or mandatory-cost declaration reference;
+- verification predicate and independent verification reference;
+- observation point (network, acquired slot/point, timestamp) and state hash;
+- derivation/profile version and evidence digest;
+- obligation identity/population, payer, beneficiary and time horizon where applicable;
+- explicit non-overlap key or replayable proof that the commitment is not already represented by another PC component or by Fs/Fr/Fc;
+- completeness rule for the relevant source population, including how missing, duplicate, stale, spent, unclassified or conflicting records fail closed.
+
+The packet must replay the six values independently, compute the sum, derive signed C = EEV − ProtectedCapital, derive RawSurplus only after the signed solvency check, and compare the replayed result to the exact Haskell decision/carrier/Issue action. A total-only checksum is necessary but insufficient.
+
+This is an evidence/schema requirement, not authorization to create a new Treasury category, choose a Reserve target, assign a cost coefficient, set an absent field to zero, modify the B1 datum, or alter the current V3/Reveal behavior.
+
+### 6. Next safe action and disposition
+
+1. Keep the current B1/Pool↔V3 cross-check and exact RU conversion unchanged.
+2. Treat CrystallizedLiabilities, WCE and LockedJackpot as the three partially sourced components; do not claim full population closure until L1/L2/L3 source coverage and replay exist.
+3. Treat SafetyCapital, ReserveProtection and MandatoryFutureCosts as **unqualified input fields** until their own typed source/derivation/perimeter evidence exists. The legacy adapter's zero projection is not proof that a non-legacy producer may safely assert zero.
+4. Do not count Treasury Reserve as ReserveProtection or PrizePool EEV. A future transfer needs a separately authorized source debit and exact physical destination credit.
+5. Keep C1 / PA1–PA7 OPEN. No current Issue signature, R1/Kc/Ω certificate, USD/USDM source qualification or first-ticket authorization is produced by this audit.
+
+No production source, test, workflow, policy, datum/redeemer ABI, V3/Reveal semantics, 500× parameter, wallet, transaction, deployment or ledger state was changed. No test or CI PASS is claimed by this documentation-only review.
+
+**Disposition:** the current producer proves aggregate integrity relative to one V3 carrier, not completeness/disjointness of the underlying commitment partition. C1 remains **NOT PRODUCER-CLOSED**.
