@@ -5465,3 +5465,67 @@ The Genesis path must remain **NOT QUALIFIED FOR PRODUCTION** until an authorize
 5. adversarial ledger tests for parallel carriers, forged/self-selected Treasury and Oracle references, alternate staking credentials, untrusted Treasury destinations, replay and concurrent transitions.
 
 These requirements are an evidence/authority boundary, not a request to invent a new threshold or economics. Implementing them may require an explicit deployment/ABI decision and an Agent B/security review. No Genesis validator, mint policy, Treasury datum, Oracle schema, V3/Reveal/Issue semantics, R1/Kc rule or deployment configuration was changed.
+
+## 45.74 AGENT A — B2 ISSUE READ IS OFF-CHAIN-BOUND, NOT ENFORCED BY THE ON-CHAIN V3/MINT PATH (2026-11-13)
+
+**Classification:** SOURCE-LEVEL B2 / FIRST-ISSUE ENFORCEMENT GAP. No change to B2 policy, V3 state, MintPolicy, redeemer ABI or deployment authorized.
+
+### 1. What the current Issue path does correctly off-chain
+
+The Issue builder in `src/mint.ts` requires deployment-configured B2 address/policy/name, queries the exact configured address, requires exactly one UTxO containing the configured singleton, decodes it with `observePreprodB2Control`, checks the observed reference against the chosen UTxO, and compares `CurrentActiveClass` / `HighestClassEverActivated` with the live V3 control projection and requested class. The transaction builder includes the selected B2 UTxO in `.readFrom([...])`.
+
+The reader `relayer/preprodIssueObservationReader.js` independently observes the B2 singleton, rejects an identity/reference mismatch, compares its two class-control values with the V3 carrier's control projection, and places the exact B2 reference in `controlStateReference`. The signed Issue authority payload requires that field and the off-chain verifier checks it equals the current expected reference. The runtime bridge also checks the returned witness's B2 reference against the caller-supplied runtime reference.
+
+This is a real off-chain source binding; it is not merely a frontend-supplied class integer.
+
+### 2. What the transaction validators actually authenticate
+
+The Plutus B2 control validator is parameterized by the configured singleton policy/name and authority key. When a B2 state transition spends the carrier, it checks authority signature, exactly one own input/output, one configured token in each, complete Value preservation, valid datum, and nonce/version increments. This protects the B2 state **when B2 itself is transitioned**.
+
+Ordinary Issue does not spend B2, so that validator is not executed. The current on-chain Issue predicates inspected here are:
+- `MintPolicy.hs::mkPolicy`: checks Counter input by payment ScriptHash, Ticket mint, Prize/Registry structure, Oracle valuation, Treasury payment and B1 reservation. Its parameters do not include B2 policy/name/address, and it does not inspect `txInfoReferenceInputs` for B2.
+- `V3EconomicStateCarrier.hs::mkValidator`: checks its own V3 singleton, V3 state validity/version/value continuity, state-hash endpoints and the configured Ed25519 authority signature. It does not identify or decode a B2 reference input.
+- `B1PrizePool.hs`: checks the Pool accounting transition and ticket reservation; it does not authenticate B2 control.
+
+The fact that `src/mint.ts` includes B2 in `.readFrom` therefore does not make B2 an on-chain precondition by itself. A Cardano reference input is visible to validators through `TxInfo`, but a validator must explicitly inspect and bind it for that input to become a script-enforced requirement.
+
+### 3. The inner signature checked by V3 omits the B2 state reference
+
+This is the decisive source distinction:
+
+- `relayer/signedIssueAuthority.js::verifySignedIssueAuthorityEnvelope` verifies the outer signature over the canonical full payload. That payload includes `controlStateReference`, and the server-side verifier compares it with the live expected reference.
+- The Plutus V3 carrier does **not** verify that outer envelope signature. It verifies only `carrierBindingSignature` over `canonicalCarrierBindingMessage`.
+- `V3EconomicStateCarrier.hs::canonicalCarrierBindingMessage` commits to action class, decision reference, observation reference, pre-state hash, action fingerprint and post-state hash. It has no `controlStateReference` field.
+- The current reader's `observationReference` is formed from the Counter, Pool and V3 carrier references; it does not include the B2 reference. `PreRichIssueDecision.IssueDecisionInput` likewise has no B2 reference.
+
+Thus the exact B2 reference is authenticated in the off-chain signed Issue envelope, but is **not included in the inner signature the on-chain V3 validator verifies**, and no other inspected on-chain Issue validator requires the B2 reference. The current architecture binds B2 to the approved builder/authority service, but does not independently enforce the B2 reference on-chain as required by `PRE-RICH/docs/B2-AUTHENTICATED-CONTROL-DESIGN-v0.1.md` §90–100.
+
+This does not show that a correctly configured and trusted authority will approve an inactive class. It shows that a direct transaction can omit or replace the B2 reference without violating a Plutus check that currently reads it; whether an inner authorization signature can still be obtained is a separate authority-service question. No bypass transaction was constructed or submitted.
+
+### 4. Economic/state consequence and closure requirement
+
+The V3 economic state itself contains `currentActiveClass`, and the on-chain V3 carrier authenticates its pre/post state hashes under the configured authority key. Therefore the existing V3 state can constrain class saleability when a trusted decision source signs the V3 transition. What it does not prove is that this decision was derived from, and bound to, the separate canonical B2 control UTxO required by the B2 design.
+
+Before claiming B2 is an independent on-chain Issue gate, the implementation/evidence must establish one governed binding path, for example by:
+- making the on-chain V3 carrier predicate require exactly one deployment-pinned B2 reference input and compare its authenticated datum/control values with the Issue state; or
+- explicitly governing and proving that the authority signature over the V3 transition is itself the accepted sole authority for B2, with the B2 reference/identity cryptographically included in the message and a transaction-side verification path that cannot be omitted.
+
+These are alternatives for review, not selected protocol decisions or an implementation mandate. They may affect validator parameters, redeemer/action ABI or the authority contract and require an explicit change decision plus adversarial conformance. Do not silently change the current V3, B2 or MintPolicy semantics to close the gap.
+
+### 5. Agent B Counter lookalike characterization — current Lab failure is a test compile error
+
+The new Agent B CEK characterization in `plutus/test/MintPolicyB1ValuePreservationTest.hs` is currently blocked before Plutus CEK execution. The exact failure in IMMORTAL Cardano Integration Lab #2728 (run `43376155077`, job `131723137013`) is:
+`test/MintPolicyB1ValuePreservationTest.hs:30:44: parse error on input ‘as’`
+
+The import is written as `import CounterValidator (compiledValidator as compiledCounterValidator)`, which is invalid Haskell import-alias syntax. A valid equivalent is a qualified import, for example `import qualified CounterValidator as CounterValidator (compiledValidator)`, followed by `CounterValidator.compiledValidator`, or simply importing `compiledValidator` without renaming if there is no name collision.
+
+Consequently, run #2728 records `COUNTER_LOOKALIKE_CEK_OUTCOME=failure` and skips the local-Yaci stage. The source-level payment-ScriptHash matching issue in `MintPolicy.hs` remains visible, but this run has **not** yet executed the new CEK test and supplies no positive/negative CEK result. Agent B owns that Counter characterization and correction; Agent A has not edited their test or validator.
+
+### 6. Disposition
+
+- B2 off-chain observation + authority-envelope reference binding: **IMPLEMENTED**.
+- B2 reference included by the ordinary Issue transaction builder: **IMPLEMENTED**.
+- B2 reference enforced by the inner on-chain V3 signature or a Plutus Issue validator: **NOT ESTABLISHED**.
+- Agent B Counter lookalike CEK result: **NOT RUN — Haskell test parse error**.
+- Counter lookalike local-Yaci trace: **SKIPPED** because the earlier CEK characterization step failed.
+- B2 and Counter remain separate concerns. No V3, B2, MintPolicy, Counter, 500×, Reveal, Genesis or deployment change was made by this Agent A audit.
