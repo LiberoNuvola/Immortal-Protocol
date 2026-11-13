@@ -5389,3 +5389,79 @@ The on-chain action currently only performs `PRE_GENESIS → GENESIS`; no `GENES
 The economic predicate and a real on-chain revalidation implementation exist at source level. The local Yaci trace exercises that validator, but only with synthetic PRE/Oracle identities. Production Preprod canonical PRE materialization, exact Treasury identity/lineage, canonical carrier deployment identity and an observed Preprod transition remain **OPEN**.
 
 No PRE policy, bridge, Treasury identity rule, Oracle schema, Genesis threshold, PrizePool EEV, ProtectedCapital, R1 rule, V3/Reveal semantics, datum/redeemer ABI, wallet transaction or deployment was changed or authorized by this audit.
+
+## 45.73 AGENT A — GENESIS CARRIER SELF-DECLARED IDENTITY AND TREASURY REFERENCE AUTHORITY (2026-11-13)
+
+**Classification:** SOURCE-LEVEL AUTHORITY BLOCKER FOR PRODUCTION GENESIS USE; adversarial local-Yaci characterization in progress. No validator/ABI/economic change authorized.
+
+### 1. The on-chain Genesis validator is unparameterized and trusts its own datum for every identity
+
+The exported `GenesisRegimeCarrier.compiledValidator` is a parameterless script with the Plutus entry type `BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit`. Its `PreRichRegimeDatum` carries all of the following as datum fields:
+
+- `prdCanonicalTreasury` payment ScriptHash;
+- PRE policy ID and asset name;
+- Oracle singleton policy ID and token name;
+- Oracle publisher PKH;
+- Genesis carrier token policy ID and name;
+- PrizePool payment ScriptHash.
+
+The validator preserves these fields between input and output, but it does not compare them with any immutable validator parameter, deployment constant, authorized marker or externally authenticated deployment manifest. Consequently, datum continuity is not identity authentication.
+
+### 2. The one-shot mint policy does not establish one global Genesis carrier
+
+`GenesisCarrierMintPolicy.compiledPolicyFactory` is a public one-shot factory parameterized by a caller-selected seed `TxOutRef` and carrier token name. It enforces that the chosen seed is consumed and exactly one token is minted under that derived policy; it does not authorize a particular seed or pin one resulting policy ID in `GenesisRegimeCarrier`.
+
+The carrier validator then reads `prdCarrierPolicy` and `prdCarrierName` from its own datum and verifies one token under those same self-declared values. Its `countOwnInputs`/continuation checks are transaction-local: they constrain the carrier input/output being transitioned, but they do not establish a global singleton across all UTxOs at the unparameterized script address.
+
+Source-level consequence: distinct users can derive different one-shot policies from different seed UTxOs, each mint a token with the same carrier name, and create separate PRE_GENESIS UTxOs at the same GenesisRegimeCarrier validator address with independently chosen datum identities. Each carrier transition can be submitted separately because the validator only requires one own-script input and one matching continuing output in that transaction. The one-shot policy prevents duplicate mint under one policy; it does not prevent multiple independent policies/carriers.
+
+No live production second carrier is asserted here. This is a source-permitted multiplicity path, not a claim that such a carrier is deployed.
+
+### 3. Treasury and Oracle observations inherit those self-declared identities
+
+- `findSingleTreasuryReference` selects a reference input by the datum-supplied Treasury payment ScriptHash and accepts it when a `TreasuryDatum` decodes. It does not pin a full address, staking credential, state NFT, canonical datum hash or expected destination/threshold fields.
+- `findSingleOracleReference` requires the singleton token identity, PRE quote, publisher and freshness to match the values in the carrier datum. Those checks are internally consistent, but the singleton policy/name and publisher themselves are not fixed by immutable validator parameters. With a self-created carrier datum, they are self-selected too.
+- The Genesis transition does not execute the Treasury or Oracle validator; both are reference inputs.
+
+Therefore the current on-chain validator has a correct arithmetic predicate over the values it reads, but the source identities that give those values protocol authority are not deployment-pinned by the validator itself.
+
+### 4. The legacy Treasury datum can be caller-selected and is not checked by Genesis
+
+`TreasuryDatum` consists only of `tdThreshold`, four recipient ScriptHashes and four percentages. Genesis currently checks its decodability, not its values.
+
+`plutus/Treasury.hs::mkValidator` later checks:
+- that a Treasury input exists;
+- input lovelace meets the datum-supplied threshold;
+- the four datum-supplied percentages sum to 10,000;
+- each datum-supplied recipient ScriptHash receives at least its computed lovelace amount.
+
+It does not compare recipient hashes with an immutable deployment set, require distinct recipients, require a signer/authority, or constrain where non-ADA assets in the Treasury input may be sent. If all four recipient hashes are set to one script hash and the percentages are 2,500 each, a single output at that hash carrying the whole lovelace amount satisfies each individual minimum check. The Treasury validator does not itself preserve canonical PRE in a Treasury category or restrict the PRE asset to a canonical destination.
+
+This gives a concrete potential bootstrap bypass: a holder can construct a UTxO at the unparameterized Treasury script address with PRE and a self-selected, syntactically valid Treasury datum. The Genesis validator can count the PRE quantity without validating the datum's destinations. The same datum can define later Treasury distribution destinations. A fresh quote and a carrier with self-selected Oracle/Treasury identities compound the gap.
+
+The exact asset-drain transaction is not yet independently executed in Yaci in this work pass; the recipient-selection and percentage checks above are direct source-level behavior. Do not describe the potential spend as a completed ledger exploit.
+
+### 5. Existing Yaci trace now makes the weak Treasury-datum boundary explicit
+
+The local trace `audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts` already constructed its Treasury reference with:
+- threshold = 0;
+- all four destination hashes equal the same fixture-selected `00…00` ScriptHash;
+- percentages = 2,500 each (sum = 10,000).
+
+The Genesis transition succeeded because it only needs the datum to decode; the Treasury spending validator is not invoked by a reference input. Commit `5d75dfc4da9428c6508411bff8b0651dcc37aa6b` adds an explicit `treasuryReferenceBoundaryProbe` record to that non-production trace, including these fields and the Genesis acceptance. Its Yaci/Cardano CI run is pending at the time of this checkpoint update; no completed execution result is claimed here.
+
+### 6. First Issue remains disconnected from Genesis regime evidence
+
+As recorded in §45.72, the runtime Issue reader/provider do not read a Genesis carrier or regime tag. Even a correctly anchored and activated Genesis state would not presently be bound into the first-Issue admission. Conversely, a self-created carrier cannot be treated as protocol Genesis authority merely because its own validator transition succeeds.
+
+### 7. Required disposition before production use
+
+The Genesis path must remain **NOT QUALIFIED FOR PRODUCTION** until an authorized design supplies and tests, without relying on self-declared datum values:
+
+1. one globally recognized Genesis carrier identity (fixed seed/policy/name or equivalent authenticated state identity), including rejection of independently minted parallel carriers;
+2. deployment-pinned Treasury identity and the intended canonical Treasury datum/configuration or equivalent authenticated Treasury-state lineage;
+3. deployment-pinned Oracle singleton identity and publisher, including the expected PRE asset identity;
+4. a current Issue admission binding to that exact canonical GENESIS state if Genesis is intended to gate the first Issue;
+5. adversarial ledger tests for parallel carriers, forged/self-selected Treasury and Oracle references, alternate staking credentials, untrusted Treasury destinations, replay and concurrent transitions.
+
+These requirements are an evidence/authority boundary, not a request to invent a new threshold or economics. Implementing them may require an explicit deployment/ABI decision and an Agent B/security review. No Genesis validator, mint policy, Treasury datum, Oracle schema, V3/Reveal/Issue semantics, R1/Kc rule or deployment configuration was changed.
