@@ -5311,3 +5311,70 @@ On source commit `1e7becb`, Flux DoD #690 completed SUCCESS, PRE-RICH Expiry Ref
 Therefore no real Reveal acceptance/failure semantics are inferred from this run. In particular, the 16,532-byte failure is at the preceding script-publication transaction, not evidence that the Reveal-spending transaction itself exceeded 16,384 bytes.
 
 **Disposition:** Preprod now has a materially stronger common-point physical Pool/ticket observation with current script provenance. It confirms 1,000 RU direct physical tUSDM in the B1 Pool and zero live ticket UTxOs at that exact point, but it does not remove the external valuation, ProtectedCapital producer, R1/Kc/Ω, deployment approval or Reveal execution blockers. No on-chain transaction, wallet signature or deployment was performed by this observation.
+
+## 45.72 AGENT A — GENESIS 4,000-USDM BOOTSTRAP: ON-CHAIN REVALIDATION AND PREPROD AUTHORITY GAPS (2026-11-13)
+
+**Classification:** PRE-RICH APPLICATION GATE AUDIT — SOURCE-BASED; NO NEW ECONOMIC RULE OR DEPLOYMENT AUTHORITY.
+
+### 1. Keep the two monetary requirements separate
+
+The PRE-RICH Genesis bootstrap condition is **verified PRE Treasury value >= 4,000 USDM** (400,000 USDM subunits). It values the exact canonical PRE asset by the configured PRE/USDM Oracle quote. It is not the B1 PrizePool's direct physical tUSDM EEV, does not transfer Treasury value into the PrizePool, and does not grant PrizePool liquidity or reduce WCE/ProtectedCapital.
+
+The current acquired-point observation in §45.71 is only **1,000 RU of physical configured tUSDM in the PrizePool**. It says nothing about the amount or verified value of canonical PRE in the Treasury. The Genesis threshold, PRE asset identity and Treasury observation must be evaluated as a distinct source perimeter.
+
+### 2. What the on-chain Genesis carrier actually revalidates
+
+The current `PRE-RICH/onchain/GenesisRegimeCarrier.hs` contains a concrete `ActivateGenesis` validator. It is more than an off-chain Boolean gate:
+
+- The continuing carrier datum must move from the `PRE_GENESIS` tag to `GENESIS`, and increment both transition nonce and state version exactly once. Its Treasury script hash, PRE policy/name, Oracle singleton policy/name, publisher, carrier identity and PrizePool hash must remain unchanged.
+- The consumed and continuing carrier UTxOs must each contain exactly one configured carrier token; transaction-wide carrier input/output quantities are checked and the complete carrier Value must be preserved.
+- A Treasury reference input is found by the configured `prdCanonicalTreasury` payment ScriptHash and must carry a decodable `TreasuryDatum`.
+- An Oracle reference input must carry the configured Oracle singleton, decode to a quote for the exact PRE policy/name, match the configured publisher, have a non-negative price and pass `validOracleTimestamp` against the transaction validity interval.
+- The validator reads the PRE quantity for the exact policy/name from the referenced Treasury UTxO, constructs the observation internally, and applies the existing integer-floor conversion at Oracle precision. The resulting value must be at least `4,000 * 100` USDM subunits.
+- The transition is restricted to the carrier only: it may not consume or create a B1 PrizePool script input/output. Treasury and Oracle remain reference inputs, not spent inputs.
+
+Thus the validator itself recomputes the valuation from transaction reference inputs; the production gap is not simply that a caller supplies `allChecksVerified=true`. The pure TypeScript runtime observer is a separate off-chain convenience and does not substitute for this on-chain revalidation.
+
+### 3. Treasury identity binding is narrower than a canonical Treasury-state proof
+
+A remaining source-authority question is visible in `findSingleTreasuryReference`:
+
+- It matches the **payment ScriptHash** stored in the carrier datum, not a complete canonical Cardano address or an independently authenticated Treasury UTxO identity token.
+- It accepts a reference input when the `TreasuryDatum` can be decoded. It does not validate the decoded TreasuryDatum's percentage/threshold fields as part of Genesis admission.
+- A reference input does not execute the Treasury spending validator. `plutus/Treasury.hs` validates its legacy `Distribute` conditions only when that UTxO is spent.
+- The helper rejects multiple matching Treasury script references supplied in the same transaction, but this is not a global ledger census or proof that the referenced UTxO is the sole canonical Treasury state. It also does not compare the full address/staking credential.
+
+This does **not** mean arbitrary assets can be spent from the script address: spending remains subject to the Treasury validator. It means the Genesis proof currently defines Treasury identity at the payment-script-hash + decodable-datum boundary. Whether that is the intended canonical Treasury identity must be explicit. If the intended authority is a unique reviewed Treasury UTxO/full address or a lineage-bound state, the current helper alone does not prove it. Do not silently upgrade this narrower check into a complete Treasury provenance certificate.
+
+### 4. One-shot carrier identity is unique per seed, not globally self-authenticating
+
+`GenesisCarrierMintPolicy` is correctly a one-shot factory parameterized by one exact seed `TxOutRef`; it only permits one unit with the configured carrier name and has no burn path. But different seed references produce different policy IDs. The validator reads the carrier policy/name from its datum rather than from an independently compiled production constant.
+
+Therefore the one-shot policy provides **per-policy uniqueness**, not by itself a globally recognized production Genesis carrier identity. The actual seed reference, derived policy ID/name and canonical PRE_GENESIS carrier UTxO must be fixed in an authenticated deployment manifest/approval. The current source tree and Yaci fixture do not substitute for that production binding.
+
+### 5. Conformance evidence versus production evidence
+
+- `plutus/test/GenesisAdmissionTest.hs` and `GenesisRegimeCarrierTest.hs` exercise the pure admission/regime transition functions. In particular, `GenesisRegimeCarrierTest.hs` imports `PreRichRegimeState`; it does not directly execute `GenesisRegimeCarrier.mkValidator`.
+- The separate `audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts` does execute the compiled validator in a local Yaci/Cardano ledger trace, checks the one-shot carrier, Oracle/Treasury reference inputs, carrier-value preservation, no PrizePool touch and replay rejection. It explicitly sets `production=false` and creates its PRE and Oracle test assets with a wallet-controlled native policy. That is meaningful local evaluator/conformance evidence, but it is not the canonical PRE policy, an authenticated Preprod Treasury, or a production deployment.
+- The workflow `.github/workflows/pre-genesis-genesis-cardano.yml` is a local Yaci devnet fixture. It is not the live Preprod PRE materialization witness.
+
+### 6. Production Preprod materialization remains OPEN
+
+The current `PREPROD-PRE-MATERIALIZATION-GATE-v0.1.md` records the canonical PRE identity as policy `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c`, asset name `5052452d52494348`, and explicitly states that no authoritative Preprod mint/transfer transaction or bound PRE-bearing Treasury UTxO has been established in the current evidence corpus.
+
+The existing Treasury inventory observer is useful discovery: it derives the Treasury address from the checked-in Treasury artifact, inspects address/script-hash UTxO inventories, and discovers PRE/tUSDM holders. It does not by itself establish the canonical PRE transfer/mint provenance, calculate a fresh authenticated PRE/USDM valuation, or prove the Genesis transition. The separate configured-Treasury observer inspects tUSDM and takes its binding reference from caller-supplied configuration; it is not a canonical PRE Genesis witness.
+
+The remaining closure chain is therefore:
+1. establish the canonical PRE asset on Preprod from an authoritative mint/transfer witness;
+2. prove the exact PRE-bearing Treasury state and its intended canonical identity/lineage (not merely a script payment hash plus decodable datum, unless that narrower rule is explicitly adopted);
+3. bind the same transaction's fresh PRE/USDM quote to the configured Oracle singleton/publisher;
+4. bind the one-shot Genesis carrier seed, policy ID and initial PRE_GENESIS UTxO to a reviewed deployment approval;
+5. execute and observe the real Preprod `ActivateGenesis` transaction, including state transition, preserved references/value, replay/concurrency rejection and accounting delta.
+
+The on-chain action currently only performs `PRE_GENESIS → GENESIS`; no `GENESIS → ACTIVE` transition is provided by this carrier. Genesis activation must not be described as first-ticket authorization or as the R1/Kc/QNE certificate. Those remain separate gates.
+
+### 7. Disposition
+
+The economic predicate and a real on-chain revalidation implementation exist at source level. The local Yaci trace exercises that validator, but only with synthetic PRE/Oracle identities. Production Preprod canonical PRE materialization, exact Treasury identity/lineage, canonical carrier deployment identity and an observed Preprod transition remain **OPEN**.
+
+No PRE policy, bridge, Treasury identity rule, Oracle schema, Genesis threshold, PrizePool EEV, ProtectedCapital, R1 rule, V3/Reveal semantics, datum/redeemer ABI, wallet transaction or deployment was changed or authorized by this audit.
