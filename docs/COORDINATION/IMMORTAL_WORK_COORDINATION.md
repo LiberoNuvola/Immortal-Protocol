@@ -5612,3 +5612,60 @@ A second pass enumerated the reference-input access in the relevant Plutus scrip
 This narrows the earlier §45.74 conclusion: across the inspected MintPolicy, Prize and V3 carrier paths, the only reference-input consumer found is the Beacon Registry reader. There is no on-chain B2 reference check hidden in those three execution paths. This is source-level evidence only; it is not a constructed or submitted bypass transaction and does not decide how the existing B2 design should be implemented.
 
 **Disposition:** B2 remains off-chain-bound for ordinary Issue, not independently script-enforced under the current inspected source. The §45.75 matrix remains the closure contract; implementation still requires an explicit design/ABI decision and adversarial CEK + ledger evidence.
+
+
+## 45.77 AGENT A — ECONOMIC ADAPTER TRANSACTION-INTENT BINDING LIMIT (2026-11-13)
+
+**Classification:** source/call-site audit of the current branch. No code, economic rule, validator or ABI changed.
+
+### 1. What the adapter now proves
+
+Current `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` (blob `ec9693a31aa878d332272c26a9f4baeccceb5715`) strengthens the client-side submission boundary:
+
+- extracts actual spending inputs from the completed Lucid CML transaction body;
+- requires declared admission inputs to be present and rejects duplicate references;
+- permits extra spending inputs only when each exact reference appears in the connected wallet's UTxO list;
+- snapshots exact serialized transaction/body bytes before asynchronous wallet classification;
+- rechecks the completed transaction bytes before signing;
+- compares the signed transaction body bytes with the validated body before submit;
+- requires an EconomicAdmission witness and, for `expectedActionClass === 'Issue'`, an AuthoritativeIssueAdmission witness.
+
+These checks prevent input-list omission and transaction mutation across the asynchronous classification/signing window. They are useful integrity properties.
+
+### 2. What it does not prove
+
+The adapter itself explicitly documents at lines 433–440 that this is input classification only and does not bind the full output/datum/redeemer/validity map to intent.
+
+The current `EconomicAdmissionWitness` validation (`Adapter/CARDANO/runtime/EconomicAdmission.ts`, blob `6ef4091d9fe8be968eea4e04d55df17856c3e038`) validates the declared input set, liquidity-source references, authenticated Pool reference/value, action class, fingerprints as well-formed digests and immediate liquidity. It does not recompute `actionFingerprint` from the completed transaction body or compare the transaction's outputs, mint, withdrawals, redeemers, datums, reference inputs, collateral or validity interval with a canonical action projection.
+
+The exact CML byte snapshot is compared with itself across time; it is not compared with a digest or canonical transaction projection inside the admission witness. Therefore it proves immutability after the check, not that the immutable transaction is the transaction described by the admitted economic decision.
+
+The authoritative Issue witness also contains `controlStateReference`, `v3CarrierBinding`, EEV, ProtectedCapital and viability evidence; the runtime compares several references/values to acquired inputs. But this validation does not, by itself, bind every actual transaction-body field to those evidence objects. In particular, it does not close the B2 on-chain reference-input gap in §§45.74–45.76.
+
+### 3. Reachable call-site classification
+
+A current repository search found these uses of the generic `submitInfrastructure` path:
+
+- `src/registryFlow.ts::publishRoundBeacon` through `src/txHelpers.ts::signAndSubmitTx`;
+- `src/gameFlow.ts` call at the inspected line 540, in the Beacon synchronization flow (spends Prize and reads Registry; not the Issue/Reveal/Claim/Expire economic transitions);
+- `src/adSettlement.ts::submitAdSettlement`, which has a separate application-level campaign admission and is not an IMMORTAL Issue/Reveal/Claim/Expire transition;
+- read-only integration trace harnesses that explicitly identify themselves as audit paths.
+
+The inspected production Issue path in `src/mint.ts` uses `submitEconomic(..., 'Issue')`; the economic Reveal/Claim/Expire paths use the economic submission helper. No current production Issue call site was found using `submitInfrastructure`. The generic method remains a public adapter method, so its intended non-economic restriction is a caller/API discipline rather than a type-level or transaction-semantic enforcement boundary.
+
+### 4. Required closure evidence (not implementation authority)
+
+A future transaction-intent binding review should define, from already-governed action semantics, a canonical projection or commitment covering the fields that materially affect the action. At minimum the review must explicitly classify:
+
+- spending and reference inputs, including exact singleton identities;
+- outputs, addresses, values and inline datum hashes/bytes;
+- mint/burn assets and quantities;
+- script purposes, redeemers and reference-script identities;
+- withdrawals/certificates if present;
+- collateral and total collateral;
+- validity interval;
+- the admitted action class, action fingerprint, pre-state and post-state commitments.
+
+Positive and mutation-negative tests should demonstrate that changing any governed field after admission causes rejection before wallet signing. A separate test should demonstrate that a syntactically valid witness cannot be reused with a different transaction body. Tests must not invent a new economic projection or change on-chain semantics; the projection must be explicitly specified and versioned first.
+
+**Disposition:** the adapter now enforces useful exact-input and post-validation immutability checks, but it does not establish complete transaction-to-economic-decision equivalence. This is a residual admission-boundary proof gap, not evidence that a specific live transaction has bypassed on-chain validators. Keep it separate from the B2 reference binding gap and the independent R1/Kc/Ω, ProtectedCapital, Genesis and USD/USDM blockers.
