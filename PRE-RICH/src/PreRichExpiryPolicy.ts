@@ -83,6 +83,18 @@ export function deriveCardanoIssueTimeAnchor(
   if (conversion.unixTimeToSlot(issuedAt) !== candidateSlot) {
     throw new Error('Lucid Issue slot/time conversion is not reversible at the selected slot')
   }
+  // The returned timestamp must be the first millisecond belonging to this
+  // slot, not merely any timestamp that maps back to the same slot. Checking
+  // the preceding millisecond catches offset conversions that otherwise pass
+  // the one-way slot -> time -> slot round trip.
+  if (issuedAt > 0) {
+    const precedingMillisecondSlot = conversion.unixTimeToSlot(issuedAt - 1)
+    if (!Number.isSafeInteger(precedingMillisecondSlot) ||
+        precedingMillisecondSlot < 0 ||
+        precedingMillisecondSlot >= candidateSlot) {
+      throw new Error('Lucid Issue slot/time conversion is not reversible at the selected slot')
+    }
+  }
   if (BigInt(issuedAt) > candidateNowMs) {
     throw new Error('Issue slot-start time cannot be later than the candidate time')
   }
