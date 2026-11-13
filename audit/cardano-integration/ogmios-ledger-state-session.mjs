@@ -1,4 +1,4 @@
-function normalizeLedgerPoint(raw, label) {
+export function normalizeLedgerPoint(raw, label) {
   const candidate = raw?.tip ?? raw
   const slot = Number(candidate?.slot)
   const hash = candidate?.hash ?? candidate?.id
