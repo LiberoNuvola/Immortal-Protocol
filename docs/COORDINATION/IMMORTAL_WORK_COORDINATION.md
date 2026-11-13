@@ -5358,7 +5358,18 @@ Therefore the one-shot policy provides **per-policy uniqueness**, not by itself 
 - The separate `audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts` does execute the compiled validator in a local Yaci/Cardano ledger trace, checks the one-shot carrier, Oracle/Treasury reference inputs, carrier-value preservation, no PrizePool touch and replay rejection. It explicitly sets `production=false` and creates its PRE and Oracle test assets with a wallet-controlled native policy. That is meaningful local evaluator/conformance evidence, but it is not the canonical PRE policy, an authenticated Preprod Treasury, or a production deployment.
 - The workflow `.github/workflows/pre-genesis-genesis-cardano.yml` is a local Yaci devnet fixture. It is not the live Preprod PRE materialization witness.
 
-### 6. Production Preprod materialization remains OPEN
+### 6. The first-Issue consumer does not bind the Genesis regime carrier
+
+A second, separate integration gap exists between Genesis activation and the current Issue path:
+
+- `PreRichIssueDecision.hs::IssueDecisionInput` carries the V3 economic pre-state, class/price, EEV/liquidity values, and truth/freshness/obligation/Ω Boolean inputs. It has no Genesis regime state or Genesis carrier reference.
+- `relayer/preprodIssueObservationReader.js::readPreprodIssueObservation` reads the Counter, B1 PrizePool, V3 economic-state carrier and B2 control carrier. It does not read the `GenesisRegimeCarrier` address, singleton token, datum or regime tag.
+- `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` composes that Issue observation with direct-USDM Pool observation and Haskell admission; it does not add a Genesis regime witness.
+- The inspected `src/mint.ts` path builds the Issue transaction using the V3 economic-state carrier and BeaconRegistry/Oracle references; no Genesis regime carrier input/reference is part of its admission binding.
+
+Consequently, the presence of a standalone `ActivateGenesis` validator does not yet establish that the first Issue can only proceed from an authenticated GENESIS regime. The Genesis action itself changes only `PRE_GENESIS → GENESIS`; the current Genesis carrier exposes no `GENESIS → ACTIVE` edge. Do not infer that either the Genesis transition or the separate V3 carrier supplies this missing Issue/regime binding. This is an integration gap, not permission to invent a new regime rule or to alter V3/Issue semantics without a governed decision.
+
+### 7. Production Preprod materialization remains OPEN
 
 The current `PREPROD-PRE-MATERIALIZATION-GATE-v0.1.md` records the canonical PRE identity as policy `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c`, asset name `5052452d52494348`, and explicitly states that no authoritative Preprod mint/transfer transaction or bound PRE-bearing Treasury UTxO has been established in the current evidence corpus.
 
@@ -5373,7 +5384,7 @@ The remaining closure chain is therefore:
 
 The on-chain action currently only performs `PRE_GENESIS → GENESIS`; no `GENESIS → ACTIVE` transition is provided by this carrier. Genesis activation must not be described as first-ticket authorization or as the R1/Kc/QNE certificate. Those remain separate gates.
 
-### 7. Disposition
+### 8. Disposition
 
 The economic predicate and a real on-chain revalidation implementation exist at source level. The local Yaci trace exercises that validator, but only with synthetic PRE/Oracle identities. Production Preprod canonical PRE materialization, exact Treasury identity/lineage, canonical carrier deployment identity and an observed Preprod transition remain **OPEN**.
 
