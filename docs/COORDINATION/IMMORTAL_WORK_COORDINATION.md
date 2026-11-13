@@ -5529,3 +5529,70 @@ Consequently, run #2728 records `COUNTER_LOOKALIKE_CEK_OUTCOME=failure` and skip
 - Agent B Counter lookalike CEK result: **NOT RUN — Haskell test parse error**.
 - Counter lookalike local-Yaci trace: **SKIPPED** because the earlier CEK characterization step failed.
 - B2 and Counter remain separate concerns. No V3, B2, MintPolicy, Counter, 500×, Reveal, Genesis or deployment change was made by this Agent A audit.
+
+
+## 45.75 AGENT A — B2/V3 MINIMUM BINDING CONTRACT AND ADVERSARIAL TEST MATRIX (2026-11-13)
+
+**Classification:** NON-NORMATIVE implementation/evidence contract for review. It records the proof obligations implied by the existing B2 design (§90–100, §135–158); it does not select a new architecture or authorize an on-chain change.
+
+### 1. Fresh branch reconciliation
+
+At this review point, `work/immortal-green-closure` is one commit ahead of Agent A checkpoint `9b3227b3d11f8286282c03086a7ff925f0cc17cb`. The compare reports exactly one changed path, `plutus/test/MintPolicyB1ValuePreservationTest.hs`, attributable to Agent B's Counter lookalike characterization. Agent A has not edited that file.
+
+The corrected test source now uses `import qualified CounterValidator as CounterValidatorModule` and invokes `CounterValidatorModule.compiledValidator`. This removes the previously observed invalid import-alias syntax. No new CI/CEK/Yaci result was available during this review; source correction is not a test PASS.
+
+### 2. Reconfirmed B2/V3 source boundary
+
+The current source still shows all three of the following:
+
+- `relayer/preprodIssueObservationReader.js` returns the exact B2 `controlStateReference` and passes it to the off-chain authority source, but constructs `observationReference` from Counter + Pool + V3 carrier references only.
+- `PreRichIssueDecision.IssueDecisionInput` has decision/observation references but no B2 control reference or B2 control-state fields.
+- `V3EconomicStateAction` contains action class, decision reference, observation reference, pre-state hash, action fingerprint, post-state hash and authority signature. `canonicalCarrierBindingMessage` signs those six values; it does not sign a distinct B2 reference. The V3 validator does not inspect a B2 reference input.
+
+The outer signed Issue envelope does include and verify `controlStateReference`, but the outer signature is not the Ed25519 signature verified by the Plutus V3 carrier. These are separate trust boundaries and must not be conflated.
+
+### 3. Minimum evidence invariant
+
+For an ordinary Issue to satisfy the existing B2 design, the evidence must establish the same B2 control state across acquisition, transaction construction and on-chain validation:
+
+1. **Acquired identity:** one exact deployment-configured B2 singleton is observed at a recorded ledger point. Its full configured identity (including the address/credential requirements chosen by the deployment), policy ID, token name, quantity, datum and TxOutRef are recorded. A datum-shaped UTxO or a payment-ScriptHash-only match is not sufficient evidence of the canonical singleton.
+2. **Transaction presence:** the exact acquired UTxO is included as a reference input in the submitted Issue transaction. The B2 carrier remains unspent by ordinary Issue, as the design requires.
+3. **On-chain recognition:** a validator that actually executes for Issue independently identifies the configured B2 singleton reference input, requires its expected cardinality/identity, decodes the datum and checks the existing B2 control predicates. Merely placing an item in `readFrom` or verifying an off-chain envelope does not enforce this.
+4. **Decision consistency:** the class/control values used by the Issue decision match those decoded from that exact reference input and the V3 transition state. At minimum, the existing design's `ticketClass <= CurrentActiveClass` rule and the already specified control-state invariants must fail closed.
+5. **Cryptographic binding:** the authority signature checked on-chain commits to the same B2 reference and the relevant control-state values (directly or through a canonical digest), and the executing validator checks that the committed reference is the reference input actually present in `TxInfo`. A signed opaque reference without a transaction-side equality check is insufficient; a present reference without a signature/validator binding is also insufficient.
+
+This is a conjunction, not a choice between “signature includes B2” and “B2 UTxO is present”. Any proposed alternative authority model must be reconciled explicitly with the current B2 design before code is changed.
+
+### 4. Adversarial and positive test matrix
+
+| Case | Required outcome | Proof layer |
+|---|---|---|
+| Exact configured singleton, valid datum, active class, unchanged canonical reference | Accept when all existing Issue predicates also pass | CEK + ledger |
+| Ordinary Issue uses B2 only as reference input; B2 is not spent | Accept; B2 state remains unchanged | Ledger |
+| B2 reference omitted | Reject | CEK + ledger |
+| A different UTxO with a lookalike datum is supplied | Reject | CEK + ledger |
+| Singleton policy ID, token name or quantity differs | Reject | CEK + ledger |
+| Two matching configured singleton references are present | Reject; do not select first match | CEK + ledger |
+| Reference is stale/replaced after a B2 transition | Reject the missing or non-current reference | Ledger |
+| Off-chain signed reference differs from the actual transaction reference | Reject | CEK + ledger |
+| B2 datum's current/highest values differ from the state used by the V3 Issue decision | Reject | CEK + ledger |
+| `ticketClass > CurrentActiveClass` | Reject | CEK + ledger |
+| Existing invalid control relation (including `current > highest`) | Reject | CEK + ledger |
+| Valid V3 signature is replayed with a substituted B2 reference | Reject | CEK + ledger |
+| B2 reference stays the same but the signed control-state commitment is altered | Reject | CEK + ledger |
+| Same payment script hash with an alternate staking credential/address lookalike | Reject unless that full address is explicitly the configured canonical identity | CEK + ledger |
+
+The last case is deliberately phrased against the full configured identity: whether a deployment pins a specific staking credential must come from the deployment/specification, not be invented by this audit. The on-chain check must enforce whichever complete identity is actually governed.
+
+### 5. Evidence sequence and closure criteria
+
+- **Source/ABI review:** identify the exact Issue validator that executes, the exact B2 singleton identity parameters, datum decoder, reference-input lookup and canonical signed-message bytes. Record any datum, redeemer, parameter or validator-hash change before implementation.
+- **CEK:** exercise the positive case and every negative row that can be represented at script-context level. Include a paired test proving the signature fails when the reference or control-state commitment is changed.
+- **Yaci/native ledger:** submit the positive ordinary Issue and the missing/substituted/stale-reference negatives against the compiled scripts. Record the consumed inputs, reference inputs, outputs, script hashes and evaluator result.
+- **Preprod:** only after code/ABI/deployment authority and test gates are explicitly approved, bind the evidence to the exact deployed B2 singleton and acquired ledger point. A local CEK/Yaci PASS is not live Preprod proof.
+
+B2 is not closed until the actual Issue validator enforces the canonical reference and the evidence shows the positive and negative cases. Off-chain observation, an outer signed envelope, or the presence of `readFrom` alone cannot satisfy this criterion.
+
+### 6. Scope guard
+
+This matrix does not authorize adding B2 fields to `V3EconomicStateAction`, changing `canonicalCarrierBindingMessage`, changing `IssueDecisionInput`, changing a validator parameter/redeemer ABI, regenerating deployment scripts, or changing B2/V3/MintPolicy/Counter/Reveal/500×/economic semantics. Those are implementation choices requiring an explicit design/ABI decision and Agent B/security review. No on-chain code or economic rule was changed by this checkpoint.
