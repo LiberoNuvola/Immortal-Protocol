@@ -13,6 +13,7 @@ import Prelude
   , (==)
   , (++)
   , (<)
+  , (-)
   )
 
 import EconomicProfile
@@ -104,6 +105,22 @@ main = do
       assert (peaCandidateEEV admitted == 500) "issue preserves explicit EEV"
       assert (uesUnresolvedReserve (peaCandidateUniversal admitted) == 1) "issue candidate carries unresolved reserve"
       assert (uesWorstCaseExposure (peaCandidateUniversal admitted) == 500) "issue candidate carries 500x worst-case exposure"
+
+  case preRichEconomicAdmission profile preprodDeclaredInitialState (Issue 0 1) 500 500 500 0 True True True True of
+    Nothing -> error "FAIL: unchanged-EEV Preprod initial Issue was rejected at exact solvency boundary"
+    Just admitted -> do
+      let candidate = peaCandidateUniversal admitted
+      assert (peaPreEEV admitted == 500) "Preprod synthetic fixture records pre-Issue EEV"
+      assert (peaCandidateEEV admitted == 500) "Preprod synthetic fixture keeps candidate EEV unchanged"
+      assert (peaAvailableExecutableLiquidity admitted == 500) "Preprod synthetic fixture keeps executable liquidity separate at 500 USDM sub-units"
+      assert (uesWorstCaseExposure candidate == 500) "Preprod initial Issue adds 500 RU worst-case exposure"
+      assert (solvencyInvariant 500 candidate) "Preprod initial Issue remains solvent exactly at the post-state boundary"
+
+  assert
+    (case preRichEconomicAdmission profile preprodDeclaredInitialState (Issue 0 1) 500 499 500 0 True True True True of
+       Nothing -> True
+       Just _ -> False)
+    "Preprod synthetic fixture rejects unchanged-liquidity candidate at EEV 499 RU"
 
   assert
     (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 499 499 0 True True True True of
@@ -237,9 +254,9 @@ main = do
     "declared Preprod S0 has no Expire action before any ticket exists"
 
   let initialBuffer = V3Kernel.rawSurplus profile 500 preprodDeclaredInitialState
-      postIssueBuffer = V3Kernel.rawSurplus profile 501 initialIssueState
-  assert (initialBuffer == 500) "declared Preprod S0 synthetic fixture begins with a 500-unit protection buffer"
-  assert (postIssueBuffer == 1) "one-unit Issue receipt is dominated by the existing 500x exposure bound"
-  assert (postIssueBuffer < initialBuffer) "initial class-0 Issue erodes the synthetic protection buffer by 499 units"
+      postIssueBuffer = V3Kernel.rawSurplus profile 500 initialIssueState
+  assert (initialBuffer == 500) "declared Preprod S0 synthetic fixture begins with a 500-RU protection buffer"
+  assert (postIssueBuffer == 0) "initial class-0 Issue consumes the complete 500-RU buffer when EEV is unchanged"
+  assert (initialBuffer - postIssueBuffer == 500) "initial class-0 Issue erodes the synthetic protection buffer by exactly 500 RU"
 
   putStrLn "ALL ECONOMIC ADMISSION TESTS PASSED"
