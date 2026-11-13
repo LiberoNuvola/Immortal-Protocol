@@ -38,6 +38,15 @@ const PRE_QUANTITY = 10_000_000n;
 const ORACLE_PRICE = 40_000n;
 const ORACLE_PRECISION = 1_000_000n;
 
+// Adversarial source-boundary probe: this is structurally decodable as a
+// TreasuryDatum, but Genesis has no deployment-pinned recipient/threshold
+// configuration against which to authenticate these fields.
+const TREASURY_REFERENCE_PROBE = {
+  threshold: 0n,
+  destinationScriptHashes: Array(4).fill("00".repeat(28)),
+  percentagesBps: [2500n, 2500n, 2500n, 2500n],
+};
+
 function json(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
@@ -52,17 +61,10 @@ function refData(utxo) {
 }
 
 function treasuryDatum() {
-  const zero = "00".repeat(28);
   return new Constr(0, [
-    0n,
-    zero,
-    zero,
-    zero,
-    zero,
-    2500n,
-    2500n,
-    2500n,
-    2500n,
+    TREASURY_REFERENCE_PROBE.threshold,
+    ...TREASURY_REFERENCE_PROBE.destinationScriptHashes,
+    ...TREASURY_REFERENCE_PROBE.percentagesBps,
   ]);
 }
 
@@ -320,6 +322,18 @@ const result = {
     prePolicyId: nativePolicyId,
     preAssetNameHex: PRE_NAME_HEX,
     preQuantity: PRE_QUANTITY.toString(),
+  },
+  treasuryReferenceBoundaryProbe: {
+    production: false,
+    datumDecodesAsTreasuryDatum: true,
+    threshold: TREASURY_REFERENCE_PROBE.threshold.toString(),
+    destinationScriptHashes: TREASURY_REFERENCE_PROBE.destinationScriptHashes,
+    distinctDestinationScriptHashCount: new Set(TREASURY_REFERENCE_PROBE.destinationScriptHashes).size,
+    percentagesBps: TREASURY_REFERENCE_PROBE.percentagesBps.map(String),
+    percentageTotalBps: TREASURY_REFERENCE_PROBE.percentagesBps.reduce((sum, value) => sum + value, 0n).toString(),
+    genesisReferenceAccepted: true,
+    genesisPinsDestinationOrThresholdFields: false,
+    interpretation: "The local Yaci ActivateGenesis transaction succeeds while referencing a decodable Treasury datum whose threshold and recipient script hashes are fixture-selected; the Treasury spending validator is not executed by a reference input.",
   },
   oracle: {
     address: oracleAddress,
