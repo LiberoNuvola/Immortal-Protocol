@@ -156,3 +156,14 @@ This document defines evidence and identity prerequisites only. It does not crea
 Agent A owns the C1 identity/evidence producer. Agent B must review the on-chain binding consequences before any attempt to make the census a production Issue precondition. Do not change `PreprodAuthoritativeIssueProvider`, `readPreprodIssueObservation`, validators, V3/Reveal, or admission ABI as part of this addendum.
 
 **Disposition:** first establish an authorized five-component deployment envelope; then implement the five-address acquired-point observer using the existing Ogmios acquire/release lifecycle. Until both exist and are independently tested, C1 remains OPEN and no first-Issue readiness claim follows.
+
+
+## 9. Governance dependency — no trust mechanism is selected
+
+The repository's `GOV-30-AUTHORITY-ROLE-AND-KEY-LIFECYCLE-OPTIONS.md` is explicitly a **DISCUSSION DRAFT — NO NORMATIVE DECISION / NO IMPLEMENTATION AUTHORIZED**. It records open alternatives for issuer identity, key binding, verifier/appraiser, relying authority, activation, rotation, revocation, compromise and historical verification.
+
+Accordingly, this C1 addendum states the evidence properties that a future authorized deployment identity process must satisfy; it does **not** select or authorize a concrete trust-root product, key registry, signer, certificate authority, GitHub artifact-attestation profile, custody model, quorum, or revocation mechanism. GitHub workflow provenance and artifact attestation are candidate evidence mechanisms only until their issuer, relying authority, appraisal policy and governance binding are explicitly approved.
+
+The C1 producer must therefore remain fail-closed while GOV-30's relevant authority decisions are unresolved. It may continue read-only source inspection and identity-consistency checks, but must not label a deployment authority-authenticated or promote a self-hash, wallet signature, workflow run, branch protection setting, or artifact attestation alone into deployment authorization.
+
+This dependency is deliberately separate from the five-address acquired-point mechanics. The latter can be implemented and fixture-tested as a read-only observer once its input identity records are supplied; a successful observer run still cannot close deployment authority or PA1–PA7 without the governed reliance decision.
