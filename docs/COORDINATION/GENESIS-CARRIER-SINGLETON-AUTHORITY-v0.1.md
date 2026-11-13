@@ -65,3 +65,19 @@ Those remain ledger/deployment evidence fronts.
 Do not use the carrier token as Treasury liquidity, PrizePool liquidity, ProtectedCapital, RawSurplus, or any other economic quantity. It is solely an application-state identity/authority token.
 
 No Genesis threshold, Oracle source, payout rule, or IMMORTAL universal state formula is changed by this mechanism.
+
+## 2026-11-13 — correction: one-shot-per-seed is not a global singleton
+
+A current-source audit of `PRE-RICH/onchain/GenesisRegimeCarrier.hs` and `GenesisCarrierMintPolicy.hs` narrows the claim above:
+
+- The mint policy guarantees at most one token for **one derived policy ID**, whose seed `TxOutRef` is supplied by the caller to the public factory.
+- A different seed produces a different policy ID; there is no authorized seed or expected carrier policy/name hard-coded into the parameterless `GenesisRegimeCarrier` validator.
+- `PreRichRegimeDatum` itself supplies `prdCarrierPolicy`, `prdCarrierName`, `prdCanonicalTreasury`, PRE identity, Oracle singleton identity/publisher and PrizePool hash. The validator checks continuity and a token under those same datum-supplied carrier fields, not a deployment-pinned identity.
+- The validator's exactly-one-own-input/continuing-output checks apply to the current transaction. They do not prove that there is exactly one recognized Genesis carrier UTxO/policy across the ledger.
+- The first-Issue reader/provider currently does not consume a Genesis carrier identity or regime witness.
+
+Therefore the implementation has a **one-shot mint mechanic**, but it does **not yet establish one globally canonical Genesis regime singleton**. Independent one-shot policies may create independent carrier tokens/UTxOs at the same unparameterized validator address, and each may be transitioned separately under its own datum identity. The current code has no on-chain or Issue-consumer binding to reject such parallel self-declared carriers.
+
+The same identity issue applies to the datum-supplied Treasury and Oracle source identities: no deployment-pinned Treasury hash, Oracle singleton identity or publisher is embedded as an immutable parameter of the Genesis validator. Those values are preserved from input to output but are not made authoritative merely by being in the datum.
+
+**Disposition correction:** retain as implemented only the one-shot-per-seed policy property and local Yaci transition fixture. Reclassify global singleton authority, canonical source identity and production Genesis regime authority as **OPEN / NOT ESTABLISHED** until the actual seed/policy/name and source identities are pinned by an authenticated mechanism that the validator and the first-Issue consumer enforce. This correction does not authorize a replacement policy, new datum layout, validator parameterization, deployment or ABI change.
