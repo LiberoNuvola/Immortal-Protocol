@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import WebSocket from 'ws'
+import { createOgmiosLedgerStateSession, normalizeLedgerPoint } from './ogmios-ledger-state-session.mjs'
 
 const endpoint = process.env.DEMETER_OGMIOS_URL?.trim()
 const evidenceDir = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
@@ -142,61 +143,15 @@ client.on('message', raw => {
   }
 })
 
-function normalizeLedgerPoint(raw, label) {
-  const candidate = raw?.tip ?? raw
-  const slot = Number(candidate?.slot)
-  const hash = candidate?.hash ?? candidate?.id
-  if (!Number.isSafeInteger(slot) || slot < 0 ||
-      typeof hash !== 'string' || !/^[0-9a-fA-F]{64}$/.test(hash)) {
-    throw new Error(label + '_MALFORMED: ' + JSON.stringify(raw))
-  }
-  return { slot, hash: hash.toLowerCase() }
-}
-
-let ledgerStateAcquired = false
+let ledgerSession = null
 let snapshotPoint = null
-
-async function acquireConsistentLedgerState() {
-  let lastError = 'unknown acquire error'
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const tipResponse = await rpc('queryNetwork/tip')
-    const point = normalizeLedgerPoint(tipResponse, 'OGMIOS_NETWORK_TIP')
-    try {
-      // This configured Ogmios v7 endpoint uses the ledger point shape
-      // { slot, id } for acquireLedgerState (matching its queryNetwork/tip
-      // response); the human-facing API guide's { slot, hash } alias is not
-      // accepted by this deployed endpoint.
-      const acquired = await rpc('acquireLedgerState', {
-        point: { slot: point.slot, id: point.hash },
-      })
-      // Mark immediately so even a malformed acknowledgement is released in finally.
-      ledgerStateAcquired = true
-      if (acquired?.acquired !== 'ledgerState' || !acquired?.point) {
-        throw new Error('OGMIOS_LEDGER_STATE_ACQUIRE_ACK_MALFORMED: ' + JSON.stringify(acquired))
-      }
-      const actualPoint = normalizeLedgerPoint(acquired.point, 'OGMIOS_ACQUIRED_POINT')
-      if (actualPoint.slot !== point.slot || actualPoint.hash !== point.hash) {
-        throw new Error(
-          'OGMIOS_ACQUIRED_POINT_MISMATCH: ' +
-          JSON.stringify({ requested: point, acquired: actualPoint }),
-        )
-      }
-      return { slot: actualPoint.slot, id: actualPoint.hash }
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : String(error)
-      if (ledgerStateAcquired) throw error
-      console.warn('Ogmios ledger-state acquire attempt ' + attempt + ' failed: ' + lastError)
-      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 250 * attempt))
-    }
-  }
-  throw new Error('OGMIOS_LEDGER_STATE_ACQUIRE_FAILED_AFTER_3_ATTEMPTS: ' + lastError)
-}
 
 try {
   console.log('Ogmios WebSocket connected')
-  snapshotPoint = await acquireConsistentLedgerState()
+  ledgerSession = createOgmiosLedgerStateSession({ rpc })
+  snapshotPoint = await ledgerSession.acquire()
   console.log('Ogmios ledger state acquired at ' + JSON.stringify(snapshotPoint))
-  const ledgerTip = await rpc('queryLedgerState/tip')
+  const ledgerTip = await ledgerSession.query('queryLedgerState/tip')
   const queriedLedgerPoint = normalizeLedgerPoint(ledgerTip, 'OGMIOS_LEDGER_TIP')
   if (queriedLedgerPoint.slot !== snapshotPoint.slot ||
       queriedLedgerPoint.hash !== snapshotPoint.id) {
@@ -218,19 +173,19 @@ try {
     observed_at: new Date().toISOString(),
     acquired_ledger_state: snapshotPoint,
     network_tip: snapshotPoint,
-    network_block_height: await rpc('queryNetwork/blockHeight'),
-    network_start_time: await rpc('queryNetwork/startTime'),
-    shelley_genesis: await rpc('queryNetwork/genesisConfiguration', { era: 'shelley' }),
-    alonzo_genesis: await rpc('queryNetwork/genesisConfiguration', { era: 'alonzo' }),
-    ledger_epoch: await rpc('queryLedgerState/epoch'),
+    network_block_height: await ledgerSession.query('queryNetwork/blockHeight'),
+    network_start_time: await ledgerSession.query('queryNetwork/startTime'),
+    shelley_genesis: await ledgerSession.query('queryNetwork/genesisConfiguration', { era: 'shelley' }),
+    alonzo_genesis: await ledgerSession.query('queryNetwork/genesisConfiguration', { era: 'alonzo' }),
+    ledger_epoch: await ledgerSession.query('queryLedgerState/epoch'),
     ledger_tip: ledgerTip,
-    era_summaries: await rpc('queryLedgerState/eraSummaries'),
-    protocol_parameters: await rpc('queryLedgerState/protocolParameters'),
+    era_summaries: await ledgerSession.query('queryLedgerState/eraSummaries'),
+    protocol_parameters: await ledgerSession.query('queryLedgerState/protocolParameters'),
   }
   const body = JSON.stringify(observations, null, 2) + '\n'
   await writeFile(`${evidenceDir}/ogmios-preprod-context.json`, body)
 
-  const walletRaw = await rpc('queryLedgerState/utxo', { addresses: [walletAddress] })
+  const walletRaw = await ledgerSession.query('queryLedgerState/utxo', { addresses: [walletAddress] })
   const walletUtxos = Array.isArray(walletRaw) ? walletRaw.map(entry => {
     const transaction = entry.outputReference?.transaction ?? entry.transaction ?? {}
     const index = entry.outputReference?.index ?? entry.index
@@ -294,7 +249,7 @@ try {
   // Ogmios WebSocket. The configured address is a historical deployment
   // candidate and must be revalidated against the current deployment manifest.
   const prizeTipBefore = snapshotPoint
-  const prizeRaw = await rpc('queryLedgerState/utxo', { addresses: [prizeValidatorAddress] })
+  const prizeRaw = await ledgerSession.query('queryLedgerState/utxo', { addresses: [prizeValidatorAddress] })
   const prizeTipAfter = snapshotPoint
   if (!Array.isArray(prizeRaw)) {
     throw new Error('OGMIOS_PRIZE_VALIDATOR_UTXO_RESPONSE_NOT_ARRAY')
@@ -386,7 +341,7 @@ try {
   // The configured address is the historical deployment candidate; the
   // resulting UTxOs and datum are recorded, not assumed to remain unchanged.
   const poolTipBefore = snapshotPoint
-  const poolRaw = await rpc('queryLedgerState/utxo', { addresses: [poolAddress] })
+  const poolRaw = await ledgerSession.query('queryLedgerState/utxo', { addresses: [poolAddress] })
   const poolTipAfter = snapshotPoint
   const poolUtxos = Array.isArray(poolRaw) ? poolRaw.map(entry => {
     const transaction = entry.outputReference?.transaction ?? entry.transaction ?? {}
@@ -492,9 +447,12 @@ try {
   console.error(diagnostic.failure)
   process.exitCode = 1
 } finally {
-  if (client && ledgerStateAcquired && client.readyState === WebSocket.OPEN) {
+  if (ledgerSession?.isAcquired && !ledgerSession.isReleased) {
     try {
-      await rpc('releaseLedgerState')
+      if (!client || client.readyState !== WebSocket.OPEN) {
+        throw new Error('Ogmios WebSocket is not open during ledger-state release')
+      }
+      await ledgerSession.release()
       console.log('Ogmios ledger state released')
     } catch (releaseError) {
       const message = releaseError instanceof Error ? releaseError.message : String(releaseError)
