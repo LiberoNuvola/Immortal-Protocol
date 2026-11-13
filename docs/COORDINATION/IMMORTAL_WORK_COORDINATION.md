@@ -5165,3 +5165,62 @@ This is an evidence/schema requirement, not authorization to create a new Treasu
 No production source, test, workflow, policy, datum/redeemer ABI, V3/Reveal semantics, 500× parameter, wallet, transaction, deployment or ledger state was changed. No test or CI PASS is claimed by this documentation-only review.
 
 **Disposition:** the current producer proves aggregate integrity relative to one V3 carrier, not completeness/disjointness of the underlying commitment partition. C1 remains **NOT PRODUCER-CLOSED**.
+
+## 45.70 AGENT A — C1 LIVE CENSUS / R1-Kc EVIDENCE BOUNDARY REVALIDATION (2026-11-13)
+
+**Audited source HEAD:** `1e7becb03537eb218c0c8d67ae8a5a181bf7359f`  
+**Classification:** SOURCE-BASED RECONCILIATION — READ-ONLY CENSUS REVIEW; NO CERTIFICATION OR ADMISSION AUTHORITY.
+
+### 1. Refinement to §45.69: a ticket census exists, but it is not the Issue producer
+
+The repository contains a dedicated read-only Preprod census path that was not part of the runtime Issue reader reviewed in §45.69:
+
+- `audit/cardano-integration/preprod-protected-capital-census.mjs` derives the PrizeValidator and B1 Pool topology from the checked-out scripts and a deployment-identity bundle, scans both addresses through `relayer/koiosProtectedCapitalSourceCensus.js`, parses PrizeDatum records, and builds `PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts`.
+- The Koios source requires exact `Content-Range` totals, reconciles page offsets and page lengths, rejects duplicate or wrong-address references, validates `is_spent=false`, records response-body digests, checks datum bytes/hashes, and requires the ledger tip hash/slot/block height to remain identical before and after the multi-address scan.
+- The item ledger independently classifies the observed PrizeDatum population and checks L1 payout totals against B1 pending liabilities, L3 face-price totals against B1 unresolved reserve, and L3 counts against the B1 unresolved-ticket count.
+
+This is a material audit capability and narrows the earlier finding: a full address enumeration mechanism exists for the PrizeValidator ticket population. It does **not** close the producer gap, for reasons made explicit by the implementation itself:
+
+- `paginationComplete=true` describes successful reconciliation of the provider-reported pages; it is not proof that the provider supplied every ledger UTxO.
+- The census output hard-codes `sourceCompletenessAuthorityVerified=false`, `providerAttestationVerified=false`, `providerSnapshotPinned=false`, `sameBackendSnapshotVerified=false`, `fullProtectedCapitalQualified=false`, and `r7L6EmptinessProven=false`.
+- The item-ledger type fixes `sourceCompletenessAuthorityVerified=false` and `fullProtectedCapitalQualified=false`, with scope `PRIZE_VALIDATOR_TICKET_POPULATION_ONLY`. Its own documentation says completeness metadata cannot prove that an upstream provider actually returned every page.
+- L2 lifecycle remains an aggregate observation; consumed expiry history requires transaction replay; L6 absence is not certified; the census does not source SafetyCapital, ReserveProtection or MandatoryFutureCosts.
+- The live census is a separate audit workflow. `relayer/preprodIssueObservationReader.js` still does not consume its ticket records or enumerate the PrizeValidator population for the authoritative Issue decision.
+
+Therefore the census can establish a useful **internally reconciled, provider-observed ticket ledger**, not a complete, authenticated PA1–PA7 source producer. Its current boundary must not be upgraded merely because the pagination and arithmetic tests pass.
+
+### 2. Historical census result — not a current admission witness
+
+The latest detailed census report inspected is the 2026-11-06 read-only campaign:
+
+- Koios observed zero PrizeValidator UTxOs and one B1 Pool singleton. The ticket-item ledger internally reconciled zero L1/L3 items to the Pool aggregates at that observation.
+- The observed Pool carried 1,000,000,000 atomic units of the configured direct-tUSDM asset, deterministically represented as 100,000 USDM subunits (1,000 USDM units at the declared 100-subunit scale). This is physical configured tUSDM quantity, not a USD/USDM market quote or a parity claim.
+- A separate Ogmios query corroborated the Pool out-reference and datum bytes, but it was 248 slots later. It is corroboration at a different chain point, not one shared atomic snapshot.
+- The Oracle State quote was stale by approximately 28.52 days against a one-hour maximum-age parameter. Its datum alone did not establish an external USD/USDM source.
+- A subsequent direct-USDM EV1–EV7 qualification was mechanically qualified for the exact physical tUSDM profile, while the source set remained `OBSERVED_NOT_QUALIFIED` and deployment approval remained `PENDING / NOT CREATED`.
+
+These are dated observations and qualification artifacts, not a live 2026-11-13 read, not a current deployment approval, not a USD/USDM source qualification, and not R1 or PA1–PA7 evidence. A fresh observation would still need an authenticated completeness/authority path and the separate human deployment-approval binding before being used in Issue admission.
+
+### 3. R1/Kc/Ω revalidation — the certificate remains absent
+
+The current S0 proof boundary is unchanged:
+
+- The only V3 economic action available at the declared S0 is `Issue(0,1)`. With unchanged EEV and the V1 500× WCE, the unclamped margin `b = EEV − ProtectedCapital` decreases by exactly 500 RU. Additional initial solvency headroom does not turn this transition into a non-eroding QNE witness.
+- The `allOmegaSuccessorsCertified` value passed to the admission path is a caller-supplied Boolean. It does not enumerate, authenticate or prove completeness of the authoritative Ω successor set.
+- The pure lifecycle/QNE helper checks a supplied non-empty witness list, but the reviewed Genesis and Issue execution boundaries do not invoke it as a transaction-bound action/certificate. It is not reachable as `Wit(S0)` in the current profile.
+- A general R1 certificate still requires a concrete total `χ`/`Wit`, VC1–VC6, authoritative or soundly over-approximated Ω, the complete deployment evidence package and an exact deployment binding. No such deployment-bound certificate was found.
+- The certification manifest still leaves G4 (Protected Capital / Economic Gate / V3↔Cardano) and G7 (deployment certification, including the viability-Kc-Ω certificate) OPEN with empty evidence arrays. The Haskell Semantic Conformance run #444 later completed successfully, but it ran on the earlier commit `5f6dbcd`; its `B-R1 Risk Protection bridge scaffold conformance` step is scaffold conformance, not a deployment certificate.
+
+No theorem that `K* = ∅` is inferred from the local S0 obstruction. Conversely, the local result is sufficient to reject the claim that the current S0 Issue action already supplies the T-MARGIN/QNE witness.
+
+### 4. Operational disposition
+
+1. Keep the separate census as a read-only audit tool; do not call its current output a complete or authoritative producer.
+2. Do not feed its Koios records into runtime Issue admission until source authority, completeness, snapshot binding and the transaction-bound handoff are independently specified and verified.
+3. Keep the six ProtectedCapital terms and PA1–PA7 open as recorded in §45.69. A ticket census alone cannot qualify the three untyped scalar components or prove disjointness.
+4. Keep R1/Kc/Ω MISSING and Issue #37 BLOCKED. Do not replace the missing certificate with a Boolean, a sampled Ω list, a historical artifact or the Haskell scaffold test.
+5. No new economic coefficient, R7 policy, Treasury posting, Reserve treatment, Issue rule, V3/Reveal semantic, ABI or deployment is authorized by this review.
+
+The separate Flux test failure was also traced to `deriveCardanoIssueTimeAnchor`: its prior round-trip checked only time→slot after slot→time, allowing a timestamp one millisecond after the actual slot boundary. Commit `1e7becb03537eb218c0c8d67ae8a5a181bf7359f` adds a preceding-millisecond boundary check matching the existing regression test. This narrows the Issue time-anchor validation only; it does not change expiry horizons, economic rules, V3 or Reveal. CI validation for that source fix remains pending at this documentation snapshot.
+
+**Disposition:** the ticket census is a stronger internal observation tool than the production Issue reader, but it is deliberately not certified for source completeness or full ProtectedCapital. The R1/Kc certificate and current first-Issue authorization remain **MISSING / BLOCKED**.
