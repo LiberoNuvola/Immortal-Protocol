@@ -5006,3 +5006,75 @@ These cases must be exercised across the actual Haskell and Aiken consumers that
 - Canonical one-round/one-Registry anchor and independently bound publisher authority: **NOT IMPLEMENTED / DECISION-DESIGN GATE OPEN**.
 - B3→B2→B1 trust policy: **ALREADY DECIDED / PRESERVE**.
 - No Haskell/Aiken validator, datum ABI, ticket commitment, economics, V3 carrier or deployment was changed in this audit.
+
+
+## 45.68 AGENT A — TREASURY RESERVE / PROTECTED CAPITAL / INITIAL ISSUE RECONCILIATION (2026-11-13)
+
+**Audited HEAD:** `5f6dbcd74eb617fc985485d413d636bbbf5dccb8`  
+**Classification:** SOURCE-DERIVED ECONOMIC RECONCILIATION / NO POLICY CHANGE  
+**Owner:** Agent A — PRE-RICH economics, EEV and admission  
+**Scope:** Reserve role, RU/USDM unit bridge, S0 initial Issue margin and the current Haskell conformance evidence. No change to 500×, V3, Reveal, R7, EEV policy or Treasury allocation.
+
+### 1. Exact EEV unit bridge
+
+The inspected source chain confirms that the two monetary pairs at the Issue gate deliberately use different scales:
+
+- `Adapter/CARDANO/observation/DirectUsdmEev.ts` observes the exact configured physical tUSDM in the exact B1 Pool UTxO and returns **USDM sub-units**. It uses six ledger decimals and 100 IMMORTAL USDM sub-units per accounting USDM.
+- `relayer/preprodIssueObservationReader.js` verifies that the signed pre-EEV and candidate-EEV amounts both equal the exact physical Pool observation. It then applies `usdmSubunitsToReferenceUnits`: exact division by 100, with a remainder rejected. It passes the normalized values to the Haskell decision as **IMMORTAL reference units (RU)**.
+- The same reader leaves `availableExecutableLiquidity` and `requiredImmediateLiquidity` in **USDM sub-units**. They are an immediate-settlement pair and are not converted into RU.
+- `PRE-RICH/onchain/PreRichIssueDecision.hs` documents and enforces this input contract: pre/candidate EEV in RU; immediately executable liquidity and its requirement in USDM sub-units.
+
+Therefore, for the historical diagnostic amount of 1,000,000,000 tUSDM atomic units, the direct observer produces 100,000 USDM sub-units and the Issue reader normalizes this to 1,000 RU. This is a conversion of the exact approved Preprod asset identity, not a generic USD/USDM parity claim. A Nov-12 snapshot of that amount remains a historical deployment candidate requiring live revalidation; it is not a current EEV approval.
+
+### 2. What the latest unchanged-EEV test proves
+
+Commit `5f6dbcd74eb617fc985485d413d636bbbf5dccb8` changes only `plutus/test/EconomicAdmissionTest.hs` relative to its immediate parent. The added S0 case is explicitly synthetic:
+
+- pre-EEV = 500 RU and candidate-EEV = 500 RU;
+- immediately executable liquidity = 500 USDM sub-units, a separate unit/field;
+- required immediate liquidity = 0;
+- the initial `Issue(0,1)` adds 500 RU worst-case exposure;
+- the candidate remains solvent exactly at 500 RU and is rejected at 499 RU;
+- synthetic RawSurplus falls from 500 RU to zero, an exact 500 RU headroom erosion.
+
+This correctly tests **unchanged EEV at Issue**. It is not a live Pool observation, a deployment approval, a first-ticket transaction or a test that a TicketSale payment increases Pool EEV. The 500 USDM sub-units in the fixture are 5 USDM and must not be read as 500 RU.
+
+### 3. Four different meanings that must stay separate
+
+1. **B1 `ppUnresolvedReserve` / V3 `v3UnresolvedReserve`:** aggregate face price of unresolved tickets. For the first 1-RU ticket this increases by 1 RU.
+2. **WorstCaseExposure:** 500 × unresolved face exposure under PRE-RICH V1. This is the deterministic maximum-payout amount and is included in ProtectedCapital.
+3. **V3 `ReserveProtection`:** a distinct protected-capital component, also added to ProtectedCapital. It is not a Treasury balance or a spendable budget.
+4. **PRE-RICH Treasury “Reserve” category:** an intended internal accounting position within the single Treasury custody perimeter. No authenticated Reserve category balance, posting path or debit path is currently demonstrated in B1.
+
+Agent B's source review of the legacy adapter confirms that the B1 projection sets generic SafetyCapital, ReserveProtection and MandatoryFutureCosts to zero; the legacy B1 representation has no Treasury Reserve field, and the V3-to-legacy conversion rejects non-zero values for those unsupported components. A legacy Reserve destination script hash is not a balance or an accounting posting.
+
+Accordingly, a Treasury Reserve balance cannot be mapped to `v3ReserveProtection` by name, used to reduce WorstCaseExposure, or counted as B1 PrizePool liquidity while it remains outside the selected Pool EEV perimeter. Any future Reserve-backed Pool funding needs exact-asset source custody, an explicitly authorized category debit, the physical Treasury-to-Pool transfer, exact Pool credit, and an atomic post-state solvency check. It must not double-count assets still held by Treasury.
+
+### 4. What Reserve could usefully cover — and what it cannot
+
+Agent B's source-level review confirms no counterexample to the enforceable 500× **normal payout amount** bound under the stated assumptions: every normal ticket payout is validator-computed and capped at 500× its ticket price, and every unresolved ticket is represented exactly once in aggregate Pending face exposure. A statistical PMF misspecification changes the probability of reaching the maximum, not the maximum amount enforced by the validator. It is therefore not sound to describe an unallocated Treasury Reserve as a substitute for, or a reduction of, the existing 500× protection.
+
+A separate pathwise Reveal headroom condition does exist. Let `F` be the aggregate remaining unresolved face exposure and `P_last` the price of the final unresolved ticket. Because the Reveal pre-check evaluates the pre-transition EffectivePool while that final face reserve is still deducted, the all-maximum path requires:
+
+`E_free >= 500 × F + P_last`
+
+For homogeneous 1-USDM tickets, a 4,000-USDM pool meets the 500× aggregate amount boundary for eight tickets, but the inspected pre-Reveal predicate supports only seven at that exact boundary; 4,001 USDM is needed to execute the eighth maximum Reveal in that order. This is a **pathwise liveness/headroom** distinction, not evidence that the 500× payout amount is understated, and it does not authorize changing Reveal or WCE semantics.
+
+A funded Reserve could potentially be evaluated as a source of that additional physical headroom, but only through an adopted PRE-RICH posting/funding rule and an authorized, exact-value Treasury-to-PrizePool transfer. No minimum, percentage, trigger, target or automatic Reserve use is selected here. The batch target remains an execution trigger, not an allocation rule or spending authority.
+
+### 5. R1/C1 and current verification status
+
+- The S0 Issue margin change remains `Δ(EEV − ProtectedCapital) = −500 RU` when EEV is unchanged. The new test now demonstrates this boundary directly; it does not establish global T-EROSION, an alternative R1 certificate, or Kc/Ω closure. R1/Kc/Ω remains OPEN.
+- The exact direct-USDM-to-RU conversion is implemented and verified at the Preprod reader boundary. C1 is still not producer-closed because the six ProtectedCapital components need authoritative, exhaustive, disjoint, same-snapshot provenance and PA1–PA7 certification.
+- Cardano Adapter Sale Conformance [#43367228343](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43367228343) completed SUCCESS on this exact HEAD; this verifies the selected TypeScript/adapter suites, not the changed Haskell test.
+- IMMORTAL Haskell Semantic Conformance [#43367228583](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43367228583) was still in progress at inspection, at `Compiled MintPolicy B1 Value-preservation conformance`; `Economic Admission conformance` had not yet run. No Haskell PASS is claimed.
+- PRE-RICH Emulator Reveal Conformance [#43367228086](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43367228086) failed at its real Reveal emulator conformance step. This is a separate Reveal gate; the diagnostic-only follow-up steps succeeded. It is not evidence that this test-only Issue commit changed Reveal.
+
+### 6. Non-regression and next safe action
+
+- No allocation percentage, Reserve target, new account authority, statistical guarantee, R7 delta or spending power is introduced.
+- No production economic source, 500× rule, V3 transition, Reveal semantics, B1 datum/redeemer or on-chain state is changed.
+- No first Issue, signature, deployment approval or Preprod transaction is authorized by this reconciliation.
+- Next: complete the exact-head Haskell run; then keep the Agent A work on the C1 source/provenance producer and the Treasury category ledger evidence contract. Any Reserve-to-Pool use must remain blocked until the category debit and physical source-to-destination transfer are proven.
+
+**Disposition:** Reserve is a separate Treasury accounting intention, not `ReserveProtection` and not immediately spendable Pool liquidity. Its most concrete potential utility identified here is separately authorized Reveal liveness headroom; the current code does not yet implement or authorize that path.
