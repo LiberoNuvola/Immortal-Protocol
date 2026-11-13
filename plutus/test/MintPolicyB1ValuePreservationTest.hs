@@ -27,7 +27,7 @@ import PlutusTx.Test.Run.Code
   )
 
 import Beacon (encodeBeaconTarget, ticketCommitment)
-import CounterValidator (compiledValidator as compiledCounterValidator)
+import qualified CounterValidator as CounterValidatorModule
 import MintPolicy (compiledPolicyFactory)
 import OracleTypes (OracleStateId (..))
 import Types
@@ -285,7 +285,7 @@ main = do
         , txInfoId = TxId (bytes [5..36])
         }
     counterContext = ScriptContext counterTxInfo (Spending lookalikeRef)
-    counterDatumCode = unsafeApplyCode compiledCounterValidator (liftCodeDef (toBuiltinData (0 :: Integer)))
+    counterDatumCode = unsafeApplyCode CounterValidatorModule.compiledValidator (liftCodeDef (toBuiltinData (0 :: Integer)))
     counterRedeemerCode = unsafeApplyCode counterDatumCode (liftCodeDef (toBuiltinData ()))
     counterContextCode = unsafeApplyCode counterRedeemerCode (liftCodeDef (toBuiltinData counterContext))
   assertEvaluatesSuccessfully counterContextCode
