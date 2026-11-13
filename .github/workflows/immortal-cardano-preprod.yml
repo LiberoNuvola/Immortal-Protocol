@@ -80,6 +80,9 @@ jobs:
       - name: Install repository test dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Test acquired Ogmios ledger-state lifecycle
+        run: node --test audit/cardano-integration/ogmios-ledger-state-session.test.mjs
+
       - name: Install isolated Preprod probe dependencies
         run: npm install --prefix audit/cardano-integration
 
