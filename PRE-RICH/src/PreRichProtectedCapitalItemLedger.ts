@@ -201,6 +201,44 @@ function classifyPrizeDatum(
     throw new Error('ticket expiresAt must not precede issuedAt')
   }
 
+  // Validate the ticket's canonical economic envelope before assigning any
+  // lifecycle state. A malformed Revealed/Claimed datum must not become L1/L4
+  // merely because its amount happens to reconcile with the aggregate Pool.
+  const priceReferenceUnits = referenceUnitsIfRepresentable(
+    record.priceUsdmSubunits,
+    'ticket price',
+  )
+  const canonicalClassIndex = priceReferenceUnits === null
+    ? -1
+    : PRE_RICH_CANONICAL_PRICES.findIndex(
+        (price) => price === priceReferenceUnits,
+      )
+  if (record.priceUsdmSubunits === 0n || canonicalClassIndex < 0) {
+    return {
+      ...common,
+      r7Cell: 'L6',
+      pcComponent: null,
+      classId: null,
+      priceReferenceUnits,
+      countedAmountReferenceUnits: null,
+      classificationReason: 'Ticket price is not in the canonical PRE-RICH ladder',
+    }
+  }
+  if (
+    record.prizeAmountUsdmSubunits >
+    PRE_RICH_MAX_NORMAL_PAYOUT_MULTIPLIER * record.priceUsdmSubunits
+  ) {
+    return {
+      ...common,
+      r7Cell: 'L6',
+      pcComponent: null,
+      classId: BigInt(canonicalClassIndex),
+      priceReferenceUnits,
+      countedAmountReferenceUnits: null,
+      classificationReason: 'Ticket payout exceeds the canonical 500x normal-payout bound',
+    }
+  }
+
   if (record.prizeStatus === 'Pending') {
     if (record.prizeAmountUsdmSubunits !== 0n) {
       return {
