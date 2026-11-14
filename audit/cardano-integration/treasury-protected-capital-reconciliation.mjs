@@ -153,6 +153,9 @@ export function reconcileTicketSalesToProtectedCapital({ journal, ledger }) {
     schema: 'PRE-RICH-TICKETSALE-PROTECTED-CAPITAL-CROSSWALK-v1',
     qualification: {
       identityCrosswalkComplete: qualified,
+      providedSetIdentityCrosswalkComplete: qualified,
+      treasuryJournalHistoryCompletenessVerified: false,
+      protectedCapitalSourceCompletenessAuthorityVerified: false,
       economicPostingQualified: false,
       fullProtectedCapitalQualified: false,
       spendAuthorizationGranted: false,
