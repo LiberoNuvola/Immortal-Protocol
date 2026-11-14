@@ -82,7 +82,7 @@ jobs:
 
       - name: Test acquired Ogmios ledger-state lifecycle
         run: node --test audit/cardano-integration/ogmios-ledger-state-session.test.mjs
-
+\n      - name: Test fail-closed five-component C1 acquired-point observer\n        run: node --test audit/cardano-integration/preprod-c1-acquired-point-observer.test.mjs\n
       - name: Install isolated Preprod probe dependencies
         run: npm install --prefix audit/cardano-integration
 
