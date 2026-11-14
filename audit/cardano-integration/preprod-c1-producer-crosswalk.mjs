@@ -180,7 +180,7 @@ async function main() {
   process.stdout.write(JSON.stringify(report, null, 2) + '\\n')
 }
 
-if (import.meta.url === new URL(process.argv[1], 'file://' + process.cwd() + '/').href) {
+if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
   main().catch(error => {
     process.stderr.write(String(error?.stack ?? error) + '\\n')
     process.exitCode = 1
