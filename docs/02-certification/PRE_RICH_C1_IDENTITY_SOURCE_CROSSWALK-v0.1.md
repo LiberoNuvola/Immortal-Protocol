@@ -63,7 +63,7 @@ The observer does not authenticate the deployment, re-derive scripts, classify P
 
 ## 5. Safe next work
 
-The next implementation should be limited to a **read-only evidence normalizer/validator** for the three existing deployment evidence formats. It should:
+The **read-only evidence normalizer/validator** for the three existing deployment evidence formats is now implemented at `audit/cardano-integration/preprod-c1-producer-crosswalk.mjs`, with fixture coverage in `preprod-c1-producer-crosswalk.test.mjs`. It should be used to:
 
 1. load the direct-USDM, V3 and B2 evidence artifacts without modifying them;
 2. preserve their original digests and provenance references;
@@ -72,7 +72,7 @@ The next implementation should be limited to a **read-only evidence normalizer/v
 5. emit a gap report, not an authenticated identity envelope;
 6. leave `deploymentAuthorityVerified=false` and `c1Qualified=false` unconditionally until GOV-30 is resolved and an independently verified trust chain exists.
 
-Before implementing even that normalizer, obtain the exact Counter address/materialization source from an authoritative deployment artifact or derive it from the pinned topology and preserve the derivation evidence. Do not use the historical candidate address as canonical solely because it was queried successfully.
+The normalizer reports the Counter address as present in the direct-USDM topology while explicitly reporting the Counter materialization out-ref as missing. Running it against the actual three producer artifacts is a separate evidence acquisition step; do not use the historical candidate address as canonical solely because it was queried successfully.
 
 ## 6. Explicit non-actions
 
@@ -99,4 +99,4 @@ The current producers do not supply that common identity:
 
 The C1 observer's common-generation check must not be bypassed by relabelling these separate deployment IDs as one. Nor should the current source commit be retroactively represented as the deployment source commit: that would conflate the present audit code with the commits that produced the on-chain artifacts.
 
-**Disposition:** the five-address observer mechanics are implemented and fixture-tested, but a production-shaped C1 identity envelope cannot yet be assembled from the current producer outputs without inventing or asserting missing provenance. Do not run a five-component Preprod census using fabricated envelope fields or historical candidate addresses. The next valid engineering unit is a read-only producer crosswalk/identity assembler that reports each missing field explicitly and refuses to emit a C1-queryable envelope until the provenance inputs are independently supplied. This does not select a trust root or qualify deployment authority.
+**Disposition:** the five-address observer mechanics are implemented and fixture-tested, but a production-shaped C1 identity envelope cannot yet be assembled from the current producer outputs without inventing or asserting missing provenance. Do not run a five-component Preprod census using fabricated envelope fields or historical candidate addresses. The read-only producer crosswalk is implemented and wired into Cardano Adapter Sale Conformance. The next valid engineering unit is to run it against the exact current producer artifacts, review its field-level report, and obtain the missing deployment-generation provenance from authorized sources before any C1-queryable envelope is assembled. This does not select a trust root or qualify deployment authority.
