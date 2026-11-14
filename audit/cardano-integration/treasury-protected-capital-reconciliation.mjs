@@ -97,7 +97,7 @@ export function reconcileTicketSalesToProtectedCapital({ journal, ledger }) {
     if (identity.policyId !== ledgerPolicy) fail('PC_RECONCILE_LEDGER_ITEM_POLICY_DIFFERS_FROM_SOURCE')
     const txHash = txHashFromUtxoReference(item.utxoReference)
     if (!txHash) fail('PC_RECONCILE_LEDGER_ITEM_UTXO_REFERENCE_INVALID')
-    return { item, ...identity, txHash }
+    return { item, ...identity, currentUtxoTxHash: txHash }
   })
   const ledgerByUnit = uniqueMap(ledgerRows, (row) => row.unit, 'PC_RECONCILE_DUPLICATE_LEDGER_TICKET_IDENTITY')
 
@@ -115,14 +115,11 @@ export function reconcileTicketSalesToProtectedCapital({ journal, ledger }) {
       })
       continue
     }
-    if (ledgerRow.txHash !== String(receiptRow.event.transactionHash).toLowerCase()) {
-      blockers.push('TICKET_IDENTITY_ISSUE_TRANSACTION_MISMATCH:' + unit)
-      continue
-    }
     matched.push({
       ticketUnit: unit,
       receiptRef: receiptRow.event.receiptRef,
-      transactionHash: receiptRow.event.transactionHash,
+      issueTransactionHash: receiptRow.event.transactionHash,
+      currentPrizeDatumUtxoTransactionHash: ledgerRow.currentUtxoTxHash,
       prizeDatumUtxoReference: ledgerRow.item.utxoReference,
       prizeDatumDigest: ledgerRow.item.datumDigest,
       r7Cell: ledgerRow.item.r7Cell,
@@ -178,7 +175,7 @@ export function reconcileTicketSalesToProtectedCapital({ journal, ledger }) {
     receiptWithoutCurrentDatum,
     ledgerWithoutReceipt,
     limitations: [
-      'The crosswalk matches immutable ticket identity and the Issue transaction hash only.',
+      'The crosswalk matches immutable ticket identity; the Issue transaction hash is retained as receipt provenance but is not compared with the current PrizeDatum UTxO transaction hash because lifecycle transitions may recreate the datum.',
       'A missing current PrizeDatum does not prove that no obligation ever existed; consumed lifecycle history is outside this current-UTxO census.',
       'A missing Treasury receipt does not prove that a ticket was never sold; journal history coverage must be independently qualified.',
       'No Treasury asset valuation, category posting, EEV credit, ProtectedCapital perimeter certification, settlement or spend authority is inferred.',
