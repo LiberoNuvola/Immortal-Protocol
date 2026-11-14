@@ -9,6 +9,8 @@
  * Candidate inputs remain untrusted until the GOV-30 authority chain exists.
  */
 
+import { decodeC1ComponentCardinality } from './preprod-c1-cardinality-decoder.mjs'
+
 export const C1_COMPONENT_IDS = Object.freeze([
   'prizeValidator',
   'b1Pool',
@@ -137,11 +139,16 @@ export async function observeC1ComponentsAtAcquiredPoint({
       throw new Error('C1_OBSERVER_LEDGER_SESSION_POINT_CHANGED:' + component.componentId)
     }
 
+    const cardinality = decodeC1ComponentCardinality({
+      component,
+      rawUtxos: raw,
+    })
     observations[component.componentId] = {
       address: component.address,
       rawUtxoCount: raw.length,
       rawOgmiosUtxoResult: raw,
-      cardinalityStatus: 'NOT_EVALUATED_RAW_VALUE_DECODER_REQUIRED',
+      cardinality,
+      cardinalityStatus: cardinality.cardinalityStatus,
     }
   }
 
@@ -162,7 +169,7 @@ export async function observeC1ComponentsAtAcquiredPoint({
     qualificationBlockers: [
       'GOV_30_TRUST_ROOT_AND_AUTHORIZED_DEPLOYMENT_ATTESTATION_UNRESOLVED',
       'SCRIPT_AND_PARAMETER_REDERIVATION_NOT_PERFORMED_BY_THIS_OBSERVER',
-      'SINGLETON_CARDINALITY_REQUIRES_INDEPENDENT_OGMIOS_VALUE_DECODER',
+      'PRIZEVALIDATOR_POPULATION_CLASSIFICATION_REQUIRES_PRIZEDATUM_DECODER_AND_AUTHENTICATED_ADDRESS',
       'PRIZEVALIDATOR_POPULATION_CLASSIFICATION_NOT_PERFORMED_BY_THIS_OBSERVER',
       'B1_V3_AGGREGATE_RECONCILIATION_NOT_PERFORMED',
     ],
