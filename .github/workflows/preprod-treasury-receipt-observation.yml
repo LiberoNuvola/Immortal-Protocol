@@ -194,6 +194,15 @@ jobs:
           TREASURY_RECEIPT_JOURNAL_OUTPUT: audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
         run: node audit/cardano-integration/observe-preprod-treasury-receipts.mjs
 
+      - name: Reconcile Treasury receipts against the same-run ProtectedCapital census
+        if: always() && hashFiles('audit/preprod-evidence/preprod-protected-capital-census.json') != '' && hashFiles('audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json') != ''
+        run: |
+          node --check audit/cardano-integration/reconcile-treasury-protected-capital.mjs
+          node audit/cardano-integration/reconcile-treasury-protected-capital.mjs \
+            audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
+            audit/preprod-evidence/preprod-protected-capital-census.json \
+            audit/preprod-evidence/treasury-protected-capital-crosswalk.json
+
       - name: Reconcile current snapshot against prior retained observation
         if: success()
         env:
@@ -208,6 +217,7 @@ jobs:
               audit/preprod-evidence/previous-observation/treasury-ticket-sale-receipt-journal.json \
               audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
               audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+            audit/preprod-evidence/treasury-protected-capital-crosswalk.json
           else
             node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
               --baseline \
