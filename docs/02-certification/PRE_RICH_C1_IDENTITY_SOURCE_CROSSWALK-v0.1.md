@@ -12,7 +12,7 @@ The repository has separate producers for the historical direct-USDM/B1 deployme
 
 The producers do not yet emit one unified, cryptographically authorized five-component deployment generation. In particular:
 
-- the direct-USDM manifest supplies PrizeValidator and B1 topology hashes/addresses, but does not supply a Counter address or a complete five-component deployment identity;
+- the direct-USDM manifest now supplies the Counter address alongside its hash, but none of the current producers supplies a complete, common five-component deployment generation;
 - the V3 and B2 deployment evidence records are separate and do not, in the inspected producer code, bind themselves to the same authorized deployment ID/source commit as the B1/Prize generation;
 - the current observer's structural envelope fields include source commit, payment credential, derived script hash, parameter digest and deployment out-ref for every component, but those values are not all emitted by the current deployment producers;
 - a self-hash, wallet signer address, successful workflow, or live UTxO query does not establish deployment authority.
@@ -86,3 +86,17 @@ This audit does not:
 - qualify C1, PA1–PA7, or first-Issue readiness.
 
 **Disposition:** separate deployment evidence is sufficient to identify the missing integration fields, but not sufficient to assert one authorized deployment generation. C1 remains OPEN.
+
+## 7. Cross-producer generation gap confirmed against the C1 observer
+
+The existing `preprod-c1-acquired-point-observer.mjs` can query all five declared addresses through one acquired Ogmios ledger-state session. Its structural envelope validator requires one shared `deploymentId` and one shared 40-hex `sourceCommit` across all five components, plus per-component script/payment identity, parameter digest and deployment out-ref.
+
+The current producers do not supply that common identity:
+
+- **PrizeValidator / B1 / Counter:** the direct-USDM manifest has schema `IMMORTAL-PREPROD-DIRECT-USDM-DEPLOYMENT-v0.1`, a bootstrap transaction hash, topology hashes/addresses and a B1 Pool UTxO ref. It has no C1 `deploymentId`, no pinned source commit, no script artifact/parameter digests and no Counter materialization out-ref.
+- **V3:** `scripts/deployV3Carrier.mts` emits the independent identifier `V3-ECONOMIC-STATE-CARRIER-PREPROD-001`, deployment transaction ref and carrier state ref, but no shared C1 generation, source commit or parameter digest.
+- **B2:** `scripts/deployPreRichControlCarrier.mts` emits the independent identifier `PRE-RICH-B2-CONTROL-PREPROD-001`, deployment transaction ref and control state ref, but no shared C1 generation, source commit or parameter digest.
+
+The C1 observer's common-generation check must not be bypassed by relabelling these separate deployment IDs as one. Nor should the current source commit be retroactively represented as the deployment source commit: that would conflate the present audit code with the commits that produced the on-chain artifacts.
+
+**Disposition:** the five-address observer mechanics are implemented and fixture-tested, but a production-shaped C1 identity envelope cannot yet be assembled from the current producer outputs without inventing or asserting missing provenance. Do not run a five-component Preprod census using fabricated envelope fields or historical candidate addresses. The next valid engineering unit is a read-only producer crosswalk/identity assembler that reports each missing field explicitly and refuses to emit a C1-queryable envelope until the provenance inputs are independently supplied. This does not select a trust root or qualify deployment authority.
