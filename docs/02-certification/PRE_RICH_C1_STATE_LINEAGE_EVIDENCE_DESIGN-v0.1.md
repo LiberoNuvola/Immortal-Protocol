@@ -218,3 +218,16 @@ Evidence disposition remains unchanged:
 - Do not treat the first observed current Counter UTxO as its initial materialization without origin evidence.
 - Do not add a Counter initializer or alter the Issue/validator path as part of this audit.
 - C1 remains OPEN; no live-chain lookup, transaction, deployment, or semantic change was performed.
+
+
+### 9.8 Review of retained Preprod run evidence — Counter origin not covered
+
+The retained artifacts for Preprod workflow run `43631846800` (the run associated with the previously reviewed acquired-state observation) were downloaded and inspected:
+
+- `immortal-cardano-preprod-context` (artifact `14129010083`) contains the acquired Ogmios context, wallet UTxO inventory, PrizeValidator address census, B1 Pool UTxO packet, conformance binding, and run provenance.
+- The acquired point is slot `139001021`, block id `63a076a0da1526cac45bc1435e3b9f1eacbd2b00b394e928441709ca9be4f384`; its recorded source snapshot is `c0be99b7a60ff16772bc9770636668d1669d6113`.
+- `preprod-b1-script-provenance` (artifact `14128930362`) records B1 script provenance and limitations, but contains no Counter origin transaction/output or Counter address census.
+
+The context artifact does not include a Counter query. The B1 provenance artifact does not establish Counter materialization. These are coverage limitations of the retained evidence packets; they are not evidence that the Counter UTxO is absent from Preprod. The artifacts are also tied to the recorded historical source snapshot, not the current branch HEAD, and are not promoted to current deployment authority.
+
+Accordingly, the Preprod run evidence reviewed here cannot close the Counter-origin gap. A separate observation must first identify the exact canonical Counter address from the authorized deployment topology, then establish the origin transaction and output reference from ledger history. Merely observing one current UTxO at that address would establish current cardinality, not origin provenance. No new Preprod query or transaction was run for this review.
