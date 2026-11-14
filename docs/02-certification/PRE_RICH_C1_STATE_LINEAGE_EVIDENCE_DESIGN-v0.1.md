@@ -137,3 +137,63 @@ Until these decisions are reviewed, no signer, CA, registry, quorum, provider, p
 Agent A owns the read-only C1 evidence model. Agent B must review any future proposal that turns lineage or completeness into an Issue precondition. No production provider, deployment producer, observer, validator, V3/Reveal, datum ABI, admission ABI, wallet flow or on-chain state is changed by this note.
 
 **Disposition:** the existing observer remains a same-point raw census primitive. Deployment authority, materialization, current observation, state lineage and PrizeValidator population completeness remain distinct qualifications. C1 remains OPEN; PA1–PA7 remain unqualified.
+
+
+## 9. Source audit — actual materialization behavior on the reviewed branch
+
+**Reviewed branch HEAD:** `d7d34526abe17428ea98a200324d2422b0650e2e`  
+**Scope:** read-only inspection of current producer and Issue source. This is source-code evidence, not proof that any corresponding Preprod transaction ran or remains live.
+
+### 9.1 B1 PrizePool
+
+`audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs` derives the B1/Prize topology and, when no existing Pool singleton is found, submits one transaction that mints the Pool singleton and pays the B1 address with the initial inline Pool datum and physical tUSDM. It then observes the singleton output and stores its exact reference as `utxos.pool`.
+
+There is an important recovery branch: if exactly one existing Pool singleton is found, the producer reuses that current UTxO and records it as `utxos.pool`; it does not recover or prove the original creation transaction. Thus `utxos.pool` is an observed Pool state reference at bootstrap execution, not unconditionally the immutable first materialization reference. The manifest does not separately persist the bootstrap transaction hash in the shown `utxos` record.
+
+**Consequence:** B1's initial state creation can be evidenced by the fresh-bootstrap transaction/output when that branch actually ran and its transaction is independently verified. A reused Pool reference must be classified as a current observation unless its prior creation/lineage is independently recovered.
+
+### 9.2 V3 carrier
+
+`scripts/deployV3Carrier.mts` explicitly selects a seed UTxO, derives the singleton policy from that seed and token name, derives the carrier validator/address, and submits one transaction that consumes the seed, mints quantity one of the carrier asset, and creates the carrier output with the explicitly supplied canonical initial datum.
+
+The evidence records both `deploymentTransactionRef` (transaction-level) and `carrierStateReference` (specific output-level). The output-level reference is observed after confirmation and is therefore the precise initial state output for this deployment run, subject to independent transaction/inclusion verification.
+
+**Consequence:** for the currently inspected producer, V3 has a concrete state-materialization transaction/output pair. Its later Issue continuation outputs are state transitions, not a new deployment generation.
+
+### 9.3 B2 control carrier
+
+`scripts/deployPreRichControlCarrier.mts` follows the same shape: explicit seed, seed-derived singleton policy, derived control address, one transaction that consumes the seed, mints quantity one and creates the initial control datum. Its evidence records `deploymentTransactionRef` and `controlStateReference`.
+
+The Issue builder currently reads the B2 singleton as a reference input; the inspected Issue construction does not consume and recreate B2 in the Issue transaction. Other control transitions may exist elsewhere and would need their own replay if the state changes.
+
+**Consequence:** the B2 producer has a concrete initial state-materialization pair for its deployment run. Do not assume that it remains the current state output forever.
+
+### 9.4 PrizeValidator population
+
+The production Issue path in `src/mint.ts` creates a new Pending PrizeDatum output at `prizeAddress` using `payToContract`; the transaction comment explicitly describes the PrizeValidator side as `(no input) → Pending PrizeDatum`. The same Issue transaction mints/delivers the Ticket NFT and advances Counter/Pool/V3 state.
+
+The direct-USDM bootstrap producer derives and records the PrizeValidator address/hash, but its manifest `utxos` block records only the Pool reference. It does not create a PrizeDatum population output as part of that B1 Pool bootstrap.
+
+**Consequence:** there is no single PrizeValidator population materialization out-ref in the inspected direct-USDM producer. Each Issue creates a population member. Population history must start from an explicitly defined Issue activation boundary and account for every Issue-created PrizeDatum plus its subsequent lifecycle transitions. The script/reference-script publication event, if one exists, is a different artifact/materialization role and must not be substituted for the first ticket output.
+
+### 9.5 Counter
+
+The inspected direct-USDM bootstrap records `counterAddress` and `counterHash` in topology, but its `utxos` record contains only `pool`. The source regression test `preprod-direct-usdm-counter-address-evidence.test.mjs` explicitly asserts that Counter address evidence is not promoted to a Counter UTxO/materialization reference.
+
+The production Issue path reads exactly one Counter UTxO, consumes it, and creates the continuation at the same address with datum `n + 1` in the same Issue transaction. The inspected producer set does not establish the origin transaction/output for the Counter UTxO that must exist before the first Issue.
+
+**Consequence:** Counter's first state origin remains an evidence gap. Do not label the first observed Counter UTxO as its deployment materialization unless its origin is recovered and independently verified. The first Issue transition can only extend a known origin; it cannot retrospectively prove that origin.
+
+### 9.6 Consolidated result
+
+| Component | What current source establishes | What it does not establish |
+|---|---|---|
+| PrizeValidator | Script/address identity; each Issue creates a Pending population output | One population-wide deployment out-ref; full Issue-history boundary/completeness |
+| B1 Pool | Pool singleton state output on fresh bootstrap; exact current ref in manifest | Original creation provenance on reuse path; full post-bootstrap transition lineage |
+| Counter | Script/address identity; one current UTxO required; Issue consumes and recreates it | Origin transaction/output for the pre-first-Issue Counter state |
+| V3 | Explicit initial datum; deployment transaction and initial state output references | Authority authentication or later transition replay |
+| B2 | Explicit initial datum; deployment transaction and initial state output references | Authority authentication or later transition replay |
+
+This audit narrows the open design question: the v0.1 requirement for a non-empty `deploymentTxOutRef` on every component is not satisfiable from the currently inspected producer outputs without either (a) inventing a reference, (b) mislabelling a current observation as initial materialization, or (c) changing the contract to support typed materialization roles and population/initial-state origins. None of those changes is made here.
+
+The correct current disposition is to preserve missing origins as `UNKNOWN / NOT PROVIDED`, keep C1 OPEN, and obtain the missing Counter-origin and PrizeValidator population-boundary evidence before designing a production lineage verifier.
