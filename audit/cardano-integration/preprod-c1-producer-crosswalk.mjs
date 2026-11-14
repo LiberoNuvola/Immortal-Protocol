@@ -177,12 +177,12 @@ async function main() {
     loadArtifact(INPUTS.b2Control, value => value.deployment === 'PRE-RICH-B2-CONTROL-PREPROD-001'),
   ])
   const report = buildC1ProducerCrosswalk({ directUsdm, v3Carrier, b2Control })
-  process.stdout.write(JSON.stringify(report, null, 2) + '\\n')
+  process.stdout.write(JSON.stringify(report, null, 2) + '\n')
 }
 
 if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
   main().catch(error => {
-    process.stderr.write(String(error?.stack ?? error) + '\\n')
+    process.stderr.write(String(error?.stack ?? error) + '\n')
     process.exitCode = 1
   })
 }
