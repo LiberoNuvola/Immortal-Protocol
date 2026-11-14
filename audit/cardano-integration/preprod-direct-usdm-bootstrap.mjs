@@ -393,6 +393,7 @@ const manifest = {
   },
   topology: {
     counterHash: scripts.counterHash,
+    counterAddress: scripts.counterAddress,
     registryHash: scripts.registryHash,
     treasuryHash: scripts.treasuryHash,
     prizeHash: scripts.prizeHash,
