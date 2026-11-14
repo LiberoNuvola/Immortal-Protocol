@@ -86,6 +86,9 @@ jobs:
       - name: Test fail-closed five-component C1 acquired-point observer
         run: node --test audit/cardano-integration/preprod-c1-acquired-point-observer.test.mjs
 
+      - name: Test deterministic C1 Ogmios cardinality decoder
+        run: node --test audit/cardano-integration/preprod-c1-cardinality-decoder.test.mjs
+
       - name: Install isolated Preprod probe dependencies
         run: npm install --prefix audit/cardano-integration
 
