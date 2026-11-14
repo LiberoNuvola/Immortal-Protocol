@@ -197,3 +197,24 @@ The production Issue path reads exactly one Counter UTxO, consumes it, and creat
 This audit narrows the open design question: the v0.1 requirement for a non-empty `deploymentTxOutRef` on every component is not satisfiable from the currently inspected producer outputs without either (a) inventing a reference, (b) mislabelling a current observation as initial materialization, or (c) changing the contract to support typed materialization roles and population/initial-state origins. None of those changes is made here.
 
 The correct current disposition is to preserve missing origins as `UNKNOWN / NOT PROVIDED`, keep C1 OPEN, and obtain the missing Counter-origin and PrizeValidator population-boundary evidence before designing a production lineage verifier.
+
+
+### 9.7 Counter-origin follow-up — no production initializer identified
+
+A second source pass examined the complete tracked path inventory for the reviewed branch, the Preprod bootstrap workflow, the Counter validator, the script-topology builder, the Issue builder, and the Counter lookalike characterization.
+
+Observed source behavior:
+
+- `src/loadValidator.ts` loads the unparameterized CounterValidator and derives its script hash/address as part of the topology. It does not submit a transaction or create a Counter state output.
+- `plutus/CounterValidator.hs` validates a spend transition from the current datum to exactly one output carrying `current + 1`, with the script-address output/value-preservation checks. It is not an initializer.
+- `src/mint.ts` queries the derived Counter address, fails if there are zero UTxOs, and fails unless there is exactly one. It decodes that existing datum, then consumes the input and creates the `n + 1` continuation in the Issue transaction. It does not create the initial Counter output.
+- `audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs` records `counterHash` and `counterAddress` in topology only. Its `utxos` section records only the Pool reference. The corresponding workflow does not invoke a Counter initializer.
+- `audit/cardano-integration/counter-lookalike-ledger-trace.ts` does create a canonical-address-shaped output with datum zero, but only on an isolated local Yaci ledger for a payment-credential/lookalike characterization. The same test creates two alternate-stake-credential lookalikes and spends those lookalikes. This is not a Preprod deployment producer, does not establish the production Counter origin, and must not be reused as that evidence.
+
+Conclusion for the reviewed branch: no production Counter initialization workflow or producer was identified in the inspected tracked source. The source establishes the required runtime shape and subsequent transition, but not how the initial Preprod Counter UTxO was created. This is a concrete provenance gap, not proof that no such output exists on-chain or that no external/manual producer was ever used.
+
+Evidence disposition remains unchanged:
+- Counter origin transaction/output: `UNKNOWN / NOT PROVIDED`.
+- Do not treat the first observed current Counter UTxO as its initial materialization without origin evidence.
+- Do not add a Counter initializer or alter the Issue/validator path as part of this audit.
+- C1 remains OPEN; no live-chain lookup, transaction, deployment, or semantic change was performed.
