@@ -39,7 +39,7 @@ function fixture() {
   }
 }
 
-test('matches one receipt to one current PrizeDatum by ticket identity and Issue transaction', () => {
+test('matches one receipt to one current PrizeDatum by immutable ticket identity', () => {
   const { journal, ledger } = fixture()
   const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
   assert.equal(result.qualification.identityCrosswalkComplete, true)
@@ -48,6 +48,8 @@ test('matches one receipt to one current PrizeDatum by ticket identity and Issue
   assert.equal(result.qualification.protectedCapitalSourceCompletenessAuthorityVerified, false)
   assert.equal(result.counts.matchedCount, 1)
   assert.equal(result.matched[0].ticketUnit, UNIT)
+  assert.equal(result.matched[0].issueTransactionHash, TX)
+  assert.equal(result.matched[0].currentPrizeDatumUtxoTransactionHash, TX)
   assert.equal(result.matched[0].r7Cell, 'L3')
 })
 
@@ -75,12 +77,14 @@ test('reports a current datum without a matching receipt without inferring it wa
   assert.equal(result.ledgerWithoutReceipt[0].status, 'CURRENT_PRIZEDATUM_WITHOUT_MATCHING_OBSERVED_RECEIPT')
 })
 
-test('blocks a matching ticket identity whose PrizeDatum UTxO was created by another transaction', () => {
+test('accepts a current PrizeDatum recreated by a later lifecycle transaction while retaining Issue provenance', () => {
   const { journal, ledger } = fixture()
-  ledger.items[0].utxoReference = 'b2'.repeat(32) + '#0'
+  const currentUtxoTx = 'b2'.repeat(32)
+  ledger.items[0].utxoReference = currentUtxoTx + '#0'
   const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
-  assert.equal(result.qualification.identityCrosswalkComplete, false)
-  assert.equal(result.qualification.blockers[0], 'TICKET_IDENTITY_ISSUE_TRANSACTION_MISMATCH:' + UNIT)
+  assert.equal(result.qualification.identityCrosswalkComplete, true)
+  assert.equal(result.matched[0].issueTransactionHash, TX)
+  assert.equal(result.matched[0].currentPrizeDatumUtxoTransactionHash, currentUtxoTx)
 })
 
 test('rejects duplicate ticket identities in the receipt source', () => {
