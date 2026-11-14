@@ -44,6 +44,8 @@ test('matches one receipt to one current PrizeDatum by ticket identity and Issue
   const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
   assert.equal(result.qualification.identityCrosswalkComplete, true)
   assert.equal(result.qualification.economicPostingQualified, false)
+  assert.equal(result.qualification.treasuryJournalHistoryCompletenessVerified, false)
+  assert.equal(result.qualification.protectedCapitalSourceCompletenessAuthorityVerified, false)
   assert.equal(result.counts.matchedCount, 1)
   assert.equal(result.matched[0].ticketUnit, UNIT)
   assert.equal(result.matched[0].r7Cell, 'L3')
