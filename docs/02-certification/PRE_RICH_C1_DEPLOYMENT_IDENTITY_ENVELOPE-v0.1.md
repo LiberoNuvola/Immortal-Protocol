@@ -147,7 +147,7 @@ The envelope verifier and C1 adapter must reject:
 9. Counter with zero or multiple UTxOs at its configured address;
 10. PrizeValidator incorrectly treated as a singleton, or an unclassified PrizeValidator UTxO omitted from the population;
 11. any component queried outside the acquired point or after release;
-12. a live UTxO reference/value/datum that differs from the signed deployment record's expected materialization.
+12. a live UTxO whose identity, value or datum violates the component's declared state/cardinality contract, or whose lineage cannot be established where lineage is required. A live state UTxO reference is not required to equal the original deployment materialization out-ref after a legitimate state transition.
 
 ## 8. Ownership and non-goals
 
@@ -167,3 +167,27 @@ Accordingly, this C1 addendum states the evidence properties that a future autho
 The C1 producer must therefore remain fail-closed while GOV-30's relevant authority decisions are unresolved. It may continue read-only source inspection and identity-consistency checks, but must not label a deployment authority-authenticated or promote a self-hash, wallet signature, workflow run, branch protection setting, or artifact attestation alone into deployment authorization.
 
 This dependency is deliberately separate from the five-address acquired-point mechanics. The latter can be implemented and fixture-tested as a read-only observer once its input identity records are supplied; a successful observer run still cannot close deployment authority or PA1–PA7 without the governed reliance decision.
+
+
+## 10. Out-reference semantics — materialization, observation and lineage
+
+The field `deploymentTxOutRef` in v0.1 is interpreted strictly as the **deployment materialization output reference**: the transaction output that originally created the component's deployment/state surface. It is immutable provenance evidence. It is not a promise that the same output remains unspent at every later acquired ledger point.
+
+The acquired-point observer separately records **observed state UTxO references** from the live query:
+
+- PrizeValidator: the complete set of observed address UTxO references; zero, one or many rows are possible, with population completeness and classification evaluated separately.
+- Counter: the sole observed address UTxO reference under the current reader contract; exactly one UTxO is required.
+- B1 Pool, V3 carrier and B2 control: the observed UTxO reference(s) carrying the exact configured singleton unit; exactly one holder with quantity one is required. Other address UTxOs, if any, remain visible and are not silently conflated with the singleton holder.
+
+The observer's `utxoReferences` / raw Ogmios rows are observations at `acquiredLedgerState`. They must not overwrite or be relabelled as `deploymentTxOutRef`.
+
+A stateful component may be consumed and recreated by a legitimate protocol transition. Therefore:
+
+1. equality between `deploymentTxOutRef` and a current observed state out-ref is expected only while the original materialization output remains unspent;
+2. inequality is not, by itself, evidence of a deployment mismatch or invalid state;
+3. where the component has transitioned, a separate **state-lineage evidence** record is needed to connect the current observed UTxO to the authorized deployment generation (for example, a replayable transaction chain or another independently verified lineage proof);
+4. the v0.1 observer does not produce or verify that lineage proof. It reports current observations only and must leave lineage qualification false/unknown unless supplied and independently checked by a separate verifier.
+
+For the Counter, the same distinction applies even though its cardinality contract is address-based rather than singleton-token-based. Its current unique UTxO reference is an observation; the Counter deployment materialization reference is provenance. A static/unparameterized script does not eliminate the need to distinguish those two facts.
+
+This section clarifies the meaning of existing v0.1 fields and observations. It does not add a new required field, change an ABI, select a lineage mechanism, or authorize changes to the observer, deployment scripts or on-chain state. Until a lineage evidence format and verifier are separately reviewed, C1 must not claim that current state has been proven to descend from the authorized deployment merely because the address, datum or singleton token matches.
