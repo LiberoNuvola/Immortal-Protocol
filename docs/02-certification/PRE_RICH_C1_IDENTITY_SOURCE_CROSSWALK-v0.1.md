@@ -25,7 +25,7 @@ Therefore **C1 remains OPEN**. Do not fill missing fields with inferred or copie
 |---|---|---|---|
 | PrizeValidator | `audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs` → direct-USDM deployment manifest; B1 script provenance artifact | Prize script hash, Prize address, Ticket policy ID, deployment manifest hash | No external authority attestation; no unified C1 deployment ID; script artifact digest and parameter digest not emitted as a governed identity record; historical address provenance still requires revalidation |
 | B1 Pool | Same direct-USDM deployment manifest and live B1 Pool observation | B1 script hash/address, Pool singleton policy/name/unit, bootstrap transaction, observed Pool UTxO ref and direct-USDM unit | Manifest self-hash is not signature authentication; no complete signed/attested five-component generation; parameter and artifact digests not bound into a common authority record |
-| Counter | Direct-USDM manifest topology includes `counterHash`; Counter validator source is `plutus/CounterValidator.hs` | Counter script hash exists in topology | No Counter address in that topology record; no deployment transaction/out-ref for the Counter script materialization in the inspected manifest; no common deployment-generation binding. Do not invent a Counter singleton token |
+| Counter | Direct-USDM manifest topology includes `counterHash` and `counterAddress`; Counter validator source is `plutus/CounterValidator.hs` | Counter script hash and address derived by `buildScriptsFromLucid()` are now persisted in the topology record | No Counter deployment transaction/out-ref for script materialization in the inspected manifest; no common deployment-generation binding; the address is derived identity only, not authority or proof of a live UTxO. Do not invent a Counter singleton token |
 | V3 carrier | `scripts/deployV3Carrier.mts` → `audit/preprod-issue/v3-carrier-deployment.json` | Preprod network, seed ref, policy ID, token name, unit, carrier address, deployment transaction, state UTxO ref, signer address, authority public key, initial datum | Separate deployment record; no shared C1 deployment ID/source commit/attestation; no explicit script artifact digest or parameter digest in emitted evidence; no governed binding to Prize/B1/Counter/B2 |
 | B2 control | `scripts/deployPreRichControlCarrier.mts` → `audit/preprod-issue/b2-control-deployment.json` | Preprod network, seed ref, policy ID, token name, unit, control address, deployment transaction, state UTxO ref, signer address, control authority PKH, initial datum/state | Separate deployment record; no shared C1 deployment ID/source commit/attestation; no explicit script artifact digest or parameter digest in emitted evidence; no governed binding to Prize/B1/Counter/V3 |
 
@@ -35,7 +35,7 @@ Therefore **C1 remains OPEN**. Do not fill missing fields with inferred or copie
 
 The direct-USDM producer writes a manifest with schema `IMMORTAL-PREPROD-DIRECT-USDM-DEPLOYMENT-v0.1`, network `cardano-preprod`, profile candidate `PRE-RICH-EEV-USDM-DIRECT-V1`, bootstrap transaction, B1 singleton policy/name, direct-USDM unit, topology hashes and Prize/B1 addresses, plus the B1 Pool UTxO reference.
 
-The topology object contains `counterHash`, `registryHash`, `treasuryHash`, `prizeHash`, `b1PrizePoolHash`, `ticketPolicyId`, `prizeAddress` and `b1PrizePoolAddress`. It does **not** contain a Counter address or Counter deployment out-ref.
+The topology object now contains `counterHash`, `counterAddress`, `registryHash`, `treasuryHash`, `prizeHash`, `b1PrizePoolHash`, `ticketPolicyId`, `prizeAddress` and `b1PrizePoolAddress`. `counterAddress` is copied from the address already derived by `buildScriptsFromLucid()`; it is not a Counter deployment out-ref, live observation, or authorization proof. The manifest still does not contain a Counter materialization reference.
 
 The existing identity loader explicitly labels manifest integrity as `SELF_HASH_MATCH_NOT_SIGNATURE_AUTHENTICATION` and `manifestAuthorityCryptographicallyVerified=false`. This is the correct fail-closed interpretation.
 
@@ -49,7 +49,7 @@ The B2 producer derives the minting policy from its selected seed reference and 
 
 ### 3.4 Counter
 
-The C1 cardinality contract correctly treats Counter as exactly one UTxO at its configured/re-derived address and does not invent a Counter singleton asset. The current direct-USDM manifest only contributes the Counter validator hash. The missing Counter address and materialization provenance are therefore a real identity-envelope gap, not a reason to add a new token convention.
+The C1 cardinality contract correctly treats Counter as exactly one UTxO at its configured/re-derived address and does not invent a Counter singleton asset. The direct-USDM manifest now contributes the Counter validator hash and the address derived alongside it by `buildScriptsFromLucid()`. Counter materialization provenance remains absent and must be independently observed; this is not a reason to add a new token convention.
 
 ## 4. Observer boundary
 
