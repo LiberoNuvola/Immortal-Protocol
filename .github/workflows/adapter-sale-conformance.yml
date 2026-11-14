@@ -27,6 +27,8 @@ jobs:
         run: npx vitest run src/__tests__/treasuryIdentity.test.ts
       - name: Run read-only Treasury receipt journal contract tests
         run: node --test audit/cardano-integration/treasury-receipt-journal.test.mjs
+      - name: Run C1 Counter address evidence boundary regression
+        run: node --test audit/cardano-integration/preprod-direct-usdm-counter-address-evidence.test.mjs
       - name: Pyth USD/USDM candidate formula vectors (not authoritative)
         run: npx vitest run Adapter/CARDANO/observation/PythAdaUsdConversionCandidate.test.ts
       - run: npx vitest run src/wallet.test.ts src/__tests__/cardano-execution-adapter.test.ts src/__tests__/caes-transition-closure.test.ts src/__tests__/immortal-reveal-conformance.test.ts src/__tests__/rf8-submission-boundary.test.ts src/__tests__/rf8-treasury-relayer-boundary.test.ts Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts Adapter/CARDANO/observation/CardanoObservedTransitionEvidence.test.ts Adapter/CARDANO/observation/ExecutableLiquidityObservation.test.ts Adapter/CARDANO/observation/Cip113ProgrammableTokenBoundary.test.ts Adapter/CARDANO/observation/Cip113PreRichIsolation.test.ts Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts src/__tests__/issueIntent.test.ts src/__tests__/issueSettlementConformance.test.ts src/__tests__/authoritativeIssueEntrypoint.test.ts
