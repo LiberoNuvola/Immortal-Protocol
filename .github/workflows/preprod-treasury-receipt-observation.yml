@@ -16,6 +16,9 @@ on:
       - "audit/cardano-integration/preprod-protected-capital-census.mjs"
       - "audit/cardano-integration/preprod-protected-capital-deployment-identity.mjs"
       - "audit/cardano-integration/preprod-protected-capital-deployment-identity.test.mjs"
+      - "audit/cardano-integration/treasury-protected-capital-reconciliation.mjs"
+      - "audit/cardano-integration/treasury-protected-capital-reconciliation.test.mjs"
+      - "audit/cardano-integration/reconcile-treasury-protected-capital.mjs"
       - "src/loadValidator.ts"
       - "src/gameRules.ts"
   workflow_dispatch:
