@@ -317,4 +317,46 @@ describe('PRE-RICH ProtectedCapital item ledger — read-only source census', ()
     expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(true)
   })
 
+  it('classifies a Revealed payout above 500x as L6 even when the Pool aggregate matches', () => {
+    const census = baseCensus()
+    census.records[3] = {
+      ...census.records[3],
+      prizeAmountUsdmSubunits: 50_001n,
+    }
+    census.pool.pendingLiabilitiesUsdmSubunits = 50_001n
+
+    const ledger = buildPreRichProtectedCapitalItemLedger(census)
+
+    expect(ledger.items[3].r7Cell).toBe('L6')
+    expect(ledger.items[3].classificationReason).toContain('exceeds the canonical 500x')
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
+  })
+
+  it('classifies a Revealed ticket with a non-canonical price as L6', () => {
+    const census = baseCensus()
+    census.records[3] = {
+      ...census.records[3],
+      priceUsdmSubunits: 150n,
+    }
+
+    const ledger = buildPreRichProtectedCapitalItemLedger(census)
+
+    expect(ledger.items[3].r7Cell).toBe('L6')
+    expect(ledger.items[3].classificationReason).toContain('not in the canonical PRE-RICH ladder')
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
+  })
+
+  it('does not classify a Claimed record above 500x as settled L4', () => {
+    const census = baseCensus()
+    census.records[5] = {
+      ...census.records[5],
+      prizeAmountUsdmSubunits: 100_001n,
+    }
+
+    const ledger = buildPreRichProtectedCapitalItemLedger(census)
+
+    expect(ledger.items[5].r7Cell).toBe('L6')
+    expect(ledger.qualification.ticketLedgerInternallyReconciled).toBe(false)
+  })
+
 })
