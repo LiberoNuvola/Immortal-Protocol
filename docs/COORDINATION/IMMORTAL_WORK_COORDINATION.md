@@ -7503,3 +7503,18 @@ Il run `43679611905` resta `IN_PROGRESS` (conclusion `null`), sul source SHA `63
 **Disposition:** Haskell Semantic Conformance = **SUCCESS**; BeaconRegistry adversarial CEK harness = **SUCCESS con finding CHARACTERIZATION**; Counter Yaci test = **HARNESS FAILURE pre-submit, API incompatibility identified, repair not applied**; T04 size experiment = **IN PROGRESS**; Registry authenticity = **BLOCKED**.
 
 **Non-effects:** nessun file di protocollo o di harness modificato in questa nota; nessun ABI, script, validator, MintPolicy, Factory, V3/Reveal, economic rule, B2, Treasury o Materios change. Nessuna transazione, firma, wallet, Preprod/Mainnet query, deployment o ticket issuance.
+
+
+## 46.01 AGENT A — FIRST PREPROD ISSUE GATE RECONCILIATION (2026-11-15)
+
+**Audit HEAD before note:** `8b301e95795e98d7066103debb81ce0693080202`  
+**Report:** `docs/COORDINATION/AGENT-A-FIRST-PREPROD-ISSUE-GATE-RECONCILIATION-2026-11-15.md`  
+**Classification:** READ-ONLY SOURCE / EVIDENCE RECONCILIATION; NO IMPLEMENTATION AUTHORITY.
+
+**Disposition:** **NO-GO — first real Preprod Issue remains blocked.** Agent B's 2026-11-15 adversarial evidence reclassifies B1 Registry identity as **BLOCKED / P0**: the current Issue MintPolicy accepts a buyer-controlled Pending Registry reference based on payment ScriptHash and datum contents, without authenticating Registry identity/lineage. Independently, R1/Kc/authoritative Ω certification remains missing; the actual S0 Issue action erodes the direct-EEV margin by 500 RU.
+
+The read-only readiness script does not verify either of those two gates. `READY_FOR_WALLET_REVIEW` is not a transaction authorization or a security go/no-go. The detailed source chain, evidence limits, ownership and closure order are recorded in the linked Agent A report.
+
+**Ownership:** Agent B — B1 Registry identity and consumer enforcement; Agent A — deployment-bound R1/Kc/Ω certificate. Revalidate live Direct-USDM EEV, Oracle and B2 evidence only after the upstream blockers have defined closure contracts.
+
+**Non-effects:** no production source, test, validator, policy, ABI, V3, Reveal, 500× rule, wallet, transaction, deployment or ledger state changed or executed.
