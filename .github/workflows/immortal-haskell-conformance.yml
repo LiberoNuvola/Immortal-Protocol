@@ -82,7 +82,7 @@ jobs:
         working-directory: plutus
         run: cabal test b1-reveal-headroom-tests --test-show-details=direct
 
-      - name: B1 Direct-USDM Claim and FundTreasury transition characterization (synthetic CEK only)
+      - name: B1 Direct-USDM Claim, FundTreasury and Reveal transition characterization (synthetic CEK only)
         working-directory: plutus
         run: cabal test b1-direct-usdm-transition-characterization-tests --test-show-details=direct
 
