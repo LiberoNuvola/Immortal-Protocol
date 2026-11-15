@@ -310,40 +310,105 @@ makeClaimContexts =
     )
 
 
--- B1-only TicketRevealed characterization. The Pool input/output baskets
--- contain only the singleton, approved tUSDM and ADA. The transaction balances
--- exactly, but diverts 1,000,000 approved tUSDM atomic units from the Pool to a
--- PubKey output while keeping ppTotalLiquidity unchanged. This deliberately
--- does NOT claim that PrizeValidator's full cryptographic Reveal predicate is
--- accepted; it isolates the B1 Pool guard against physical-value loss.
-makeRevealDrainContext :: ScriptContext
-makeRevealDrainContext =
+-- Full shared Reveal fixture with canonical commitment/beacon/game derivation.
+-- The Pool input/output baskets are EV3-canonical (singleton + approved tUSDM
+-- + ADA) and the whole TxInfo balances exactly. Both compiled validators are
+-- evaluated against this same TxInfo. The Pool loses 1,000,000 approved
+-- tUSDM atomic units while ppTotalLiquidity remains unchanged; the diverted
+-- physical asset is paid to the source PubKey output.
+revealPlayerSecret :: Builtins.BuiltinByteString
+revealPlayerSecret = rawBytes [33, 34, 35, 36]
+
+revealTarget :: BeaconTarget
+revealTarget =
+  BeaconTarget
+    { btNetworkId = 0
+    , btRound = 1
+    , btMainchainRef = rawBytes [1, 2, 3]
+    , btVersion = rawBytes [1]
+    }
+
+revealInputPrizeDatum :: PrizeDatum
+revealInputPrizeDatum =
+  (prizeDatum Pending 0)
+    { pdPlayerCommitment =
+        rawBytes
+          [ 0x98, 0x7e, 0x4d, 0x42, 0x29, 0x44, 0x22, 0x6f
+          , 0xc8, 0x0d, 0xb3, 0x5c, 0x2f, 0x47, 0x84, 0x23
+          , 0xe7, 0x21, 0x5d, 0x7f, 0x30, 0x90, 0xb7, 0xd0
+          , 0xd0, 0x18, 0x27, 0x7d, 0x00, 0xb5, 0x55, 0x05
+          ]
+    , pdPriceUsdm = 2
+    , pdCommitment =
+        rawBytes
+          [ 0x8c, 0x2e, 0x25, 0x82, 0xd9, 0x85, 0x49, 0x3c
+          , 0xc4, 0x16, 0x6e, 0x17, 0x17, 0xd8, 0x51, 0xc3
+          , 0xc6, 0x84, 0x35, 0x0c, 0x99, 0xea, 0x7e, 0xda
+          , 0x81, 0x94, 0x92, 0x70, 0xc2, 0x6c, 0xc0, 0x76
+          ]
+    , pdGameVersion = rawBytes [1]
+    , pdTicketNonce = 11
+    , pdBeaconTarget = revealTarget
+    , pdBeaconStatus = BeaconReady
+    , pdBeaconValue =
+        rawBytes
+          [ 0x69, 0xb5, 0xef, 0xa2, 0xac, 0xfd, 0xab, 0x1e
+          , 0x0f, 0x55, 0x79, 0xe9, 0xcf, 0x71, 0xc5, 0x75
+          , 0x75, 0x4c, 0x9a, 0x11, 0xe3, 0xf8, 0x38, 0x8a
+          , 0xd9, 0xcc, 0x16, 0xc4, 0xd2, 0xc9, 0x82, 0x57
+          ]
+    , pdMcHash = rawBytes (replicate 32 26)
+    , pdMateriosContext = rawBytes [27]
+    , pdRow1Tier = 0
+    , pdRow2Tier = 0
+    }
+
+revealOutputPrizeDatum :: PrizeDatum
+revealOutputPrizeDatum =
+  revealInputPrizeDatum
+    { pdStatus = Revealed
+    , pdPrizeAmount = 5
+    , pdResult =
+        rawBytes
+          [ 0x5e, 0x55, 0x0e, 0x86, 0x9d, 0xab, 0x3c, 0x71
+          , 0xaf, 0x0a, 0xfe, 0xaa, 0x4e, 0x49, 0x5e, 0x82
+          , 0x6a, 0x63, 0x0e, 0xb1, 0x01, 0x66, 0x48, 0xdd
+          , 0xb8, 0x36, 0x91, 0xfa, 0xf7, 0x98, 0x82, 0xb3
+          ]
+    , pdPrizeTier = 2
+    , pdRow1Tier = 0
+    , pdRow2Tier = 2
+    }
+
+revealInputPoolDatum :: B1PrizePoolDatum
+revealInputPoolDatum =
+  (poolDatum 1_000 0)
+    { ppUnresolvedReserve = 2
+    , ppUnresolvedTicketCount = 1
+    }
+
+revealOutputPoolDatum :: B1PrizePoolDatum
+revealOutputPoolDatum =
+  (poolDatum 1_000 5)
+    { ppUnresolvedReserve = 0
+    , ppUnresolvedTicketCount = 0
+    }
+
+makeRevealDrainContexts :: (ScriptContext, ScriptContext)
+makeRevealDrainContexts =
   let
     poolRef = TxOutRef (TxId (rawBytes [121])) 0
     prizeRef = TxOutRef (TxId (rawBytes [122])) 0
     sourceRef = TxOutRef (TxId (rawBytes [123])) 0
 
-    beforePool =
-      (poolDatum 1_000 0)
-        { ppUnresolvedReserve = 1
-        , ppUnresolvedTicketCount = 1
-        }
-    afterPool =
-      (poolDatum 1_000 200)
-        { ppUnresolvedReserve = 0
-        , ppUnresolvedTicketCount = 0
-        }
-    beforePrize = prizeDatum Pending 0
-    afterPrize = prizeDatum Revealed 200
-
     poolInput =
       TxInInfo poolRef
         (scriptOut poolHash (poolValue 10_000_000 0)
-          (PlutusTx.toBuiltinData beforePool))
+          (PlutusTx.toBuiltinData revealInputPoolDatum))
     prizeInput =
       TxInInfo prizeRef
         (scriptOut prizeHash prizeScriptValue
-          (PlutusTx.toBuiltinData beforePrize))
+          (PlutusTx.toBuiltinData revealInputPrizeDatum))
     sourceInput =
       TxInInfo sourceRef
         (pubkeyOut sourcePkh
@@ -351,10 +416,10 @@ makeRevealDrainContext =
 
     poolOutput =
       scriptOut poolHash (poolValue 9_000_000 0)
-        (PlutusTx.toBuiltinData afterPool)
+        (PlutusTx.toBuiltinData revealOutputPoolDatum)
     prizeOutput =
       scriptOut prizeHash prizeScriptValue
-        (PlutusTx.toBuiltinData afterPrize)
+        (PlutusTx.toBuiltinData revealOutputPrizeDatum)
     divertedOutput =
       pubkeyOut sourcePkh
         (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 1_000_000
@@ -375,7 +440,9 @@ makeRevealDrainContext =
         AssocMap.empty
         (TxId (rawBytes [124]))
   in
-    ScriptContext info (Spending poolRef)
+    ( ScriptContext info (Spending prizeRef)
+    , ScriptContext info (Spending poolRef)
+    )
 
 -- Historical Oracle-vs-direct FundTreasury characterization only. Its Pool output
 -- deliberately contains a foreign positive asset and is therefore NOT an
@@ -460,6 +527,30 @@ applyB1Validator datum action context =
         (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData action))
   in
     PlutusTx.unsafeApplyCode configured6
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
+
+applyPrizeReveal datum playerSecret context =
+  let
+    configured0 =
+      PlutusTx.unsafeApplyCode PrizeValidator.compiledValidatorFactory
+        (Lift.liftCode plcVersion100 registryHash)
+    configured1 =
+      PlutusTx.unsafeApplyCode configured0
+        (Lift.liftCode plcVersion100 defaultPrizeTable)
+    configured2 =
+      PlutusTx.unsafeApplyCode configured1
+        (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData oracleState))
+    configured3 =
+      PlutusTx.unsafeApplyCode configured2
+        (Lift.liftCode plcVersion100 oraclePublisher)
+    configured4 =
+      PlutusTx.unsafeApplyCode configured3
+        (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData datum))
+    configured5 =
+      PlutusTx.unsafeApplyCode configured4
+        (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData (Reveal playerSecret)))
+  in
+    PlutusTx.unsafeApplyCode configured5
       (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
 
 applyPrizeClaim datum context =
@@ -557,16 +648,14 @@ main = do
     "Claim counterexample: EV3-canonical Pool loses 200 direct subunits while owner receives zero tUSDM and an Oracle-equivalent foreign payout"
 
   let
-    revealDrainContext = makeRevealDrainContext
-    revealInputDatum =
-      (poolDatum 1_000 0)
-        { ppUnresolvedReserve = 1
-        , ppUnresolvedTicketCount = 1
-        }
-    revealAccepted =
+    (revealPrizeContext, revealPoolContext) = makeRevealDrainContexts
+    revealPrizeAccepted =
       evalAccepts
-        (applyB1Validator revealInputDatum (TicketRevealed 1) revealDrainContext)
-    revealInfo = scriptContextTxInfo revealDrainContext
+        (applyPrizeReveal revealInputPrizeDatum revealPlayerSecret revealPrizeContext)
+    revealPoolAccepted =
+      evalAccepts
+        (applyB1Validator revealInputPoolDatum (TicketRevealed 2) revealPoolContext)
+    revealInfo = scriptContextTxInfo revealPrizeContext
     revealPoolAddress = Address (ScriptCredential poolHash) Nothing
     revealPoolInputs =
       filter ((== revealPoolAddress) . txOutAddress . txInInfoResolved)
@@ -595,14 +684,15 @@ main = do
       foldr ((<>) . txOutValue) mempty (txInfoOutputs revealInfo)
 
   assert
-    revealAccepted
-    "OBSERVED B1-ONLY GAP: compiled TicketRevealed accepts a balanced transaction that diverts approved tUSDM from an EV3-canonical Pool"
+    (revealPrizeAccepted && revealPoolAccepted)
+    ("OBSERVED COMBINED GAP: compiled PrizeValidator Reveal and B1 TicketRevealed accept balanced transaction; prizeAccepted="
+      ++ show revealPrizeAccepted ++ ", poolAccepted=" ++ show revealPoolAccepted)
 
   assert
     (revealPoolInputTusdm - revealPoolOutputTusdm == 1_000_000
       && revealOwnerTusdm == 1_000_000
       && revealTotalInputValue == revealTotalOutputValue)
-    "Reveal drain fixture: Pool loses exactly 1,000,000 tUSDM atomic units, owner receives them, and full transaction Value balances"
+    "Reveal drain fixture: canonical Prize/Pool Value balances, but 1,000,000 approved tUSDM atomic units leave the Pool and reach a PubKey output"
 
   let
     fundContext = makeFundContext
@@ -622,7 +712,7 @@ main = do
       && fundDirectDelta == -100)
     "Non-EV3 FundTreasury characterization: Oracle accounting rises 10 RU while direct EEV falls 1 RU"
 
-  putStrLn "ALL B1 DIRECT-USDM CLAIM / FUND TREASURY CEK CHARACTERIZATIONS PASSED"
+  putStrLn "ALL B1 DIRECT-USDM CLAIM / FUND TREASURY / REVEAL CEK CHARACTERIZATIONS PASSED"
 
 assert :: Bool -> String -> IO ()
 assert condition label =
