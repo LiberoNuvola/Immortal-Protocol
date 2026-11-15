@@ -7431,3 +7431,21 @@ The matrix cites the exact local Lab run `43678893383`, source SHA `53edd6117796
 **Disposition:** do not report the current B1 Registry implementation as release-green. The B1 authorized-publisher mode remains a named trust profile, but an authenticated Registry instance has not been established. Registry identity and Issue/SyncBeacon read authenticity stay blocking. Trustless Factory also remains unavailable until G1 governance/configuration and G2 canonical target derivation are resolved.
 
 **Non-effects:** no validator, MintPolicy, Datum/ABI, Factory, relayer, V3, Reveal, B2, economic rule, Treasury or Materios source changed. No code or workflow changed; no transaction, key, wallet, Preprod/Mainnet query, signing, deployment or ticket issuance occurred.
+
+
+## 46.00 AGENT B — HASKELL SEMANTIC CONFORMANCE BEACONREGISTRY STEP COMPLETED (2026-11-15)
+
+**Workflow:** `Haskell Semantic Conformance`, run `43678893331`  
+**Source SHA:** `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`  
+**Job:** `132704991081` (`haskell-conformance`)  
+**Step 8:** `BeaconRegistry adversarial characterization (CEK only)`  
+**Conclusion at poll:** **SUCCESS**  
+**Overall workflow at poll:** **IN_PROGRESS**, next step `Beacon commitment cross-language conformance`.
+
+This is a second independent workflow execution of the registered Cabal adversarial suite, in addition to the already observed PASS inside Cardano Lab run `43678893383`. It confirms that the Haskell conformance workflow now actually invokes the BeaconRegistry CEK suite. It remains a CEK-only characterization; all positive `CHARACTERIZATION` outcomes described in §45.97/§45.98 remain security findings, not successful security properties.
+
+The overall workflow is not complete, and no final workflow conclusion is claimed.
+
+**T04 size experiment:** run `43679611905`, job `132707159426`, remains **IN_PROGRESS** at step 8 `Compile, measure baseline, then compare the isolated candidate`. Restore and artifact-upload steps are still pending; no candidate byte count or final clean-worktree evidence is yet available.
+
+**Non-effects:** no source, ABI, validator, mint policy, transaction, wallet, deployment, Preprod/Mainnet or protocol parameter changed in this observation.
