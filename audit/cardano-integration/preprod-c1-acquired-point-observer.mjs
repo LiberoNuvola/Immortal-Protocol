@@ -9,6 +9,7 @@
  * Candidate inputs remain untrusted until the GOV-30 authority chain exists.
  */
 
+import { createHash } from 'node:crypto'
 import { decodeC1ComponentCardinality } from './preprod-c1-cardinality-decoder.mjs'
 
 export const C1_COMPONENT_IDS = Object.freeze([
@@ -20,6 +21,33 @@ export const C1_COMPONENT_IDS = Object.freeze([
 ])
 
 const SINGLETON_COMPONENTS = new Set(['b1Pool', 'v3Carrier', 'b2Control'])
+
+/**
+ * Deterministic JSON canonicalization for parsed Ogmios result objects.
+ * This digest binds the parsed response, not the original WebSocket wire bytes.
+ * Unsafe numeric values are rejected because JSON.parse would already have
+ * lost their exact integer representation.
+ */
+export function canonicalJson(value) {
+  if (value === null) return 'null'
+  if (typeof value === 'string' || typeof value === 'boolean') return JSON.stringify(value)
+  if (typeof value === 'number') {
+    if (!Number.isSafeInteger(value)) {
+      throw new Error('C1_OBSERVER_CANONICAL_JSON_NUMBER_INVALID')
+    }
+    return JSON.stringify(value)
+  }
+  if (Array.isArray(value)) return '[' + value.map(canonicalJson).join(',') + ']'
+  if (typeof value === 'object') {
+    const keys = Object.keys(value).sort()
+    return '{' + keys.map(key => JSON.stringify(key) + ':' + canonicalJson(value[key])).join(',') + '}'
+  }
+  throw new Error('C1_OBSERVER_CANONICAL_JSON_VALUE_UNSUPPORTED')
+}
+
+export function sha256CanonicalJson(value) {
+  return createHash('sha256').update(canonicalJson(value), 'utf8').digest('hex')
+}
 
 function requiredString(value, field) {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -76,10 +104,18 @@ export function validateC1CandidateIdentityEnvelope(envelope) {
     if (component.paymentCredentialKind !== 'script') {
       throw new Error('C1_IDENTITY_PAYMENT_CREDENTIAL_KIND_INVALID:' + componentId)
     }
-    requiredHex(component.paymentCredentialHash, 28, componentId + '_PAYMENT_CREDENTIAL_HASH')
-    requiredHex(component.derivedScriptHash, 28, componentId + '_DERIVED_SCRIPT_HASH')
+    const paymentCredentialHash = requiredHex(component.paymentCredentialHash, 28, componentId + '_PAYMENT_CREDENTIAL_HASH')
+    const derivedScriptHash = requiredHex(component.derivedScriptHash, 28, componentId + '_DERIVED_SCRIPT_HASH')
+    if (paymentCredentialHash !== derivedScriptHash) {
+      throw new Error('C1_IDENTITY_PAYMENT_CREDENTIAL_DERIVED_HASH_MISMATCH:' + componentId)
+    }
+    requiredHex(component.scriptArtifactDigest, 32, componentId + '_SCRIPT_ARTIFACT_DIGEST')
     requiredHex(component.parameterDigest, 32, componentId + '_PARAMETER_DIGEST')
-    requiredString(component.deploymentTxOutRef, componentId + '_DEPLOYMENT_TX_OUT_REF')
+    const deploymentTxOutRef = requiredString(component.deploymentTxOutRef, componentId + '_DEPLOYMENT_TX_OUT_REF')
+    const deploymentRefMatch = /^([0-9a-f]{64})#(0|[1-9][0-9]*)$/i.exec(deploymentTxOutRef)
+    if (!deploymentRefMatch || !Number.isSafeInteger(Number(deploymentRefMatch[2]))) {
+      throw new Error('C1_IDENTITY_DEPLOYMENT_TX_OUT_REF_INVALID:' + componentId)
+    }
 
     if (SINGLETON_COMPONENTS.has(componentId)) {
       requiredHex(component.singleton?.policyId, 28, componentId + '_SINGLETON_POLICY_ID')
@@ -126,11 +162,14 @@ export async function observeC1ComponentsAtAcquiredPoint({
   const identity = validateC1CandidateIdentityEnvelope(identityEnvelope)
   const acquiredPoint = { ...ledgerSession.point }
   const observations = {}
+  const identityEnvelopeCanonicalJsonSha256 = sha256CanonicalJson(identityEnvelope)
 
   for (const component of identity.components) {
-    const raw = await ledgerSession.query('queryLedgerState/utxo', {
-      addresses: [component.address],
-    })
+    const query = {
+      method: 'queryLedgerState/utxo',
+      params: { addresses: [component.address] },
+    }
+    const raw = await ledgerSession.query(query.method, query.params)
     if (!Array.isArray(raw)) {
       throw new Error('C1_OBSERVER_UTXO_RESPONSE_NOT_ARRAY:' + component.componentId)
     }
@@ -145,8 +184,11 @@ export async function observeC1ComponentsAtAcquiredPoint({
     })
     observations[component.componentId] = {
       address: component.address,
+      query,
+      queryCanonicalJsonSha256: sha256CanonicalJson(query),
       rawUtxoCount: raw.length,
       rawOgmiosUtxoResult: raw,
+      rawOgmiosUtxoResultCanonicalJsonSha256: sha256CanonicalJson(raw),
       cardinality,
       cardinalityStatus: cardinality.cardinalityStatus,
     }
@@ -159,6 +201,9 @@ export async function observeC1ComponentsAtAcquiredPoint({
     sourceCommit: identity.sourceCommit,
     acquiredLedgerState: acquiredPoint,
     queryConsistency: 'ONE_ACQUIRED_OGMIOS_LEDGER_STATE',
+    digestAlgorithm: 'SHA256_CANONICAL_JSON_V1',
+    digestScope: 'PARSED_JSON_OBJECTS_NOT_ORIGINAL_WEBSOCKET_WIRE_BYTES',
+    identityEnvelopeCanonicalJsonSha256,
     componentOrder: [...C1_COMPONENT_IDS],
     observations,
     identityConsistency: identity.identityConsistency,
