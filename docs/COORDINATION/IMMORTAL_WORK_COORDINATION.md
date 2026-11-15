@@ -7288,3 +7288,87 @@ The Cardano Integration Lab run remained `in_progress` after the B0 step, at the
 **Disposition:** **T01b and RegistryPublish characterization: LOCAL YACI STEP SUCCESS.** Haskell V2 T04 remains **RESOURCE BLOCKED / NOT RUN** until size feasibility is demonstrated; Registry authenticity remains **BLOCKED**; no GREEN promotion.
 
 **Non-effects:** no Registry/Prize validator, datum/redeemer ABI, production deployment, Preprod/Mainnet network, wallet secret, economic policy, V3/Reveal semantics, B2, Treasury or Materios code changed. No production signing or ticket issuance took place.
+
+
+## 45.97 AGENT B — T01b YACI / HASKELL CEK / AIKEN V3 SYNCBEACON RISULTATI (2026-11-15)
+
+**Branch HEAD verificato prima della registrazione:** `467bab6b2cf5f9928362a50205b94b091b046701`  
+**Lab run:** `43678893383` — run #2763 — source SHA `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`  
+**Job:** `132705524504` (`devnet-integration`)  
+**Classificazione:** EVIDENZA LOCALE YACI + HASKELL CEK + DIAGNOSTICA HARNESS; NESSUNA MODIFICA DI PROTOCOLLO.
+
+### 45.97.1 T01b Registry: risultato Yaci completato e verificato
+
+Il passo `beacon_registry_b0_yaci` (step 29 nel job) ha concluso **SUCCESS**. Il suo output registrato nei log riporta:
+
+- `beaconRegistryB0Yaci = CHARACTERIZATION_COMPLETED`;
+- bootstrap transaction: `b422b4ce0c3a853509726da1626f8cef270109c1b8ded80a9cddd10c9b41112b`;
+- Value-delta RegistryPublish: `6635439c6b18b553faab3d17a013ee11bececad0674d80029101ac02b4bc60a6`;
+- round-mismatch RegistryPublish: `96589f1ec06cce7723ffcc5fa5e41ee063049ababd7eb67de92aace4c6c888a7`;
+- Registry Value: **6,000,000 → 5,000,000 lovelace**; wallet return osservato;
+- il Pending concorrente è rimasto non speso.
+
+Il passo è riuscito dopo aver verificato la creazione ordinaria dei Pending e di un output Registry Ready-shaped senza esecuzione del validator Registry. È quindi prova ledger locale del fatto che la sola destinazione all'indirizzo con quel payment ScriptHash non autentica provenienza o stato. Il RegistryPublish bilanciato ha inoltre accettato la riduzione di Value e la discrepanza `brRound=41` / `btRound(target)=42`. Questi sono risultati **CHARACTERIZATION**, non comportamento approvato.
+
+### 45.97.2 Haskell V2 adversarial CEK suite: PASS esecutivo, non security approval
+
+Nello stesso job la suite `beacon-registry-adversarial-tests` ha concluso **PASS** (1/1 test suite). Le asserzioni osservate comprendono:
+
+- RegistryPublish: PASS su signer designato; rifiuto di firma mancante, Beacon non derivato, input Registry aggiuntivo, output duplicati, commitment vuoto e contesto Materios vuoto;
+- CHARACTERIZATION: RegistryPublish accetta `brRound /= btRound(target)`;
+- CHARACTERIZATION: RegistryPublish accetta una variazione di Value nell'output continuativo nel contesto CEK sintetico (contesto non bilanciato);
+- SyncBeacon: rifiuta Registry Pending, round mismatch e target/version mismatch;
+- CHARACTERIZATION: SyncBeacon accetta un Ready fittizio non derivato, senza esecuzione del Registry o firma del relayer;
+- CHARACTERIZATION: SyncBeacon accetta `mcHash/context` scelti dall'attaccante quando il Beacon è correttamente derivato, senza pubblicazione Registry;
+- CHARACTERIZATION: SyncBeacon accetta Ready con commitment/context vuoti, un Registry lookalike con stesso payment ScriptHash ma staking credential diversa e più Registry reference selezionando la prima.
+
+Il risultato Cabal **PASS** significa che le asserzioni del test sono state eseguite. Ogni caso marcato CHARACTERIZATION documenta una debolezza riproducibile; non deve essere interpretato come security pass.
+
+### 45.97.3 Aiken Plutus V3 SyncBeacon su Yaci: harness completato, bypass osservato
+
+Lo step `Execute Aiken V3 SyncBeacon adversarial local-Yaci characterization` (step 41) ha concluso **SUCCESS** come harness. Gli outcome registrati nei log sono:
+
+- `AIKEN_SYNC_BEACON_HARNESS_OUTCOME=success`;
+- `AIKEN_SYNC_BEACON_FAKE_READY_ACCEPTED=true`;
+- `AIKEN_SYNC_BEACON_REFERENCE_AMBIGUITY_ACCEPTED=true`;
+- `AIKEN_SYNC_BEACON_INVALID_REGISTRY_ACCEPTED=false`;
+- `AIKEN_SYNC_BEACON_DUPLICATE_STRUCTURE_ACCEPTED=false`;
+- `AIKEN_SYNC_BEACON_IMMUTABLE_MUTATION_ACCEPTED=false`;
+- `AIKEN_SYNC_BEACON_VALUE_MUTATION_ACCEPTED=false`.
+
+La semantica delle variabili è importante: `*_ACCEPTED=true` è la conferma che il candidato ha accettato il twin avversariale. Pertanto fake Ready e reference ambiguity sono **finding**, non controlli superati. La prova riguarda l'implementazione Aiken Plutus V3 isolata su Yaci e non sostituisce il test Haskell V2 né qualifica un deployment.
+
+### 45.97.4 Root cause condivisa osservata nei due consumer SyncBeacon
+
+Nel consumer Haskell V2, `PrizeValidator.hs`:
+
+- `isRegistryRef` filtra il riferimento solo tramite `addressCredential == ScriptCredential regHash`;
+- `readRegistry` prende il primo riferimento corrispondente;
+- `validateSyncBeacon` controlla Ready, round, target e non-vuotezza del Beacon, quindi copia `brBeaconValue`, `brMcHash` e `brMateriosContext`;
+- non verifica un state token univoco, la lineage di creazione/pubblicazione, la spesa Registry nell'azione SyncBeacon o la re-derivazione del Beacon dai campi forniti.
+
+Il consumer Aiken in `poc/aiken-reveal-parity/lib/immortal/sync_beacon_transaction.ak` presenta la stessa struttura sostanziale: il Registry reference è selezionato dal solo payment ScriptHash, il primo match viene usato e `sync_output_matches` richiede un Beacon non vuoto ma non lo ricalcola né autentica la lineage dell'UTxO.
+
+Conseguenza: un indirizzo script è una condizione di destinazione, non una prova che l'UTxO sia stato creato o aggiornato dal validator. Un ordinario pagamento può creare un output con lo stesso payment ScriptHash e un datum Ready-shaped. La derivazione corretta di `brBeaconValue` dimostra coerenza dei campi, non autenticità della fonte esterna o autorizzazione del publisher.
+
+**Security disposition:** Registry provenance/authenticity resta **BLOCKED** in entrambi i consumer. Il problema non si risolve con una sola selezione del primo reference input o un controllo del datum. Serve una futura identità di stato non falsificabile e univoca, con lineage/authority verificabile on-chain; il modello di apertura dovrà continuare a rispettare il vincolo già stabilito di esecuzione permissionless e non introdurre per default un signer privilegiato o un keeper di fiducia. Nessuna implementazione, token policy, Factory ABI o parametro viene introdotto da questa annotazione.
+
+### 45.97.5 Perché l'intero Cardano Lab risulta FAILURE: difetto del test Counter, non del Registry
+
+Il job `132705524504` è terminato **FAILURE** unicamente perché lo step successivo, `Execute Counter lookalike identity spend characterization on local Yaci`, ha lanciato:
+
+`TypeError: Cannot read properties of undefined (reading 'from_scripthash')`
+
+Lo stack punta a `audit/cardano-integration/counter-lookalike-ledger-trace.ts:122`, all'espressione `CML.StakeCredential.from_scripthash(...)`. Il package di audit dichiara `@lucid-evolution/lucid@0.6.5`; il membro atteso non è presente sull'oggetto CML esposto nel runtime. L'errore avviene prima della costruzione e dell'invio delle transazioni Counter: non esiste quindi un esito ledger, né PASS né FAIL semantico, per quel test. La caratterizzazione Counter CEK accoppiata aveva concluso PASS, ma non sostituisce la prova Yaci.
+
+Questa eccezione è indipendente dal passo B0 già riuscito e dal passo Aiken SyncBeacon già completato. Non deve oscurare o invalidare retroattivamente i relativi risultati; al contempo non può essere ignorata per dichiarare verde l'intero Lab.
+
+### 45.97.6 Workflow distinti ancora aperti e limiti
+
+- Haskell Semantic Conformance run `43678893331` sul source SHA `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`: ancora **in_progress** al passo Compiled MintPolicy B1 Value-preservation; non si dichiara completato il workflow complessivo. La suite BeaconRegistry è comunque stata eseguita e ha PASS nella run Lab descritta sopra.
+- Conservative size experiment `43679611905`, source SHA `637e7709aa07b802e3accc7acba4a2915f76d523`: ancora **in_progress** alla compilazione/misura baseline-candidate. Non è disponibile un byte count candidato. Il limite canonico di T04 resta **16,443 byte** contro **16,384 byte**; non si presume alcun miglioramento.
+- Haskell V2 T04 nativo su Yaci resta **RESOURCE BLOCKED / NOT RUN** fino a una prova positiva di size feasibility e successiva pubblicazione/reference verificata dell'esatto artefatto V2.
+
+**Disposition finale:** T01b Registry Yaci = **SUCCESS locale**; Haskell V2 adversarial CEK suite = **PASS esecutivo con finding CHARACTERIZATION**; Aiken V3 SyncBeacon Yaci = **harness SUCCESS con fake Ready/reference ambiguity accettati**; Counter Yaci = **HARNESS FAILURE pre-submit**; Registry authenticity = **BLOCKED**; Haskell V2 T04 = **RESOURCE BLOCKED**. Nessuna GREEN promotion.
+
+**Non-effects:** nessun sorgente validator, script Aiken, datum/redeemer ABI, Factory, Registry policy, relayer, workflow o parametro di protocollo modificato. Nessuna modifica a V3/Reveal semantics, B2, economia, Treasury o Materios. Nessun maxTxSize alterato, nessuna transazione Preprod/Mainnet, nessuna firma di produzione e nessuna emissione ticket.
