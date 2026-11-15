@@ -7914,10 +7914,10 @@ This does not invalidate the signed-authority transport or its live-state bindin
 
 ## 46.13 AGENT A — B1 DIRECT-USDM CLAIM / FUND TREASURY CEK CHARACTERIZATION IMPLEMENTED (2026-11-15)
 
-**Test implementation:** `d713e4816474409a2c1e3133cdb88f38111e60a6`  
+**Test implementation:** `d713e4816474409a2c1e3133cdb88f38111e60a6`; final cleanup `35e6d3bff7b64b7951b0ed783d133c01c640c7d1`  
 **Reveal unit-label correction:** `4b6e8981cb1086b94726817f1666d70cea6c0e5f`  
 **Report:** `docs/COORDINATION/AGENT-A-B1-DIRECT-USDM-CEK-CLAIM-FUND-2026-11-15.md`  
-**Report commit:** `4d7f2015da053d7555cc89f6d4ceace608622b15`  
+**Report commit:** `62c5195ba765381c2bdf343bdea0358877c9493a`  
 **Classification:** TEST-ONLY COMPILED PLUTUS CEK CHARACTERIZATION; SYNTHETIC TXINFO; CI VERIFICATION PENDING.
 
 The new Cabal suite `b1-direct-usdm-transition-characterization-tests` and its Haskell conformance workflow step characterize two additional B1 direct-USDM delta gaps using the compiled validators. The test file uses one shared TxInfo for PrizeValidator+B1 Claim and a separate B1 FundTreasury context. The fixtures preserve Cardano Value conservation, including the foreign native asset, ticket/Pool singleton NFTs, ADA envelopes and tUSDM change.
