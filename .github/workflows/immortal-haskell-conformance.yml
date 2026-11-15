@@ -74,9 +74,6 @@ jobs:
           pkg-config --exists 'libblst >= 0.3.14'
           pkg-config --modversion libblst
 
-      - name: Update Cabal index
-        run: cabal update
-
       - name: Compiled MintPolicy B1 Value-preservation conformance
         working-directory: plutus
         run: cabal test mint-policy-b1-value-preservation-tests --test-show-details=direct
