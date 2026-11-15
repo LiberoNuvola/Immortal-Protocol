@@ -7911,3 +7911,25 @@ A current-source review distinguishes the genuine authority controls from the re
 This does not invalidate the signed-authority transport or its live-state binding; it limits the claim that may be made from them. The correct classification is **SIGNED ASSERTION + CROSS-BINDING IMPLEMENTED / R1 PROOF CONTENT AND Ω COMPLETENESS OPEN**.
 
 **Disposition:** Agent A still owns R1/Kc/Ω closure; Agent B still owns B1 Registry identity P0. First real Preprod Issue remains **NO-GO**. No new certificate format, proof system, coefficient, RiskMode, action restriction, B1 redeemer or validator change is selected. No source/test/validator/ABI/workflow/wallet/signature/transaction/deployment/ledger state changed or executed.
+
+## 46.13 AGENT A — B1 DIRECT-USDM CLAIM / FUND TREASURY CEK CHARACTERIZATION IMPLEMENTED (2026-11-15)
+
+**Test implementation:** `d713e4816474409a2c1e3133cdb88f38111e60a6`  
+**Reveal unit-label correction:** `4b6e8981cb1086b94726817f1666d70cea6c0e5f`  
+**Report:** `docs/COORDINATION/AGENT-A-B1-DIRECT-USDM-CEK-CLAIM-FUND-2026-11-15.md`  
+**Report commit:** `4d7f2015da053d7555cc89f6d4ceace608622b15`  
+**Classification:** TEST-ONLY COMPILED PLUTUS CEK CHARACTERIZATION; SYNTHETIC TXINFO; CI VERIFICATION PENDING.
+
+The new Cabal suite `b1-direct-usdm-transition-characterization-tests` and its Haskell conformance workflow step characterize two additional B1 direct-USDM delta gaps using the compiled validators. The test file uses one shared TxInfo for PrizeValidator+B1 Claim and a separate B1 FundTreasury context. The fixtures preserve Cardano Value conservation, including the foreign native asset, ticket/Pool singleton NFTs, ADA envelopes and tUSDM change.
+
+**Claim counterexample:** input Pool has 4,000,000 tUSDM atoms = 400 USDM sub-units (4 RU), output Pool has no tUSDM but one foreign asset Oracle-valued at 200 sub-units. The owner receives 2,000,000 tUSDM atoms valued at 200 sub-units; the PrizeDatum continues as Claimed. The B1 Oracle-valued Pool delta is exactly 200 sub-units and the compiled PrizeValidator and B1 Claim predicates are characterized as accepting the same balanced context. Physical Direct-USDM falls by 400 sub-units (4 RU), while ProtectedCapital falls by only 200 sub-units (2 RU).
+
+**FundTreasury counterexample:** input Pool has 10,000,000 tUSDM atoms = 1,000 sub-units (10 RU); output Pool has 9,000,000 tUSDM atoms plus a foreign asset. The Oracle values the tUSDM at 900 sub-units and the foreign asset at 1,100, so the output Pool liquidity is 2,000 sub-units, above the input 1,000. The transaction returns the remaining 1,000,000 tUSDM atoms as source change and is Value-balanced. The compiled B1 FundTreasury predicate is characterized as accepting the Oracle-liquidity increase although physical Direct-USDM falls by 100 sub-units (1 RU) with ProtectedCapital unchanged.
+
+**Unit correction:** the existing Reveal CEK formula returns USDM sub-units, not RU. Its −501 result is −501 USDM sub-units = −5.01 RU; the ProtectedCapital change is −500 sub-units = −5 RU. The test helper and labels are renamed accordingly. The non-erosion inequality is unchanged and remains on the same sub-unit basis.
+
+**Changed paths:** `plutus/test/B1DirectUsdmTransitionCharacterizationTest.hs`; `plutus/pre-rich-plutus.cabal`; `.github/workflows/immortal-haskell-conformance.yml`; `plutus/test/B1RevealHeadroomTest.hs` (unit-label-only).
+
+**Verification limit:** exact-head Haskell workflow completion has not been independently observed. The two new cases must not be called PASS until `immortal-haskell-conformance.yml` completes successfully on the current branch head. Both remain synthetic compiled-CEK evidence, not native-ledger, Yaci or Preprod submissions.
+
+**Disposition:** the Claim and FundTreasury Direct-USDM transition gaps now have explicit compiled-CEK characterization fixtures ready for CI. No production validator, MintPolicy, B1 redeemer, datum/ABI, V3, Reveal semantics, 500× rule, EEV profile or economic parameter changed. R1/Kc/Ω remains OPEN; B1 Registry identity remains BLOCKED / P0 under Agent B; first real Preprod Issue remains **NO-GO**.
