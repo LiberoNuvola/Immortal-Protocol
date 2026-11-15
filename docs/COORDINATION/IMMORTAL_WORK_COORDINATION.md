@@ -5987,3 +5987,117 @@ This contract intentionally does not decide:
 **Disposition:** Factory/OpenRound identity and per-round Registry anchor are now expressed as separate testable obligations; canonical target provenance remains an independent dependency. Issue #43 Registry authenticity remains **BLOCKED**; Issue #49 remains **DESIGN ONLY / OWNER APPROVAL OPEN**; exact CEK/Yaci evidence for this contract has not been executed; no GREEN promotion.
 
 **Non-effects:** documentation only. No Haskell/Aiken/TypeScript source, datum/redeemer ABI, validator/policy, test, workflow, deployment, wallet, transaction or ledger state was changed.
+
+## 45.82 AGENT B — FACTORY STT VS PER-ROUND IDENTITY: CURRENT CANDIDATE RECONCILIATION (2026-11-15)
+
+**Reviewed branch HEAD:** `c3cf62fed6c045b7e778876a318230b7ddae771d`  
+**Prior Issue #49 readiness source:** `docs/COORDINATION/AGENT-B-ISSUE49-TRUSTLESS-FACTORY-READINESS-2026-11-08.md`, blob `d360a6cb729b1d6a858d7841056572bf8eee9c63`; that note itself records an earlier reviewed source HEAD `0cc3e4f077e5f6544dfeff2894f42b805121f49c`.  
+**Classification:** design reconciliation from the existing Issue #49 readiness note, rechecked against the current branch source blobs. Non-normative; no implementation authority.
+
+### 1. Finding — one global Factory STT, plus one identity token per round
+
+The repository's earlier Issue #49 readiness analysis already contains a concrete preferred architecture:
+
+- one authenticated Factory state UTxO per PRE-RICH game/deployment namespace, carrying one unique Factory state-thread token (Factory STT);
+- each successful, permissionless OpenRound consumes that Factory state, advances its authenticated progression state, mints exactly one new per-round Registry identity token, and creates exactly one Pending Registry output carrying that identity;
+- the Factory state token remains in exactly one continuing Factory UTxO;
+- earlier per-round Registry UTxOs and their distinct identity tokens remain live and coexist; publishing one round does not consume another round's Registry.
+
+Therefore the earlier open wording “one STT with dual role vs Factory STT plus per-round identity” is clarified as follows:
+
+**Not one and the same NFT reused for both roles.** A single unique Factory STT cannot simultaneously remain in the Factory state UTxO and be present as the unique identity asset in each of several live Registry UTxOs. Moving it into a Registry strands the Factory state; copying it breaks singleton uniqueness; keeping it only in the Factory does not authenticate an individual Registry reference.
+
+**Preferred candidate:** one global Factory STT controls issuance of a family of distinct per-round identity assets. The two roles use distinct token names/assets, but the existing readiness proposal places the Factory STT and the per-round token family under the same Factory script identity/currency symbol `H_F`. Thus this is one canonical issuance authority/state machine, not one reused asset and not a second independently bootstrapped per-round authority.
+
+### 2. Architecture comparison
+
+| Candidate | Multi-round coexistence | Global replay/serialization | Per-round Registry authentication | Disposition |
+|---|---|---|---|---|
+| Reuse one identical singleton NFT as both Factory state token and Registry identity | Fails without moving/copying the singleton; moving strands Factory, copying violates uniqueness | Cannot preserve a live Factory state and all Registry identities with the same unique asset | Does not identify every Registry independently | Reject as an asset-level dual-role design |
+| One Factory STT + distinct per-round tokens minted by that same Factory policy | Yes; one Registry UTxO and one unique token per opened round | Yes, if every OpenRound spends the exact current Factory predecessor and preserves exactly one Factory continuation | Yes, if the Factory policy mints exactly one correct round token into exactly one canonical Pending output and consumers require it | **Preferred existing candidate; design only** |
+| Separate one-shot seed/permit/policy for every round | Possible mechanically, but distinct policy namespaces create logical-identity ambiguity | No shared root serialization unless another authenticated singleton coordinates permits | Only if each permit/seed is independently bound to one canonical round and a trusted common root prevents namespace duplication | Rejected as root uniqueness mechanism in existing Issue #49 readiness analysis |
+| Factory STT plus a second independent global round-token authority | Possible | Requires two coordinated singleton state machines and atomic cross-binding | Possible | No demonstrated benefit over the same-Factory-policy token family; extra state/authority/coordination burden |
+
+The second row is the design already described in Issue #49 §§4–5. It should be the baseline for further feasibility work, not treated as a newly approved protocol decision.
+
+### 3. Candidate asset and script-hash topology
+
+The earlier readiness note proposes an acyclic dependency topology:
+
+1. Compile BeaconRegistry independently as `H_R`; its script hash must not depend on the Factory policy identity.
+2. Compile the Factory STT multi-purpose script with `H_R` and immutable deployment/bootstrap parameters. Its own script hash is the Factory identity currency symbol `H_F`.
+3. Keep one fixed Factory thread-token name in the sole Factory state UTxO. The exact name is not selected in this audit.
+4. For each accepted round, mint an asset under `H_F` whose token name is a domain-separated encoding of the canonical round identity (the readiness note writes this conceptually as `roundTokenName(round)`). Exact bytes, domain separator and integer encoding remain OPEN.
+5. Constrain the OpenRound transaction to create exactly one Pending output at the exact configured Registry full address, holding exactly one of that per-round asset.
+6. Parameterize Haskell MintPolicy and PrizeValidator with the expected `H_R` and `H_F`; apply the same identity rule to the active Aiken SyncBeacon consumer.
+7. RegistryPublish preserves the per-round token and complete Registry Value. The earlier candidate keeps the current seven-field Registry datum; the authoritative Factory-policy/token check is performed by configured consumers, while the Registry spending validator must preserve the identity asset/value and immutable datum fields.
+
+**Token namespace requirement:** the Factory thread-token name and all round-token names must be disjoint under `H_F`; this is a necessary collision-avoidance property, not a selected encoding.
+
+**Cycle avoidance:** do not parameterize Factory by a Registry hash that itself depends on the Factory currency symbol. The proposed order `H_R → H_F → consumers(H_R,H_F)` is conceptually acyclic. It remains a compiler/artifact hypothesis until a pinned-toolchain prototype proves the actual Plutus V2 script graph, parameter application and currency-symbol behavior.
+
+### 4. Why separate per-round permits are inferior
+
+The existing Issue #49 readiness analysis rejects independent per-round permit UTxOs as the root uniqueness mechanism:
+
+- a deterministic token name plus publisher signature does not stop stateless mint policy invocations in separate transactions from authorizing the same logical target/name;
+- one-shot seeds per round create distinct policy IDs, so the same logical round may appear under different policy namespaces unless an authenticated canonical mapping/root already prevents it;
+- if every permit is issued by one shared singleton authority, that authority is functionally the Factory and the permit layer adds cost without removing global serialization.
+
+A bearer permit may still represent an already-approved Factory transition, but it cannot replace the Factory's authenticated unique predecessor. No bearer permit, independent per-round signer, runtime allowlist or keeper role is introduced by this reconciliation.
+
+### 5. Current source revalidation
+
+The current `work/immortal-green-closure` source blobs remain the same as the Registry audit baseline:
+
+| Source | Current blob SHA | Relevance |
+|---|---|---|
+| `src/createRound.ts` | `4112d87b7b6d88d77da0bbaee5ed2e172527609e` | Still accepts caller-supplied target and relayer; creates Pending with ordinary `payToContract` |
+| `plutus/Types.hs` | `60caeb747018b512e8e6ae7d8a100bb7023863d9` | Still seven-field Registry datum; no per-round token field |
+| `plutus/BeaconRegistry.hs` | `184f4178139dde01845853dcc0ab51371949ec9b` | Pending → Ready validator; no Factory identity mint/creation path |
+| `plutus/MintPolicy.hs` | `0d59fc05b4c11873984fffd10014bd46d8470509` | Registry reader remains first-match; no expected Factory policy identity parameter in current boundary |
+| `plutus/PrizeValidator.hs` | `45f4158c84587db5a3cd3851f35f0d1472d35700` | Registry reader remains first-match; no per-round Factory token check |
+| `poc/aiken-reveal-parity/lib/immortal/sync_beacon_transaction.ak` | `889b61b268131fe67280e82d8f2b4c67a1b5fbcd` | Aiken read path remains first-match by payment credential; no per-round Factory identity check |
+
+The current repository tree contains no Factory/OpenRound production source implementation path. The Factory STT and per-round identity remain design candidates, not deployed or compiled code. The current Pending builder and seven-field datum remain the legacy/untrusted path; their existence must not be treated as proof that the candidate architecture is present.
+
+### 6. Necessary properties for a valid dual-use Factory policy
+
+If the single Factory script identity `H_F` is used both for the Factory thread token and for round-token issuance, the eventual script must separately enforce:
+
+- bootstrap: one exact seed is consumed once; exactly one Factory thread token is created in the exact Factory state output; initial configuration and Registry credential are fixed, not caller-selected;
+- Factory continuation: exactly one Factory input with the expected thread token and valid state; exactly one continuing Factory output with the same token and exact governed continuation; no duplicate, burn, replacement or extra Factory state output;
+- round identity mint: exactly one new, expected per-round token is minted for the canonical next round; no other `H_F` mint/burn entry is allowed in that OpenRound transaction, except explicitly specified bootstrap behavior;
+- Registry placement: exactly one Pending Registry output at the exact full address carries exactly one matching per-round token; no copy in another output, no tokenless lookalike output accepted;
+- replay protection: the Factory state records the last accepted sequence/identity or equivalent authenticated state, so reusing the same round cannot mint a second token; stale competing predecessors cannot both succeed;
+- lifetime: per-round identity tokens cannot be burned, reissued, transferred away from the Registry output or substituted during Pending → Ready; the Factory thread token never migrates into a Registry;
+- consumer rule: all consumers require exactly one reference matching the exact Registry full address, `H_F`, the round-derived token name, quantity one, exact full target and expected lifecycle; multiple matches and lookalikes fail closed.
+
+These are distinct predicates even if they share one Plutus script/currency symbol. The design must not rely on “same policy ID” alone as proof that the right token is in the right output.
+
+### 7. Dependencies and constraints not solved by this choice
+
+This candidate resolves only the *shape* of Factory serialization and per-round identity issuance. It does not close:
+
+- **G1 — governance/genesis trust root:** authenticated initial configuration, verifiable GOV state and authentic/complete PRE voting snapshot remain BLOCKED;
+- **G2 — target derivation:** canonical, deterministic and authenticated derivation of the complete BeaconTarget, especially `mainchainRef`, remains BLOCKED;
+- **G5 — resource feasibility:** the prior Issue #49 readiness note reports a historical Haskell V2 PrizeValidator size of 16,443 bytes and reference-script publication transaction size of 16,540 bytes versus the 16,384-byte limit. Those measurements need fresh same-source/pinned-toolchain reproduction, but they make consumer expansion a hard precondition rather than a safe assumption;
+- **G6 — legacy safety:** live legacy tickets/Registry UTxOs and migration/retirement must be inventoried before activating new consumer hashes;
+- **G7 — owner approval:** no implementation/ABI/deployment authorization is granted by this candidate.
+
+B1 remains an authorized-publisher observation profile for a target already fixed by the Factory/configuration. Factory identity does not make the external Materios observation publisher-independent. B3 proof obligations remain Agent C's separate domain.
+
+### 8. Disposition and next bounded work
+
+**Design-level comparison result:** prefer **one global Factory STT plus a per-round token family minted by the same Factory policy identity**. Do not reuse one singleton asset as the Registry identity for all rounds; do not create an independent authority/one-shot seed policy per round. In ordinary language: one global state-thread token, many distinct round identity tokens under the Factory namespace.
+
+This is a reconciliation of the existing Issue #49 candidate, **not** owner approval, normative policy adoption, ABI approval or implementation authorization.
+
+Next bounded work, before code:
+1. freeze only the abstract asset model: one Factory thread-token name plus disjoint round-token names under `H_F`;
+2. obtain owner decision on the token namespace, exact round progression, immutable bootstrap commitment and recovery/loss model;
+3. close G1/G2 separately; no Factory can truthfully claim permissionless trustless OpenRound until both are proven;
+4. reproduce Haskell V2 artifact/transaction-size baseline with pinned toolchain before consumer changes;
+5. obtain explicit implementation slot and changed-path approval before any Factory prototype or datum/consumer edit.
+
+**Non-effects:** documentation only. No production source, datum/redeemer ABI, minting policy, validator, tests, Aiken, workflows, CI, deployment, wallet, transaction or ledger state changed. No CEK/Yaci result is asserted. Issue #43 remains release-blocking; Issue #49 remains **DESIGN CANDIDATE / NOT IMPLEMENTATION-READY**.
