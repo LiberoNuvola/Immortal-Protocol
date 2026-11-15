@@ -7041,3 +7041,63 @@ The step runs the existing compiled-wrapper CEK suite. Its output deliberately i
 **Verification:** branch HEAD and workflow contents were re-fetched after the write; HEAD is `0482d6a1fc51a3546f4325bf4296cb11c534a5ce`, and the exact Cabal command is present. The commit combined-status endpoint returned an empty status list at verification time; no CI PASS is claimed yet.
 
 **Non-effects:** no Haskell/TypeScript source, datum/redeemer ABI, validator, minting policy, Registry identity mechanism, Factory, V3, Reveal, B2, economic rule, Treasury, workflow trigger, wallet, transaction, deployment or ledger state was changed. No CI run was manually dispatched and no live network was contacted. This change does not close Issue #43 or Issue #49 and does not promote Registry authenticity to GREEN.
+
+
+## 45.92 AGENT B — REGISTRY / SYNCBEACON CEK MATRIX EXPANSION (2026-11-15)
+
+**Base HEAD:** `524dcd6b9ecc674e0e47d7e1d92b4cd8f513b237`  
+**Test commit:** `da619424d4a24d9a4a92af4cf319716ea82b753e`  
+**Test path:** `plutus/test/BeaconRegistryAdversarialTest.hs`  
+**Changed paths in this implementation commit:** the test path only  
+**Classification:** COMPILED-WRAPPER CEK TEST EXPANSION; NO PROTOCOL OR VALIDATOR SEMANTICS CHANGED.
+
+### 45.92.1 Added CEK cases
+
+The existing `beacon-registry-adversarial-tests` suite was expanded against the existing production compiled wrappers:
+
+- `RegistryPublish` rejects an empty Materios context (the empty `mcHash` rejection was already present).
+- `SyncBeacon` rejects a `BeaconPending` Registry reference.
+- `SyncBeacon` rejects a `brRound` that differs from the ticket target round.
+- `SyncBeacon` rejects a target/version mismatch.
+- A named `CHARACTERIZATION` case records that `SyncBeacon` accepts a Ready Registry datum with non-empty Beacon bytes but empty `brMcHash` and empty `brMateriosContext`.
+
+The test blob at the new branch HEAD is `700e2a8c25f9fd80396437caebfb4686a58e52c4`. The GitHub compare from the base to the test commit reports one modified path and 34 additions, zero deletions.
+
+### 45.92.2 Consolidated current-source propositions
+
+The combined current test/source evidence distinguishes these propositions:
+
+| Boundary | Current enforced behavior | Current gap / characterization |
+|---|---|---|
+| Pending creation | DApp builder derives the Registry address and creates the seven-field Pending datum | Ordinary `payToContract`; no Factory/one-shot identity; caller selects `BeaconTarget` and `relayerPkh` |
+| MintPolicy sale consumer | Requires a decodable Pending datum with matching ticket target/round predicates | The Registry is only a reference input; the Registry validator does not execute. A buyer-controlled Pending publisher field is accepted by the compiled MintPolicy CEK fixture |
+| RegistryPublish | Requires Pending state, nominated datum-PKH signature, non-empty `mcHash`/context, one Registry input, one continuing Registry output, same target, Ready status and derived Beacon bytes | Nominated PKH was not authenticated at creation; `brRound == btRound(brTarget)` is not separately enforced; continuing Registry Value is not compared with input Value |
+| Prize SyncBeacon consumer | Requires Ready status, ticket-round equality, full target equality, non-empty Beacon bytes, one Prize input/output, unchanged Prize Value and exact copied fields | A reference input does not execute RegistryPublish. Non-derived Ready Beacon, empty receipt fields, no Registry signature/spend, same-payment-ScriptHash address lookalike and multiple matching Registry references are accepted by current CEK characterizations |
+| Registry reference selection | Configured Registry payment ScriptHash is used to identify a candidate reference | Both `MintPolicy.readRegistry` and `PrizeValidator.readRegistry` return the first matching payment-ScriptHash reference; neither enforces exactly one authentic per-round identity token |
+
+**Important:** a `CHARACTERIZATION` pass means “the existing source accepts this synthetic context”; it is not a security approval, a balanced-transaction result or proof that a currently deployed instance has been exploited.
+
+### 45.92.3 CI status and evidence boundary
+
+The workflow step invoking `cabal test beacon-registry-adversarial-tests --test-show-details=direct` was added in commit `0482d6a1fc51a3546f4325bf4296cb11c534a5ce`.
+
+The current workflow's `push.paths` and `pull_request.paths` already include `.github/workflows/immortal-haskell-conformance.yml`. The test expansion changes `plutus/test/BeaconRegistryAdversarialTest.hs`, which is covered by the existing `plutus/**` push path.
+
+At the time of this audit, the combined-status endpoint returned an empty status list for `da619424d4a24d9a4a92af4cf319716ea82b753e`; the available commit-run wrapper returned no runs because it exposes PR-triggered runs only. Therefore no current exact-HEAD CI PASS or FAIL is claimed. The suite is wired; execution evidence remains pending observation.
+
+The suite runs Plutus CEK over synthetic `ScriptContext` values. It does not prove balanced transaction acceptance, actual ledger execution, Yaci behavior, deployed script identity, transaction size/fees/ExUnits, Preprod behavior or Registry deployment identity.
+
+### 45.92.4 B0 disposition and next proof boundary
+
+Issue #43 remains OPEN. The source/CEK work now gives stronger bounded coverage for RegistryPublish and SyncBeacon, but it does not satisfy the issue's exact-ending-SHA workflow evidence or independent Plutus/security review requirements.
+
+Do not change the seven-field datum, redeemer ABI, Registry policy, consumers, V3, Reveal, B2 or economics as an incidental continuation. The next major proof boundary remains separate:
+
+1. **T01a/T01b:** balanced ledger evidence for Pending/Ready-shaped Registry output creation at the Registry address without Registry validator execution, where applicable.
+2. **T04:** a ledger twin in which a Prize UTxO is spent through the exact production Haskell V2 PrizeValidator while a Ready Registry UTxO is supplied only as a reference input.
+3. **Deployment identity:** exact deployed Registry script hash/artifact and any required identity token or Factory binding must be established before a production trust claim.
+4. **Remediation authority:** any change to Registry datum/identity, publisher source, Factory or consumer reference predicates remains a separately scoped design/ABI/security decision; Issue #43 itself does not authorize an unreviewed schema or semantic change.
+
+**Disposition:** CEK matrix expanded and CI command wired; exact-HEAD execution not yet evidenced; Registry authenticity remains **BLOCKED**; no GREEN promotion.
+
+**Non-effects:** no production Haskell/TypeScript source, datum/redeemer ABI, validator/policy, Registry or Factory mechanism, V3/Reveal/B2/economic/Treasury/Materios code, workflow trigger, wallet, transaction, deployment or ledger state changed. No wallet or network action was taken.
