@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
@@ -6,6 +7,17 @@ import { resolve } from 'node:path'
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const script = resolve(root, 'audit/cardano-integration/preprod-direct-usdm-source-set.mjs')
 const invalidUnit = 'f'.repeat(56) + '0014df10745553444d'
+const producerSource = await readFile(script, 'utf8')
+assert.match(
+  producerSource,
+  /canonicalizeDirectUsdmBasket/,
+  'live EV3 source-set producer must invoke the canonical full-basket contract',
+)
+assert.match(
+  producerSource,
+  /poolAssetBasketDigest/,
+  'live EV3 source-set must persist the exact basket digest',
+)
 const result = spawnSync(process.execPath, [script], {
   cwd: root,
   encoding: 'utf8',
