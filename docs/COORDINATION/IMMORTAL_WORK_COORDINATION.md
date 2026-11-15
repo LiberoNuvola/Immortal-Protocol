@@ -7741,3 +7741,17 @@ The exact inequalities are now specified, but no validator predicates were chang
 **Disposition:** R1/Kc/Ω remains OPEN; B1 Registry identity P0 remains independently BLOCKED; first Preprod Issue remains **NO-GO**. The report does not authorize a new B1 action, redeemer constructor, validator change, or ABI modification.
 
 **Non-effects:** no production source, test, validator, policy, workflow, V3, Reveal, 500×, EEV derivation, datum/redeemer ABI, wallet, signature, deployment or ledger state changed or executed.
+
+
+## 46.07 AGENT A — GENESIS CARRIER / LIFECYCLE-POOL ATOMICITY GAP (2026-11-15)
+
+**Report:** `docs/COORDINATION/AGENT-A-R1-B1-DIRECT-USDM-TRANSITION-DELTA-VERIFICATION-2026-11-15.md` (section 9; addendum commit `ccb6a0cf0d31bc8769a37afec8ef06a45a66722c`).  
+**Classification:** READ-ONLY LIFECYCLE CARRIER / R1 COMPOSITION AUDIT; NON-NORMATIVE; NO IMPLEMENTATION.
+
+The current `GenesisRegimeCarrier` has only `ActivateGenesis`, accepts only the tag transition PreGenesis (0) → Genesis (1), and explicitly rejects any B1 PrizePool script input or output in the same transaction. This Genesis boundary remains unchanged.
+
+The pure `PreRichLifecycleTransition` helper is not composed into the Genesis carrier, B1 PrizePool validator or `PreRichEconomicAdmission`. There is no current Plutus lifecycle maintenance transaction that atomically consumes/continues the lifecycle singleton and the exact B1 Pool singleton. A lifecycle reference input alone cannot prevent a competing or subsequent Pool spend.
+
+A future QNE maintenance action therefore needs a separately specified transaction mechanism that consumes/continues the unique B1 PrizePool UTxO and lifecycle singleton atomically, preserves the full qualified Pool Value, and independently validates both state continuations. The existing Genesis activation's no-Pool invariant must remain intact. Such a design would be a B1/lifecycle action and likely an ABI/script deployment change; it is not a V3 constructor or Reveal semantic change, and no implementation is authorized by this audit.
+
+**Disposition:** lifecycle-anchored QNE remains a candidate only; deployed atomic path absent; R1/Kc/Ω OPEN; first Issue NO-GO.
