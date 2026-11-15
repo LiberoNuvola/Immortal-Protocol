@@ -197,3 +197,41 @@ A separate test should characterize allowed NFT transfer/burn semantics and conf
 - First real Preprod Issue: **NO-GO**.
 
 **Non-effects:** no production source, validator, MintPolicy, test, ABI, workflow, economic parameter, V3, Reveal, 500× rule, wallet, signing, deployment or on-chain state changed.
+
+
+## 7. EV3 source-set vs authoritative Issue runtime allowlist — qualification consistency gap
+
+A further source-to-source comparison found two distinct asset-basket validation paths.
+
+### 7.1 Authoritative Issue runtime path is fail-closed
+
+`Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` imports and calls `observePreprodDirectUsdmPool` for the live authority request. That function:
+
+- re-queries the configured Pool address through Lucid;
+- requires exactly one UTxO with the requested exact `txHash#outputIndex`;
+- requires exactly one configured Pool singleton;
+- calls `observeDirectUsdmEev` with only `lovelace` and the Pool singleton in the non-economic allowlist;
+- rejects any other positive unqualified native asset;
+- reconciles the B1 datum `ppTotalLiquidity` with the direct-USDM observation before asking for signed Issue authority.
+
+Therefore the application-side authoritative Issue observer does reject a foreign positive asset in the exact Pool UTxO before the Issue authority request.
+
+### 7.2 EV3 source-set materializer does not apply that same basket check
+
+`audit/cardano-integration/preprod-direct-usdm-source-set.mjs` separately decodes the Koios asset list into a full `assets` object. It checks the Pool singleton amount and the approved tUSDM amount, then writes a source-set artifact containing only the Pool/tUSDM identities, exact UTxO reference and conversion result.
+
+It does **not** iterate the decoded `assets` object to reject additional positive native-asset units, and the written source-set artifact does not preserve the complete asset basket. The qualification script then binds EV3 by source-byte digest and consumes the source-set's metadata; it does not independently reconstruct the full set of assets from the raw UTxO.
+
+The source-set test `preprod-direct-usdm-source-set.test.mjs` checks that an unapproved tUSDM identity fails, but it does not characterize a foreign positive asset mixed into a Pool UTxO. The separate `PreprodDirectUsdmObservation.test.ts` does test foreign-asset rejection for the authoritative runtime helper; that is not the same EV3 materializer implementation.
+
+### 7.3 Evidence boundary and disposition
+
+The November 15 Demeter/Ogmios context artifact independently shows exactly three Pool value entries at that snapshot: ADA, the Pool singleton NFT and the approved tUSDM unit. It therefore provides positive evidence that the **observed candidate at slot 139037521** had no additional foreign asset. It does not prove that the EV3 Koios materializer rejects foreign assets in every possible source-set state, nor does it refresh the direct-USDM qualification artifact.
+
+This is a **qualification-provenance / duplicated-observation consistency gap**, not evidence that the actual observed Preprod Pool currently contains a foreign asset. The authoritative Issue runtime path itself uses the stricter shared observer, so this source-set discrepancy must not be misreported as a demonstrated on-chain exploit.
+
+### 7.4 Closure requirement
+
+Before EV1–EV7 is treated as a reusable live qualification for arbitrary snapshots, align the EV3 materializer with the exact runtime basket rule (prefer a single canonical pure function or an explicit full asset-basket allowlist), persist the complete observed asset-unit set/digest in the source-set evidence, and add a deterministic EV3 fixture proving that any extra positive asset fails closed. Then regenerate the exact source-set/qualification/approval chain against the live candidate. No such code or test change is made by this audit.
+
+**Disposition:** current Issue-time runtime observer is stricter than EV3 qualification's source-set producer. The exact observed Preprod Pool is clean at the November 15 snapshot, but the EV3 pipeline is not universally basket-complete. R1/Kc/Ω and B1 Registry P0 remain unchanged.
