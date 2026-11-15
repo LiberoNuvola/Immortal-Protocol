@@ -6950,3 +6950,70 @@ Upstream Ogmios v7.0.0:
 - Cardano API QueryUTxOWhole: https://cardano-api.cardano.intersectmbo.org/cardano-api/Cardano-Api-Query.html (whole UTxO query cost is O(n) time and space).
 
 **Non-effects:** design/evidence documentation only. No source/test/workflow changed; no Ogmios node was contacted; no full UTxO response was requested; no local testnet, wallet, key, transaction or asset was created; no M1TEST submit, Preprod/Mainnet query, Mithril operation, governance decision, Plutus verification, V3/Reveal/Factory/Registry or economic state was changed.
+
+### 45.90 WholeUtxo M1-A bootstrap candidate — isolated implementation and test wiring
+
+**Audit date:** 2026-11-15  
+**Base HEAD before this implementation:** c32dd1f244baf6c7540b1b9aeaacbffd70741ef3  
+**Implementation sequence:** 285b7ec542d2e7ea0052e043fec652c07ed43705 → 3e5e19ee5212eb07c3e9ea3e12bd2b46c43fd041 → 18bb98fc0939761e7e5f154d904b59eff63a889c → 650b8df7d123cd735927759a5d36d5793da9296f → 83a073e0027d53852a6b9bdacbf72d6397acd834 → a44b67e4d5c92cb3da2206d22944b01bc154a0fb  
+**Classification:** IMPLEMENTED CANDIDATE; REPOSITORY CI AND LIVE OGMIOS COMPATIBILITY NOT YET VERIFIED.
+
+#### 45.90.1 Component boundary
+
+Added a distinct M1-A module, `audit/cardano-integration/preSnapshotWholeUtxoBootstrap.mjs`. It does not import or modify the Agent A C1 acquired-session module. It accepts an already-acquired session through a narrow injected contract: `query(method, params)`, `isAcquired`, `isReleased`, `point`, and `release()`.
+
+The bootstrap operation:
+
+1. requires a caller-supplied ChainSync point containing slot, block number, block hash and one of the explicitly accepted observation-source labels;
+2. checks that the acquired session slot/hash exactly match that ChainSync point;
+3. issues exactly `queryLedgerState/utxo` with an empty params object `{}`;
+4. rechecks that the acquired session and point remain unchanged after the query;
+5. requires an array response and validates the UTxO entries, TxIn uniqueness, ADA value shape, every policy/name hex key and every integer asset quantity with BigInt-safe handling;
+6. filters only by the exact 28-byte policy ID and exact asset-name bytes, preserving transaction ID, output index, decoded address bytes and quantity;
+7. initializes the existing pure M1-A reducer at the same slot/hash/block number;
+8. attempts session release on all operation paths after session acceptance; failed or unconfirmed release prevents a candidate result from being returned.
+
+The module does not acquire a point itself and does not claim the supplied source label is cryptographic proof. The caller remains responsible for deriving the height from the same ChainSync observation as the slot/hash; independent height queries or fabricated values are not accepted by the design.
+
+#### 45.90.2 Asset/address and evidence constraints
+
+- Empty asset-name bytes are handled as the explicit empty string `assetNameHex: ''`; a missing asset-name property is rejected.
+- Asset quantities are kept as BigInt/string at boundaries; unsafe JavaScript numbers, duplicate TxIn, malformed value maps and non-positive quantities fail closed.
+- For a PRE-bearing output, only Shelley Bech32 `addr1` / `addr_test1` addresses are accepted by this candidate. Byron/Base58 PRE-bearing outputs are explicitly rejected because the existing Base58 decoder does not validate the full Byron CBOR envelope and checksum. This is a deliberate qualification limit, not proof that the whole ledger contains no Byron outputs.
+- The response digest is SHA-256 over a locally canonicalized decoded JSON representation, not a digest of raw wire bytes. The manifest records `rawWireBytesAvailable: false`. A live integration run must retain the original query response/evidence artifact independently if raw-wire reproducibility is required.
+- Manifest qualification remains `CANDIDATE_ONLY_NO_SOURCE_COMPLETENESS_PROOF`; authority remains `NOT_ESTABLISHED`. The function cannot prove node identity, network/genesis authenticity, response completeness, or governance eligibility.
+
+#### 45.90.3 Tests and CI wiring
+
+Added `preSnapshotWholeUtxoBootstrap.test.mjs` with cases for exact request/empty params, point anchoring, policy/name decoys, BigInt quantities, empty asset name, empty result, duplicate/malformed TxIn, invalid ADA/value/quantity/address, Byron refusal, session mismatch/expiry, query failure and release failure.
+
+The `test:pre-snapshot-index` npm script now includes the new test, and the standalone `test:pre-snapshot-whole-utxo` script was added. The existing M1-A workflow path filters and syntax-check step now include both new files.
+
+**Local evidence limit:** an isolated temporary Node test harness for the bootstrap control flow reported 19/19 assertions passing. That harness used stub implementations for the reducer and address decoder; it is not a run of the committed repository test against the real reducer/adapter, and it is not GitHub Actions evidence. The committed repository test has been wired into CI, but no PASS status is claimed here until that workflow result is observed.
+
+#### 45.90.4 Remaining gates
+
+| Gate | Current state |
+|---|---|
+| Isolated bootstrap module and repo test source | **ADDED** |
+| npm and M1-A workflow wiring | **ADDED** |
+| Real repository test execution / CI | **PENDING VERIFICATION** |
+| Pinned Ogmios v7 binary: full response shape, completeness and payload/resource behavior | **NOT RUN** |
+| Live acquired-point WholeUtxo query | **NOT RUN** |
+| Byron CBOR/checksum validation | **NOT IMPLEMENTED; Byron-bearing PRE output rejected** |
+| Two independent signer/node full-row parity and same-point Kupo comparison | **NOT RUN** |
+| Production PRE identity, electorate, eligibility, voting-start point and source authenticity | **BLOCKED / OUT OF SCOPE** |
+| M1-C Mithril and M2 Plutus verification | **NOT STARTED** |
+
+This implementation creates a bounded adapter candidate to remove operator-authored `initialUtxos` from a controlled M1-A experiment. It does not close the live bootstrap/completeness gate or qualify a governance snapshot. The whole-UTxO response remains a large one-shot result whose memory/latency ceiling must be measured against actual local nodes before any operational cadence decision.
+
+#### 45.90.5 Exact source pins at the implementation HEAD
+
+| Source | Blob SHA |
+|---|---|
+| `audit/cardano-integration/preSnapshotWholeUtxoBootstrap.mjs` | `c74853ace9095e5c6090b94a1fdfd507d92d954b` |
+| `audit/cardano-integration/preSnapshotWholeUtxoBootstrap.test.mjs` | `5fd724c7036cbf199900d0acf23f1fe5a64750a5` |
+| `audit/cardano-integration/package.json` | `1a237eb157de8fdb6b7942c9ae2ade34e1ef0696` |
+| `.github/workflows/m1-a-pre-snapshot-tests.yml` | `1afad8022d91d0037b5a4d2de7b11d113eb6b927` |
+
+**Non-effects:** No Agent A C1 observer/session, Treasury implementation, V3, Reveal, economics, governance rules, Registry, production Cardano network, node, wallet, key, transaction or asset was changed or contacted. No M1TEST fixture transaction, Mithril operation, deployment or production action was executed.
