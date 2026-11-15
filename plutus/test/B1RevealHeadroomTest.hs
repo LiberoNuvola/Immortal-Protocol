@@ -537,8 +537,8 @@ directUsdmPoolValue atomicAmount =
     <> singleton (CurrencySymbol directUsdmPolicy) (TokenName directUsdmName) atomicAmount
     <> singleton adaSymbol adaToken 10_000_000
 
-directUsdmRu :: Integer -> Integer
-directUsdmRu atomicAmount =
+directUsdmSubunits :: Integer -> Integer
+directUsdmSubunits atomicAmount =
   div (atomicAmount * 100) 1_000_000
 
 -- Evaluate an otherwise identical valid LOSS Reveal while changing only the
@@ -576,7 +576,7 @@ runDirectUsdmReveal inputAtomic outputAtomic =
         Right _ -> True
         Left _ -> False
     directDelta =
-      directUsdmRu outputAtomic - directUsdmRu inputAtomic
+      directUsdmSubunits outputAtomic - directUsdmSubunits inputAtomic
   in
     (prizeAccepted, poolAccepted, payout, directDelta)
 
@@ -707,10 +707,10 @@ main = do
 
   assert
     (runDirectUsdmReveal 10_000_000 5_000_000 == (True, True, 0, -500))
-    "direct-USDM CEK boundary: current validators accept exactly -500 RU physical EEV delta"
+    "direct-USDM CEK boundary: current validators accept exactly -500 USDM-subunit physical EEV delta"
 
   assert
     (runDirectUsdmReveal 10_000_000 4_990_000 == (True, True, 0, -501))
-    "OBSERVED GAP: both current Reveal validators accept -501 RU direct-EEV delta against -500 RU ProtectedCapital delta"
+    "OBSERVED GAP: both current Reveal validators accept -501 USDM-subunit direct-EEV delta against -500 USDM-subunit ProtectedCapital delta"
 
   putStrLn "ALL B1 AND DUAL-VALIDATOR REVEAL HEADROOM CEK TESTS PASSED"
