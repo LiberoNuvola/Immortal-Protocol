@@ -175,3 +175,15 @@ A single reference input to the Pool is not sufficient for a perpetual lifecycle
 No RiskMode, coefficient, capital rule, new payout rule, action ABI or permissionless claim is selected by this report. Agent B's latest Counter lookalike Yaci success is test-harness/Counter evidence only; it does not close the separate B1 Registry counterfeit-Pending issue. The first real Preprod Issue remains **NO-GO** until both B1 Registry identity and R1/Kc/Ω close.
 
 **Final disposition:** a general R1 certificate is mathematically possible only after the concrete action model is correctly completed. The most grounded path found reuses the existing lifecycle transition as the persistent witness; it is not implemented or deployment-bound, and current B1 direct-EEV paths prevent certification today.
+
+
+## 7. Additional source reconciliation — revealed-ticket expiry is not a V3 transition mapping
+
+The B1 PrizePool / PrizeValidator path has two expiry cases:
+
+- Pending expiry decreases unresolved reserve/count and preserves the complete Pool Value.
+- Revealed expiry decreases `ppPendingLiabilities` by the crystallized prize amount and also preserves the complete Pool Value.
+
+The current `EconomicTransitionV3.transition (Expire cid)` requires an unresolved class ticket and decreases unresolved reserve/count/exposure; it does not decrease `v3CrystallizedLiabilities`. The current V3 action model therefore has no explicit transition mapping for the B1 Revealed-expiry case. It must not be silently mapped to Claim: a Claim pays the holder, whereas a Revealed expiry releases an unclaimed right.
+
+This is an additional full-action/refinement obligation for the lifecycle-anchored certificate. The joint state/action model must represent both Pending expiry and Revealed expiry, bind the right/expiry evidence, and prove the corresponding liability release and Pool conservation under the same deployment profile. Until that mapping is closed, the four-action rank proof remains a conditional theorem about the V3 transition module, not a complete proof over every B1 ticket lifecycle action.
