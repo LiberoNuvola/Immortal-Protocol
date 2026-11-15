@@ -3,7 +3,7 @@
 **Date:** 2026-11-15  
 **Branch:** work/immortal-green-closure  
 **Classification:** TEST-ONLY COMPILED PLUTUS CEK CHARACTERIZATION; SYNTHETIC TXINFO; NO PRODUCTION VALIDATOR CHANGE  
-**Implementation:** test, Cabal registration and Haskell workflow step committed; exact-head CI not yet independently observed.
+**Implementation:** test, Cabal registration and Haskell workflow step committed; exact-head CI not yet independently observed. Final test-file cleanup commit: 35e6d3bff7b64b7951b0ed783d133c01c640c7d1.
 
 ## 1. Unit-basis correction
 
