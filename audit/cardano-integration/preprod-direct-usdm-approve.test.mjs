@@ -8,8 +8,10 @@ import { spawnSync } from 'node:child_process'
 import {
   digestJson,
   EEV_EVIDENCE_REFERENCES,
+  EEV_EV3_BASKET_CONTRACT_FILE,
   EEV_REPO_FILES,
 } from './eev-approval-integrity.mjs'
+import { canonicalizeDirectUsdmBasket } from './preprod-direct-usdm-basket-contract.mjs'
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const approvalScript = resolve(root, 'audit/cardano-integration/preprod-direct-usdm-approve.mjs')
@@ -75,6 +77,30 @@ async function fixture(directory) {
     },
   })
 
+  const poolAddress = deployment.topology.b1PrizePoolAddress
+  const assetBasket = canonicalizeDirectUsdmBasket({
+    poolOutputReference: poolRef,
+    poolAddress,
+    poolTokenUnit: poolUnit,
+    approvedTusdmUnit: tusdmUnit,
+    lovelace: '5000000',
+    assetList: [
+      {
+        policy_id: tusdmUnit.slice(0, 56),
+        asset_name: tusdmUnit.slice(56),
+        quantity: '1000000000',
+      },
+      {
+        policy_id: poolUnit.slice(0, 56),
+        asset_name: poolUnit.slice(56),
+        quantity: '1',
+      },
+    ],
+  })
+  const basketContractDigest = createHash('sha256')
+    .update(await readFile(resolve(root, EEV_EV3_BASKET_CONTRACT_FILE)))
+    .digest('hex')
+
   const sourceSet = seal({
     schema: 'PRE-RICH-EEV-USDM-DIRECT-V1-SOURCE-SET-v0.1',
     profileVersion: PROFILE,
@@ -87,6 +113,12 @@ async function fixture(directory) {
       b1PrizePoolUtxo: poolRef,
       poolSingletonUnit: poolUnit,
       directUsdmUnit: tusdmUnit,
+      poolAssetBasketDigest: assetBasket.basketDigest,
+    },
+    assetBasket,
+    implementation: {
+      basketContractReference: EEV_EV3_BASKET_CONTRACT_FILE,
+      basketContractDigest,
     },
     derivation: {
       version: 'direct-usdm-v1',
@@ -137,6 +169,9 @@ async function fixture(directory) {
       observedUsdmSubunits: sourceSet.derivation.verifiedUsdmSubunits,
       freshnessModel: sourceSet.freshness.model,
       sourceEvidenceHash: sourceSet.evidenceHash,
+      assetBasketDigest: assetBasket.basketDigest,
+      basketContractReference: EEV_EV3_BASKET_CONTRACT_FILE,
+      basketContractDigest,
     },
     governance: { deploymentApprovalStatus: 'PENDING' },
   })
@@ -189,6 +224,39 @@ try {
   const rejectedManifest = runApproval(tampered.dir)
   assert.notEqual(rejectedManifest.status, 0)
   assert.match(rejectedManifest.stderr + rejectedManifest.stdout, /sourceSet\.evidenceHash does not match its current content/)
+
+  const counterfeitBasketRoot = resolve(temp, 'counterfeit-basket')
+  const counterfeitBasket = await fixture(counterfeitBasketRoot)
+  const counterfeitSourceSetPath = resolve(counterfeitBasket.dir, 'preprod-direct-usdm-source-set.json')
+  const counterfeitSourceSet = JSON.parse(await readFile(counterfeitSourceSetPath, 'utf8'))
+  const forgedBasket = structuredClone(counterfeitSourceSet.assetBasket)
+  forgedBasket.positiveAssets.push({
+    unit: 'b'.repeat(56) + '01',
+    quantity: '1',
+  })
+  const forgedBasketPayload = { ...forgedBasket }
+  delete forgedBasketPayload.basketDigest
+  forgedBasket.basketDigest = createHash('sha256').update(JSON.stringify(forgedBasketPayload)).digest('hex')
+  counterfeitSourceSet.assetBasket = forgedBasket
+  counterfeitSourceSet.source.poolAssetBasketDigest = forgedBasket.basketDigest
+  delete counterfeitSourceSet.evidenceHash
+  seal(counterfeitSourceSet)
+  await saveJson(counterfeitSourceSetPath, counterfeitSourceSet)
+
+  const counterfeitQualificationPath = resolve(counterfeitBasket.dir, 'preprod-direct-usdm-qualification.json')
+  const counterfeitQualification = JSON.parse(await readFile(counterfeitQualificationPath, 'utf8'))
+  counterfeitQualification.sourceSet.assetBasketDigest = forgedBasket.basketDigest
+  counterfeitQualification.sourceSet.sourceEvidenceHash = counterfeitSourceSet.evidenceHash
+  delete counterfeitQualification.evidenceHash
+  seal(counterfeitQualification)
+  await saveJson(counterfeitQualificationPath, counterfeitQualification)
+
+  const rejectedBasket = runApproval(counterfeitBasket.dir)
+  assert.notEqual(rejectedBasket.status, 0)
+  assert.match(
+    rejectedBasket.stderr + rejectedBasket.stdout,
+    /sourceSet canonical Direct-USDM asset basket is missing, malformed or tampered/,
+  )
 
   const staleEvRoot = resolve(temp, 'stale-ev-source')
   const staleEv = await fixture(staleEvRoot)
