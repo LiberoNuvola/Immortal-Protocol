@@ -7655,3 +7655,52 @@ The overall Cardano Lab remained **IN_PROGRESS** after step 30, proceeding throu
 **Disposition:** Counter lookalike harness/API repair = **VALIDATED**; two independent lookalike spends = **ACCEPTED BY LOCAL YACI**; exact canonical Counter UTxO = **OBSERVED UNCHANGED**. B0 Registry = SUCCESS in the same run. The test-only objective is complete.
 
 **Non-effects:** only the test-harness address construction was changed in commit `7396e042`; no CounterValidator, MintPolicy, PrizeValidator, datum/redeemer, policy, ABI, production script or economic rule changed. The two transactions use the ephemeral local Yaci CI wallet only. No production wallet, Preprod signature, Preprod/Mainnet transaction, deployment or ticket issuance occurred.
+
+## 46.05 AGENT A — R1 LIFECYCLE-ANCHORED CERTIFICATE FEASIBILITY (2026-11-15)
+
+**Audit baseline HEAD:** `e149f52e2371acc8d7baa810703ecaf972ba730e`  
+**Report:** `docs/COORDINATION/AGENT-A-R1-LIFECYCLE-CERTIFICATE-FEASIBILITY-2026-11-15.md`  
+**Report commit:** `5e835555b689eaced99f9ec6a5476e50550cdf3b`; source-reconciliation addendum commit `ac6c08427c40869fd8de18312b762c8387bd5901`  
+**Classification:** READ-ONLY R1 / ECONOMIC TRANSITION / EEV FEASIBILITY; NON-NORMATIVE; NO IMPLEMENTATION.
+
+### 46.05.1 General certificate finding
+
+A different `χ` alone cannot repair the literal four-action V3-only transition system. With finite class caps, the rank `R(S) = (remaining sale capacity, unresolved count, crystallized liabilities)` strictly decreases on every valid Issue, Reveal, Expire, or Claim transition. Therefore no infinite witness strategy and no non-empty inductive `K_c` exist under the assumption that those four constructors are the complete `A(S)`.
+
+This is a **conditional theorem about the V3-only action closure**, not a claim that the full intended deployment's `K*` is empty. B1 Pool actions and lifecycle actions exist outside that constructor set and must be enumerated in the actual system model.
+
+### 46.05.2 Candidate witness, not a certificate
+
+The existing pure `PreRichLifecycleTransition` module offers a grounded candidate:
+
+- `Active → Quiescent` via `EnterQuiescent`;
+- `Quiescent → Quiescent` via `MaintainQuiescent`.
+
+A candidate joint-state selector would choose `EnterQuiescent` in Active and `MaintainQuiescent` in Quiescent. Issue remains a distinct, margin-consuming candidate action: under V1, `Δb = −500 × P`; it can be admitted only when the exact post-Issue state remains in `K_c`, without lowering 500×.
+
+The candidate is **not reachable or accepted at the current S0 execution boundary**: no authenticated Genesis→Active transition/materialization is bound to the declared S0, `PreRichEconomicAdmission` accepts only `V3Action`, and `V3EconomicStateCarrier` currently permits only the four economic action classes. The pure QNE helper also does not authenticate or prove completeness of Ω.
+
+### 46.05.3 Direct-USDM action closure blockers
+
+The exact direct-USDM EEV is the physical tUSDM quantity in the qualified Pool UTxO, not Oracle-valued `ppTotalLiquidity`. Source review finds:
+
+- Issue sale path preserves the physical Pool Value.
+- Pending and Revealed Expire preserve the physical Pool Value.
+- TicketRevealed checks unchanged Oracle-valued `ppTotalLiquidity`, but does not require exact B1 Pool Value preservation.
+- TicketClaimed checks an Oracle-valued Pool delta equal to the claim, not the exact physical tUSDM outflow bound needed by direct-EEV QNE.
+- FundTreasury requires Oracle-valued Pool liquidity to increase, but does not enforce physical tUSDM monotonicity.
+- The B1 Revealed-expiry path reduces crystallized/pending liability while preserving Pool Value, but the current V3 `Expire` transition only releases unresolved reserve/count; a canonical V3/universal mapping for Revealed expiry remains open.
+
+Consequently, a lifecycle-maintenance witness cannot be promoted to QNE until every Pool-mutating transition is either direct-EEV monotone and atomically bound, or explicitly made non-executable under the certified regime. The lifecycle action must serialize against the exact Pool singleton; a read-only reference alone leaves a concurrent Pool-spend race.
+
+### 46.05.4 Required next closure
+
+1. Freeze the full joint state and enumerate every accepted V3, B1 Pool, lifecycle and deployment action.
+2. Materialize/bind the Active lifecycle state to the actual S0, or specify the missing initial regime transition.
+3. Define an atomic permissionless lifecycle/Pool/V3 carrier action, with replay-safe bounded state and complete resource bounds.
+4. Close direct-USDM physical-Value delta checks for Reveal, Claim and FundTreasury; close the Revealed-expiry refinement mapping.
+5. Produce the authoritative Ω perimeter and deployment-bound χ/Wit, S1, VC1–VC6, NV1–NV5 and E1–E10 evidence; Agent B independently reviews transaction and ledger binding.
+
+**Disposition:** lifecycle-anchored R1 is the most grounded candidate found, but it is not currently certified. R1/Kc/Ω remains OPEN and first Issue remains **NO-GO**. The latest Counter lookalike local-Yaci success is separate test evidence and does not close the B1 Registry counterfeit-Pending P0 blocker.
+
+**Non-effects:** no production source, test, workflow, validator, datum/redeemer ABI, V3, Reveal, 500×, EEV derivation, policy, wallet, deployment, Preprod/Mainnet transaction, or ledger state changed or executed.
