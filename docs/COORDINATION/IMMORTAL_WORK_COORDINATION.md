@@ -8736,3 +8736,49 @@ The new commit is on `work/immortal-green-closure`. The current combined-status 
 No new claim is made that a two-quote FundTreasury substitution has occurred or is currently reachable on Preprod. Current source plus the documented ADA-only bootstrap instead indicate that legacy FundTreasury fails closed when trying to value the Pool's tUSDM without a quote. The paired test will make this distinction executable once its exact Haskell conformance run is observed.
 
 No B1/PrizeValidator/MintPolicy source, Oracle deployment datum, ABI, V3, Reveal semantics, 500×, economic constant, workflow behavior, wallet, signature, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO** under §46.31.
+
+
+## 46.35 AGENT A — C1 ACQUIRED-POINT OBSERVER: DIGEST AND IDENTITY-BOUNDARY HARDENING (2026-11-15)
+
+**Classification:** READ-ONLY C1 OBSERVER / DETERMINISTIC TEST HARDENING; no production Issue integration and no authority promotion.
+
+### Existing implementation located — no duplicate observer created
+
+The current branch already contains:
+- `audit/cardano-integration/preprod-c1-acquired-point-observer.mjs`;
+- `audit/cardano-integration/preprod-c1-cardinality-decoder.mjs`;
+- their two deterministic test files;
+- workflow registration in `.github/workflows/immortal-cardano-preprod.yml`.
+
+The observer queries PrizeValidator, B1 Pool, Counter, V3 carrier and B2 control addresses through the same active `createOgmiosLedgerStateSession`. It preserves each parsed Ogmios UTxO array and classifies only the declared population/singleton cardinality. It explicitly leaves deployment authority, cardinality qualification, PrizeDatum classification and C1 qualification false. This is the correct boundary: the observer is not wired into production Issue admission.
+
+### Source hardening applied
+
+Two files changed:
+- `preprod-c1-acquired-point-observer.mjs` — commit `f7eff605ae45398466249677d9cc7ef29c6b3f73`;
+- `preprod-c1-acquired-point-observer.test.mjs` — commit `af4296db0c3895ec27a61502dbf1da72f6d28ad2`.
+
+The candidate identity envelope now requires the minimum script-artifact digest specified by the C1 deployment identity contract, rejects a payment-credential hash that differs from the independently declared derived script hash, and validates deployment materialization out-references as exact `64-hex-txid#output-index` values.
+
+For every one of the five acquired-point queries, the result now records:
+- exact method and address parameters;
+- SHA-256 of canonical JSON for the query description;
+- original parsed Ogmios result array plus SHA-256 of its canonical JSON representation;
+- an envelope digest, acquired point, and explicit digest-scope metadata.
+
+**Digest limitation is carried in the output:** these are canonical digests of parsed JSON objects, not hashes of original WebSocket wire bytes. Unsafe JavaScript numeric values are rejected rather than silently hashed after precision loss. They do not authenticate the envelope or prove deployment authority.
+
+New deterministic test assertions cover missing script-artifact digest, mismatched credential/derived hash, malformed deployment out-reference, key-order-independent canonical digesting, unsafe-number rejection, and presence of query/result/envelope digests.
+
+### Execution and qualification boundary
+
+The branch workflow already registers:
+- `node --test audit/cardano-integration/ogmios-ledger-state-session.test.mjs`;
+- `node --test audit/cardano-integration/preprod-c1-acquired-point-observer.test.mjs`;
+- `node --test audit/cardano-integration/preprod-c1-cardinality-decoder.test.mjs`.
+
+The workflow is configured for push on `work/immortal-green-closure` when `audit/cardano-integration/**` changes. **No exact workflow run/test log has been retrieved for the two new commits in this checkpoint; their assertions are PENDING, not PASS.** The connected workflow-run query is pull-request-only and therefore cannot establish the push run outcome.
+
+C1 remains OPEN. The five input identities are still candidate identities; GOV-30 trust root and authorized deployment attestation, script re-derivation, current live five-surface same-point observation, PrizeDatum population classification, B1/V3 reconciliation, state lineage and PA1–PA7 evidence are not certified by this read-only primitive.
+
+No production Issue reader/provider, Haskell admission, ABI, validator, V3, Reveal, 500×, economic constant, workflow dispatch, wallet, signature, transaction, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO**.
