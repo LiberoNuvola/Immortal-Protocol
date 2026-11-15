@@ -9,8 +9,8 @@
  * This does NOT execute MintPolicy, mint a Ticket NFT, or prove duplicate supply.
  */
 import {
-  CML, Data, Lucid, Blockfrost, getAddressDetails, validatorToAddress,
-  validatorToScriptHash, type Script, type UTxO,
+  Data, Lucid, Blockfrost, credentialToAddress, getAddressDetails,
+  validatorToAddress, validatorToScriptHash, type Script, type UTxO,
 } from '@lucid-evolution/lucid'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -117,16 +117,17 @@ async function main(): Promise<void> {
   const counterScript = { type: 'PlutusV2', script: artifact.cborHex } as Script
   const counterHash = validatorToScriptHash(counterScript).toLowerCase()
   const canonicalAddress = validatorToAddress('Preprod', counterScript)
-  const lookalikeAddress = CML.BaseAddress.new(
-    0,
-    CML.StakeCredential.from_scripthash(CML.ScriptHash.from_hex(counterHash)),
-    CML.StakeCredential.from_keyhash(CML.Ed25519KeyHash.from_hex(walletPaymentHash)),
-  ).to_address().to_bech32()
+  const lookalikeAddress = credentialToAddress(
+    'Preprod',
+    { type: 'Script', hash: counterHash },
+    { type: 'Key', hash: walletPaymentHash },
+  )
   const lookalikeDetails = getAddressDetails(lookalikeAddress)
   if (lookalikeAddress === canonicalAddress ||
       lookalikeDetails.paymentCredential?.type !== 'Script' ||
       lookalikeDetails.paymentCredential.hash.toLowerCase() !== counterHash ||
-      lookalikeDetails.stakeCredential?.type !== 'Key') {
+      lookalikeDetails.stakeCredential?.type !== 'Key' ||
+      lookalikeDetails.stakeCredential.hash.toLowerCase() !== walletPaymentHash) {
     throw new Error('Lookalike address does not preserve Counter payment credential with distinct stake credential')
   }
 
