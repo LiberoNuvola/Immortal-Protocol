@@ -7953,3 +7953,20 @@ The current PRE-RICH/Cardano transition surface cannot be represented by the fou
 PrizeValidator Claim derives the claimant from the input that carries the ticket NFT; Claim does not require burning it. PrizeValidator Expire consumes the separate PrizeDatum and leaves the ticket NFT independent. Therefore NFT transfer can change the future claimant without changing B1/V3 accounting, and any burn/lock-up must be included in the represented-rights relation or explicitly ruled out by a sound deployment perimeter.
 
 This extends the action inventory but does not prove it complete. The signed allOmegaSuccessorsCertified boolean and the pure lifecycle helper remain unable to establish Ω completeness. R1/Kc/Ω remains OPEN; B1 Registry identity P0 remains owned by Agent B; first real Preprod Issue remains **NO-GO**. No source, validator, MintPolicy, ABI, workflow, proof format, economic parameter, wallet, signature, deployment or ledger state changed or executed.
+
+
+## 46.15 AGENT A — CLAIM/FUND CEK CI COMPILE FIX FOLLOW-UP (2026-11-15)
+
+**Failed run:** Haskell Semantic Conformance #43712749970 on `37f64e546e9b11e4dcbaa38a17298c69ffb8b88d`.
+**Failure layer:** Haskell import/type-constructor ownership; no validator evaluation occurred for the new suite.
+**Exact diagnostic:** `OracleQuoteSet` is a data constructor of `OracleDatum`, not a standalone type exported by `OracleTypes`. The test attempted `OracleQuoteSet (..)`, and GHC instructed importing `OracleDatum(OracleQuoteSet)` or `OracleDatum(..)`.
+
+The preceding steps completed successfully: compiled MintPolicy B1 Value-preservation suite; B1 Reveal headroom CEK suite, including direct-USDM boundary and the accepted −501 sub-unit counterexample against −500 ProtectedCapital change.
+
+**Minimal test-only correction:** commit `2c4ad964f9ebae41938415897a2f525e783e07d0` changes the test import to `OracleDatum (OracleQuoteSet)`, retaining `OracleQuote (..)` and `OracleStateId (..)`. No production file, validator, redeemer, datum ABI, V3, Reveal semantics, economic constant, or 500× rule changed.
+
+**Verification:** new exact-head Haskell run #43715504315 is queued/in progress at the time of this entry. Do not claim Claim/Fund CEK PASS until step 9 completes and the workflow succeeds. Emulator Reveal remains a separate failed build path; its prior log identifies a PrizeValidator evaluator instantiation failure and missing Blockfrost for ExUnit calculation, not a demonstrated ledger rejection.
+
+**Agent B handoff requested:** independently review the Claim/Fund CEK fixtures once the suite compiles, focusing on OracleQuoteSet construction, shared TxInfo balance, Oracle value conversion, PrizeValidator Claim ownership/payment, and whether the FundTreasury Oracle-liquidity increase is accepted under the exact current validator. This is test review only; Agent B retains ownership of B1 Registry identity P0. No code ownership transfer requested.
+
+**Disposition:** R1/Kc/Ω remains OPEN; B1 Registry identity P0 remains under Agent B; first real Preprod Issue remains **NO-GO**.
