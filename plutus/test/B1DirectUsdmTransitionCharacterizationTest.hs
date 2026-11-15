@@ -156,7 +156,7 @@ prizeDatum status payout =
     , pdBeaconValue = rawBytes [25]
     , pdMcHash = rawBytes [26]
     , pdMateriosContext = rawBytes [27]
-    , pdPrizePoolHash = Builtins.fromBuiltin (Builtins.toBuiltin (BS.pack (replicate 28 7)))
+    , pdPrizePoolHash = rawBytes (replicate 28 7)
     , pdIssuedAt = 1_000
     , pdExpiresAt = 9_000
     , pdRow1Tier = 1
@@ -360,11 +360,6 @@ makeFundContext =
   in
     ScriptContext info (Spending poolRef)
 
-applyB1Validator
-  :: B1PrizePoolDatum
-  -> B1PrizePoolAction
-  -> ScriptContext
-  -> PlutusTx.CompiledCode Builtins.BuiltinUnit
 applyB1Validator datum action context =
   let
     configured0 =
@@ -393,10 +388,6 @@ applyB1Validator datum action context =
     PlutusTx.unsafeApplyCode configured6
       (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
 
-applyPrizeClaim
-  :: PrizeDatum
-  -> ScriptContext
-  -> PlutusTx.CompiledCode Builtins.BuiltinUnit
 applyPrizeClaim datum context =
   let
     configured0 =
@@ -421,9 +412,6 @@ applyPrizeClaim datum context =
     PlutusTx.unsafeApplyCode configured5
       (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
 
-evalAccepts
-  :: PlutusTx.CompiledCode Builtins.BuiltinUnit
-  -> Bool
 evalAccepts compiled =
   case evalResult (evaluateCompiledCode compiled) of
     Right _ -> True
