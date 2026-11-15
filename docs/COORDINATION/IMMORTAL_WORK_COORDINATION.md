@@ -8315,3 +8315,69 @@ This cross-check also highlights the current asymmetry:
 The new direct payout predicate must use one explicit, shared owner-address contract and aggregate raw approved-tUSDM atomic amounts; it must not copy either legacy Oracle predicate as the physical payout rule.
 
 No code, ABI, validator, V3, Reveal, 500×, economic constant, transaction or deployment changed.
+
+## 46.26 AGENT A — B1 DIRECT-USDM FACTORY / DEPLOYMENT PROPAGATION INVENTORY (2026-11-15)
+
+**Classification:** READ-ONLY ABI + CALL-SITE INVENTORY; DESIGN INPUT ONLY; NO IMPLEMENTATION OR DEPLOYMENT AUTHORIZATION.
+
+### Haskell factory ABI
+
+Current source `plutus/B1PrizePool.hs` exposes an untyped `wrap` / `compiledValidatorFactory` with eight `BuiltinData` arguments:
+1. PrizeValidator ScriptHash;
+2. OracleStateId;
+3. Oracle publisher PubKeyHash;
+4. Pool singleton policy;
+5. Pool singleton token name;
+6. datum;
+7. redeemer;
+8. ScriptContext.
+
+The candidate Direct-USDM binding adds the approved policy ID and asset-name bytes as two immutable factory arguments. This would make ten total wrapper arguments (seven protocol parameters plus datum/redeemer/context). This is an ABI and compiled-script change, not a datum/redeemer change. The exact argument order and versioned parameter contract must be frozen before implementation.
+
+The TypeScript layer currently expands OracleStateId into policy/name, so `buildB1PrizePool` takes six positional arguments today. Adding Direct-USDM identity there would add two more values; `buildScriptsFromLucid` also needs to carry them. Avoid silently shifting existing positional arguments in call sites.
+
+### Identified production and audit call sites
+
+- `src/loadValidator.ts`: `buildB1PrizePool` and `buildScriptsFromLucid`; derives B1 hash/address and passes B1 hash into MintPolicy construction.
+- `src/mint.ts`: the production ticket Issue builder derives the script topology and consumes B1 address/hash; resulting `pdPrizePoolHash` and ticket policy identity must match the new topology.
+- `src/gameFlow.ts`: Reveal, Claim and Expire builder paths derive the same topology and reference/spend B1.
+- `audit/cardano-integration/preprod-real-reveal.mjs`: direct `buildScriptsFromLucid` topology for its Preprod diagnostic path.
+- `audit/cardano-integration/reveal-ledger-trace.ts`: canonical topology builder plus explicit `buildB1PrizePool` calls for the isolated Aiken-V3-bound diagnostic and sequential-queue pool scripts. These are fixture-only B1 instantiations; do not change V3 or Reveal behavior.
+- `audit/cardano-integration/expire-ledger-trace.ts`: canonical topology plus explicit Aiken-bound B1 factory application.
+- `audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts`: topology builder and B1 FundTreasury trace.
+- `audit/cardano-integration/p2.8/p28b-topology-check.mts` and `p28b-vite-entry.ts`: topology construction checks; the first currently reads Oracle and Pool identity from environment, so it must also bind the Direct-USDM identity.
+- `src/__tests__/immortal-cardano-reveal-emulator-b1.mjs`: manually applies the compiled B1 factory with `applyParamsToScript`; its explicit parameter list must be updated independently of `loadValidator.ts`.
+- `plutus/test/B1DirectUsdmTransitionCharacterizationTest.hs`: manually applies `compiledValidatorFactory` in `applyB1Validator`; the compiled CEK harness must apply the exact new parameter ABI and include the canonical asset identity.
+
+This is the identified call-site set from current-branch source inspection plus repository code search; perform a final repository-wide exact search before merging because generated scripts, examples and archived fixtures can retain manual factory applications.
+
+### Generated artifacts and enforcement checks
+
+- `plutus/export/Export.hs` writes `b1PrizePoolFactory.plutus.json`; its descriptive metadata must accurately state that the Direct-USDM policy/name are bound parameters.
+- `src/plutusScripts/b1PrizePoolFactory.plutus.json` is the frontend mirror of the generated factory and must be regenerated from the same Haskell build, never edited independently.
+- `.github/workflows/immortal-cardano-lab.yml` copies `plutus/out/b1PrizePoolFactory.plutus.json` into `src/plutusScripts`; the generated copy and exact compiled CEK tests must use one artifact.
+- `scripts/predeploy-check.mjs` checks both generated and frontend B1 artifacts, Haskell source invariants, TypeScript factory wiring and artifact consistency; add assertions for the Direct-USDM parameter ABI and the no-Oracle-substitution transitions.
+- `audit/cardano-integration/resource-audit.mjs`, `audit/cardano-ledger-runner/Main.hs` and `.github/workflows/p2-8-b1-cardano-ledger-runner.yml` consume or size-check the B1 factory artifact. Re-run the size/resource gate after compilation; no size headroom is inferred from the current artifact.
+- Any deployment workflow, reference-script publication fixture, script manifest or evidence packet that pins the old B1 CBOR/hash/address must be regenerated and requalified.
+
+### Correct hash / identity cascade
+
+- **B1PrizePool script hash and address change** because its compiled factory receives two additional constants and the transition predicates change.
+- **MintPolicy hash / Ticket policy ID change** because the current MintPolicy is parameterized with the B1PrizePool hash. The new topology builder will derive a new ticket policy identity.
+- **PrizeDatum binding changes** because each new ticket must carry the new `pdPrizePoolHash`. The ticket's policy/name identity also follows the new ticket policy.
+- **PrizeValidator compiled hash does not inherently need to change** for this B1-only enforcement: its current factory is parameterized by Registry, PrizeTable, Oracle State identity and publisher, not by the B1 hash. It reads `pdPrizePoolHash` from each PrizeDatum and cross-checks the B1 output at runtime. Keep its hash stable unless a separate PrizeValidator semantic change is explicitly approved.
+- **B1 datum `ppPrizeHash` remains bound to the existing PrizeValidator hash** if that validator's parameters/code remain unchanged. The old/new Pool UTxO identity and all deployment manifests still need requalification.
+- The Pool singleton asset identity is a distinct authority token; it must not be confused with the newly bound tUSDM asset identity. Existing Pool singleton continuity/migration cannot be assumed.
+
+### Migration and test guardrails
+
+A new B1 address means the current reference script and PrizePool UTxO do not become valid at the new address. A controlled migration/bootstrap plan must specify how the singleton token, physical tUSDM, datum, reference scripts and any existing tickets/PrizeDatums are handled. Do not consume, transfer or strand funds based on an assumed automatic migration. Requalify the entire dependent topology and refresh EV1–EV7, approval hashes, deployment identity and Issue evidence against the new exact out-reference.
+
+Before considering the implementation complete:
+- compile/export the factory and verify exact applied parameter order in Haskell + TypeScript;
+- test B1 positive/negative CEK cases against one shared TxInfo with PrizeValidator;
+- assert exact atomic tUSDM conservation/payment, including dust boundaries;
+- ensure Issue preserves tUSDM, FundTreasury adds only approved tUSDM, Claim pays exact tUSDM, Reveal preserves tUSDM, and Expire preserves the full Value;
+- run all affected builders, artifact consistency, predeploy and resource/transaction-size gates.
+
+No V3 carrier code, Reveal derivation, Reveal outcome/semantics, 500× multiplier, economic constant, datum/redeemer schema, wallet, key, signature, deployment, funding or ledger state changed. The first real Preprod Issue remains **NO-GO**.
