@@ -1,3 +1,4 @@
+// READ-ONLY AUDIT: preserve independent current/historical Treasury identity and datum inventory; no transaction construction, signing or submission occurs in this observer.
 import { readFile } from 'node:fs/promises'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
