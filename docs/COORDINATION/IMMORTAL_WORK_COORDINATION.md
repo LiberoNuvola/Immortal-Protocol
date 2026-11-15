@@ -8075,3 +8075,68 @@ This design changes B1 factory parameters, compiled script bytes, ScriptHash and
 A scan of current shared coordination through §46.18 and the available PR #19 review/comment records did not find Agent B's requested independent review of the Claim/FundTreasury CEK fixtures. Agent B retains Registry identity P0 ownership. Do not treat a prior Agent B review of the separate Reveal invalid-envelope harness as review of these Claim/Fund fixtures.
 
 **Disposition:** the Preprod tUSDM identity decision is CLOSED for its narrow testnet physical-accounting role; its B1 on-chain binding is OPEN. Claim/FundTreasury compiled-CEK counterexamples remain confirmed by Haskell run #43717981674 on code SHA `79561408528eecfe799a56259a19d77d8738907e`. USD/USDM Option B source qualification remains OPEN; R1/Kc/Ω and C1/PA1–PA7 remain OPEN; Registry identity P0 remains with Agent B. First real Preprod Issue remains **NO-GO**. No code, validator, script hash/address, datum/redeemer ABI, V3, Reveal, 500×, wallet, signature, deployment, funding or ledger state changed.
+
+
+## 46.20 AGENT A — DIRECT-USDM TRANSITION RELATIONS / CLAIM PAYOUT BINDING (2026-11-15)
+
+**Classification:** SOURCE-LEVEL DESIGN REFINEMENT; NO CODE CHANGE; CEK IMPLEMENTATION NOT YET AUTHORIZED.
+
+### Exact arithmetic
+
+Approved Preprod tUSDM has 6 decimal places and the governed accounting representation is 100 sub-units per USDM. Therefore:
+- 1 USDM = 1,000,000 tUSDM atomic units;
+- 1 accounting sub-unit = 10,000 tUSDM atomic units;
+- for a payout `p` expressed in USDM sub-units, the exact physical payout is `p * 10,000` tUSDM atomic units.
+
+Do not use `floor(atomicAmount * 100 / 1,000,000)` as the only transition check. That quotient can hide a physical residue smaller than one accounting sub-unit. For Claim, enforce the exact atomic relation rather than a rounded valuation equality.
+
+### FundTreasury relation
+
+Current `FundTreasury` recomputes `ppTotalLiquidity` with `Economic.poolUsdmValue`, which oracle-values all non-zero non-Pool assets. The Direct-USDM profile relation must instead be:
+- `inputTusdm = assetAmount(ownInputValue, approvedPolicy, approvedName)`
+- `outputTusdm = assetAmount(ownOutputValue, approvedPolicy, approvedName)`
+- require `outputTusdm > inputTusdm` for FundTreasury;
+- require `ppTotalLiquidity(nextDatum) == floor(outputTusdm * 100 / 1_000_000)` under the already-governed datum representation;
+- foreign assets and ADA do not contribute to Direct-USDM EEV, regardless of Oracle quotes.
+
+The exact positive increase is the physical approved-asset delta; it must not be supplied as a redeemer scalar. If the protocol intends to permit a FundTreasury no-op or a non-tUSDM donation, that is a separate policy decision and cannot be inferred from the existing action name.
+
+### TicketClaimed relation
+
+Current B1 Claim computes both `poolInputUsdm` and `poolOutputUsdm` with `Economic.poolUsdmValue`; it also calls `payoutPaidUsdm`, which accepts a PubKey output whose basket is Oracle-valued to `pdPrizeAmount`. Thus the current check labelled “physical pool value delta mismatch” is not a physical tUSDM check, and the recipient check is not a tUSDM payout check.
+
+For a Direct-USDM Claim, the minimum exact relations are:
+- require `inputTusdm - outputTusdm == claimedAmount * 10_000`;
+- identify the ticket owner using the existing ticket NFT input + owner signature rule;
+- require the aggregate approved-tUSDM atomic quantity paid to that exact owner to equal `claimedAmount * 10_000`;
+- do not let foreign assets, ADA, another recipient, or a quote from Oracle satisfy that payout;
+- retain the existing datum status, ticket identity, liability delta, and solvency checks.
+
+The aggregate owner-output check is important: checking only that some output to the owner contains the token is insufficient, and checking a single output would unnecessarily reject a valid split payment. The helper must sum the approved asset over all PubKey outputs for the exact owner and reject non-exact totals.
+
+This B1 enforcement can reject a transaction even if PrizeValidator's legacy Oracle-basket payout predicate accepts it. PrizeValidator still has its own claim semantics; its predicate is not a substitute for the B1 atomic transition check. Any broader migration to Direct-USDM payout semantics in PrizeValidator would be a separate, explicitly scoped script-hash change and must be evaluated against the existing shared transaction contract.
+
+### Other B1 actions — physical preservation audit
+
+- `TicketIssued`: no EEV increase is recorded; exact approved tUSDM quantity must be preserved between Pool input and continuing Pool output.
+- `TicketRevealed`: no EEV increase is recorded; exact approved tUSDM quantity must be preserved.
+- `TicketExpired`: already requires full `Value` equality between Pool input and continuing Pool output; this implies approved tUSDM preservation.
+- `FundTreasury`: only action allowed to increase Direct-USDM Pool assets, under the exact relation above.
+- `TicketClaimed`: only action allowed to decrease Direct-USDM Pool assets, under the exact payout relation above.
+
+This is a candidate action matrix, not yet a protocol amendment. It must be reconciled with any authorized bootstrap, reserve, jackpot or migration actions before coding. Do not silently classify an unexamined action as an allowed deposit or withdrawal.
+
+### Test obligations before implementation acceptance
+
+Extend the compiled CEK characterization to cover:
+1. FundTreasury: exact tUSDM deposit + exact datum; foreign-asset-only Oracle valuation increase rejected; tUSDM decrease with foreign-asset compensation rejected; tUSDM positive delta with incorrect datum rejected.
+2. Claim: exact pool atomic decrease + exact owner atomic receipt accepted; Oracle-equivalent foreign payout rejected; pool decreases more than exact payout rejected; owner receives less/more than exact amount rejected; split owner outputs aggregate correctly; another wallet receiving the tUSDM rejected.
+3. Preservation: Issue and Reveal with unchanged tUSDM accepted; tUSDM loss on either rejected; Expire retains its existing full-Value equality.
+4. Arithmetic edges: zero payout invalid as today; exact 1-subunit payout; values around 10,000-atomic-unit boundaries; no hidden dust; overflow/resource bounds for `claimedAmount * 10_000`.
+5. Shared transaction: evaluate B1 and PrizeValidator CEK predicates against the same TxInfo and verify the conjunction rejects each former counterexample.
+
+### Boundary / disposition
+
+The Direct-USDM identity must be added as explicit B1 factory parameters or an independently authenticated on-chain config. The current evidence favours explicit factory parameters because no authenticated immutable config carrier bound to this Pool has been established. This changes B1 ScriptHash/address and requires controlled redeployment. The action relations above are now the exact candidate test contract; they are not yet code or authority to redeploy.
+
+No changes to V3, Reveal, 500×, economic constants, datum/redeemer ABI, wallet, signature, deployment or ledger. First real Preprod Issue remains **NO-GO** pending formal review, Agent B fixture review, R1/Kc/Ω, Registry P0 and all fresh exact-live EEV gates.
