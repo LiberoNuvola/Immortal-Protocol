@@ -309,6 +309,74 @@ makeClaimContexts =
     , ScriptContext sharedInfo (Spending poolRef)
     )
 
+
+-- B1-only TicketRevealed characterization. The Pool input/output baskets
+-- contain only the singleton, approved tUSDM and ADA. The transaction balances
+-- exactly, but diverts 1,000,000 approved tUSDM atomic units from the Pool to a
+-- PubKey output while keeping ppTotalLiquidity unchanged. This deliberately
+-- does NOT claim that PrizeValidator's full cryptographic Reveal predicate is
+-- accepted; it isolates the B1 Pool guard against physical-value loss.
+makeRevealDrainContext :: ScriptContext
+makeRevealDrainContext =
+  let
+    poolRef = TxOutRef (TxId (rawBytes [121])) 0
+    prizeRef = TxOutRef (TxId (rawBytes [122])) 0
+    sourceRef = TxOutRef (TxId (rawBytes [123])) 0
+
+    beforePool =
+      (poolDatum 1_000 0)
+        { ppUnresolvedReserve = 1
+        , ppUnresolvedTicketCount = 1
+        }
+    afterPool =
+      (poolDatum 1_000 200)
+        { ppUnresolvedReserve = 0
+        , ppUnresolvedTicketCount = 0
+        }
+    beforePrize = prizeDatum Pending 0
+    afterPrize = prizeDatum Revealed 200
+
+    poolInput =
+      TxInInfo poolRef
+        (scriptOut poolHash (poolValue 10_000_000 0)
+          (PlutusTx.toBuiltinData beforePool))
+    prizeInput =
+      TxInInfo prizeRef
+        (scriptOut prizeHash prizeScriptValue
+          (PlutusTx.toBuiltinData beforePrize))
+    sourceInput =
+      TxInInfo sourceRef
+        (pubkeyOut sourcePkh
+          (singleton adaSymbol adaToken 5_000_000))
+
+    poolOutput =
+      scriptOut poolHash (poolValue 9_000_000 0)
+        (PlutusTx.toBuiltinData afterPool)
+    prizeOutput =
+      scriptOut prizeHash prizeScriptValue
+        (PlutusTx.toBuiltinData afterPrize)
+    divertedOutput =
+      pubkeyOut sourcePkh
+        (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 1_000_000
+          <> singleton adaSymbol adaToken 5_000_000)
+
+    info =
+      TxInfo
+        [poolInput, prizeInput, sourceInput]
+        []
+        [poolOutput, prizeOutput, divertedOutput]
+        mempty
+        mempty
+        []
+        AssocMap.empty
+        (interval (POSIXTime 1_000) (POSIXTime 2_000))
+        [sourcePkh]
+        AssocMap.empty
+        AssocMap.empty
+        (TxId (rawBytes [124]))
+  in
+    ScriptContext info (Spending poolRef)
+
 -- Historical Oracle-vs-direct FundTreasury characterization only. Its Pool output
 -- deliberately contains a foreign positive asset and is therefore NOT an
 -- EV3-canonical basket; it is not evidence of a reachable EV3-qualified attack.
@@ -487,6 +555,54 @@ main = do
       && ownerPhysicalTusdmPaid == 0
       && ownerOracleEquivalentPayout == claimedAmount)
     "Claim counterexample: EV3-canonical Pool loses 200 direct subunits while owner receives zero tUSDM and an Oracle-equivalent foreign payout"
+
+  let
+    revealDrainContext = makeRevealDrainContext
+    revealInputDatum =
+      (poolDatum 1_000 0)
+        { ppUnresolvedReserve = 1
+        , ppUnresolvedTicketCount = 1
+        }
+    revealAccepted =
+      evalAccepts
+        (applyB1Validator revealInputDatum (TicketRevealed 1) revealDrainContext)
+    revealInfo = scriptContextTxInfo revealDrainContext
+    revealPoolAddress = Address (ScriptCredential poolHash) Nothing
+    revealPoolInputs =
+      filter ((== revealPoolAddress) . txOutAddress . txInInfoResolved)
+        (txInfoInputs revealInfo)
+    revealPoolOutputs =
+      filter ((== revealPoolAddress) . txOutAddress) (txInfoOutputs revealInfo)
+    revealPoolInputValue =
+      foldr ((<>) . txOutValue . txInInfoResolved) mempty revealPoolInputs
+    revealPoolOutputValue =
+      foldr ((<>) . txOutValue) mempty revealPoolOutputs
+    revealOwnerOutputs =
+      filter
+        ((== Address (PubKeyCredential sourcePkh) Nothing) . txOutAddress)
+        (txInfoOutputs revealInfo)
+    revealOwnerValue =
+      foldr ((<>) . txOutValue) mempty revealOwnerOutputs
+    revealPoolInputTusdm =
+      valueOf revealPoolInputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
+    revealPoolOutputTusdm =
+      valueOf revealPoolOutputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
+    revealOwnerTusdm =
+      valueOf revealOwnerValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
+    revealTotalInputValue =
+      foldr ((<>) . txOutValue . txInInfoResolved) mempty (txInfoInputs revealInfo)
+    revealTotalOutputValue =
+      foldr ((<>) . txOutValue) mempty (txInfoOutputs revealInfo)
+
+  assert
+    revealAccepted
+    "OBSERVED B1-ONLY GAP: compiled TicketRevealed accepts a balanced transaction that diverts approved tUSDM from an EV3-canonical Pool"
+
+  assert
+    (revealPoolInputTusdm - revealPoolOutputTusdm == 1_000_000
+      && revealOwnerTusdm == 1_000_000
+      && revealTotalInputValue == revealTotalOutputValue)
+    "Reveal drain fixture: Pool loses exactly 1,000,000 tUSDM atomic units, owner receives them, and full transaction Value balances"
 
   let
     fundContext = makeFundContext
