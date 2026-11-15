@@ -29,6 +29,7 @@ import PlutusLedgerApi.V1.Value
   , adaSymbol
   , adaToken
   , singleton
+  , valueOf
   )
 import PlutusLedgerApi.V2 (ScriptHash (..))
 import PlutusLedgerApi.V2.Contexts
@@ -41,6 +42,7 @@ import PlutusLedgerApi.V2.Tx (OutputDatum (..), TxOut (..))
 import qualified PlutusTx.AssocMap as AssocMap
 
 import qualified B1PrizePool
+import qualified Economic
 import qualified PrizeValidator
 import GameRules (defaultPrizeTable)
 import OracleTypes
@@ -432,8 +434,16 @@ main = do
     claimedAmount = 200
     claimDirectDelta =
       directUsdmSubunits 2_000_000 - directUsdmSubunits 4_000_000
-    ownerPhysicalTusdmPaid = 0
-    ownerOracleEquivalentPayout = 200
+    claimInfo = scriptContextTxInfo prizeContext
+    ownerAddress = Address (PubKeyCredential ownerPkh) Nothing
+    ownerOutputs =
+      filter ((== ownerAddress) . txOutAddress) (txInfoOutputs claimInfo)
+    ownerValue =
+      foldr ((<>) . txOutValue) mempty ownerOutputs
+    ownerPhysicalTusdmPaid =
+      valueOf ownerValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
+    ownerOracleEquivalentPayout =
+      Economic.totalUsdmValue claimInfo oracleState oraclePublisher ownerValue
 
     claimPrizeAccepted =
       evalAccepts (applyPrizeClaim prizeInputDatum prizeContext)
