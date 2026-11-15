@@ -5691,3 +5691,54 @@ Positive and mutation-negative tests should demonstrate that changing any govern
 - **Next Agent B focus:** resume the existing BeaconRegistry authenticity/consumer-boundary work in §44.62 and its already-recorded acceptance matrix. No V3, Reveal, B2 ABI, economic constants, Treasury logic or deployment change is authorized by this review.
 
 **Result:** cross-review complete; Treasury findings handed to A; no code/test/workflow/ledger change; no GREEN promotion.
+
+## 45.79 AGENT B — F4 REGISTRY LIFECYCLE REVALIDATION AT COORDINATION HEAD (2026-11-15)
+
+**Audited HEAD:** `9b6f4ec415f022759842996cd736a66ec0ce4c3e`  
+**Classification:** read-only source revalidation + CI lineage correction. No protocol code, tests, workflow, ABI or ledger state changed.
+
+### 1. Current-source revalidation
+
+The following source blobs on the current coordination branch match the previously audited Registry implementation:
+
+- `src/createRound.ts` — `4112d87b7b6d88d77da0bbaee5ed2e172527609e`
+- `src/registryDatum.ts` — `0d611c29fe4f74b9b2fa4cd328e8fe2edb5f48f4`
+- `src/beaconTrust.ts` — `e9ce2f73be14b85ed4af84863ef40bc68a6625a8`
+- `src/registryFlow.ts` — `c402d52ed1e60bb63d0f47d80de6cf0d48c71691`
+- `plutus/Types.hs` — `60caeb747018b512e8e6ae7d8a100bb7023863d9`
+- `plutus/BeaconRegistry.hs` — `184f4178139dde01845853dcc0ab51371949ec9b`
+- `plutus/MintPolicy.hs` — `0d59fc05b4c11873984fffd10014bd46d8470509`
+- `plutus/PrizeValidator.hs` — `45f4158c84587db5a3cd3851f35f0d1472d35700`
+- `plutus/test/BeaconRegistryAdversarialTest.hs` — `0c55c25a46e2aef497a4b0f36bcdcd49c4e667e9`
+
+The source revalidation confirms:
+
+- `createPendingRound` creates the initial Pending output with ordinary `payToContract`; no minting policy or validator constrains who may create the initial anchor. Its own source comment acknowledges competing Pending entries.
+- `src/mint.ts` has client-side checks for exactly one Pending datum per round and, when configured, the expected relayer PKH. These are useful UX guards but do not authenticate a reference input at the Plutus consumer boundary.
+- `src/beaconTrust.ts` implements B3→B2→B1 selection helpers, but the audited round-creation/mint call sites still do not invoke the freeze/selection helpers.
+- `src/registryFlow.ts` validates optional enriched `brGameRoundCommitment` fields off-chain, but explicitly states that the canonical seven-field on-chain datum does not store them. `registryDatum.ts` deliberately serializes only the seven Haskell fields.
+- `BeaconRegistry.validatePublish` checks the nominated relayer signature and deterministic Beacon derivation, but does not authenticate the initial Pending creation, bind the relayer to an independent authority root, require a tokenized unique anchor, or enforce equality between `brRound` and `btRound(brTarget)`.
+- `MintPolicy.readRegistry` and `PrizeValidator.readRegistry` still return the first reference input with the configured payment ScriptHash. The SyncBeacon path checks copied Ready fields, not the referenced Registry's executed lifecycle. The current ticket commitment remains target-bound only; adding trust/evidence binding would need matching Issue and Reveal recomputation.
+
+### 2. Current CEK test source versus historical CI evidence
+
+The current `plutus/test/BeaconRegistryAdversarialTest.hs` contains explicit characterization cases for buyer-controlled Pending acceptance, fake Ready acceptance, staking-address lookalikes and multiple Registry references. These are deliberately named as CHARACTERIZATION passes, not security approvals.
+
+The historical Integration Lab #2728 (run `43376155077`, source SHA `fea587bba5171c3f46cf0908a9b1002c5ccb0717`) failed before CEK execution because `MintPolicyB1ValuePreservationTest.hs:30` used invalid Haskell import-alias syntax. The current coordination HEAD has the corrected qualified import `import qualified CounterValidator as CounterValidatorModule`. However, no newer CI result was obtained in this read-only pass. Therefore the old compile failure is diagnosed, but the corrected current-HEAD test suite is **NOT YET EXECUTED / NOT PASS**. No CEK or Yaci result is inferred from source inspection.
+
+### 3. Required boundary and next gate
+
+The previous §44.60 recommendation remains the smallest conceptual delta to evaluate: extend the existing Registry with canonical round identity plus frozen trust/evidence commitment, but only alongside an independently enforced one-round/one-anchor creation invariant. A separate commitment carrier remains the higher-footprint alternative. Neither is authorized for implementation by this audit.
+
+Before any edit, the design/ABI gate must pin:
+1. the exact on-chain creation mechanism and uniqueness proof for one canonical anchor per round;
+2. the immutable token/anchor identity and complete address/value/datum constraints;
+3. the canonical encoding and hash of round identity + selected mode + evidence digest + reproducible fallback record;
+4. the authority root for the nominated publisher/relayer under the already-decided B3→B2→B1 policy;
+5. the exact Issue and SyncBeacon consumer checks and the Issue/Reveal ticket-commitment compatibility path;
+6. migration/deployment compatibility and positive/negative CEK plus native-Yaci evidence.
+
+Do not use a deterministic token name alone as a uniqueness proof; do not reuse the Genesis carrier identity; do not treat client-side selection, a reference input, or a relayer field as authority proof. Preserve the existing trust hierarchy and do not touch V3, Reveal semantics, economics or deployment absent the required decision.
+
+**Disposition:** Registry authenticity remains BLOCKED; current-source findings reconfirmed; corrected Counter test source awaits exact-HEAD execution; no code or ledger changes; no GREEN promotion.
+
