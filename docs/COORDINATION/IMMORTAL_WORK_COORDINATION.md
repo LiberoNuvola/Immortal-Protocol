@@ -6724,3 +6724,104 @@ Therefore G1, G1-F, G2, G3, G4 and G5 remain open/blocked as classified in §45.
 The next safe task is a separately reviewed proof/interface design for G1-F and the G2/G3 inputs. It must not invent missing source facts or substitute an off-chain authority.
 
 **Non-effects:** documentation-only. No source code, datum/redeemer ABI, Registry consumer, governance semantics, Plutus script, Factory, wallet, workflow, CI run, transaction, deployment, branch topology or ledger state was changed or executed.
+
+
+### 45.88 M1-A — current implementation, evidence and completeness boundary
+
+**Audit date:** 2026-11-15  
+**Exact source HEAD:** \`work/immortal-green-closure\` / \`0e2f4b0ddcedb702125db76f1c782393093b6de5\`  
+**Tested implementation checkpoint:** \`7f8005fef23ff64ba88f1e97606b255c02adc802\`  
+**Classification:** SOURCE / CI EVIDENCE REVALIDATION — NOT A LIVE LEDGER QUALIFICATION.
+
+This section revalidates the M1-A PRE snapshot indexer against its executable code, test workflow, latest M1-A test job and local two-node runbook. It supersedes the older 69/69 and 78/78 summary counts where those are presented as the latest M1-A unit result.
+
+#### 45.88.1 What is implemented
+
+| Component | Current implementation | What it actually establishes |
+|---|---|---|
+| Pure PRE UTxO reducer | \`preSnapshotUtxoIndex.mjs\` takes a caller-provided bootstrap set, applies normalized blocks in transaction order, selects \`inputs\` or \`collaterals\` from the explicit Ogmios \`spends\` discriminator, handles collateral return, exact policy/name filtering, integer quantities and rollback | Deterministic state transition from the supplied initial UTxO set and supplied normalized blocks. It does not prove that the initial set is complete or that the block stream is an authenticated governance snapshot. |
+| Canonical test message | Sorts raw address-byte leaves, aggregates all tracked UTxOs at the same raw address, and produces a deterministic Merkle-sum root plus digest. It binds module/schema/encoding, caller network label, slot/block/hash, exact asset policy/name, test identity-rule ID, leaf count and total | Byte-identical commitment for equal reducer state. The identity rule is explicitly \`raw-address-bytes-test-only-v1\`; it does not map payment/stake credentials to GOV entities, and the message is not yet bound to a proposal/voting-start predicate. |
+| Ogmios v7 adapter and ChainSync | Decodes Praos blocks in the supported Shelley/Allegra/Mary/Alonzo/Babbage/Conway eras, preserves \`spends\`, decodes address/value/mint fields and drives \`findIntersection\`, forward blocks and rollbacks over WebSocket | A real local-node transport/indexing implementation is present in source. The unit suite exercises adapter and client behavior, but no live node session has been recorded. The Byron Base58 path does not yet validate its CBOR envelope/checksum; the M1 profile itself says not to claim production completeness while this remains open. |
+| Persistent WAL | Hash-chained append-only block/rollback records, fsync, replay on reopen, local writer lock, manifest and rollback restoration | Detects accidental corruption/torn writes and recovers the locally recorded reducer state. The manifest/journal SHA chain is not an authenticated signature; an actor able to rewrite the complete local files can recompute it. It is a local single-writer persistence mechanism, not an authority or certificate. |
+| Two-replica comparison | Requires two differently labelled replicas, distinct configured loopback Ogmios URLs and WAL directories; both sessions must intersect and advance to an operator-supplied \`expectedPoint\`; exact canonical bytes and digest must match | Detects disagreement between the two configured index states at the supplied point. Replica IDs and \`nodeInstanceId\` values are caller-provided labels, not cryptographic attestations that two physical hosts, operators or independent node processes are involved. |
+| Kupo exact-point comparison | Requires a strict checkpoint at the supplied slot/hash and compares the exact-asset unspent matches with the reducer at the same retained point | Provides an independent index implementation comparison when a real Kupo database has indexed the same chain and point. Kupo does not certify governance eligibility, the bootstrap manifest, the correctness of the network label or the identity of the node/operator. Kupo's checkpoint does not supply the block number; the runner receives that from the externally supplied expected point. |
+| Private non-zero fixture helper | Generates a fresh single-signature native asset \`M1TEST\`, quantity 100, under an ephemeral policy and pays it to the generated local \`utxo1\` wallet address. Runtime is restricted to WSL/Linux, \`cardano-cli 11.0.1\`, private network magic 4242, exact node1 socket/config paths and a confined local workdir. Submit requires a separate environment opt-in and a one-shot marker. | A safe way to exercise non-zero native-asset plumbing on a newly created private chain. It is not the production PRE asset, not a PRE distribution, not a multi-holder electorate and not evidence that the optional prepare/submit/verify sequence has actually run. |
+
+#### 45.88.2 Exact CI qualification — and its limit
+
+The latest M1-A workflow job found during this audit is:
+
+- Workflow: \`.github/workflows/m1-a-pre-snapshot-tests.yml\`
+- Run: [42481336005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42481336005)
+- Exact tested commit: \`7f8005fef23ff64ba88f1e97606b255c02adc802\`
+- Job: \`Reducer + Ogmios v7 + persistent WAL\`
+- Result from the job log: **79 tests / 79 passed / 0 failed / 0 skipped**
+- The job also completed \`node --check\` for the reducer, Ogmios adapter, ChainSync client, WAL, replica comparator, dual runner, Kupo parity/HTTP/audit and private-fixture helper.
+
+The commit comparison from that tested checkpoint to the source HEAD audited here (\`0e2f4b0ddcedb702125db76f1c782393093b6de5\`) contains 163 later commits and **no changes to the M1-A implementation, test, package or workflow paths**. The 79/79 result therefore remains applicable to the M1-A files present at the audited HEAD. The prior 69/69 and 78/78 entries are historical intermediate runs; the 79/79 job is the later verified result.
+
+This is a **unit/synthetic CI qualification only**. The workflow installs its small Node dependencies and runs the M1-A test suite and syntax checks. It does not provision \`cardano-node\`, start Ogmios or Kupo, create the private testnet, connect to local node sockets, mint the \`M1TEST\` fixture or run a real chain rollback. In particular, fake-WebSocket runner tests prove the control flow of the runner, not independence or correctness of two live Cardano nodes.
+
+#### 45.88.3 Bootstrap completeness is still the central M1-A gap
+
+The code makes the bootstrap boundary explicit:
+
+1. \`createPreSnapshotIndex({ networkId, asset, anchorPoint, utxos })\` receives the starting UTxO array as an input. It validates and normalizes the entries it receives; it cannot infer whether an omitted PRE UTxO exists elsewhere in the ledger.
+2. \`createPreSnapshotJournal\` writes that same starting UTxO set into its local manifest and hashes the manifest. The digest detects subsequent accidental changes, but it does not prove that the source set was complete or that the manifest came from a Cardano ledger query.
+3. \`preSnapshotDualReplicaRunner\` accepts \`initialUtxos\`, \`anchorPoint\`, \`networkId\`, asset identity and \`expectedPoint\` from its local configuration. The runner does not itself execute a whole-ledger query, reconstruct a historical full UTxO census or verify a checkpoint-bootstrap proof.
+4. The M1 design documents specify full replay and checkpoint-plus-incremental as comparison baselines, but those acceptance paths have not been demonstrated as live M1-A evidence in this branch. The runbook's empty initial set is valid only for the controlled new private testnet origin, where the test asset is created later; it is not a valid shortcut for an already-running Preprod/Mainnet PRE distribution.
+5. Kupo parity can expose a reducer mismatch at a queried point. It does not retroactively authenticate a supplied bootstrap manifest, and two local Kupo instances on the same operator-controlled private testnet do not create a multi-operator trust quorum.
+
+Accordingly, **M1-A live bootstrap completeness is NOT QUALIFIED**. The required real run must include an independently evidenced complete bootstrap or full replay, exact chain point, raw TxIn/address/quantity comparison, two live node/ChainSync instances and exact-point Kupo parity. If the source query cannot establish the whole starting UTxO set at the selected point, the run must fail closed rather than accept a partial list.
+
+#### 45.88.4 The M1-A output is not yet a GOV voting snapshot
+
+The existing reducer is intentionally a test profile, and the following production inputs remain unselected or unproved:
+
+- exact production PRE policy ID and asset name, including the source that makes this identity authoritative;
+- exact Cardano point corresponding to GOV voting start, including timestamp-to-slot selection and finality rule;
+- the complete eligibility/exclusion perimeter for payment outputs, script outputs, treasury, exchange/LP and other classes;
+- mapping from raw Cardano addresses to GOV entities and aggregation across an entity's multiple addresses/credentials;
+- treatment of addresses sharing a stake credential, enterprise/base/reward credentials and unsupported address eras;
+- canonical proposal/snapshot-domain binding so a valid message for one proposal cannot be replayed as another proposal's snapshot;
+- authenticity/completeness mechanism accepted by the governance protocol and independently verifiable at the ledger boundary.
+
+The current leaf is a raw address-byte identity, with distinct addresses retained as distinct leaves even when they may share stake credentials. That is a deliberate M1 test choice, not a production GOV entity definition. The exact point is also an external \`expectedPoint\` supplied to the runner; M1-A does not decide which point corresponds to the governance voting-start instant. The network identity is a caller-supplied label in the reducer config, not by itself a proof of the Cardano network magic or genesis.
+
+#### 45.88.5 Readiness matrix and next gates
+
+| Gate | Current evidence | Status |
+|---|---|---|
+| M1-A reducer semantics | Pure reducer, adapter, WAL, rollback and adversarial fixtures; latest 79/79 CI | **UNIT QUALIFIED** |
+| M1-A live node integration | Two-node WSL2 runbook exists; no live node/Ogmios session evidenced | **NOT RUN** |
+| M1-A non-zero local asset | Guarded \`M1TEST\` helper and its unit tests exist; no prepare/submit/verify execution evidenced | **NOT RUN** |
+| M1-A complete bootstrap/replay | Caller-supplied initial set and hashed local manifest; no demonstrated complete production or private-ledger bootstrap evidence | **OPEN / BLOCKED** |
+| M1-A exact-point Kupo parity | Comparators and HTTP audit implemented; no live exact-point Kupo report | **NOT RUN** |
+| M1-A resource/recovery qualification | WAL replay/rollback unit tests; no chain-size, disk-growth, restart, deep-rollback or throughput measurements | **OPEN** |
+| Production PRE electorate | Asset identity, eligibility, entity/credential mapping and voting-start point unresolved | **BLOCKED BY G1** |
+| M1-C custom Mithril certification | No PRE custom module deployed to signers/aggregators/clients and no real certificate | **NOT STARTED** |
+| M2 Plutus certificate verification | No production-qualified recursive certificate verifier, CEK measurement or transaction-size proof | **NOT STARTED** |
+
+**Disposition:** M1-A has a credible and tested software core. It is not a complete PRE census, has not passed a live Cardano-node/Kupo run, and does not authenticate a governance electorate. The immediate bounded action is to execute the documented private magic-4242 two-node test with the non-zero \`M1TEST\` fixture and retain the full runtime evidence packet. That will qualify only local indexing plumbing. It must be followed by a separate design and proof decision for production PRE bootstrap, entity identity, eligibility and the voting-start point before M1-C or any GOV snapshot can be treated as authoritative.
+
+**Non-effects:** this revalidation is documentation-only. No M1-A source/test/workflow, governance semantics, production PRE identity, Cardano network, wallet, key, transaction, node, Kupo database, Mithril signer/certificate, Plutus verifier, V3, Reveal, Factory or Registry was changed or executed.
+
+#### 45.88.6 Exact source pins reviewed at the audited HEAD
+
+| Source | Blob SHA |
+|---|---|
+| \`audit/cardano-integration/preSnapshotUtxoIndex.mjs\` | \`08ee34ab4db1642ebd66410c1f17d8db9fb021b0\` |
+| \`audit/cardano-integration/ogmiosV7PreSnapshotAdapter.mjs\` | \`24614d5c93199f23315316d2b5bc732eca4e78b5\` |
+| \`audit/cardano-integration/ogmiosV7ChainSyncClient.mjs\` | \`5a1df47ad4974eabe38e8a597c23560bd8c47de9\` |
+| \`audit/cardano-integration/preSnapshotJournal.mjs\` | \`1c352feb2a313dce0aba65540f9492ee0f79e874\` |
+| \`audit/cardano-integration/preSnapshotReplicaConformance.mjs\` | \`d7edc7e3b4651919071734e4ac8dcb7f37b80e51\` |
+| \`audit/cardano-integration/preSnapshotDualReplicaRunner.mjs\` | \`c1e1d13575d0d0cb89c03b14ebbe111a00e3fc62\` |
+| \`audit/cardano-integration/preSnapshotKupoParity.mjs\` | \`e9ccb72133aa1327cf2a9bbb47797d53b7541b74\` |
+| \`audit/cardano-integration/preSnapshotKupoHttp.mjs\` | \`2fa72b88af75abf72ad40b25fe1b2d22316c288c\` |
+| \`audit/cardano-integration/preSnapshotKupoAudit.mjs\` | \`4ebd0708fc6b931d45bcd14f45abc5fb198443e4\` |
+| \`audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs\` | \`0a144ced20cd08a1befb62fec6fa5f429af0eaef\` |
+| \`audit/cardano-integration/preSnapshotPrivateTestAssetFixture.test.mjs\` | \`443aaf38f0daf0477d47bb50b54455e09f27d4bb\` |
+| \`audit/cardano-integration/package.json\` | \`095299264f8d44de9261a687d921831108dc8afb\` |
+| \`.github/workflows/m1-a-pre-snapshot-tests.yml\` | \`6fa47e974b370924fff2e3ca685105942339dffb\` |
+| \`docs/COORDINATION/AGENT-B-M1-A-LOCAL-NODE-INDEXER-EXECUTION-PROFILE-2026-11-08.md\` | \`96a2334c7b979c4c48de9bc8f94ec2e124e1ed2e\` |
+| \`docs/COORDINATION/AGENT-B-M1-A-TWO-NODE-LOCAL-DEVNET-RUNBOOK-2026-11-08.md\` | \`68d89cf3fa4e26c0484d899af76bdd56ca06ce1a\` |
