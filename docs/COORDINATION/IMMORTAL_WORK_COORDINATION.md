@@ -8035,3 +8035,43 @@ A second inspection of the deployed-script construction boundary confirms the mi
 **Do not proceed by:** inferring the tUSDM unit from an Oracle quote, hardcoding a value into an unversioned branch, or updating only the off-chain evidence producer. Each leaves a gap between specification authority and on-chain enforcement.
 
 **Disposition:** exact source confirms the missing B1 asset-identity parameter. Next decision is architectural: choose and formally bind the approved asset identity to the deployed B1 script or an authenticated on-chain configuration authority, then assess address migration/redeployment and rerun the CEK positive/negative matrix. Agent B's independent fixture review and Registry P0 remain outstanding in the shared coordination log. R1/Kc/Ω remains OPEN; first real Preprod Issue remains **NO-GO**. No validator, policy, ABI, V3, Reveal, 500×, wallet, signature, deployment or ledger state changed.
+
+
+## 46.19 AGENT A — NORMATIVE TUSDM DECISION RECONCILIATION / B1 PARAMETER PROPAGATION INVENTORY (2026-11-15)
+
+**Classification:** GOVERNED-DECISION RECONCILIATION + SOURCE CALL-SITE INVENTORY; NO CODE CHANGE.
+
+### Normative correction
+
+The earlier design audit's concern is strictly an on-chain binding gap, not an unresolved choice of Preprod tUSDM identity. Issue #37 comment [6387213299](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6387213299) is an explicit specification-authority decision dated 2026-10-24: exact Cardano Preprod tUSDM is **ACCEPTED for Preprod only** as physically present `VerifiedUSDM` in the exact qualified B1 PrizePool UTxO, subject to live out-ref/asset verification and remaining EV1–EV7, EEV and Issue gates.
+
+Approved unit:
+- policy ID `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`
+- asset name hex `0014df10745553444d`
+- full unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`
+
+This narrow decision does not imply Mainnet identity, issuer redemption, market peg or USD parity. Separately, Issue #37 records Option B (verify USD/USDM separately) as selected on 2026-10-26; its source and implementation contract remain unqualified. Do not conflate the already-approved physical Preprod asset identity with the separate USD/USDM conversion required for flows that depend on USD-denominated settlement.
+
+### Exact B1 parameter propagation inventory
+
+Current `plutus/B1PrizePool.hs` `mkValidator` and `wrap` accept five protocol parameters before datum/redeemer/context: PrizeValidator hash, OracleStateId, Oracle publisher, Pool singleton policy and Pool singleton name. There is no Direct-USDM policy/name parameter.
+
+The parameter is applied in `src/loadValidator.ts::buildB1PrizePool` and propagated through `buildScriptsFromLucid`; the current config exports Oracle and Pool singleton identity only and has no canonical tUSDM config constant. The B1 factory artifact is exported by `plutus/export/Export.hs` and mirrored into `src/plutusScripts/b1PrizePoolFactory.plutus.json` by the Cardano lab workflow. The topology is consumed by the live Issue builder and diagnostic paths including `src/mint.ts`, `src/gameFlow.ts`, `audit/cardano-integration/preprod-real-reveal.mjs`, `reveal-ledger-trace.ts`, `expire-ledger-trace.ts`, `fund-treasury-oracle-valuation-trace.ts`, and P2.8 topology/emulator checks. The deployment/export descriptions and all topology fixtures also require synchronization.
+
+The canonical approved tUSDM full unit is currently pinned in the EV3 source producer/workflow boundary (`preprod-direct-usdm-source-set.mjs`, `pre-rich-b1-eev-approval.yml`) and is not passed to the B1 factory. `src/config.ts` does not expose policy/name constants for it.
+
+### Narrow engineering design candidate — not yet implemented
+
+The most direct candidate is to add the already-governed tUSDM policy/name as explicit B1 factory parameters, then enforce the Direct-USDM transition relation in B1 for the relevant Pool-spending branches. At minimum, the CEK matrix must prove:
+- FundTreasury cannot decrease physical approved tUSDM while claiming an Oracle-valued liquidity increase; the exact allowed increase must be derived from the actual transaction input/output quantity relation, not a caller scalar.
+- TicketClaimed must bind the exact physical tUSDM decrease to the canonical payout quantity under the approved 6-decimal asset / 100-subunit accounting conversion; any remaining tUSDM must be preserved in the continuing Pool output.
+- unqualified positive native assets must not substitute for approved tUSDM in the Direct-USDM Pool profile.
+- non-Direct-USDM and zero-delta paths retain only the transitions explicitly allowed by the profile and existing B1 contract.
+
+This design changes B1 factory parameters, compiled script bytes, ScriptHash and Pool address. Therefore it cannot be treated as an in-place patch: the deployment identity, exact Pool UTxO, PrizeValidator cross-binding, MintPolicy parameterization, DApp addresses, EV1–EV7 source evidence, approval hashes and every dependent deployment artifact must be regenerated and requalified. No old Pool UTxO may be assumed to migrate automatically. This inventory is not authority to deploy or move funds.
+
+### Agent B review status / blockers
+
+A scan of current shared coordination through §46.18 and the available PR #19 review/comment records did not find Agent B's requested independent review of the Claim/FundTreasury CEK fixtures. Agent B retains Registry identity P0 ownership. Do not treat a prior Agent B review of the separate Reveal invalid-envelope harness as review of these Claim/Fund fixtures.
+
+**Disposition:** the Preprod tUSDM identity decision is CLOSED for its narrow testnet physical-accounting role; its B1 on-chain binding is OPEN. Claim/FundTreasury compiled-CEK counterexamples remain confirmed by Haskell run #43717981674 on code SHA `79561408528eecfe799a56259a19d77d8738907e`. USD/USDM Option B source qualification remains OPEN; R1/Kc/Ω and C1/PA1–PA7 remain OPEN; Registry identity P0 remains with Agent B. First real Preprod Issue remains **NO-GO**. No code, validator, script hash/address, datum/redeemer ABI, V3, Reveal, 500×, wallet, signature, deployment, funding or ledger state changed.
