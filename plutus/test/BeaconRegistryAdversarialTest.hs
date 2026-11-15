@@ -574,6 +574,29 @@ main = do
     (applySyncBeacon (syncContext fakeReady canonicalRegistryAddress))
   putStrLn "CHARACTERIZATION: SyncBeacon accepts a non-derived fake Ready Beacon without Registry execution or relayer signature"
 
+  let
+    attackerMcHash = bytes [9, 10, 11, 12]
+    attackerContext = bytes [13, 14, 15, 16]
+    attackerDerivedBeacon =
+      deriveBeacon
+        (btNetworkId target)
+        (btRound target)
+        (btMainchainRef target)
+        attackerMcHash
+        attackerContext
+        (btVersion target)
+    derivedConsistentFakeReady =
+      readyRegistry
+        { brBeaconValue = attackerDerivedBeacon
+        , brMcHash = attackerMcHash
+        , brMateriosContext = attackerContext
+        , brRelayerPkh = buyerPkh
+        }
+  assertEvaluatesSuccessfully
+    (applySyncBeacon
+      (syncContext derivedConsistentFakeReady canonicalRegistryAddress))
+  putStrLn "CHARACTERIZATION: SyncBeacon accepts attacker-chosen mcHash/context with a correctly derived Beacon and no Registry publication"
+
   let emptyReceiptReady =
         fakeReady
           { brMcHash = emptyByteString
