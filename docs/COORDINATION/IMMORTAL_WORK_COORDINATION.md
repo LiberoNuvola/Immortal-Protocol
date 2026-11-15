@@ -7575,3 +7575,49 @@ No validator, policy, ABI, workflow, test harness or production source changed i
 **Disposition:** cross-agent first-Issue NO-GO confirmed; Counter API mismatch has a minimal public-utility repair design but remains unapplied; the exclusive test-only write slot is not assumed. The conservative Haskell V2 size run `43679611905` remains IN_PROGRESS with no candidate size, so Haskell V2 T04 remains RESOURCE BLOCKED / NOT RUN.
 
 **Non-effects:** no source, validator, ABI, economic rule, test harness, wallet, signing, transaction, deployment, Preprod/Mainnet or ledger state changed.
+
+
+## 46.03 AGENT B — COUNTER LOOKALIKE TEST-HARNESS API REPAIR COMMITTED / YACI RERUN ACTIVE (2026-11-15)
+
+**Explicit user slot:** test-harness-only Counter address-construction repair.  
+**Base HEAD:** `5394c2de36ebaa25ff859ab0958ed854c4cf3060`  
+**Commit:** `7396e042eb65db8ab81f49445052ca349addc503`  
+**Changed path:** only `audit/cardano-integration/counter-lookalike-ledger-trace.ts`  
+**Blob:** `f550585bdea619cff363dd7b4fe3d26b02fef333`  
+**Diff:** 9 insertions / 8 deletions.
+
+### 46.03.1 Applied repair
+
+The previous trace called legacy `CML.StakeCredential.from_scripthash/from_keyhash`, which is not present in pinned `@lucid-evolution/lucid@0.6.5`. The exact-version public helper `credentialToAddress` is re-exported from the Lucid package and constructs a base address through the current `CML.Credential` API.
+
+The trace now imports and invokes:
+
+```ts
+const lookalikeAddress = credentialToAddress(
+  'Preprod',
+  { type: 'Script', hash: counterHash },
+  { type: 'Key', hash: walletPaymentHash },
+)
+```
+
+The existing address identity guards remain. The stake credential assertion was strengthened to require not only type `Key`, but exact equality with the ephemeral wallet payment hash. Payment credential must still equal the CounterValidator script hash, and the lookalike full address must remain distinct from the canonical Enterprise address.
+
+No validator, script artifact, datum/redeemer, policy, ABI, relayer, economic rule or production source changed.
+
+### 46.03.2 Exact Lab execution
+
+Push-triggered run: [IMMORTAL Cardano Integration Lab 43681459956](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43681459956)  
+Tested SHA: `7396e042eb65db8ab81f49445052ca349addc503`  
+Job: `132712783738` (`devnet-integration`).
+
+At the last verified poll, the workflow had completed checkout, Node setup, project dependencies, isolated lab dependencies and build-cache restoration. It remained **IN_PROGRESS** in `Setup canonical Plutus CI`, with no failure reported. The Counter trace had not yet executed. Therefore address-construction repair is committed and exact SHA queued/running, but **not yet runtime-validated or native-ledger-validated**. The complete trace must still bootstrap the three outputs, submit both lookalike spends, observe continuations and prove the canonical Counter-address UTxO remains unspent.
+
+### 46.03.3 Ancillary push-triggered Preprod Context job
+
+The same push also triggered [Preprod Context run 43681459946](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43681459946), whose only active job is explicitly marked read-only by the workflow. Its context observation and UTxO evidence checks completed successfully; deployment, direct-USDM bootstrap, V3 observation and real Reveal jobs were skipped. No transaction or wallet signature was performed by this run. This is independent observational evidence, not first-Issue authorization.
+
+Other commit checks observed SUCCESS: Documentation Link Check `43681459992`, Portability Conformance `43681459969`, Cardano Adapter Sale Conformance `43681459961`.
+
+**Disposition:** API mismatch repair applied to the single authorized test path; Cardano Lab native-Yaci outcome is pending. No claim is made yet that the Counter validator accepted either spend. Issue #43 remains OPEN, B1 Registry authenticity and first Issue remain blocked/NO-GO, and the V2 T04 size experiment is unrelated and remains separately unresolved.
+
+**Non-effects:** no production or protocol source, ABI, validator, policy, Factory, V3/Reveal semantics, economics, Treasury or Materios changed. No Preprod signing, transaction, deployment or ticket issuance occurred.
