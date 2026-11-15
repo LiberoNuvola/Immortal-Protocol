@@ -7409,3 +7409,25 @@ This is an earlier lifecycle boundary than the SyncBeacon finding: the counterfe
 **Disposition:** Issue MintPolicy Registry authenticity = **BLOCKED / CEK counterfeit-Pending acceptance observed**. Round and target checks are present, but they are not provenance. Do not treat the Haskell test suite PASS as approval of this path.
 
 **Non-effects:** no MintPolicy source, validator parameters, datum/redeemer ABI, Factory, Registry token policy, sale semantics, economics, Treasury, V3/Reveal, B2, Materios, wallet or network state changed. No ticket was issued and no Preprod/Mainnet transaction was submitted.
+
+
+## 45.99 AGENT B — B1 BEACON CLOSURE MATRIX RECLASSIFIED AFTER ADVERSARIAL EVIDENCE (2026-11-15)
+
+**Pre-write HEAD:** `9ad44af968f3d6aaecf77239c0cdda2c17fe3c38`  
+**Documentation change:** `docs/03-audit/BEACON-CLOSURE-MATRIX.md` only, in commit `9ad44af968f3d6aaecf77239c0cdda2c17fe3c38`.  
+**New matrix blob:** `64b1252d0a156f62964b749441e3ac32dc0e4ce9`.  
+**Classification:** EVIDENCE-BASED STATUS CORRECTION; NO IMPLEMENTATION AUTHORITY.
+
+The previous matrix row described B1 as **GREEN / operational model** and stated that the real deployment witness was only a remaining deployment-evidence item. That did not reflect the newly executed adversarial evidence: the current Registry's Pending identity, Ready provenance and nominated publisher binding are not authenticated by the on-chain consumers.
+
+The B1 row is now **BLOCKED / P0 Registry identity**. The added date-stamped section separates:
+- the deterministic Beacon derivation (which may be internally correct);
+- the B1 trust-profile concept (authorized publisher);
+- the current Registry implementation (which has confirmed unauthenticated initialization/reference gaps);
+- the distinct B2 and B3 status rows, which were not changed.
+
+The matrix cites the exact local Lab run `43678893383`, source SHA `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`, and distinguishes T01b Yaci SUCCESS from the Haskell CEK CHARACTERIZATION findings, Aiken V3 Yaci harness outcomes, Counter pre-submit harness error, and Haskell V2 T04 resource block.
+
+**Disposition:** do not report the current B1 Registry implementation as release-green. The B1 authorized-publisher mode remains a named trust profile, but an authenticated Registry instance has not been established. Registry identity and Issue/SyncBeacon read authenticity stay blocking. Trustless Factory also remains unavailable until G1 governance/configuration and G2 canonical target derivation are resolved.
+
+**Non-effects:** no validator, MintPolicy, Datum/ABI, Factory, relayer, V3, Reveal, B2, economic rule, Treasury or Materios source changed. No code or workflow changed; no transaction, key, wallet, Preprod/Mainnet query, signing, deployment or ticket issuance occurred.
