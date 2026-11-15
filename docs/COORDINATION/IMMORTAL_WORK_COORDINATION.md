@@ -8704,3 +8704,35 @@ Workflow-label commit: `b2fa5f5e2c0ebb01146cb4b6256899e796f18d44`. Its push path
 The fixture's static cryptographic and Value arithmetic has been independently reproduced; the compiled Haskell evaluation is still the required next evidence. Existing Claim CEK acceptance remains bound only to run #43749650325 and its exact earlier SHA. The new combined Reveal and ADA-for-tUSDM FundTreasury acceptance assertions must not be reported as PASS before a matching successful run.
 
 No production validator, MintPolicy, PrizeValidator, B1 ABI, V3, Reveal semantics, 500×, economic constant, transaction, wallet, signature, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO** under §46.31.
+
+## 46.34 AGENT A — FUND TREASURY ADA-ONLY ORACLE FAIL-CLOSED CONTROL ADDED (2026-11-15)
+
+**Classification:** TEST-ONLY CURRENT-PREDICATE CHARACTERIZATION; no production rule change; compiled execution pending.
+
+### Test commit and exact source
+
+- Test-only commit: `453871b1d9e79370f76ed1583d3c256fc7bf3aba`.
+- File: `plutus/test/B1DirectUsdmTransitionCharacterizationTest.hs`.
+- The Cabal suite remains `b1-direct-usdm-transition-characterization-tests`; the Haskell workflow already invokes it, and the workflow push path covers `plutus/**`.
+
+### Paired FundTreasury vectors now use the same Pool/Value transition
+
+The fixture builder now receives the Oracle reference output, allowing two Oracle configurations over the identical ledger-balanced EV3-canonical Pool transition:
+
+1. **Synthetic two-quote characterization:** legacy-output Pool has the Pool singleton + 10,000,000 tUSDM atoms + 1,600,000 lovelace; continuing Pool has Pool singleton + 9,000,000 tUSDM atoms + 2,700,000 lovelace. The source input/output balances the remaining 1,000,000 tUSDM atoms and 1,900,000 lovelace. The authenticated synthetic `OracleQuoteSet` contains ADA and tUSDM quotes at 100. Under the current global 1,000,000 quote precision, the Pool's Oracle total is 1,000 → 1,010, while physical direct tUSDM falls by 1,000,000 atoms (100 accounting subunits). The current B1 FundTreasury predicate is expected to accept; this remains a conditional synthetic counterexample requiring both quotes.
+
+2. **Prescribed legacy ADA-only Oracle control:** the exact same Pool and source Values are evaluated with an Oracle constructor-0 `OracleDatum` whose only quote is ADA (empty policy/name), as produced by the documented Preprod bootstrap. Since the continuing Pool contains a non-zero tUSDM asset and `Economic.totalUsdmValue` requests a quote for each non-zero asset before the ADA minimum-UTxO economic exclusion, there is no tUSDM quote; the B1 FundTreasury evaluation is expected to fail closed. This is a negative control for the current documented bootstrap configuration.
+
+The pair avoids conflating:
+- a validator-level counterexample under a synthetic multi-quote state; and
+- the currently documented Preprod ADA-only Oracle setup, under which the legacy B1 FundTreasury path cannot value the non-zero tUSDM Pool.
+
+### CI / evidence disposition
+
+The new commit is on `work/immortal-green-closure`. The current combined-status lookup returns no statuses for the exact commit, and the available workflow-run lookup does not expose a run tied to it. Therefore both new FundTreasury assertions, as well as the new combined Reveal assertion, remain **NOT YET EXECUTED / NOT YET QUALIFIED**. The prior Claim CEK result remains scoped only to its exact earlier tested commit and run #43749650325.
+
+### Disposition
+
+No new claim is made that a two-quote FundTreasury substitution has occurred or is currently reachable on Preprod. Current source plus the documented ADA-only bootstrap instead indicate that legacy FundTreasury fails closed when trying to value the Pool's tUSDM without a quote. The paired test will make this distinction executable once its exact Haskell conformance run is observed.
+
+No B1/PrizeValidator/MintPolicy source, Oracle deployment datum, ABI, V3, Reveal semantics, 500×, economic constant, workflow behavior, wallet, signature, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO** under §46.31.
