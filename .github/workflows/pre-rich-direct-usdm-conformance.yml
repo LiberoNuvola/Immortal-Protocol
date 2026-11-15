@@ -11,6 +11,8 @@ on:
       - "Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts"
       - "audit/cardano-integration/preprod-direct-usdm-source-set.mjs"
       - "audit/cardano-integration/preprod-direct-usdm-source-set.test.mjs"
+      - "audit/cardano-integration/preprod-direct-usdm-basket-contract.mjs"
+      - "audit/cardano-integration/preprod-direct-usdm-basket-contract.test.mjs"
       - "audit/cardano-integration/preprod-direct-usdm-approve.mjs"
       - "audit/cardano-integration/eev-approval-integrity.mjs"
       - "audit/cardano-integration/eev-approval-integrity.test.mjs"
@@ -80,6 +82,7 @@ jobs:
           node --check audit/cardano-integration/eev-approval-integrity.mjs
           node --test audit/cardano-integration/eev-approval-integrity.test.mjs
           node --test audit/cardano-integration/preprod-direct-usdm-source-set.test.mjs
+          node --test audit/cardano-integration/preprod-direct-usdm-basket-contract.test.mjs
           node --test audit/cardano-integration/preprod-direct-usdm-approve.test.mjs
 
       - name: Test materialized Oracle State datum decoding

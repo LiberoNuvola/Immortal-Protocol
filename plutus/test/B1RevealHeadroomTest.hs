@@ -395,12 +395,32 @@ makeDualRevealContexts
   -> Builtins.BuiltinByteString
   -> (ScriptContext, ScriptContext)
 makeDualRevealContexts before inputPrize outputPrize after ticketId =
+  makeDualRevealContextsWithPoolValues
+    before inputPrize outputPrize after ticketId poolValue poolValue
+
+makeDualRevealContextsWithPoolValues
+  :: B1PrizePoolDatum
+  -> PrizeDatum
+  -> PrizeDatum
+  -> B1PrizePoolDatum
+  -> Builtins.BuiltinByteString
+  -> Value
+  -> Value
+  -> (ScriptContext, ScriptContext)
+makeDualRevealContextsWithPoolValues
+  before
+  inputPrize
+  outputPrize
+  after
+  ticketId
+  inputPoolValue
+  outputPoolValue =
   let
     poolRef = TxOutRef (TxId (rawBytes [51])) 0
     prizeRef = TxOutRef (TxId (rawBytes [52])) 0
     poolInput =
       TxInInfo poolRef
-        (scriptOut poolHash poolValue (PlutusTx.toBuiltinData before))
+        (scriptOut poolHash inputPoolValue (PlutusTx.toBuiltinData before))
     prizeInput =
       TxInInfo prizeRef
         (scriptOut prizeHash (prizeValueFor ticketId)
@@ -409,7 +429,7 @@ makeDualRevealContexts before inputPrize outputPrize after ticketId =
       scriptOut prizeHash (prizeValueFor ticketId)
         (PlutusTx.toBuiltinData outputPrize)
     poolOutput =
-      scriptOut poolHash poolValue (PlutusTx.toBuiltinData after)
+      scriptOut poolHash outputPoolValue (PlutusTx.toBuiltinData after)
     -- This TxInfo value is constructed once and shared verbatim by both
     -- contexts. Only the ScriptPurpose differs.
     sharedInfo =
@@ -503,6 +523,62 @@ runDualValidatorSequence liquidity prices secrets =
             Left _ -> False
       in
         (prizeAccepted, poolAccepted) : go after rest
+
+
+directUsdmPolicy :: Builtins.BuiltinByteString
+directUsdmPolicy = rawBytes (replicate 28 14)
+
+directUsdmName :: Builtins.BuiltinByteString
+directUsdmName = rawBytes [116, 85, 83, 68, 77] -- tUSDM fixture name
+
+directUsdmPoolValue :: Integer -> Value
+directUsdmPoolValue atomicAmount =
+  singleton (CurrencySymbol poolPolicy) (TokenName poolName) 1
+    <> singleton (CurrencySymbol directUsdmPolicy) (TokenName directUsdmName) atomicAmount
+    <> singleton adaSymbol adaToken 10_000_000
+
+directUsdmRu :: Integer -> Integer
+directUsdmRu atomicAmount =
+  div (atomicAmount * 100) 1_000_000
+
+-- Evaluate an otherwise identical valid LOSS Reveal while changing only the
+-- physical tUSDM amount in the Pool Value. This deliberately characterizes
+-- existing compiled validators; it does not impose or implement a new rule.
+runDirectUsdmReveal
+  :: Integer
+  -> Integer
+  -> (Bool, Bool, Integer, Integer)
+runDirectUsdmReveal inputAtomic outputAtomic =
+  let
+    price = 1
+    nonce = 7
+    ticketId = ticketNameFor 0
+    secret = rawBytes [0, 187, 204, 221]
+    before = poolDatum 1_000 0 1 1
+    (inputPrize, outputPrize, payout) =
+      canonicalPrizePair price nonce ticketId secret
+    after =
+      before
+        { ppPendingLiabilities = ppPendingLiabilities before + payout
+        , ppUnresolvedReserve = ppUnresolvedReserve before - price
+        , ppUnresolvedTicketCount = ppUnresolvedTicketCount before - 1
+        }
+    inputValue = directUsdmPoolValue inputAtomic
+    outputValue = directUsdmPoolValue outputAtomic
+    (prizeContext, poolContext) =
+      makeDualRevealContextsWithPoolValues
+        before inputPrize outputPrize after ticketId inputValue outputValue
+    prizeAccepted =
+      evaluatePrizeReveal inputPrize secret prizeContext
+    poolAccepted =
+      case evalResult (evaluateCompiledCode
+             (applyB1Validator before (TicketRevealed price) poolContext)) of
+        Right _ -> True
+        Left _ -> False
+    directDelta =
+      directUsdmRu outputAtomic - directUsdmRu inputAtomic
+  in
+    (prizeAccepted, poolAccepted, payout, directDelta)
 
 assertDualOutcomes :: [(Bool, Bool)] -> [Bool] -> String -> IO ()
 assertDualOutcomes actual expected label =
@@ -624,5 +700,17 @@ main = do
        [genesis, genesis] [lossSecret, maxSecrets !! 1])
     [True, True]
     "shared TxInfo dual CEK: canonical LOSS before a later 500x payout remains valid at exact WCE"
+
+  assert
+    (runDirectUsdmReveal 10_000_000 10_000_000 == (True, True, 0, 0))
+    "direct-USDM CEK control: valid LOSS Reveal with unchanged physical Pool Value"
+
+  assert
+    (runDirectUsdmReveal 10_000_000 5_000_000 == (True, True, 0, -500))
+    "direct-USDM CEK boundary: current validators accept exactly -500 RU physical EEV delta"
+
+  assert
+    (runDirectUsdmReveal 10_000_000 4_990_000 == (True, True, 0, -501))
+    "OBSERVED GAP: both current Reveal validators accept -501 RU direct-EEV delta against -500 RU ProtectedCapital delta"
 
   putStrLn "ALL B1 AND DUAL-VALIDATOR REVEAL HEADROOM CEK TESTS PASSED"
