@@ -8381,3 +8381,53 @@ Before considering the implementation complete:
 - run all affected builders, artifact consistency, predeploy and resource/transaction-size gates.
 
 No V3 carrier code, Reveal derivation, Reveal outcome/semantics, 500× multiplier, economic constant, datum/redeemer schema, wallet, key, signature, deployment, funding or ledger state changed. The first real Preprod Issue remains **NO-GO**.
+
+## 46.27 AGENT A — B1 ORACLE-PARAMETER REPLACEMENT OPTION (2026-11-15)
+
+**Classification:** ARCHITECTURAL ALTERNATIVE IDENTIFIED FROM SOURCE; REVIEW REQUIRED; NO IMPLEMENTATION AUTHORIZATION.
+
+### Source fact
+
+In current `plutus/B1PrizePool.hs`, the B1-specific OracleStateId / publisher parameters are used only by:
+- `FundTreasury`, through `recomputedLiquidity → Economic.poolUsdmValue`;
+- `TicketClaimed`, through `payoutPaidUsdm` and the Oracle-valued Pool input/output delta.
+
+Issue, Reveal and Expire do not need Oracle valuation in B1. The separate PrizeValidator still has its own OracleStateId/publisher inputs and its Claim predicate continues to Oracle-value the owner's aggregate canonical enterprise-address output.
+
+### Two possible B1 factory designs
+
+**A. Add Direct-USDM policy/name and retain B1 Oracle parameters.** This is the additive route inventoried in §46.26: five existing B1 protocol parameters become seven and the compiled wrapper grows from eight to ten arguments. It retains redundant Oracle valuation in B1 unless the old predicates are also removed; retaining both requires an explicit explanation of the two independent obligations.
+
+**B. Replace B1 OracleStateId/publisher with Direct-USDM policy/name.** B1's five protocol-parameter slots remain five:
+- PrizeValidator ScriptHash;
+- Direct-USDM policy ID;
+- Direct-USDM asset-name bytes;
+- Pool singleton policy;
+- Pool singleton token name.
+
+The compiled wrapper remains eight arguments total (five protocol parameters plus datum/redeemer/context), although the parameter meanings and compiled script bytes change. B1 FundTreasury and Claim become physical-asset transitions without a B1 Oracle dependency. The separate PrizeValidator Oracle dependency and its existing Claim valuation are preserved; the transaction must satisfy both the PrizeValidator condition and B1's stricter direct-asset condition.
+
+### Why option B deserves first review
+
+It aligns the B1 validator's accounting boundary with the accepted Preprod Direct-USDM profile and avoids adding unused/duplicated Oracle inputs to the Pool validator. It also avoids increasing factory application arity and potentially reduces validator code and CEK work. This is a source-based design rationale, not a protocol decision.
+
+The change is not a drop-in ABI-compatible edit: B1's script hash/address changes, so MintPolicy hash/Ticket policy ID and each new `pdPrizePoolHash` also change as described in §46.26. PrizeValidator itself need not change for this option; its own Oracle checks and B1 cross-reference through PrizeDatum remain in place.
+
+### Dependencies / caveats
+
+- `src/loadValidator.ts` must continue supplying Oracle identity to PrizeValidator and MintPolicy, while supplying the Direct-USDM identity to B1. Do not globally remove Oracle configuration from the topology builder.
+- Explicit test/diagnostic builders (including local synthetic Reveal/Expire traces) must pass their fixture's own direct asset policy/name, not accidentally inherit the production Preprod constant.
+- `scripts/predeploy-check.mjs` currently asserts that B1 contains Oracle valuation logic. That assertion must be reconsidered against the chosen architecture; do not blindly remove it without confirming PrizeValidator still enforces its separate Oracle-bound Claim condition.
+- `PrizeValidator.rawClaimantValue` remains limited to `Address (PubKeyCredential ownerHash) Nothing`. B1 direct payout aggregation must respect the same canonical enterprise-address contract for the shared transaction.
+- The direct asset is accepted only for Preprod physical accounting. Do not generalize this identity to Mainnet or infer USD parity/redemption.
+- The first-Issue Option B USD/USDM source gate remains independent and unqualified; replacing B1's Oracle check does not resolve that gate.
+
+### Review requested before choosing
+
+Agent B / specification authority should compare A and B for:
+1. preservation of the existing PrizeValidator+B1 shared Claim transaction contract;
+2. exact parameter ordering, factory/artifact migration and any ABI consumer missed by §46.26;
+3. script size/CEK impact and any required Oracle reference inputs after B1 no longer reads them;
+4. whether the B1 Oracle redundancy is a deliberate normative requirement or merely legacy duplication.
+
+**Current disposition:** neither A nor B has been implemented or adopted. Option B is the narrower candidate to evaluate first; implementation remains blocked on independent review and controlled deployment migration approval. No B1/PrizeValidator code, ABI, V3, Reveal, 500×, economic constants, workflow, wallet, signature, deployment, funding or ledger state changed.
