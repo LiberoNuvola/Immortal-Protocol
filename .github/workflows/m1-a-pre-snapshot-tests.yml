@@ -24,6 +24,8 @@ on:
       - "audit/cardano-integration/preSnapshotKupoAudit.mjs"
       - "audit/cardano-integration/preSnapshotPrivateTestAssetFixture.mjs"
       - "audit/cardano-integration/preSnapshotPrivateTestAssetFixture.test.mjs"
+      - "audit/cardano-integration/preSnapshotWholeUtxoBootstrap.mjs"
+      - "audit/cardano-integration/preSnapshotWholeUtxoBootstrap.test.mjs"
       - "audit/cardano-integration/package.json"
   workflow_dispatch:
 
@@ -75,3 +77,5 @@ jobs:
           node --check preSnapshotKupoHttp.mjs
           node --check preSnapshotKupoAudit.mjs
           node --check preSnapshotPrivateTestAssetFixture.mjs
+          node --check preSnapshotWholeUtxoBootstrap.mjs
+          node --check preSnapshotWholeUtxoBootstrap.test.mjs
