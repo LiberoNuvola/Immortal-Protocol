@@ -373,3 +373,17 @@ Consequently, “Reserve starts accumulating from ticket sales after activation�
 The direct-USDM PrizePool census is not evidence of the Treasury Reserve compartment's balance. Nor can the Treasury payment be divided into an assumed Reserve share without a current authorized allocation rule.
 
 **Agent A recommendation:** preserve the existing Issue semantics and do not modify V3. Treat the Treasury Reserve credit/use policy as OPEN until the project explicitly identifies which of these meanings is intended and supplies its authorized transition and evidence. This is a semantic clarification, not a request to invent a percentage or coefficient.
+
+## 2026-11-15 — Agent A: Treasury settlement conformance boundary
+
+A further source-and-test trace narrows what the current Issue settlement actually guarantees:
+
+- `src/issueSettlement.ts::assertCompletedTreasurySettlement` requires exactly one completed output at the canonical Treasury address and compares its complete asset-unit/quantity map with the exact basket derived from the authenticated oracle quote(s). It proves output-value conformance; it does not create or classify a Reserve balance.
+- `src/mint.ts` applies that assertion after Lucid completes the transaction, then separately checks output-specific minimum ADA. The output datum is the datum selected from the existing Treasury UTxO set.
+- `src/treasuryIdentity.ts::selectConsistentTreasuryDatum` only requires every observed Treasury UTxO to carry the same datum. Its own contract explicitly says consistency is not authentication and that the legacy datum has no authenticated category balances.
+- `plutus/Types.hs::TreasuryDatum` contains a threshold, four destination script hashes and four legacy percentages. It contains no category balance ledger or Reserve balance field. `plutus/Treasury.hs` only implements the legacy `Distribute` action.
+- `src/__tests__/issueSettlementConformance.test.ts` covers exact completed Treasury output settlement and oracle basket conformance. `src/__tests__/treasuryIdentity.test.ts` covers address/datum consistency, including rejection of empty or conflicting custody sets. `src/__tests__/rf8-treasury-relayer-boundary.test.ts` asserts that the relayer worker remains fail-closed and cannot sign/submit the legacy distribution.
+
+This closes one ambiguity: **the Issue payment is an exact-value Treasury custody output, not a category posting**. The exact asset basket may be ADA, PRE or a supported mixture, but its presence in Treasury custody does not, by itself, establish an accounting credit to the legacy Reserve destination. Nor does the legacy TreasuryDatum encode an accumulated Reserve sub-ledger.
+
+No implementation or economic semantics were changed. The open decision remains the same: define whether the post-activation Reserve is a separately held account/UTxO or a governed accounting sub-ledger, then identify its authorized credit and release transitions and prevent double counting. Until then, do not assign any fraction of Issue proceeds to Reserve.
