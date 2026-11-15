@@ -8140,3 +8140,41 @@ Extend the compiled CEK characterization to cover:
 The Direct-USDM identity must be added as explicit B1 factory parameters or an independently authenticated on-chain config. The current evidence favours explicit factory parameters because no authenticated immutable config carrier bound to this Pool has been established. This changes B1 ScriptHash/address and requires controlled redeployment. The action relations above are now the exact candidate test contract; they are not yet code or authority to redeploy.
 
 No changes to V3, Reveal, 500×, economic constants, datum/redeemer ABI, wallet, signature, deployment or ledger. First real Preprod Issue remains **NO-GO** pending formal review, Agent B fixture review, R1/Kc/Ω, Registry P0 and all fresh exact-live EEV gates.
+
+
+## 46.21 AGENT A — EV3-CANONICAL CLAIM PAYOUT-SUBSTITUTION FIXTURE (2026-11-15)
+
+**Classification:** TEST-ONLY CHARACTERIZATION UPDATE; COMPILED CEK RESULT NOT YET OBSERVED; NO PRODUCTION SEMANTICS CHANGED.
+
+### Fixture correction
+
+The previous Claim fixture put a foreign positive asset in the continuing Pool. That is not a valid EV3-qualified Pool basket: `canonicalizeDirectUsdmBasket` rejects every positive asset other than the Pool singleton and approved tUSDM. The previous fixture is therefore not evidence of a reachable attack against an EV3-qualified Pool and must not be described as such.
+
+The replacement fixture keeps both Pool input and continuing Pool output EV3-canonical:
+- Pool input: 4,000,000 approved tUSDM atomic units;
+- Pool output: 2,000,000 approved tUSDM atomic units;
+- source change: remaining 2,000,000 approved tUSDM atomic units;
+- foreign asset: 1 unit enters from the source and 1 unit is paid to the ticket owner's PubKey output;
+- ticket NFT, Pool singleton, PrizeDatum continuing value and ADA balance are preserved.
+The owner receives no tUSDM in this synthetic transaction.
+
+The test now derives, from the shared `TxInfo`, (a) Pool input/output Oracle basket values using `Economic.poolUsdmValue`, (b) physical tUSDM delta using `valueOf`, and (c) the aggregate owner output Value and its Oracle equivalent using `Economic.totalUsdmValue`. The assertions are no longer hard-coded for these measured quantities.
+
+### Source-level predicate reconciliation
+
+- B1 `payoutPaidUsdm` scans PubKey outputs to the exact owner and accepts if any one matching output has Oracle-valued amount exactly equal to the required payout. It does not require physical approved tUSDM.
+- PrizeValidator `rawClaimantValue` aggregates Values at the exact enterprise PubKey address, then `Economic.totalUsdmValue` Oracle-values that aggregate. It also does not require physical approved tUSDM.
+- Both Claim validators independently require the Pool's Oracle-valued decrease to equal the crystallized payout (B1) / datum-liability consistency (PrizeValidator). The candidate fixture makes the Pool's Oracle value fall by 200 subunits while the owner receives zero physical tUSDM and an Oracle-equivalent foreign payout of 200 subunits.
+- This remains a hypothesis until the compiled CEK suite actually evaluates both validators against this exact shared TxInfo and emits PASS. It is not a native ledger/Yaci/Preprod transaction or proof of live reachability.
+
+### Commits and verification
+
+Test-only commits on `work/immortal-green-closure`:
+- `07e86ed243c5af9075fc9da6e5086bd78932a574`: replace non-EV3 Pool foreign-asset Claim fixture with EV3-canonical Pool and foreign-asset owner payout.
+- `8a653913a1dccf76098197e3c235d0b2df585c86`: derive owner physical tUSDM and Oracle equivalent from TxInfo outputs.
+- `d9cc7be42f617a8c964bfb7cac8947a5e6e2e5d0`: explicitly label the old FundTreasury fixture as historical/non-EV3.
+- `d2c713c850aecbc507af229251e3a39d63b66d30`: derive Pool Oracle values and physical tUSDM delta from TxInfo Values.
+
+The Haskell Semantic Conformance workflow has a push trigger for this branch and includes `b1-direct-usdm-transition-characterization-tests`. As of this entry, the GitHub commit status endpoint returned no statuses and the available commit-run wrapper returned no runs (it filters PR-triggered runs); therefore no CI or CEK PASS is claimed. Obtain and inspect the exact workflow run/job log before relying on the result.
+
+No production code, B1 factory parameters, script hashes/addresses, datum/redeemer ABI, V3, Reveal, 500×, wallet, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO**. R1/Kc/Ω, Registry identity P0, fresh EV1–EV7, C1/PA1–PA7 and the other §46.20 gates remain open.
