@@ -7518,3 +7518,60 @@ The read-only readiness script does not verify either of those two gates. `READY
 **Ownership:** Agent B — B1 Registry identity and consumer enforcement; Agent A — deployment-bound R1/Kc/Ω certificate. Revalidate live Direct-USDM EEV, Oracle and B2 evidence only after the upstream blockers have defined closure contracts.
 
 **Non-effects:** no production source, test, validator, policy, ABI, V3, Reveal, 500× rule, wallet, transaction, deployment or ledger state changed or executed.
+
+
+## 46.02 AGENT B — COORDINAMENTO FIRST-ISSUE NO-GO / CONTRO HARNES REPAIR CANDIDATE (2026-11-15)
+
+**Reviewed shared HEAD:** `5480aa02f79330345b56ee90cf0131afa831a6a7`  
+**Agent A report:** `docs/COORDINATION/AGENT-A-FIRST-PREPROD-ISSUE-GATE-RECONCILIATION-2026-11-15.md` (blob `a650dddfc1ec27a60111f9cc3fbdd31a6dc615c2`)  
+**Classification:** CROSS-AGENT GATE RECONCILIATION + TEST-HARNESS REPAIR SPEC; NO IMPLEMENTATION.
+
+### 46.02.1 Shared first-Issue disposition and ownership
+
+Agent B read Agent A's exact-head report and confirms the shared first-Preprod-Issue disposition is **NO-GO** on two independent gates:
+
+- **Agent B — B1 Registry identity (P0):** counterfeit Pending can pass the current positive-price Issue MintPolicy predicate; Registry initialization and publisher lineage are not authenticated. Same identity problem affects SyncBeacon readers.
+- **Agent A — R1/Kc/authoritative Ω:** deployment-bound viability certificate and complete Ω proof are missing; current S0 Issue action changes direct-EEV margin by `-500 RU`.
+
+Neither gate substitutes for the other. The read-only `READY_FOR_WALLET_REVIEW` output does not certify either. No action to build, sign or submit a first Issue is authorized by a general readiness label or this evidence note.
+
+Agent B's implementation boundary remains the authenticated per-round Registry identity, exact/unique consumer references and immutable publisher binding. Agent A owns the separate economic certificate; do not mix economic coefficient/action decisions into the Registry workstream.
+
+### 46.02.2 Counter Yaci repair: preferred exact-version API
+
+The earlier §46.01 diagnosis was made more precise against the **exact** upstream tag `@lucid-evolution/lucid@0.6.5`, which is the installed version in `audit/cardano-integration/package.json`.
+
+A direct low-level CML fix would replace obsolete `CML.StakeCredential` constructors with `CML.Credential.new_script/new_pub_key`. An even narrower, preferred repair is to use the public helper already exported by that exact package:
+
+- `packages/utils/src/credential.ts` defines `credentialToAddress(network, paymentCredential, stakeCredential)`;
+- `packages/utils/src/index.ts` re-exports `credential.ts`;
+- `packages/lucid/src/index.ts` re-exports `@lucid-evolution/utils`;
+- the helper builds the Cardano base address with the current `CML.Credential` class and returns its Bech32 address.
+
+The future test-only patch can therefore replace the legacy manual construction with:
+
+```ts
+import { credentialToAddress } from "@lucid-evolution/lucid"
+
+const lookalikeAddress = credentialToAddress(
+  "Preprod",
+  { type: "Script", hash: counterHash },
+  { type: "Key", hash: walletPaymentHash },
+)
+```
+
+Retain all existing checks that the payment credential still equals the Counter script hash and the stake credential is the wallet key hash. Then run the complete local-Yaci trace and require observed native-ledger spends, not just successful address construction.
+
+**No patch is applied.** The Counter trace is outside the previously returned T07 changed-path manifest. The API diagnosis and code sketch do not themselves grant a changed-path slot. A separate, explicit, test-only slot must enumerate `audit/cardano-integration/counter-lookalike-ledger-trace.ts` (and any narrowly required test evidence paths), with CounterValidator, production scripts, ABI, policies, V3/Reveal and all economic sources explicitly excluded.
+
+### 46.02.3 Shared-branch movement after Agent B checkpoint
+
+The compare from Agent B HEAD `8b301e95795e98d7066103debb81ce0693080202` to `5480aa02f79330345b56ee90cf0131afa831a6a7` is three commits ahead / zero behind. The only changed paths are:
+- new Agent A read-only first-Issue reconciliation report;
+- coordination document.
+
+No validator, policy, ABI, workflow, test harness or production source changed in this branch movement.
+
+**Disposition:** cross-agent first-Issue NO-GO confirmed; Counter API mismatch has a minimal public-utility repair design but remains unapplied; the exclusive test-only write slot is not assumed. The conservative Haskell V2 size run `43679611905` remains IN_PROGRESS with no candidate size, so Haskell V2 T04 remains RESOURCE BLOCKED / NOT RUN.
+
+**Non-effects:** no source, validator, ABI, economic rule, test harness, wallet, signing, transaction, deployment, Preprod/Mainnet or ledger state changed.
