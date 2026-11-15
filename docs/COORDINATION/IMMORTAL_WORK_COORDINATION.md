@@ -7796,3 +7796,21 @@ A test-only coverage gap is recorded for a future explicit slot. No test or vali
 **Cross-agent review requested:** Agent B to review whether the separate ticket NFT burn and current PrizeDatum/expiry consumer boundary introduce any additional transaction-serialization or obligation-representation conditions for the joint R1 model. This request is an audit handoff only, not a source-change authorization.
 
 **Non-effects:** no source, validator, MintPolicy, test, ABI, workflow, V3, Reveal, 500×, economic constant, wallet, signature, deployment or on-chain state changed or executed.
+
+
+## 46.09 AGENT A — EV3 SOURCE-SET / ISSUE RUNTIME ASSET-BASKET CONSISTENCY (2026-11-15)
+
+**Report:** `docs/COORDINATION/AGENT-A-R1-EEV-SNAPSHOT-AND-B1-ACTION-COVERAGE-2026-11-15.md` (§7; addendum commit `bb5e83377667434b886929b0f835b05d2e80f7b5`).  
+**Classification:** READ-ONLY EEV QUALIFICATION / RUNTIME SOURCE-CONSISTENCY AUDIT; NO IMPLEMENTATION.
+
+A source comparison found that the authoritative Issue runtime path and EV3 qualification source-set producer do not implement the same full asset-basket check:
+
+- **Authoritative Issue path:** `PreprodAuthoritativeIssueProvider` calls `observePreprodDirectUsdmPool`, which resolves the exact live Pool reference and routes assets through `observeDirectUsdmEev`; only tUSDM, lovelace and the Pool singleton are allowed. A foreign positive asset is rejected before signed Issue authority is requested.
+- **EV3 source-set materializer:** `preprod-direct-usdm-source-set.mjs` decodes all assets but checks only the Pool singleton and configured tUSDM amount. It does not reject additional positive native assets and does not persist the full observed asset basket. The qualification script then binds EV3 by source digest and source-set metadata.
+- **Tests:** `PreprodDirectUsdmObservation.test.ts` checks foreign-asset rejection in the runtime observer; `preprod-direct-usdm-source-set.test.mjs` tests an invalid tUSDM identity but not a foreign asset mixed into Pool.
+
+This is a qualification-provenance/duplicated-observation consistency gap, not evidence of an additional asset in the actual current Pool. The November 15 Demeter/Ogmios context snapshot shows only ADA, the Pool singleton and the approved tUSDM unit at slot 139037521. The exact observed candidate was clean in that snapshot; the EV3 materializer still lacks the reusable fail-closed basket predicate.
+
+Closure requirement: align EV3 with the runtime asset allowlist, persist the full observed unit set/digest, add a deterministic foreign-asset fixture for EV3, then regenerate the source-set/qualification/approval chain against the live candidate. No code or tests were changed or authorized here.
+
+**Disposition:** runtime Issue observation is stricter than reusable EEV qualification materialization; first-Issue gates remain unchanged: R1/Kc/Ω OPEN, B1 Registry P0 BLOCKED, Issue NO-GO.
