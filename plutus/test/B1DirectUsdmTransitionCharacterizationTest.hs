@@ -44,8 +44,7 @@ import qualified B1PrizePool
 import qualified PrizeValidator
 import GameRules (defaultPrizeTable)
 import OracleTypes
-  ( OracleDatum (..)
-  , OracleQuote (..)
+  ( OracleQuote (..)
   , OracleStateId (..)
   )
 import Types
