@@ -226,10 +226,11 @@ ownerTicketValue =
     <> singleton adaSymbol adaToken 5_000_000
 
 -- The claim uses one shared TxInfo and evaluates both compiled spending
--- validators against it. All non-reference assets balance exactly:
--- tUSDM 1,000,000 in = 980,000 in Pool + 10,000 to owner + 10,000 change;
--- foreign asset 1 in = 1 in Pool; the Pool and ticket singleton NFTs continue;
--- ADA inputs and outputs both total 25,000,000 lovelace.
+-- validators against it. The Pool basket remains EV3-canonical: singleton +
+-- approved tUSDM only. All non-reference assets balance exactly:
+-- tUSDM 4,000,000 in = 2,000,000 in Pool + 2,000,000 source change;
+-- foreign asset 1 in = 1 to the ticket owner; Pool/ticket singleton NFTs continue;
+-- ADA inputs and outputs balance. The owner receives no physical tUSDM.
 makeClaimContexts
   :: (ScriptContext, ScriptContext)
 makeClaimContexts =
@@ -262,7 +263,7 @@ makeClaimContexts =
             <> singleton adaSymbol adaToken 5_000_000))
 
     poolOutput =
-      scriptOut poolHash (poolValue 0 1)
+      scriptOut poolHash (poolValue 2_000_000 0)
         (PlutusTx.toBuiltinData afterPool)
     prizeOutput =
       scriptOut prizeHash prizeScriptValue
@@ -270,7 +271,7 @@ makeClaimContexts =
     ownerPayout =
       pubkeyOut ownerPkh
         (ownerTicketValue
-          <> singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 2_000_000)
+          <> singleton (CurrencySymbol foreignPolicy) (TokenName foreignName) 1)
     sourceChange =
       pubkeyOut sourcePkh
         (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 2_000_000
@@ -430,9 +431,9 @@ main = do
     poolOutputOracleValue = 200
     claimedAmount = 200
     claimDirectDelta =
-      directUsdmSubunits 0 - directUsdmSubunits 4_000_000
-    claimProtectedCapitalDelta =
-      0 - 200
+      directUsdmSubunits 2_000_000 - directUsdmSubunits 4_000_000
+    ownerPhysicalTusdmPaid = 0
+    ownerOracleEquivalentPayout = 200
 
     claimPrizeAccepted =
       evalAccepts (applyPrizeClaim prizeInputDatum prizeContext)
@@ -450,9 +451,10 @@ main = do
     "Claim fixture reconciles Oracle-valued Pool delta and exact 200-subunit crystallized payout"
 
   assert
-    (claimDirectDelta == -400 && claimProtectedCapitalDelta == -200
-      && div claimDirectDelta 100 < div claimProtectedCapitalDelta 100)
-    "Claim counterexample: direct EEV falls 4 RU while ProtectedCapital falls only 2 RU"
+    (claimDirectDelta == -200
+      && ownerPhysicalTusdmPaid == 0
+      && ownerOracleEquivalentPayout == claimedAmount)
+    "Claim counterexample: EV3-canonical Pool loses 200 direct subunits while owner receives zero tUSDM and an Oracle-equivalent foreign payout"
 
   let
     fundContext = makeFundContext
