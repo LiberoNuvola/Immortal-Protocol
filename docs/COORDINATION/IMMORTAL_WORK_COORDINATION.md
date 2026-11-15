@@ -7755,3 +7755,44 @@ The pure `PreRichLifecycleTransition` helper is not composed into the Genesis ca
 A future QNE maintenance action therefore needs a separately specified transaction mechanism that consumes/continues the unique B1 PrizePool UTxO and lifecycle singleton atomically, preserves the full qualified Pool Value, and independently validates both state continuations. The existing Genesis activation's no-Pool invariant must remain intact. Such a design would be a B1/lifecycle action and likely an ABI/script deployment change; it is not a V3 constructor or Reveal semantic change, and no implementation is authorized by this audit.
 
 **Disposition:** lifecycle-anchored QNE remains a candidate only; deployed atomic path absent; R1/Kc/Ω OPEN; first Issue NO-GO.
+
+
+## 46.08 AGENT A — EEV APPROVAL SNAPSHOT / B1 ACTION AND TEST-COVERAGE RECONCILIATION (2026-11-15)
+
+**Source baseline:** `215e9d31023be1b71d1ab1db1876bad6dafd87e9`  
+**Report:** `docs/COORDINATION/AGENT-A-R1-EEV-SNAPSHOT-AND-B1-ACTION-COVERAGE-2026-11-15.md`  
+**Report commit:** `02e590517589ac7e4171bb6ecdb3f0e6dd02bb96`  
+**Classification:** READ-ONLY EVIDENCE / ACTION-PERIMETER / TEST-COVERAGE AUDIT; NO IMPLEMENTATION.
+
+### 46.08.1 Exact Direct-USDM approval and current contextual observation
+
+The protected workflow [39552468679 — PRE-RICH B1 EEV Deployment Approval](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679) completed SUCCESS and produced artifact `immortal-preprod-eev-approved`. The retrieved exact artifact records:
+
+- `DEPLOYMENT_APPROVED` for `PRE-RICH-EEV-USDM-DIRECT-V1`;
+- approved tUSDM unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`;
+- exact candidate Pool out-reference `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`;
+- qualification-time amount 1,000,000,000 tUSDM atomic units = 100,000 RU;
+- approval explicitly requires `LIVE_UTXO_REVALIDATION` and does not itself authorize Issue.
+
+The read-only [Preprod Context run 43681459946](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43681459946) later observed the same exact out-reference and physical tUSDM quantity at a stable acquired-ledger-state tip (slot 139037521). It also observed exactly one Pool singleton and the ADA envelope. This is a current-context re-observation of the historical candidate, not a refreshed EV1–EV7 qualification or a new approval: the workflow skipped the direct-USDM bootstrap and real Reveal/deploy jobs. Same-transaction exact Pool consumption and immediate admission-time revalidation remain mandatory.
+
+### 46.08.2 Direct-USDM rounding and finite action perimeter
+
+The deployed observation conversion is floor rounding: `floor(atomicQuantity * 100 / 1,000,000)`. The unit tests confirm one tUSDM = 100 RU, 1,000,000,000 atomic = 100,000 RU, and the floor boundary. Section 46.06 transition inequalities are therefore integer-RU inequalities, not oracle-value comparisons.
+
+The complete current `B1PrizePoolAction` enum has five constructors: FundTreasury, TicketIssued, TicketRevealed, TicketClaimed and TicketExpired. MintPolicy also permits an exact single NFT burn through a separate branch that is not a B1 Pool action. The broader R1 state/Ω perimeter must include ticket ownership transfers and NFT burn because PrizeValidator Claim derives the owner from the NFT being present in transaction inputs; pending/revealed accounting remains until the relevant expiry path.
+
+### 46.08.3 Test coverage
+
+- Issue's actual compiled MintPolicy is tested for exact complete Pool Value equality and mutations to ADA/native-asset quantities, additions and removals.
+- Reveal's compiled CEK headroom suite constructs input/output Pool UTxOs with the same fixed `poolValue`; it does not characterize a changed physical Pool Value.
+- No dedicated compiled-CEK physical-Value mutation suite for Claim, FundTreasury or Expire was found in the inspected `plutus/test` tree.
+- TypeScript B1 invariant tests are pure mirrors and do not prove the production Plutus predicates.
+
+A test-only coverage gap is recorded for a future explicit slot. No test or validator changes are authorized/applied by this audit.
+
+**Disposition:** Direct-USDM asset identity has an exact protected approval and the approved candidate was independently observed live later; immediate admission revalidation remains necessary. Current B1 action/test gap is now enumerated. R1/Kc/Ω remains OPEN; B1 Registry identity remains BLOCKED / P0; first Preprod Issue remains **NO-GO**.
+
+**Cross-agent review requested:** Agent B to review whether the separate ticket NFT burn and current PrizeDatum/expiry consumer boundary introduce any additional transaction-serialization or obligation-representation conditions for the joint R1 model. This request is an audit handoff only, not a source-change authorization.
+
+**Non-effects:** no source, validator, MintPolicy, test, ABI, workflow, V3, Reveal, 500×, economic constant, wallet, signature, deployment or on-chain state changed or executed.
