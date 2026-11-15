@@ -387,3 +387,31 @@ A further source-and-test trace narrows what the current Issue settlement actual
 This closes one ambiguity: **the Issue payment is an exact-value Treasury custody output, not a category posting**. The exact asset basket may be ADA, PRE or a supported mixture, but its presence in Treasury custody does not, by itself, establish an accounting credit to the legacy Reserve destination. Nor does the legacy TreasuryDatum encode an accumulated Reserve sub-ledger.
 
 No implementation or economic semantics were changed. The open decision remains the same: define whether the post-activation Reserve is a separately held account/UTxO or a governed accounting sub-ledger, then identify its authorized credit and release transitions and prevent double counting. Until then, do not assign any fraction of Issue proceeds to Reserve.
+
+## 2026-11-15 — Agent A: Reserve category versus V3 ReserveProtection
+
+A current-branch code crosswalk closes another ambiguity in the Reserve discussion:
+
+- The PRE-RICH category-ledger specification (§§3–5) defines Treasury Reserve as an internal accounting category of the single Treasury, while separately naming the B1 unresolved-ticket reserve, deterministic worst-case exposure, pending winning liabilities, locked Jackpot and general Reserve protection. It explicitly says these positions are not interchangeable and that no automatic TicketSale posting is adopted.
+- `IMMORTAL/kernel/UniversalEconomicKernel.hs` includes `uesReserveProtection` in `protectedCapital`; `rawSurplus = max(0, EEV - ProtectedCapital)`. The corresponding V3 kernel adds `v3ReserveProtection` to ProtectedCapital. This field is a protected-capital requirement component, not a held asset, Treasury category balance, or source of liquidity. Increasing it with EEV unchanged reduces residual surplus; it does not increase EEV.
+- `PRE-RICH/src/PreRichPreprodDeploymentProfile.ts` initializes `reserveProtection = 0` and rejects any non-zero protected-capital component in the declared initial profile.
+- `IMMORTAL/kernel/EconomicTransitionV3.hs` exposes only Issue, Reveal, Claim and Expire. The canonical transitions update their own ticket/liability fields and preserve `v3ReserveProtection`; Issue does not credit it from the sale. The existing `plutus/test/EconomicAdmissionTest.hs` mixed-class fixture also checks that a non-zero ReserveProtection input remains unchanged through Issue.
+- `plutus/B1LegacyAdapter.hs` projects legacy B1 into the universal state with ReserveProtection set to zero; its reverse projection rejects a V3 state with non-zero `v3ReserveProtection`. The legacy B1 datum therefore cannot represent this component.
+- `PRE-RICH/onchain/PreRichEconomicProjection.hs` can project V3 ReserveProtection when that field exists in the V3 state, but the projection does not establish any Treasury asset backing or category-to-component mapping.
+
+### Economic consequence for the proposed tail-risk use
+
+The current PRE-RICH V1 normal payout cap remains 500× ticket price, and WCE is the deterministic maximum over all unresolved tickets. A statistical PMF tail miss does not raise the validator-permitted maximum above that bound. The documented exact-WCE Reveal headroom issue is a separate pre-state affordability condition; classifying an amount as Treasury Reserve or increasing `ReserveProtection` does not itself fix it.
+
+The potentially useful physical route is to move qualified assets into the exact B1 PrizePool so its eligible liquidity/EEV increases. That is a custody transfer, not a `ReserveProtection` increase. The current PRE-RICH category-ledger specification identifies the Prize category as the source for Treasury→PrizePool funding; a Treasury Reserve source cannot be substituted without an explicit policy authorization/reclassification. The production Treasury-source debit and matching B1 credit are still not implemented/proven by the inspected FundTreasury path.
+
+### Disposition
+
+The project statement “Reserve is not funded at Genesis and begins accumulating after activation through ticket sales” remains a policy/intent constraint, not a demonstrated implementation:
+
+1. Issue currently creates the exact-value Treasury receipt and increments B1/V3 unresolved-ticket accounting by ticket face price.
+2. It does not post a separate amount to the Treasury Reserve category.
+3. It does not increase `v3ReserveProtection`.
+4. No authenticated Treasury category ledger currently records a Reserve balance, its encumbrances, or its permitted debit/use.
+
+Do not infer a sale percentage, treat the full ticket receipt as Reserve, or reuse `ppUnresolvedReserve` as the Treasury Reserve. A future decision must define the source/posting rule, purpose, availability/encumbrance, authorized use and non-overlap before any balance can be recognized. No V3, Reveal, Issue, B1 datum, validator, or economic parameter was changed in this update.
