@@ -7880,7 +7880,7 @@ Current workflow inspection confirms that `pre-rich-direct-usdm-conformance.yml`
 
 **Implementation checkpoint:** `fc33c2df30e1f678d946a72ce4fdeeea133a9716`  
 **Report:** `docs/COORDINATION/AGENT-A-EV3-BASKET-PRODUCER-IMPLEMENTATION-2026-11-15.md`  
-**Report commit:** `117c92e0133c213c9ee5f692da0bc41944327ba9`  
+**Report commit:** `319b2ec09b550a28701229ad9f7a5b408cab2180`  
 **Classification:** EVIDENCE-PRODUCER / QUALIFICATION-INTEGRITY IMPLEMENTATION; NO PROTOCOL OR DEPLOYMENT CHANGE.
 
 The EV3 source-set producer now invokes the existing canonical Direct-USDM basket contract and persists the exact positive-asset basket plus its digest. The basket binds the exact Pool out-reference/address, Pool singleton=1, approved physical tUSDM>0 and lovelace envelope; any additional positive native asset is rejected. Basket verification reconstructs the canonical contract, so recomputing a digest over a forged foreign-asset list does not make it admissible. A follow-up uses locale-independent lexical ordering (`fc33c2df30e1f678d946a72ce4fdeeea133a9716`) so basket hashes do not vary with runtime collation.
