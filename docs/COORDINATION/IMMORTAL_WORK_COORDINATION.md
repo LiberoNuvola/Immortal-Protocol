@@ -5742,3 +5742,100 @@ Do not use a deterministic token name alone as a uniqueness proof; do not reuse 
 
 **Disposition:** Registry authenticity remains BLOCKED; current-source findings reconfirmed; corrected Counter test source awaits exact-HEAD execution; no code or ledger changes; no GREEN promotion.
 
+## 45.80 AGENT B — REGISTRY ANCHOR UNIQUENESS MECHANISM COMPARISON (2026-11-15)
+
+**Audited HEAD:** `44631a8c6f909151b26f6471e26d8d8ef7996292`  
+**Classification:** read-only source inventory + non-normative mechanism comparison. No validator, mint policy, datum ABI, test, workflow, deployment or ledger state changed.
+
+### 1. Current implementation inventory
+
+The current branch tree contains no dedicated `BeaconRegistryMintPolicy` or equivalent Registry-anchor minting policy. The visible Plutus mint-policy sources are the PRE-RICH ticket policy, Genesis carrier policy, B2 Control carrier policy and V3 Economic State carrier policy.
+
+The Registry lifecycle remains:
+
+- `src/createRound.ts` constructs the seven-field Pending datum and sends it to the Registry address with ordinary `payToContract`; it does not mint or attach a Registry identity token.
+- `plutus/Types.hs` defines the current seven-field `BeaconRegistryDatum`; it has no anchor policy/name, frozen trust mode, evidence digest or fallback record.
+- `plutus/BeaconRegistry.hs` validates a spent Pending → Ready transition and a continuing output at the same full address. It does not authenticate initial creation or check a state-token identity/value in the spent and continuing Registry outputs.
+- `plutus/MintPolicy.hs::readRegistry` and the Registry reader in `plutus/PrizeValidator.hs` select the first reference input with the configured payment ScriptHash; neither establishes a unique canonical Registry anchor.
+
+Relevant current source blobs:
+- `src/createRound.ts`: `4112d87b7b6d88d77da0bbaee5ed2e172527609e`
+- `plutus/Types.hs`: `60caeb747018b512e8e6ae7d8a100bb7023863d9`
+- `plutus/BeaconRegistry.hs`: `184f4178139dde01845853dcc0ab51371949ec9b`
+- `plutus/MintPolicy.hs`: `0d59fc05b4c11873984fffd10014bd46d8470509`
+
+### 2. Existing repository patterns are precedents, not ready-made proofs
+
+**Numeric counter pattern.** `plutus/CounterValidator.hs` checks for one continuing output at the same full script address with datum `n+1`, no extra output at that address, and non-decreasing lovelace. The ticket `MintPolicy` requires exactly one input whose payment ScriptHash equals the configured counter hash and checks that an `n+1` output exists.
+
+This is a serialization/continuation motif only. In the inspected code it does not establish an authenticated initial counter, a unique state-token identity, one canonical counter UTxO across all staking credentials, or a binding between that counter sequence and the canonical Beacon `btRound`. It must not be promoted as a secure Registry singleton without those missing invariants.
+
+**One-shot seed pattern.** The existing `PreRichControlCarrierMintPolicy` and `V3EconomicStateCarrierMintPolicy` are parameterized by a `TxOutRef`; they require that input to be consumed and that the transaction mint exactly the configured singleton asset. `GenesisCarrierMintPolicy` similarly requires its one-shot seed and exact named carrier mint.
+
+These demonstrate that a fixed seed reference can authorize a one-time mint. They do not, by themselves, constrain the minted token to a specific Registry address/output or bind its datum to a canonical round. The Genesis carrier identity and policy are separately governed and must not be reused for BeaconRegistry.
+
+Relevant source blobs:
+- `plutus/CounterValidator.hs`: `29d3bcf6d6a4a0b4348cfa5e17a61ec822093870`
+- `PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs`: `03e6b4bc9caf8866eca57c4ba1e987799cb49b15`
+- `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs`: `b778d8a559d4050a565ac5f49a8d5cccb5451b42`
+- `PRE-RICH/onchain/GenesisCarrierMintPolicy.hs`: `c95a16b03258201a29b2593daecb8aa512fb259b`
+
+### 3. Candidate A — dedicated global Registry round allocator
+
+A scalable candidate for one fixed Registry anchor policy is a dedicated, independently bootstrapped allocator singleton, separate from the ticket serial counter and all Genesis/B2/V3 carrier identities.
+
+At a high level, a round-creation transaction would have to prove all of the following atomically:
+
+1. It spends exactly one canonical allocator UTxO at the exact configured full address, carrying exactly one allocator identity token under the expected policy/name and a valid current datum.
+2. The Registry-anchor minting policy accepts only the allocator's current state and mints exactly one non-burned anchor token under the fixed Registry policy, with the canonical token name for the allocated round.
+3. Exactly one initial Pending Registry output exists at the exact canonical Registry full address. That output carries exactly one matching anchor token, the expected seven-field datum (or the separately approved future schema), and the required `brRound` / `btRound` binding.
+4. Exactly one allocator continuation exists, preserving its identity token and required value while advancing the state exactly once. Extra allocator outputs, duplicate anchor outputs, wrong round/name, wrong mint quantities, burns and malformed datum/output combinations fail closed.
+5. The Registry spending validator later preserves the same anchor token and immutable round identity across Pending → Ready. Issue and SyncBeacon require exactly one canonical reference carrying that token, at the exact address, with the expected round/target/status; neither consumer may select the first ScriptHash match.
+
+**Important unresolved semantic dependency:** a monotonic allocator proves uniqueness of its own sequence, but it proves uniqueness of an external `btRound` only if the protocol explicitly binds the canonical round ID to that sequence (for example, `btRound = allocated sequence`) or specifies another deterministic anti-reuse mapping. The current source does not define that mapping. Do not silently assume contiguous round numbering, skip behavior, genesis offset or reset/recovery semantics.
+
+A single allocator serializes **round creation** transactions, not every ticket Issue, provided the minted Registry anchor remains a reference input during Issue. Its costs and liveness implications are therefore concentrated at round initialization. Initial singleton authority, recovery/loss handling, and the canonical round-number contract still require specification.
+
+### 4. Candidate B — per-round one-shot seed
+
+A separate one-shot policy parameterized by a round-specific `TxOutRef` can make a particular seed consumable only once and mint one configured token. This can be mechanically simple for an isolated round.
+
+For a reusable Registry consumer, however, it leaves several design obligations:
+
+- The seed must be independently authorized and cryptographically/ledger-bound to the exact canonical round; an arbitrary user-owned seed only proves that the user spent their own UTxO.
+- A distinct policy parameter per seed normally yields a distinct policy identity per round. Issue/SyncBeacon cannot trust a policy ID self-declared in the Registry datum; a fixed trusted mapping/root or another governed authentication mechanism is required.
+- A single fixed policy accepting arbitrary per-round seeds would itself need a trusted seed-registration/authorization rule. Without that, it recreates buyer-controlled anchor creation under a new name.
+- The exact minted token must still be constrained to the single canonical Registry output and preserved by RegistryPublish; the existing carrier policies do not supply those output/address/datum checks.
+- Seed custody and provisioning create a liveness/DoS boundary: a seed can be consumed without completing the intended mint unless its spending/authorization flow is constrained.
+
+A per-round seed is therefore not automatically simpler end-to-end. It trades shared allocator state for per-round provisioning, policy identity/mapping and authority-management obligations.
+
+### 5. Comparison and disposition
+
+| Dimension | Dedicated allocator singleton | Per-round one-shot seed |
+|---|---|---|
+| Anchor policy identity | One fixed Registry policy can cover all allocated rounds | Usually one policy identity per parameterized seed, unless a separately governed shared seed registry exists |
+| Uniqueness source | Authenticated singleton state + exactly-once sequence transition | One-time consumption of the exact authorized seed |
+| Round binding | Requires a specified sequence ↔ canonical round mapping | Requires an independently authenticated round ↔ seed mapping |
+| Concurrency | Serializes round creation through one state UTxO | Independent seeds can avoid global allocator contention |
+| Consumer configuration | Fixed policy/name rules are compatible with one shared reader configuration | Dynamic policy identity requires a trusted mapping/root |
+| Main risk | Bootstrap/recovery and undefined round-number semantics | Seed authorization/provisioning, dynamic policy identity and seed-consumption DoS |
+
+**Disposition:** neither candidate is selected or authorized. A dedicated allocator is a plausible shared-policy candidate only after canonical round-number semantics and singleton bootstrap/recovery are fixed. A per-round seed remains viable only if a trusted, scalable seed-to-round authority/mapping is specified. The existing ticket counter and carrier mint policies are not accepted substitutes.
+
+### 6. Next design gate — no implementation authority implied
+
+Before any code/ABI change, the design record must settle:
+
+1. canonical round identity and whether `btRound` is sequential, sparse, externally assigned or otherwise mapped;
+2. allocator/seed initial authority, exact identity, recovery/loss behavior and authorized creator;
+3. exact policy parameters, token-name encoding, output placement, full-address rules and non-burn/reissue lifecycle;
+4. Registry Pending → Ready token/value preservation and unique consumer lookup rules across Haskell and any active Aiken path;
+5. frozen trust-mode/evidence/fallback commitment and its compatibility with Issue and Reveal ticket-commitment recomputation;
+6. migration/deployment sequence and bounded CEK + native-Yaci positive/negative evidence.
+
+The existing hierarchy remains unchanged: **B3_VERIFIED → B2_ATTESTED → B1_AUTHORIZED**; no silent downgrade. This comparison does not authorize changes to V3, Reveal semantics, economics, B2 ABI, Genesis identity or deployment.
+
+**Handoff:** Agent B retains the Registry/Plutus/Cardano security boundary. No task or decision is transferred to A or C by this comparison. Agent A retains economics/admission; Agent C retains Materios B3 provenance. No cross-agent code or runtime action is requested.
+
+**Result:** source comparison recorded; Registry authenticity remains **BLOCKED**; design/ABI gate remains **OPEN**; no code/tests/workflows/ledger changed; no GREEN promotion.
