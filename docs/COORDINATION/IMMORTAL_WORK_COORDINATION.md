@@ -7933,3 +7933,23 @@ The new Cabal suite `b1-direct-usdm-transition-characterization-tests` and its H
 **Verification limit:** exact-head Haskell workflow completion has not been independently observed. The two new cases must not be called PASS until `immortal-haskell-conformance.yml` completes successfully on the current branch head. Both remain synthetic compiled-CEK evidence, not native-ledger, Yaci or Preprod submissions.
 
 **Disposition:** the Claim and FundTreasury Direct-USDM transition gaps now have explicit compiled-CEK characterization fixtures ready for CI. No production validator, MintPolicy, B1 redeemer, datum/ABI, V3, Reveal semantics, 500× rule, EEV profile or economic parameter changed. R1/Kc/Ω remains OPEN; B1 Registry identity remains BLOCKED / P0 under Agent B; first real Preprod Issue remains **NO-GO**.
+
+## 46.14 AGENT A — R1 Ω INVENTORY EXTENDED BEYOND V3 (2026-11-15)
+
+**Report:** `docs/COORDINATION/AGENT-A-R1-OMEGA-ACTION-PERIMETER-ENUMERATION-2026-11-15.md`  
+**Report commit:** `9ede62e6e4e4cda76c65522a7bfa5c06b693e0c3`  
+**Classification:** READ-ONLY SOURCE-BASED ACTION / STATE-PERIMETER AUDIT; NO IMPLEMENTATION.
+
+The current PRE-RICH/Cardano transition surface cannot be represented by the four V3 actions alone. The source-grounded inventory now explicitly separates:
+- four V3 economic actions and their signed carrier boundary;
+- five B1 PrizePool actions (FundTreasury, TicketIssued, TicketRevealed, TicketClaimed, TicketExpired);
+- four PrizeDatum actions (SyncBeacon, Reveal, Claim, Expire);
+- ticket NFT ownership transfers and the independent MintPolicy single-NFT burn branch;
+- Counter n→n+1, RegistryPublish, B2 ActivateControl/ContractControl, Genesis ActivateGenesis and the pure-only EnterQuiescent/MaintainQuiescent helper;
+- external/ledger successors: exact Pool UTxO replacement/concurrency/finality, Direct-USDM asset and liveness, Oracle quote/publisher/freshness, Registry/Materios state, ticket transfer/burn/expiry and validity-range time.
+
+**New rights-perimeter finding:** MintPolicy's burn branch returns True when the own-policy mint field is exactly one token-name entry with quantity −1. It does not bind the burn to a PrizeDatum input, Claim, Expire, owner signature or B1 Pool transition. Ledger conservation still requires the burned NFT to be present in transaction inputs. The finding does not claim every burn is unauthorized; it means NFT burn/transfer and the PrizeDatum/B1 obligation lifecycle are distinct state dimensions and cannot be collapsed in the R1 model.
+
+PrizeValidator Claim derives the claimant from the input that carries the ticket NFT; Claim does not require burning it. PrizeValidator Expire consumes the separate PrizeDatum and leaves the ticket NFT independent. Therefore NFT transfer can change the future claimant without changing B1/V3 accounting, and any burn/lock-up must be included in the represented-rights relation or explicitly ruled out by a sound deployment perimeter.
+
+This extends the action inventory but does not prove it complete. The signed allOmegaSuccessorsCertified boolean and the pure lifecycle helper remain unable to establish Ω completeness. R1/Kc/Ω remains OPEN; B1 Registry identity P0 remains owned by Agent B; first real Preprod Issue remains **NO-GO**. No source, validator, MintPolicy, ABI, workflow, proof format, economic parameter, wallet, signature, deployment or ledger state changed or executed.
