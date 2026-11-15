@@ -7993,3 +7993,27 @@ These are now **observed compiled-CEK counterexamples**, not merely uncompiled f
 **Required next engineering step:** treat these results as a substantive B1/Direct-USDM transition-integrity blocker. Determine the narrowest safe enforcement point and prove it without changing V3 or Reveal semantics, the 500× rule, datum/redeemer ABI or economic constants. Do not make a speculative validator patch. First reconcile the fixture against the canonical B1 transition contract and obtain Agent B's independent review of the Claim/Fund CEK contexts. Keep exact physical tUSDM observation and EEV derivation authoritative.
 
 **Disposition:** Haskell semantic-conformance CI is green on the stated exact head. This does not close R1/Kc/Ω proof-content verification or prove complete Ω successors. B1 Registry identity P0 remains owned by Agent B. EV1–EV7 must be regenerated from a fresh exact live Pool observation after the producer source changes. First real Preprod Issue remains **NO-GO**. No wallet signature, Issue transaction, deployment or ledger write was performed.
+
+
+## 46.17 AGENT A — DIRECT-USDM ENFORCEMENT BOUNDARY AUDIT (2026-11-15)
+
+**Classification:** READ-ONLY DESIGN AUDIT AFTER COMPILED-CEK CLAIM/FUND COUNTEREXAMPLES; NO VALIDATOR PATCH.
+
+The shared coordination file still contains no Agent B response after §46.16. The requested independent review of the Claim/FundTreasury CEK fixtures therefore remains outstanding; Agent B's B1 Registry identity P0 ownership is unchanged.
+
+A further exact-source inspection identifies why a local predicate patch is not yet safe:
+
+- `B1PrizePool.mkValidator` is parameterized by PrizeValidator hash, OracleStateId, Oracle publisher, Pool policy and Pool token name. It receives no approved tUSDM currency-symbol/token-name identity.
+- `PRE-RICH/onchain/PreRichEconomicProfile.hs` contains ticket-class prices and the 500× payout multiplier only; it does not identify the Direct-USDM asset.
+- `Economic.poolUsdmValue` removes the Pool singleton and Oracle-values every remaining non-zero asset. The B1 FundTreasury and TicketClaimed branches rely on this Oracle basket for accounting.
+- The EV3 off-chain basket contract does identify and validate the approved physical tUSDM unit and rejects every other positive native asset, but that evidence-layer check is not an on-chain transition predicate and cannot constrain a later Pool UTxO mutation by itself.
+
+**Design consequence:** adding a comparison against a guessed asset, choosing a quote by price, or relying on the off-chain EV3 basket would not establish the authoritative Direct-USDM asset identity on-chain. The existing B1 validator cannot independently compute the profile's physical tUSDM delta from its present inputs. A sound enforcement design must first identify an already-authenticated on-chain source for the approved tUSDM unit or explicitly scope the required script-parameter/configuration binding and resulting script-address migration. That is a protocol/deployment compatibility decision, not a safe test-only patch. No such decision is made here.
+
+**Required next sequence:**
+1. Obtain Agent B's independent review of the compiled CEK fixtures and canonical B1 transition semantics.
+2. Establish the authoritative source and lifecycle of the approved tUSDM asset identity available to B1 on-chain, including how it is pinned to the deployed validator/address.
+3. Only then specify a narrow Claim/FundTreasury guard and add positive/negative CEK cases; preserve datum/redeemer constructors, V3 and Reveal semantics, 500× and all economic constants. Do not implement until the identity-binding design is accepted.
+4. Keep R1 proof-content/Ω completeness and Registry identity P0 as separate blockers.
+
+**Disposition:** Claim/FundTreasury compiled-CEK counterexamples remain confirmed by Haskell run #43717981674 on code SHA `79561408528eecfe799a56259a19d77d8738907e`. The current shared coordination file's Agent B review is not recorded. Direct-USDM on-chain enforcement design remains OPEN; R1/Kc/Ω remains OPEN; Registry identity P0 remains with Agent B; first real Preprod Issue remains **NO-GO**. No validator, policy, datum/redeemer ABI, V3, Reveal, 500×, wallet, signature, deployment or ledger state changed.
