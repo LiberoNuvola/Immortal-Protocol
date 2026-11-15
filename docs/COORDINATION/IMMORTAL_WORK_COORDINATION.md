@@ -7372,3 +7372,40 @@ Questa eccezione è indipendente dal passo B0 già riuscito e dal passo Aiken Sy
 **Disposition finale:** T01b Registry Yaci = **SUCCESS locale**; Haskell V2 adversarial CEK suite = **PASS esecutivo con finding CHARACTERIZATION**; Aiken V3 SyncBeacon Yaci = **harness SUCCESS con fake Ready/reference ambiguity accettati**; Counter Yaci = **HARNESS FAILURE pre-submit**; Registry authenticity = **BLOCKED**; Haskell V2 T04 = **RESOURCE BLOCKED**. Nessuna GREEN promotion.
 
 **Non-effects:** nessun sorgente validator, script Aiken, datum/redeemer ABI, Factory, Registry policy, relayer, workflow o parametro di protocollo modificato. Nessuna modifica a V3/Reveal semantics, B2, economia, Treasury o Materios. Nessun maxTxSize alterato, nessuna transazione Preprod/Mainnet, nessuna firma di produzione e nessuna emissione ticket.
+
+
+## 45.98 AGENT B — ISSUE MINTPOLICY ACCETTA PENDING REGISTRY BUYER-CONTROLLED (2026-11-15)
+
+**Source:** `plutus/MintPolicy.hs` (blob `0d59fc05b4c11873984fffd10014bd46d8470509`)  
+**Test:** `plutus/test/BeaconRegistryAdversarialTest.hs`  
+**Run:** Cardano Integration Lab `43678893383`, source SHA `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`; suite `beacon-registry-adversarial-tests` = **PASS**.  
+**Classification:** ISSUE PATH CEK SECURITY CHARACTERIZATION; NO NATIVE-LEDGER ISSUE CLAIM.
+
+### 45.98.1 Finding
+
+The executed test calls the production compiled MintPolicy wrapper through `applyPositivePriceMint` using `pendingRegistry { brRelayerPkh = buyerPkh }` as a reference input. The complete synthetic sale context includes the expected ticket/prize, pool, counter, Treasury, buyer and oracle structures. `assertEvaluatesSuccessfully` returns, and the suite prints:
+
+`CHARACTERIZATION: positive-price MintPolicy CEK accepts a buyer-controlled Pending Registry reference without Registry spending or relayer authorization; synthetic Oracle quote only`
+
+This establishes that the MintPolicy's current on-chain predicate accepts a buyer-controlled Pending Registry datum at CEK level. The relayer PKH in the datum is set to the buyer; no Registry spending validator is executed and no relayer signature is needed by this MintPolicy check.
+
+### 45.98.2 Source reason
+
+In `MintPolicy.hs`, `readRegistry` walks `txInfoReferenceInputs`, accepts the first output whose payment credential is `ScriptCredential h` with `h == regHash`, and decodes its datum. It does not authenticate full address, a unique Registry state token, initialization lineage or a prior RegistryPublish transition.
+
+`newPrizeDatumValid` then accepts the Registry branch when:
+- `sameTarget (brTarget reg) target`;
+- `brRound reg == btRound target`;
+- `brStatus reg == BeaconPending`.
+
+These checks establish only the contents of an attacker-supplied datum. They do not establish that an authentic Registry instance for that round exists. The same script-address ordinary-payment property demonstrated by T01b applies to this reference input.
+
+### 45.98.3 Scope and consequence
+
+This is an earlier lifecycle boundary than the SyncBeacon finding: the counterfeit Registry can pass the MintPolicy's Registry predicate during Issue, before the ticket later attempts to synchronize a Ready Beacon. It therefore broadens the authenticated-Registry blocker from the SyncBeacon consumer to the positive-price Issue admission predicate.
+
+**Evidence limit:** this test is a compiled Haskell CEK characterization with a synthetic `ScriptContext` and synthetic Oracle quote. It does **not** prove a complete Issue transaction was built, submitted or accepted by Yaci, nor that a production ticket was minted. The next native-ledger twin, if pursued within the approved test perimeter, must use the exact canonical MintPolicy/Prize/Pool artifacts and label any successful local fixture as synthetic local-Yaci evidence only.
+
+**Disposition:** Issue MintPolicy Registry authenticity = **BLOCKED / CEK counterfeit-Pending acceptance observed**. Round and target checks are present, but they are not provenance. Do not treat the Haskell test suite PASS as approval of this path.
+
+**Non-effects:** no MintPolicy source, validator parameters, datum/redeemer ABI, Factory, Registry token policy, sale semantics, economics, Treasury, V3/Reveal, B2, Materios, wallet or network state changed. No ticket was issued and no Preprod/Mainnet transaction was submitted.
