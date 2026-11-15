@@ -321,3 +321,32 @@ The current PRE-RICH specification keeps Treasury and PrizePool distinct: player
 - Before any Reserve balance can be recognized, its exact asset/account identity, source event, permitted classification and accounting transition must be evidenced. Destination identity alone is insufficient.
 
 **Status:** READ-ONLY PREPROD OBSERVATION SUCCESS / ZERO CURRENT TICKET POPULATION OBSERVED / FULL HISTORICAL PROTECTED-CAPITAL COMPLETENESS OPEN / TREASURY FOUR-WAY LEGACY DISTRIBUTION NOT PROMOTED.
+
+## 2026-11-15 — Agent A: current-branch legacy distribution reachability check
+
+A targeted read of the current closure branch narrows the four-destination issue further:
+
+- `src/mint.ts` contains the current PRE-RICH sale path's Treasury output. This is evidence of sale settlement into Treasury, not evidence that a percentage allocation is performed during the sale.
+- `src/treasuryPolicy.ts` still defines the historical percentage helper but explicitly marks it deprecated and non-authoritative for production economic flows.
+- `plutus/Treasury.hs` still validates the legacy `Distribute` action and the four Prize/Stake/Reserve/Maintenance destinations.
+- `relayer/relayer.js` still contains legacy distribution constants/calculation code, but its current `treasuryWorker` explicitly stops at a fail-closed migration boundary. Its source comment prohibits direct signing/submission until an authoritative EconomicAdmission path is defined and bound to the transition. The inspected worker therefore does not execute the old split.
+
+This supports the narrower classification: **four-way distribution code remains present, but the inspected current relayer path disables its economic execution**. This is not a claim that every possible deployment or external spender has been exhaustively excluded.
+
+### Consequence for Reserve funding
+
+The current evidence proves a sale payment destination and a separate legacy distribution validator. It does not yet prove a current, authorized transition that credits a distinct Reserve compartment from ticket-sale proceeds.
+
+Therefore the project constraint “Reserve is not funded at Genesis; it begins to accumulate after activation through the applicable ticket-sale flow” is not yet backed by a complete executable accounting path in the inspected artifacts. We must not silently interpret the legacy `tdReservePct`, `reservePct` or relayer percentages as that path.
+
+The remaining gap is precise:
+
+1. identify the canonical Reserve asset/account identity (or prove Reserve is an accounting sub-ledger rather than a separate UTxO);
+2. identify the post-activation sale transition that credits it;
+3. define the permitted use/release transition and the obligation it protects;
+4. bind both transitions to authoritative economic admission and observable evidence;
+5. prove that Reserve is not double-counted in EEV, ProtectedCapital, UnresolvedTicketReserve, statistical risk reserve or Jackpot/CAR.
+
+No numerical split or new Reserve algorithm is proposed.
+
+**Status:** LEGACY FOUR-WAY EXECUTION DISABLED IN INSPECTED RELAYER / CURRENT SALE SETTLEMENT INTO TREASURY PRESENT / CANONICAL POST-GENESIS RESERVE CREDIT PATH NOT YET EVIDENCED.
