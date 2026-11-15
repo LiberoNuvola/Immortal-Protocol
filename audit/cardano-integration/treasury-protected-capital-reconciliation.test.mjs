@@ -42,6 +42,7 @@ function fixture() {
 test('matches one receipt to one current PrizeDatum by immutable ticket identity', () => {
   const { journal, ledger } = fixture()
   const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
+  assert.equal(result.qualification.populationDisposition, 'NONEMPTY_ONE_TO_ONE_MATCH')
   assert.equal(result.qualification.identityCrosswalkComplete, true)
   assert.equal(result.qualification.economicPostingQualified, false)
   assert.equal(result.qualification.treasuryJournalHistoryCompletenessVerified, false)
@@ -53,10 +54,32 @@ test('matches one receipt to one current PrizeDatum by immutable ticket identity
   assert.equal(result.matched[0].r7Cell, 'L3')
 })
 
+test('reports two empty input populations without vacuously qualifying the identity crosswalk', () => {
+  const { journal, ledger } = fixture()
+  journal.receiptEvents = []
+  ledger.items = []
+
+  const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
+
+  assert.equal(result.qualification.populationDisposition, 'EMPTY_INPUT_POPULATIONS')
+  assert.equal(result.qualification.identityCrosswalkComplete, false)
+  assert.equal(result.qualification.providedSetIdentityCrosswalkComplete, false)
+  assert.deepEqual(result.qualification.blockers, [])
+  assert.equal(result.counts.receiptCount, 0)
+  assert.equal(result.counts.protectedCapitalItemCount, 0)
+  assert.equal(result.counts.matchedCount, 0)
+  assert.equal(result.qualification.treasuryJournalHistoryCompletenessVerified, false)
+  assert.equal(result.qualification.protectedCapitalSourceCompletenessAuthorityVerified, false)
+  assert.equal(result.qualification.economicPostingQualified, false)
+  assert.equal(result.qualification.fullProtectedCapitalQualified, false)
+  assert.equal(result.qualification.spendAuthorizationGranted, false)
+})
+
 test('does not qualify snapshots observed at different slots', () => {
   const { journal, ledger } = fixture()
   ledger.source.observedSlot = 901
   const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
+  assert.equal(result.qualification.populationDisposition, 'NONEMPTY_UNRECONCILED')
   assert.equal(result.qualification.identityCrosswalkComplete, false)
   assert.deepEqual(result.qualification.blockers, ['SNAPSHOT_SLOT_MISMATCH'])
 })
@@ -65,6 +88,7 @@ test('keeps a receipt without a current datum unresolved rather than treating it
   const { journal, ledger } = fixture()
   ledger.items = []
   const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
+  assert.equal(result.qualification.populationDisposition, 'NONEMPTY_UNRECONCILED')
   assert.equal(result.qualification.identityCrosswalkComplete, false)
   assert.equal(result.receiptWithoutCurrentDatum[0].status, 'RECEIPT_WITHOUT_CURRENT_LIVE_PRIZEDATUM')
 })
@@ -73,6 +97,7 @@ test('reports a current datum without a matching receipt without inferring it wa
   const { journal, ledger } = fixture()
   journal.receiptEvents = []
   const result = reconcileTicketSalesToProtectedCapital({ journal, ledger })
+  assert.equal(result.qualification.populationDisposition, 'NONEMPTY_UNRECONCILED')
   assert.equal(result.qualification.identityCrosswalkComplete, false)
   assert.equal(result.ledgerWithoutReceipt[0].status, 'CURRENT_PRIZEDATUM_WITHOUT_MATCHING_OBSERVED_RECEIPT')
 })

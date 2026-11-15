@@ -140,17 +140,26 @@ export function reconcileTicketSalesToProtectedCapital({ journal, ledger }) {
     })
   }
 
-  const qualified = blockers.length === 0
+  const bothPopulationsEmpty = receipts.length === 0 && ledgerRows.length === 0
+  const nonemptyOneToOneMatch = !bothPopulationsEmpty
+    && blockers.length === 0
     && receiptWithoutCurrentDatum.length === 0
     && ledgerWithoutReceipt.length === 0
     && matched.length === receipts.length
     && matched.length === ledgerRows.length
 
+  const populationDisposition = bothPopulationsEmpty
+    ? 'EMPTY_INPUT_POPULATIONS'
+    : nonemptyOneToOneMatch
+      ? 'NONEMPTY_ONE_TO_ONE_MATCH'
+      : 'NONEMPTY_UNRECONCILED'
+
   return {
     schema: 'PRE-RICH-TICKETSALE-PROTECTED-CAPITAL-CROSSWALK-v1',
     qualification: {
-      identityCrosswalkComplete: qualified,
-      providedSetIdentityCrosswalkComplete: qualified,
+      populationDisposition,
+      identityCrosswalkComplete: nonemptyOneToOneMatch,
+      providedSetIdentityCrosswalkComplete: nonemptyOneToOneMatch,
       treasuryJournalHistoryCompletenessVerified: false,
       protectedCapitalSourceCompletenessAuthorityVerified: false,
       economicPostingQualified: false,

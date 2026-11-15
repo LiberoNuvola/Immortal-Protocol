@@ -67,12 +67,23 @@ const output = {
 await mkdir(path.dirname(outputPath), { recursive: true })
 await writeFile(outputPath, JSON.stringify(output, (_, value) =>
   typeof value === 'bigint' ? value.toString() : value, 2) + '\n', 'utf8')
+const crosswalkRunStatus =
+  output.qualification.populationDisposition === 'EMPTY_INPUT_POPULATIONS' &&
+  Array.isArray(output.qualification.blockers) &&
+  output.qualification.blockers.length === 0
+    ? 'EMPTY_INPUT_POPULATIONS'
+    : output.qualification.populationDisposition === 'NONEMPTY_ONE_TO_ONE_MATCH' &&
+      output.qualification.identityCrosswalkComplete === true
+      ? 'NONEMPTY_ONE_TO_ONE_MATCH'
+      : 'IDENTITY_CROSSWALK_BLOCKED'
+
 console.log(JSON.stringify({
   output: outputPath,
   schema: output.schema,
+  status: crosswalkRunStatus,
   qualification: output.qualification,
   counts: output.counts,
   inputEvidence: output.inputEvidence,
 }, null, 2))
 
-if (!output.qualification.identityCrosswalkComplete) process.exitCode = 2
+if (crosswalkRunStatus === 'IDENTITY_CROSSWALK_BLOCKED') process.exitCode = 2
