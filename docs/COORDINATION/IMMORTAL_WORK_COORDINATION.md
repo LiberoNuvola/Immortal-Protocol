@@ -6650,3 +6650,77 @@ The next bounded work is a **field/proof traceability review**, not code:
 | `plutus/export/Export.hs` | `b33cd08b2d9dc6800215e771f18d561c87bc34c7` | Existing exports; no governance or ApplicationConfig validator |
 | `plutus/pre-rich-plutus.cabal` | `49d2f812350710f44c13a7f8850f8abf6eeba376` | Governance Haskell modules/tests packaged, not a Plutus governance script |
 
+
+
+### 45.87 Field/proof traceability — current-source audit
+
+**Audit date:** 2026-11-15  
+**Exact branch HEAD audited:** \`work/immortal-green-closure\` / \`ec65f8bf782cc315ecb303c6d527f38496b9b932\`  
+**Classification:** READ-ONLY SOURCE TRACEABILITY; this section records current evidence and does not select new protocol values or authorize implementation.
+
+This pass follows every minimum application-config field group from §45.86. It separates (1) the normative authority that ought to determine a value, (2) the current source/input from which the frontend or pure model obtains it, (3) the ledger predicate that constrains it, and (4) the evidence proving that predicate is bound to the current canonical state. A value appearing in a TypeScript type, browser environment variable, Haskell record, transaction datum or hash is not automatically an authenticated application-config value.
+
+#### 45.87.1 Field-to-proof matrix
+
+| Field group | Required authoritative source | What exists at the audited HEAD | On-chain verifier and exact evidence | Disposition |
+|---|---|---|---|---|
+| Application namespace / Factory binding | Immutable deployment/genesis commitment, then one authenticated current config state bound to exactly one Factory STT | No production ApplicationConfig or BeaconRegistryFactory/OpenRound module was found in the complete recursive repository tree at the audited HEAD. Existing Genesis carriers concern the PRE-RICH regime, not a Factory/application namespace. | No Factory validator exists to check a namespace, Factory token, config token or namespace-to-Factory relation. The Plutus export set contains no Factory or ApplicationConfig export. Tree evidence: audited HEAD above; export evidence: \`plutus/export/Export.hs\` SHA \`b33cd08b2d9dc6800215e771f18d561c87bc34c7\`. | **ABSENT — G4/G5 BLOCKED.** |
+| Network / deployment domain and \`BeaconTarget.networkId\` | Adopted versioned config defining the exact Cardano deployment domain and the semantic mapping from that domain to the BeaconTarget field | Browser config sets \`NETWORK = 'Preprod'\`; \`src/mint.ts\` separately defaults \`networkId\` to \`0\` and permits an option override. The \`BeaconTarget\` type is only a number plus round/reference/version bytes. | \`plutus/BeaconRegistry.hs\` copies and compares the supplied target via \`sameTarget\` and uses its fields in beacon derivation. It does not prove that \`networkId\` means the configured Cardano network or derive it from authenticated deployment state. | **INPUT / PARTIAL PRESERVATION ONLY.** Bytes are committed into Registry/beacon calculation, but their network meaning/source is not authenticated. |
+| Registry credential / address | Deployment-bound config and Factory parameters fixing the exact Registry credential/address expected for each round | \`createPendingRound\` derives an address client-side from the currently loaded unparameterized Registry script. The Registry datum has no Registry credential or Factory identity field. | The Registry validator checks that its own continuing output remains at its own input address and that only one input from that address is consumed for publication. This protects Pending→Ready continuity; it does not prove that a Factory selected the canonical Registry credential or that a Pending was created by Factory. Sources: \`src/createRound.ts\`, \`plutus/BeaconRegistry.hs\`, \`plutus/Types.hs\`. | **PARTIAL LOCAL CONTINUITY; FACTORY BINDING ABSENT.** |
+| B1 trust profile / publisher PKH | Authenticated adopted config explicitly fixing B1 as the profile for this Factory generation and pinning the publisher identity for future rounds | Browser config exposes \`VITE_RELAYER_PKH\`; \`createPendingRound\` accepts \`relayerPkh\` from its caller and writes it into the new Pending datum. | \`BeaconRegistry.hs\` requires a transaction signature from the PKH already stored in the consumed Pending datum when publishing. It does not authenticate who selected/inserted that PKH at Pending creation or check it against canonical config. \`createRound.ts\` creates the Pending with ordinary \`payToContract\`, not a Factory transition. | **PARTIAL B1 PUBLISHER AUTHENTICATION; INITIAL BINDING ABSENT.** The signature proves control of the datum-selected PKH, not governance adoption of that PKH. |
+| Application ruleset / config commitment | GOV-canonicalized, adopted application config bound to a specific proposal/decision, ruleset version and conformance result | \`src/beacon.ts\` derives GameRoundCommitment from supplied game ID, round, config hash and protocol version. \`src/registryFlow.ts\` checks the supplied commitment off-chain. The current seven-field Registry datum does not store GameRoundCommitment; \`plutus/Types.hs\` defines only round, target, status, beacon value, mcHash, Materios context and relayer PKH. | No Factory reads or verifies an adopted config state. The Registry validator does not check GameRoundCommitment, configHash, proposal ID or application ruleset. \`src/registryDatum.ts\` documents that the commitment is not written into the datum. | **OFF-CHAIN CONSISTENCY ONLY.** Commitment from supplied inputs is not proof the inputs were adopted. No ABI change is implied. |
+| Progression rule ID / parameters | Versioned, governance-adopted deterministic rule evaluated against authenticated Factory progression state | No production Factory state or progression evaluator was found. Current frontend defaults round ID to zero and accepts a \`roundId\` option; relayer selection groups pending candidates by numeric round. | No on-chain \`lastRound + 1\`, skip, pause, stop or progression-rule evaluator exists in a Factory validator because Factory/OpenRound is absent. Registry publication checks continuity of the already-created datum only. | **ABSENT — G3 OPEN / G5 NOT IMPLEMENTED.** |
+| Target resolver / \`mainchainRef\` / complete \`BeaconTarget\` | Adopted resolver version plus authenticated source-domain inputs and independently verifiable round→checkpoint→anchor relation | \`src/mint.ts\` defaults \`mainchainRef\` to UTF-8 \`pre-rich-round-<roundId>\` while permitting caller override. \`createPendingRound\` accepts a complete \`BeaconTarget\` argument. No resolver identity or relation is carried by a canonical config carrier. | Registry checks equality of target between Pending and Ready and derives the beacon from the submitted target plus submitted Materios context. It does not establish why that target belongs to that round. The existing B3/Materios audit remains applicable: upstream runtime accepts caller-supplied anchor identifiers and does not enforce the SDK hash convention as a consensus rule (Issue #49 comment \`6817241935\`; §45.83). | **CALLER-SUPPLIED TARGET; AUTHENTICATED RESOLUTION ABSENT. G2 BLOCKED.** |
+| Governance provenance / PRE snapshot / canonical adoption | Cardano-verifiable GOV-16/17/18 lifecycle from a complete authenticated PRE snapshot through decision, adoption, conformance and canonicalization | \`Governance.hs\` models entities as \`EntityId = Integer\`, snapshots as supplied entity/weight pairs, and votes against those IDs. \`GovernanceEventSchema.hs\` stores event IDs, ruleset version, payload commitment, predecessor and evidence references as model data. \`GovernanceAuthorization.hs\` classifies event-type/actor-class pairs. \`GovernanceCanonicalizationWitness.hs\` checks fields and boolean evidence flags. | These are pure Haskell model/conformance components, not a Cardano transaction-context verifier. \`IMMORTAL/governance/README.md\` says standalone suites do not authenticate production actors/credentials, establish a live governance authority or certify on-chain governance. \`plutus/export/Export.hs\` exports no governance validator or governance-state carrier. | **BLOCKED — G1.** Haskell replay, event JSON, non-empty evidence strings and a bare hash cannot establish the canonical governance root. |
+| Config version / predecessor / unique-current-state continuity | Canonical governance transition preserving one config-state identity, monotonic version and predecessor link, with stale-config rejection | Governance event models contain a predecessor string; existing Genesis, PRE-RICH Control and V3 carriers have their own state/version/nonce or authority patterns. No ApplicationConfig token/datum or transition module exists. | No on-chain config singleton, mint policy, unique-current-config rule, predecessor verifier, stale-reference rejection or config-update/OpenRound race predicate exists. Existing carrier rules are domain-specific; Control/V3 authority-signature patterns are not permissionless config governance. | **ABSENT FOR APPLICATION CONFIG.** Existing carrier patterns are precedents only. |
+
+#### 45.87.2 What is genuinely enforced today
+
+The current B1 Registry script enforces a limited proposition:
+
+- the consumed Registry input is Pending;
+- the transaction is signed by the \`brRelayerPkh\` contained in that Pending datum;
+- supplied \`mcHash\` and Materios context are non-empty;
+- exactly one input at the Registry's own address is consumed;
+- exactly one continuing output at that address is decoded;
+- the continuing datum preserves the full target, round and relayer PKH, becomes Ready and carries the beacon derived from the supplied target/context.
+
+That proves **publisher authorization relative to the Pending datum and Pending→Ready continuity**. It does not prove the Pending datum was opened by the canonical Factory, that the round/target/config was adopted, that the publisher PKH came from governance, or that the external Materios record is canonical.
+
+Likewise, \`GameRoundCommitment\` is a deterministic integrity primitive, but the source documents that it is not a Materios receipt or authentication proof for external Materios data. Its off-chain validation does not close the datum representation or canonical-config gap.
+
+#### 45.87.3 Exact current source pins
+
+All pins below were fetched from the audited branch HEAD \`ec65f8bf782cc315ecb303c6d527f38496b9b932\` during this pass:
+
+| Source | Blob SHA | Traceability fact |
+|---|---|---|
+| \`src/config.ts\` | \`245d81ee6f9916623f7ed31fb4ef904af7407d3b\` | Browser \`NETWORK\` and \`VITE_RELAYER_PKH\`; not a ledger config carrier |
+| \`src/mint.ts\` | \`1cde621e072db3b9db5b699377915b80b7db5c3e\` | Default network/round/version and caller-overridable target fields |
+| \`src/beacon.ts\` | \`4ad58dedb68bb3db1b52900b113126105dcd8766\` | BeaconTarget and off-chain GameRoundCommitment/derivation |
+| \`src/createRound.ts\` | \`4112d87b7b6d88d77da0bbaee5ed2e172527609e\` | Caller-supplied relayer PKH; ordinary Pending output creation |
+| \`src/registryFlow.ts\` | \`c402d52ed1e60bb63d0f47d80de6cf0d48c71691\` | Off-chain GameRoundCommitment validation; current datum limitation documented |
+| \`src/registryDatum.ts\` | \`0d611c29fe4f74b9b2fa4cd328e8fe2edb5f48f4\` | Exact seven-field datum encoding; no Factory identity/commitment field |
+| \`plutus/Types.hs\` | \`60caeb747018b512e8e6ae7d8a100bb7023863d9\` | Seven-field BeaconRegistryDatum |
+| \`plutus/BeaconRegistry.hs\` | \`184f4178139dde01845853dcc0ab51371949ec9b\` | B1 publisher-signature and Pending→Ready continuity checks |
+| \`IMMORTAL/governance/Governance.hs\` | \`a55dc4bdaa3e9f081c9c050ea68fd9c6ac386f2e\` | Pure governance model and supplied snapshot weights |
+| \`IMMORTAL/governance/GovernanceEventSchema.hs\` | \`3f933e727b4316e44bc2f456470410b3a8c635bc\` | Canonical event shape, string predecessor and evidence references |
+| \`IMMORTAL/governance/GovernanceAuthorization.hs\` | \`8a2716ed368e7403fbac82c7121369bc95ae53d1\` | Event/actor-class rules, not ledger signer verification |
+| \`IMMORTAL/governance/GovernanceCanonicalizationWitness.hs\` | \`8957b631183e5f69f759fddae0070d35815fb4ec\` | Pure Haskell canonicalization projection |
+| \`IMMORTAL/governance/README.md\` | \`312175e57cb9e94972662353a2775f8fb545de44\` | Explicit limits of Haskell conformance evidence |
+| \`plutus/export/Export.hs\` | \`b33cd08b2d9dc6800215e771f18d561c87bc34c7\` | No governance or ApplicationConfig validator export |
+
+#### 45.87.4 Traceability conclusion and next gate
+
+The matrix does not identify a hidden or reusable authenticated ApplicationConfig source. Current artifacts fall into four classes:
+
+- **Frontend inputs:** deployment labels, defaults and environment variables; useful for constructing transactions, not protocol authority.
+- **Off-chain deterministic models:** target encoding, GameRoundCommitment and governance replay; useful for consistency/conformance, not proof of canonical adoption.
+- **Existing on-chain B1 checks:** publisher signature relative to the Pending datum and Registry transition continuity; useful but downstream of the missing canonical opening.
+- **Domain-specific carriers:** Genesis, PRE-RICH Control and V3 state carriers; structural precedents, not an already-authorized ApplicationConfig or governance carrier.
+
+Therefore G1, G1-F, G2, G3, G4 and G5 remain open/blocked as classified in §45.86. The gap is not merely a missing Factory validator; it is the absence of a provenance chain from immutable application genesis, through ledger-verifiable governance adoption, into a unique current config state that can safely determine progression and the complete target.
+
+The next safe task is a separately reviewed proof/interface design for G1-F and the G2/G3 inputs. It must not invent missing source facts or substitute an off-chain authority.
+
+**Non-effects:** documentation-only. No source code, datum/redeemer ABI, Registry consumer, governance semantics, Plutus script, Factory, wallet, workflow, CI run, transaction, deployment, branch topology or ledger state was changed or executed.
