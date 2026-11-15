@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import test from 'node:test'
 
 import {
@@ -145,6 +146,23 @@ test('EV3 basket digest rejects altered evidence', () => {
   const basket = canonicalizeDirectUsdmBasket(fixture())
   assert.equal(verifyDirectUsdmBasket({ ...basket, lovelaceQuantity: '5000001' }), false)
   assert.equal(verifyDirectUsdmBasket({ ...basket, basketDigest: '0'.repeat(64) }), false)
+})
+
+test('EV3 basket verifier rejects a self-digested foreign positive asset', () => {
+  const basket = canonicalizeDirectUsdmBasket(fixture())
+  const forged = {
+    ...basket,
+    positiveAssets: [
+      ...basket.positiveAssets,
+      { unit: foreignUnit, quantity: '1' },
+    ],
+  }
+  const payload = { ...forged }
+  delete payload.basketDigest
+  forged.basketDigest = createHash('sha256')
+    .update(JSON.stringify(payload))
+    .digest('hex')
+  assert.equal(verifyDirectUsdmBasket(forged), false)
 })
 
 test('exact Pool output reference is parsed canonically and must occur exactly once', () => {
