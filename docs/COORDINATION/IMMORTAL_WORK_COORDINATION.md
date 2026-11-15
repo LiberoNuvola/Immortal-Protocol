@@ -8268,7 +8268,7 @@ The checked-in suite contains one composite Claim substitution fixture and one h
 
 - valid exact Claim: Pool tUSDM atomic decrease equals `claimedAmount * 10_000`, with the same aggregate atomic quantity paid to the ticket owner's payment credential;
 - owner receives less than, more than, or zero approved tUSDM; wrong recipient; foreign/ADA-only Oracle-equivalent payout;
-- split owner outputs, including outputs to the same payment credential with different staking credentials, aggregate to the exact required quantity;
+- split owner outputs at the exact canonical enterprise address (the current `PrizeValidator.rawClaimantValue` boundary: matching `PubKeyCredential` and no staking credential) aggregate to the exact required quantity; alternate staking credentials are outside this B1-only scope because PrizeValidator currently excludes them;
 - residual atomic dust just below, at, and above a 10,000-atomic-unit accounting boundary;
 - Pool decrease exceeds or falls short of exact payout while the remaining Pool basket stays EV3-canonical;
 - canonical EV3 FundTreasury exact positive tUSDM deposit with consistent datum; foreign-only valuation increase, compensating foreign input, decreasing tUSDM, and mismatched datum;
@@ -8294,3 +8294,24 @@ No PR review is claimed by this request. The GitHub review list for PR #19 remai
 - No B1, PrizeValidator, MintPolicy, script factory, ABI, V3, Reveal, 500×, economic constant, workflow, wallet, signature, deployment, funding or ledger state changed.
 - The explicit factory-parameter/redeployment approach remains an engineering candidate pending Agent B review and controlled migration approval. No old Pool UTxO is assumed to migrate.
 - R1/Kc/Ω, Registry identity P0, USD/USDM Option B source qualification, fresh EV1–EV7/deployment approval and C1/PA1–PA7 remain independently open. First real Preprod Issue remains **NO-GO**.
+
+
+## 46.25 AGENT A — CLAIM OWNER-ADDRESS AGGREGATION BOUNDARY CORRECTION (2026-11-15)
+
+**Classification:** SOURCE CROSS-CHECK / §46.24 PRECISION CORRECTION; DOCUMENTATION ONLY.
+
+A direct read of `plutus/PrizeValidator.hs` confirms that its current `rawClaimantValue` constructs and aggregates outputs only at the exact enterprise address:
+
+`Address (PubKeyCredential ownerHash) Nothing`
+
+It does not aggregate outputs using only the payment credential while ignoring arbitrary staking credentials. The test fixture in §46.21 uses this same enterprise address.
+
+Accordingly, the §46.24 split-output candidate is narrowed to multiple outputs at that exact canonical enterprise address. A future B1 direct-tUSDM payout helper must aggregate the approved asset across those outputs and compare the exact atomic total with the PrizeDatum payout. It must not silently introduce broader staking-address acceptance that the current PrizeValidator does not share. Supporting base addresses or alternate staking credentials would require a separate PrizeValidator compatibility decision and its own compiled CEK matrix; it is not part of this B1-only candidate.
+
+This cross-check also highlights the current asymmetry:
+- B1 `payoutPaidUsdm` scans PubKey outputs and succeeds if any individual matching output has an Oracle-valued amount equal to the payout; it does not aggregate the owner's outputs.
+- PrizeValidator `rawClaimantValue` aggregates Values at the exact enterprise owner address before Oracle valuation.
+
+The new direct payout predicate must use one explicit, shared owner-address contract and aggregate raw approved-tUSDM atomic amounts; it must not copy either legacy Oracle predicate as the physical payout rule.
+
+No code, ABI, validator, V3, Reveal, 500×, economic constant, transaction or deployment changed.
