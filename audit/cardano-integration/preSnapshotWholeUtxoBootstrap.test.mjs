@@ -17,7 +17,7 @@ function output(txId, index, quantity, extra = {}) {
     address,
     value: {
       ada: { lovelace: 3000000n },
-      [policyIdHex]: { [assetNameHex]: quantity },
+      ...(quantity === undefined ? {} : { [policyIdHex]: { [assetNameHex]: quantity } }),
       ...extra
     }
   }
