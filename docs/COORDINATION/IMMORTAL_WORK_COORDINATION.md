@@ -8536,3 +8536,40 @@ The combined Reveal fixture is independent of this quote-availability issue: the
 - **Issue:** mandatory MintPolicy `atomicPoolReservationValid` preserves complete Pool Value on the normal Issue/mint path.
 
 No assertion is made that a live Preprod Oracle datum currently contains ADA-only or ADA+tUSDM; fetch and decode the exact singleton to establish that. No on-chain state, Oracle datum, validator, workflow, wallet, signature, deployment, funding or ledger state changed.
+
+## 46.30 AGENT A — FIRST ISSUE ADA SETTLEMENT / ADA-ONLY ORACLE COMPATIBILITY (2026-11-15)
+
+**Classification:** READ-ONLY ISSUE-PATH SOURCE RECONCILIATION; no code, CI, wallet or ledger action.
+
+### Exact standard Issue path
+
+The current `src/mint.ts` default branch (when `opts.settlementAssetQuantities` is absent) constructs the Treasury payment using `deriveAdaIssueSettlementLovelace` and `decodeAdaOraclePriceReference`. That helper accepts only the canonical ADA quote (empty policy/name), adds the existing 1,600,000-lovelace economic-exclusion floor, and derives a finite validity TTL from the authenticated quote freshness deadline.
+
+The builder reads exactly one Oracle State singleton UTxO at the configured Oracle address and requires its inline datum. It passes that UTxO as a reference input in the Issue transaction path. Thus the prescribed legacy ADA-only Oracle datum is compatible with the standard ADA settlement path; it is not necessary to invent or add a tUSDM quote merely to pay the current fixed ADA Issue settlement.
+
+On-chain, the required MintPolicy sale path independently enforces:
+- `atomicTreasuryPaymentValid`: the exact Treasury script output must be Oracle-valued by `Economic.totalUsdmValue` to the `pdPriceUsdm` amount; with the current single ADA quote, the standard ADA-only output is representable and checked on-chain.
+- `atomicPoolReservationValid`: exactly one B1 Pool input/output pair; full `beforeValue == afterValue`; unchanged liquidity/liabilities/locked jackpot/threshold/suspension/prize hash; exact unresolved reserve increase and ticket count increment.
+
+Therefore, for the **standard ADA-paid first Issue**, the absence of a tUSDM Oracle quote does not itself prevent the Treasury check and does not permit the Pool's tUSDM balance to change during Issue. This is a source-level compatibility finding, not a successful live Issue observation.
+
+### Keep the lifecycle boundaries separate
+
+- **Issue:** standard ADA Treasury payment + exact B1 Pool Value preservation in mandatory MintPolicy. The tUSDM Oracle quote is not required for this branch, provided the actual configured Oracle singleton contains the fresh ADA quote used by the builder.
+- **FundTreasury:** current B1 calls Oracle-based `poolUsdmValue` over the Pool Value, so an ADA-only quote set cannot value non-zero tUSDM; the path may fail closed for lack of quote. A physical Direct-USDM transition contract is still needed for this action.
+- **Claim:** current B1 Pool delta and PrizeValidator owner payout both use Oracle valuation. A physical tUSDM payout without an authenticated tUSDM quote is not compatible with those legacy checks. B1-only change is insufficient unless the separate PrizeValidator Claim predicate is reconciled.
+- **Reveal:** current source shows a Pool Value-preservation gap, independent of whether an Oracle tUSDM quote exists; combined compiled CEK fixture has been added but remains unexecuted/unqualified on the latest test source.
+- **Expire:** full B1 Pool Value equality already enforced.
+
+### First-ticket gate disposition
+
+This reconciliation removes one false dependency from the first-ticket path: **an ADA-only Oracle datum is not, by itself, a reason to block the standard ADA-funded Issue**. It does not relax or close the independent release gates:
+- R1/Kc/QNE and authoritative Ω/witness;
+- Registry identity P0 and required beacon/registry controls;
+- exact current Preprod EEV source UTxO, EV1–EV7 and deployment approval binding;
+- USD/USDM Option B source/settlement qualification where the selected path requires it;
+- C1/PA1–PA7 accounting partition/provenance;
+- exact current deployment topology and live UTxO freshness;
+- all required Issue admission evidence and transaction-body binding.
+
+**Disposition:** standard ADA Issue settlement path is compatible with the prescribed ADA-only Oracle configuration at source level, and MintPolicy already preserves the entire Pool Value during TicketIssued. No live wallet/CI/Preprod transaction has been executed in this step. First real Preprod Issue remains **NO-GO** until every independent admission/deployment gate is freshly evidenced.
