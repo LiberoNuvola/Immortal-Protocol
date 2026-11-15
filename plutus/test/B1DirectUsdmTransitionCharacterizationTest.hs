@@ -239,14 +239,14 @@ makeClaimContexts =
     ownerRef = TxOutRef (TxId (rawBytes [103])) 0
     sourceRef = TxOutRef (TxId (rawBytes [104])) 0
 
-    beforePool = poolDatum 10_000 100
-    afterPool = poolDatum 9_900 0
-    beforePrize = prizeDatum Revealed 100
+    beforePool = poolDatum 400 200
+    afterPool = poolDatum 200 0
+    beforePrize = prizeDatum Revealed 200
     afterPrize = beforePrize { pdStatus = Claimed }
 
     poolInput =
       TxInInfo poolRef
-        (scriptOut poolHash (poolValue 1_000_000 0)
+        (scriptOut poolHash (poolValue 4_000_000 0)
           (PlutusTx.toBuiltinData beforePool))
     prizeInput =
       TxInInfo prizeRef
@@ -262,7 +262,7 @@ makeClaimContexts =
             <> singleton adaSymbol adaToken 5_000_000))
 
     poolOutput =
-      scriptOut poolHash (poolValue 980_000 1)
+      scriptOut poolHash (poolValue 0 1)
         (PlutusTx.toBuiltinData afterPool)
     prizeOutput =
       scriptOut prizeHash prizeScriptValue
@@ -270,16 +270,16 @@ makeClaimContexts =
     ownerPayout =
       pubkeyOut ownerPkh
         (ownerTicketValue
-          <> singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 10_000)
+          <> singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 2_000_000)
     sourceChange =
       pubkeyOut sourcePkh
-        (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 10_000
+        (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 2_000_000
           <> singleton adaSymbol adaToken 5_000_000)
 
     quoteSet =
       [ adaQuote
-      , tusdmQuote 10_000
-      , foreignQuote 100_000_000
+      , tusdmQuote 100
+      , foreignQuote 200_000_000
       , ticketQuote
       ]
     oracleReference =
@@ -312,12 +312,12 @@ makeFundContext =
     poolRef = TxOutRef (TxId (rawBytes [111])) 0
     sourceRef = TxOutRef (TxId (rawBytes [112])) 0
 
-    beforePool = poolDatum 10_000 0
-    afterPool = poolDatum 10_100 0
+    beforePool = poolDatum 1_000 0
+    afterPool = poolDatum 2_000 0
 
     poolInput =
       TxInInfo poolRef
-        (scriptOut poolHash (poolValue 1_000_000 0)
+        (scriptOut poolHash (poolValue 10_000_000 0)
           (PlutusTx.toBuiltinData beforePool))
     sourceInput =
       TxInInfo sourceRef
@@ -326,16 +326,16 @@ makeFundContext =
             <> singleton adaSymbol adaToken 5_000_000))
 
     poolOutput =
-      scriptOut poolHash (poolValue 900_000 1)
+      scriptOut poolHash (poolValue 9_000_000 1)
         (PlutusTx.toBuiltinData afterPool)
     sourceChange =
       pubkeyOut sourcePkh
-        (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 100_000
+        (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 1_000_000
           <> singleton adaSymbol adaToken 5_000_000)
 
     quoteSet =
       [ adaQuote
-      , tusdmQuote 10_000
+      , tusdmQuote 100
       , foreignQuote 1_100_000_000
       ]
     oracleReference =
@@ -417,22 +417,22 @@ evalAccepts compiled =
     Right _ -> True
     Left _ -> False
 
-directUsdmRu :: Integer -> Integer
-directUsdmRu atomicAmount =
+directUsdmSubunits :: Integer -> Integer
+directUsdmSubunits atomicAmount =
   div (atomicAmount * 100) 1_000_000
 
 main :: IO ()
 main = do
   let
     (prizeContext, poolContext) = makeClaimContexts
-    prizeInputDatum = prizeDatum Revealed 100
-    poolInputDatum = poolDatum 10_000 100
-    poolOutputOracleValue = 9_900
-    claimedAmount = 100
+    prizeInputDatum = prizeDatum Revealed 200
+    poolInputDatum = poolDatum 400 200
+    poolOutputOracleValue = 200
+    claimedAmount = 200
     claimDirectDelta =
-      directUsdmRu 980_000 - directUsdmRu 1_000_000
-    claimProtectedCapitalDeltaRu =
-      div (0 - 100) 100
+      directUsdmSubunits 0 - directUsdmSubunits 4_000_000
+    claimProtectedCapitalDelta =
+      0 - 200
 
     claimPrizeAccepted =
       evalAccepts (applyPrizeClaim prizeInputDatum prizeContext)
@@ -445,32 +445,32 @@ main = do
       ++ show claimPrizeAccepted ++ ", poolAccepted=" ++ show claimPoolAccepted)
 
   assert
-    (poolOutputOracleValue == 9_900
-      && 10_000 - poolOutputOracleValue == claimedAmount)
-    "Claim fixture reconciles Oracle-valued Pool delta and exact 100-subunit crystallized payout"
+    (poolOutputOracleValue == 200
+      && 400 - poolOutputOracleValue == claimedAmount)
+    "Claim fixture reconciles Oracle-valued Pool delta and exact 200-subunit crystallized payout"
 
   assert
-    (claimDirectDelta == -2 && claimProtectedCapitalDeltaRu == -1
-      && claimDirectDelta < claimProtectedCapitalDeltaRu)
-    "Claim counterexample: direct EEV falls 2 RU while ProtectedCapital falls only 1 RU"
+    (claimDirectDelta == -400 && claimProtectedCapitalDelta == -200
+      && div claimDirectDelta 100 < div claimProtectedCapitalDelta 100)
+    "Claim counterexample: direct EEV falls 4 RU while ProtectedCapital falls only 2 RU"
 
   let
     fundContext = makeFundContext
-    fundInputDatum = poolDatum 10_000 0
-    fundOutputOracleValue = 10_100
+    fundInputDatum = poolDatum 1_000 0
+    fundOutputOracleValue = 2_000
     fundAccepted =
       evalAccepts (applyB1Validator fundInputDatum FundTreasury fundContext)
     fundDirectDelta =
-      directUsdmRu 900_000 - directUsdmRu 1_000_000
+      directUsdmSubunits 9_000_000 - directUsdmSubunits 10_000_000
 
   assert
     fundAccepted
     "OBSERVED GAP: compiled FundTreasury accepts Oracle-valued liquidity increase while physical direct tUSDM falls"
 
   assert
-    (fundOutputOracleValue > 10_000
-      && fundDirectDelta == -10)
-    "FundTreasury counterexample: Oracle accounting rises 1 RU while direct EEV falls 10 RU"
+    (fundOutputOracleValue > 1_000
+      && fundDirectDelta == -100)
+    "FundTreasury counterexample: Oracle accounting rises 10 RU while direct EEV falls 1 RU"
 
   putStrLn "ALL B1 DIRECT-USDM CLAIM / FUND TREASURY CEK CHARACTERIZATIONS PASSED"
 
