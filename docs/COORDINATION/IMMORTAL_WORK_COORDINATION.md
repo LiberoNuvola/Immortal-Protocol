@@ -6101,3 +6101,168 @@ Next bounded work, before code:
 5. obtain explicit implementation slot and changed-path approval before any Factory prototype or datum/consumer edit.
 
 **Non-effects:** documentation only. No production source, datum/redeemer ABI, minting policy, validator, tests, Aiken, workflows, CI, deployment, wallet, transaction or ledger state changed. No CEK/Yaci result is asserted. Issue #43 remains release-blocking; Issue #49 remains **DESIGN CANDIDATE / NOT IMPLEMENTATION-READY**.
+
+
+---
+
+## 45.83 AGENT B — FACTORY BOOTSTRAP / ROUND PROGRESSION / BEACON TARGET RESOLVER CROSSWALK
+
+**Date:** 2026-11-15  
+**Exact reviewed HEAD:** `703ba814093d94a5586e1ff9b5ab4af1b6212e64`  
+**Classification:** SOURCE TRIANGULATION / DESIGN CONTRACT — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY  
+**Scope:** clarify what is actually frozen, what the current builder merely defaults, and which authenticated dependencies must exist before a permissionless trustless OpenRound can be specified.
+
+### 45.83.1 Disposition
+
+The audit still finds **no complete Factory bootstrap, adopted-config carrier, round progression function, or canonical target resolver implemented in production source**. The Factory STT plus per-round token remains a design candidate.
+
+This pass adds one important reconciliation to §45.82:
+
+- governance **parameters** are frozen by the repository's implementation-facing Phase 2 contract;
+- governance **source authenticity/completeness and Cardano execution binding** remain open;
+- the DApp's current `BeaconTarget` values are defaults/build inputs, not proof of canonical target selection;
+- the existing `GameRoundCommitment` is a useful integrity primitive, but the current Registry datum does not carry or authenticate it;
+- Materios proof of a selected `AnchorRecord` is not the same property as proof that the selected anchor is canonical for a given PRE-RICH round.
+
+No new protocol rule, target formula, progression rule, script parameter, ABI, or authority is selected here.
+
+### 45.83.2 Governance source precedence correction
+
+The older Notion page `GOV-03 — PRE Voting Mechanisms & Decision Rules v0.1` is explicitly a candidate-space document and says that it does not freeze a final mechanism. It is not the latest implementation-facing contract and its fetched page metadata reports `verification.state=unverified`.
+
+The repository source `docs/00-normative/GOVERNANCE_IMPLEMENTATION_CONTRACT_PHASE2.md` identifies GOV-01 → GOV-18 as its source and freezes these canonical parameters:
+
+- representation: eligible ledger entities at the voting-start snapshot;
+- voting weight: `V(P)=P`;
+- delegation: direct, non-recursive, weight-conserving and snapshot-bound;
+- quorum: `Q/E >= 1/4`, with `Q=Y+N+A`;
+- ordinary approval: `Y/(Y+N) > 1/2`;
+- kernel approval: `Y/(Y+N) >= 2/3`;
+- abstention counts toward quorum and is excluded from the approval denominator;
+- community review 7 days, voting 5 days, finalization/challenge 3 days; material amendment starts a new lifecycle.
+
+Therefore GOV-03's old candidate-space language must **not** be used to reopen these already-frozen parameters.
+
+This does **not** close the Factory governance trust root. The separate Agent B source audit `AGENT-B-GOVERNANCE-PRE-SNAPSHOT-AND-BEACON-TARGET-TRUSTLESS-GAP-2026-11-08.md` finds that deterministic Haskell replay still does not prove: complete PRE balances/eligible denominator at the voting-start boundary; the mapping of governance EntityId to Cardano credential; actor signature authenticity; evidence authenticity/completeness; or a Cardano-verifiable adopted application-config state. The existing governance contract itself is not a conformance certificate.
+
+**Correct status:** governance decision parameters are frozen; Cardano-verifiable genesis/snapshot/credential/event/canonicalization provenance remains BLOCKED.
+
+### 45.83.3 Factory bootstrap — immutable configuration is separate from one-shot uniqueness
+
+The prior Issue #49 readiness note specifies an immutable deployment manifest and a one-shot seed reference. Its required initial manifest content includes at least:
+
+- Factory instance/game namespace;
+- initial ruleset and configuration commitment;
+- exact Registry credential/address;
+- B1 trust profile and publisher identity;
+- progression rule;
+- target-derivation contract;
+- script hashes and parameterization;
+- seed reference and expected initial Factory state.
+
+The distinction is material:
+
+1. Consuming one seed once can prevent a second bootstrap from the same seed.
+2. It does **not**, by itself, prove that the first transaction used the correct initial configuration.
+3. The Factory policy/bootstrap path must constrain the initial state and token placement to the independently reproducible deployment commitment. A first submitter cannot be allowed to select the publisher, Registry address, progression, target resolver or configuration while consuming the seed.
+4. After bootstrap, the seed must confer no ongoing pause, arbitrary mint, target-selection, publisher-override, upgrade or recovery power.
+5. Any mutable application-configuration change must be the result of the authenticated canonical governance transition; an ordinary OpenRound reads that adopted state rather than changing it.
+
+The abstract script dependency proposal remains `H_R → H_F → consumers(H_R,H_F)`: compile the independent Registry as `H_R`, then the Factory policy parameterized by `H_R` and immutable bootstrap inputs as `H_F`, then the consumers. This remains a hash-topology/compiler hypothesis until a pinned-toolchain artifact proves the actual Plutus V2 construction and parameter application.
+
+**Not decided:** exact initial manifest commitment encoding, namespace bytes, token names, seed identity, Factory datum ABI, upgrade policy, or recovery/loss procedure. No admin reset or privileged recovery key may be inferred.
+
+### 45.83.4 Round progression — strict ordering is a candidate constraint, not an adopted function
+
+The Issue #49 readiness note states that a strict monotonic sequence is required as its proposed baseline, while also leaving the exact progression and skip predicates to PRE-RICH application policy and requiring them to be fixed in adopted configuration before code.
+
+The current source does not implement that state machine:
+
+- `src/createRound.ts` accepts a caller-supplied target and relayer; its local round check is only `round >= 0`.
+- `src/mint.ts` exposes optional `networkId`, `roundId`, `mainchainRef` and `gameVersion` inputs.
+- Its current convenience defaults are `networkId=0`, `roundId=0`, `gameVersion=V1`, and `mainchainRef=UTF8("pre-rich-round-" + roundId)`.
+- Those defaults are builder behavior, can be overridden, and are not an authenticated schedule or a Factory progression predicate.
+
+Consequently, do not promote `round+1`, fixed cadence, time-based selection, or skip/reopen rules into protocol law based on these defaults.
+
+Minimum design requirement: the submitter relays a transition whose round is derived from the authenticated Factory predecessor and the adopted progression rule; the submitter does not choose the round. The exact deterministic function, skip eligibility, pause/stop behavior, and config-version transition remain application-policy decisions. If skips are ever allowed, the rule and its visible state consequence must be adopted before implementation; an operator cannot manually skip, reopen, freeze or reorder.
+
+### 45.83.5 Target derivation — current encodings bind bytes but do not establish their origin
+
+The current tuple is `BeaconTarget=(networkId, round, mainchainRef, version)`.
+
+Source facts:
+
+- `plutus/Beacon.hs::deriveBeacon` deterministically hashes the supplied network, round, mainchainRef, mcHash, Materios context and version. Its source comment expressly says this does not prove authenticity of mcHash.
+- `src/beacon.ts::deriveGameRoundCommitment` binds `gameId`, `roundId`, `configHash` and `protocolVersion`. It is an integrity/binding primitive, not a Materios receipt, target-selection proof or randomness source.
+- `src/registryFlow.ts` recomputes/checks that commitment off-chain and checks round/version consistency. Its own source comments state that the current Registry datum does not contain GameRoundCommitment; the check is therefore not an on-chain authentication boundary.
+- `src/registryDatum.ts` and `plutus/Types.hs` retain the current seven-field `BeaconRegistryDatum`; the separate `GameRoundCommitment` type is not included in that datum.
+- The ticket commitment includes the encoded complete BeaconTarget, but a commitment to caller-supplied target bytes does not prove that those bytes were selected by the canonical protocol rule.
+
+The field `mainchainRef` therefore remains semantically unresolved. The sources do not authorize silently treating it as one of: a Materios finalized block hash, an Orinq `anchor_id`, an `AnchorRecord.root_hash`, a checkpoint/manifest commitment, or another external reference.
+
+The Materios evidence boundary remains two independent relations:
+
+1. **State authentication:** finalized header/StateRoot plus a valid storage proof authenticates the exact `OrinqReceipts::Anchors[anchor_id]` value.
+2. **Semantic target binding:** an independently adopted and verified rule proves that this exact anchor is the canonical one for this PRE-RICH round/checkpoint.
+
+The inspected pallet accepts `anchor_id` as an explicit argument to `submit_anchor`. The Orynq SDK convention `SHA256(rootHash_bytes || manifestHash_bytes)` is observed producer behavior, not a Materios consensus rule or adopted PRE-RICH canonical mapping. The known real Preprod receipt → checkpoint leaf/root → anchor record is a concrete witness for that selected receipt; it does not define a general round-to-anchor function.
+
+Likewise, the repository's `canonicalAnchorKey` hashes a canonical evidence tuple; it is not a protocol rule mapping round to Materios `anchor_id`.
+
+B3's required proof composition remains conceptually:
+`finalized header + GRANDPA authority/ancestry/finality proof → StateRoot → storage proof → exact AnchorRecord → adopted round/checkpoint relation`.
+
+B3-A finality/authority provenance, B3-B historical state/storage verification and B3-C Cardano verification/semantic mapping remain separate gates. A valid B1 publisher signature cannot replace them.
+
+### 45.83.6 Minimum trust boundary before OpenRound
+
+The following is an interface-level checklist, **not a selected datum/redeemer ABI**:
+
+1. Read the unique authenticated Factory predecessor and its immutable namespace/sequence state.
+2. Read the canonical adopted application-config state and verify its identity/version against the Factory's governed configuration reference.
+3. Derive the round from the adopted progression rule and Factory predecessor; reject caller-provided round substitution.
+4. Derive `networkId` and `version` from immutable deployment configuration and adopted application configuration respectively.
+5. Verify a target witness binding the same round/config to the adopted meaning of `mainchainRef` and the canonical Materios checkpoint/anchor relation.
+6. Freeze the full target before B1 publication; the configured B1 publisher may publish observation data only for this target.
+7. Atomically advance the Factory state and mint exactly one round identity into exactly one Pending Registry output, preserving the §45.81/§45.82 identity and consumer conditions.
+
+A proof package that only says “this AnchorRecord exists” is insufficient at step 5. A commitment that only says “these config bytes hash to H” is insufficient unless the initial/configuration source and adoption lifecycle are authenticated. If any of these inputs cannot be verified under the selected on-chain trust contract, OpenRound must fail closed.
+
+### 45.83.7 Gates and disposition
+
+| Gate | Required closure | Current status |
+|---|---|---|
+| B0 — Bootstrap root | Independently reproducible deployment manifest; immutable initial config; exact first Factory state/token constraints; seed replay protection | **DESIGN ONLY / OPEN** |
+| B1 — Governance state | Frozen GOV rules plus complete PRE snapshot, credential-bound actors and Cardano-verifiable canonical adoption/config state | **BLOCKED** |
+| B2 — Progression | Adopted deterministic next-round/skip/stop function and version transition | **OPEN / NOT SELECTED** |
+| B3 — Target semantics | Adopted meaning of mainchainRef and canonical round/checkpoint → anchor relation | **BLOCKED** |
+| B4 — External proof | Exact Materios finality, authority/ancestry and historical storage witness | **OPEN** |
+| B5 — Script feasibility | Acyclic script/artifact proof, CEK and transaction-size measurements on pinned toolchain | **BLOCKED / MUST REPRODUCE** |
+| B6 — Legacy/owner | Live legacy inventory, migration disposition, owner approval and bounded implementation slot | **OPEN / NOT AUTHORIZED** |
+
+**Disposition:** the existing Factory identity shape remains the preferred design candidate, but its bootstrap and OpenRound inputs are not yet trustless. There is no evidence-based route to implement a correct permissionless OpenRound by simply replacing the present caller-supplied `mainchainRef` with an SDK hash or the current string default.
+
+**Non-effects:** documentation/audit only. No production code, ABI, Plutus/Aiken script, Factory policy, target resolver, governance rule, test, workflow, CI run, branch topology, wallet action, transaction, deployment, or ledger state was changed or executed. No V3/Reveal or economic semantics were changed.
+
+### 45.83.8 Exact source pins reviewed
+
+| Source | Blob SHA | Use in this crosswalk |
+|---|---|---|
+| `docs/00-normative/GOVERNANCE_IMPLEMENTATION_CONTRACT_PHASE2.md` | `bf42cf1c465cf9b6be768efed99594159793c2b9` | Frozen GOV implementation parameters |
+| `docs/COORDINATION/AGENT-B-GOVERNANCE-PRE-SNAPSHOT-AND-BEACON-TARGET-TRUSTLESS-GAP-2026-11-08.md` | `ac45a5dcf381898df55362eea0afe407820ea5ac` | Snapshot and target trust gaps |
+| `src/config.ts` | `245d81ee6f9916623f7ed31fb4ef904af7407d3b` | Public deployment defaults/config |
+| `src/mint.ts` | `1cde621e072db3b9db5b699377915b80b7db5c3e` | Caller-overridable target inputs/defaults |
+| `src/createRound.ts` | `4112d87b7b6d88d77da0bbaee5ed2e172527609e` | Caller-supplied Pending target/relayer |
+| `src/beacon.ts` | `4ad58dedb68bb3db1b52900b113126105dcd8766` | Target and GameRoundCommitment encoding |
+| `src/registryFlow.ts` | `c402d52ed1e60bb63d0f47d80de6cf0d48c71691` | Off-chain commitment checks |
+| `src/registryDatum.ts` | `0d611c29fe4f74b9b2fa4cd328e8fe2edb5f48f4` | Seven-field datum encoding |
+| `plutus/Beacon.hs` | `3c9065e7b6b2b9484d845d03078dca165e40f031` | On-chain deterministic derivation |
+| `plutus/Types.hs` | `60caeb747018b512e8e6ae7d8a100bb7023863d9` | Current Registry ABI |
+| `plutus/BeaconRegistry.hs` | `184f4178139dde01845853dcc0ab51371949ec9b` | Current Pending → Ready boundary |
+| `poc/materios-checkpoint/src/selectionCommitment.ts` | `ad6dea3d21bacc24d63f6a9fc744978b6eb7188c` | Materios selection commitment extraction only |
+| `poc/materios-checkpoint/src/canonicalEvidence.ts` | `1ade2167eae734bd9f1b5c1a0a1672bb579a0f77` | Evidence tuple anchorKey, not round-to-anchor rule |
+| `poc/materios-checkpoint/src/capture-anchor.ts` | `3a953606393bcd94eaa82d00381976709c8193ce` | Exact selected AnchorRecord witness capture boundary |
+| `docs/research/B3-C-POC2-MATERIOS-ANCHOR-KEY-TRIANGULATION-2026-09-27.md` | `ebc464d9839fdfd523b2cb5806e0aa63a53c144a` | Caller-supplied anchor key and open semantic relation |
+| `docs/04-guides/14_BEACON_FAILOVER_AND_ROUND_FREEZE_v0.1.md` | `6bfb95892c10a795070fa7317fb412a6cd5ec443` | Trust-mode freeze only; not a target resolver |
+
