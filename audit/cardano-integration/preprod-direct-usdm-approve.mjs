@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { verifyDirectUsdmBasket } from './preprod-direct-usdm-basket-contract.mjs'
 import {
   assertArtifactEvidenceHash,
   assertQualificationEvidenceMatchesRepository,
@@ -77,6 +78,40 @@ const oracleState = JSON.parse(
 // Recompute all evidence digests from the parsed canonical contents. Digest
 // shape alone is insufficient for a privileged deployment-approval action.
 const sourceSetEvidenceHash = assertArtifactEvidenceHash(sourceSet, 'sourceSet')
+const assetBasket = sourceSet.assetBasket
+if (!verifyDirectUsdmBasket(assetBasket)) {
+  throw new Error('sourceSet canonical Direct-USDM asset basket is missing, malformed or tampered')
+}
+if (
+  sourceSet?.source?.poolAssetBasketDigest !== assetBasket.basketDigest ||
+  assetBasket.poolOutputReference !== sourceSet?.source?.b1PrizePoolUtxo ||
+  assetBasket.poolAddress !== sourceSet?.source?.b1PrizePoolAddress ||
+  assetBasket.poolTokenUnit !== sourceSet?.source?.poolSingletonUnit?.toLowerCase() ||
+  assetBasket.approvedTusdmUnit !== sourceSet?.source?.directUsdmUnit?.toLowerCase()
+) {
+  throw new Error('sourceSet canonical asset basket is not bound to the exact deployed Pool identity')
+}
+const basketPoolAsset = assetBasket.positiveAssets.find(
+  asset => asset.unit === assetBasket.poolTokenUnit,
+)
+const basketTusdmAsset = assetBasket.positiveAssets.find(
+  asset => asset.unit === assetBasket.approvedTusdmUnit,
+)
+if (
+  assetBasket.positiveAssets.length !== 2 ||
+  basketPoolAsset?.quantity !== '1' ||
+  !basketTusdmAsset ||
+  BigInt(basketTusdmAsset.quantity) <= 0n ||
+  sourceSet?.derivation?.atomicQuantity !== basketTusdmAsset.quantity
+) {
+  throw new Error('sourceSet canonical asset basket does not match the approved EV3 direct-USDM source')
+}
+if (
+  sourceSet?.implementation?.basketContractReference !== 'audit/cardano-integration/preprod-direct-usdm-basket-contract.mjs' ||
+  sourceSet?.implementation?.basketContractDigest !== qualification?.sourceSet?.basketContractDigest
+) {
+  throw new Error('sourceSet EV3 basket contract does not match the qualified implementation digest')
+}
 const deploymentEvidenceHash = assertArtifactEvidenceHash(deployment, 'deployment')
 const oracleEvidenceHash = assertArtifactEvidenceHash(oracleState, 'oracleState')
 const qualificationEvidenceHash = assertArtifactEvidenceHash(qualification, 'qualification')
@@ -161,7 +196,10 @@ if (qualification?.sourceSet?.directUsdmUnit !== sourceSet?.source?.directUsdmUn
     qualification?.sourceSet?.poolAddress !== sourceSet.source.b1PrizePoolAddress ||
     qualification?.sourceSet?.observedPhysicalAtoms !== sourceSet.derivation.atomicQuantity ||
     qualification?.sourceSet?.observedUsdmSubunits !== sourceSet.derivation.verifiedUsdmSubunits ||
-    qualification?.sourceSet?.freshnessModel !== sourceSet.freshness.model) {
+    qualification?.sourceSet?.freshnessModel !== sourceSet.freshness.model ||
+    qualification?.sourceSet?.assetBasketDigest !== assetBasket.basketDigest ||
+    qualification?.sourceSet?.basketContractReference !== sourceSet.implementation.basketContractReference ||
+    qualification?.sourceSet?.basketContractDigest !== sourceSet.implementation.basketContractDigest) {
   throw new Error('qualification does not bind the complete current source-set facts')
 }
 
@@ -191,6 +229,8 @@ const approvalSnapshot = {
   sourceReference: qualification.sourceReference,
   directUsdmUnit: sourceSet.source.directUsdmUnit,
   poolInputReference: sourceSet.source.b1PrizePoolUtxo,
+  assetBasketDigest: assetBasket.basketDigest,
+  basketContractDigest: sourceSet.implementation.basketContractDigest,
   freshnessModel: sourceSet.freshness.model,
   derivationVersion: sourceSet.derivation.version,
 }
