@@ -81,6 +81,10 @@ jobs:
         working-directory: plutus
         run: cabal test mint-policy-b1-value-preservation-tests --test-show-details=direct
 
+      - name: BeaconRegistry adversarial characterization (CEK only)
+        working-directory: plutus
+        run: cabal test beacon-registry-adversarial-tests --test-show-details=direct
+
       - name: Beacon commitment cross-language conformance
         working-directory: plutus
         run: cabal test beacon-commitment-cross-language-tests --test-show-details=direct
