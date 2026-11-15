@@ -220,7 +220,6 @@ jobs:
               audit/preprod-evidence/previous-observation/treasury-ticket-sale-receipt-journal.json \
               audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json \
               audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
-            audit/preprod-evidence/treasury-protected-capital-crosswalk.json
           else
             node audit/cardano-integration/reconcile-treasury-journal-snapshots.mjs \
               --baseline \
@@ -239,5 +238,6 @@ jobs:
             audit/preprod-evidence/preprod-protected-capital-census.json
             audit/preprod-evidence/treasury-ticket-sale-receipt-journal.json
             audit/preprod-evidence/treasury-ticket-sale-reconciliation.json
+            audit/preprod-evidence/treasury-protected-capital-crosswalk.json
           if-no-files-found: warn
           retention-days: 30
