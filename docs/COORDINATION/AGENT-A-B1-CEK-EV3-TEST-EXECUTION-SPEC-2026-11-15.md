@@ -372,3 +372,21 @@ Reveal has a direct-quantity-only CEK countermodel; Expire and Issue already hav
 **First real Preprod Issue:** **NO-GO**.
 
 **No implementation was performed.** This is the next test-only specification offered for cross-agent review; source/test/workflow changes remain a separate explicit authorization.
+
+
+## 10. Fixture realism and ledger-balance controls
+
+The CEK test contexts should be internally ledger-balanced even though the Plutus CEK evaluator itself does not execute Cardano's Value-conservation rule. This avoids countermodels that only exist because the synthetic context violates a basic ledger constraint.
+
+For Oracle-valued FundTreasury/Claim cases, include exactly the Pool min-UTxO ADA quantity in Pool input/output and include an ADA quote (policy/name = ADA identity) with price zero in the synthetic `OracleQuoteSet`. `Economic.totalUsdmValue` requests a quote for each non-zero asset before applying the ADA min-UTxO economic exclusion. For Claim, include a zero-price quote for the ticket NFT in the owner's combined NFT+payout output, otherwise the correct Oracle traversal will reject the missing NFT quote before the target Pool-delta predicate is reached.
+
+Recommended balanced flows:
+
+- **Reveal:** Pool input 10,000,000 tUSDM atoms; Pool output 4,990,000; a separate output receives the remaining 5,010,000 atoms. Pool singleton and ADA envelope are preserved. No unauthorized mint/burn or value creation is needed.
+- **Claim:** Pool input 1,000,000 tUSDM atoms; Pool output 980,000; the owner's output contains the ticket NFT plus 20,000 tUSDM atoms (payout). Pool singleton and ADA envelope are preserved. The direct tUSDM balance is fully conserved; the 2-RU physical outflow is exactly the amount delivered to the claimant, while the Oracle quote values it at 1 RU.
+- **FundTreasury:** Pool input 1,000,000 tUSDM atoms; Pool output 900,000; a separate funder/change output receives the remaining 100,000 atoms. Pool singleton and ADA envelope are preserved. The current FundTreasury validator has no origin/destination check that prevents the residual tUSDM from leaving the Pool while an Oracle quote makes the continuing output's recomputed liquidity exceed the old datum.
+- **Expire:** Pool input/output complete Value equality, no ADA or token change, no additional beneficiary output.
+
+All Oracle quotes must be included on the same singleton reference UTxO, have a unique policy/name identity, the configured publisher, a timestamp that satisfies the actual `TxInfo` validity upper bound and non-negative price. All B1 datum/PrizeDatum/payout fields must otherwise satisfy the real compiled branch. A fixture that omits required ADA/NFT quotes or fails Value conservation is `FIXTURE_INVALID`, not evidence against or for the target predicate.
+
+This clarification does not upgrade synthetic CEK contexts to a native-ledger execution claim.
