@@ -8431,3 +8431,66 @@ Agent B / specification authority should compare A and B for:
 4. whether the B1 Oracle redundancy is a deliberate normative requirement or merely legacy duplication.
 
 **Current disposition:** neither A nor B has been implemented or adopted. Option B is the narrower candidate to evaluate first; implementation remains blocked on independent review and controlled deployment migration approval. No B1/PrizeValidator code, ABI, V3, Reveal, 500×, economic constants, workflow, wallet, signature, deployment, funding or ledger state changed.
+
+## 46.28 AGENT A — DIRECT-USDM LIFECYCLE RECONCILIATION / NEW CEK COUNTEREXAMPLE FIXTURES (2026-11-15)
+
+**Classification:** SOURCE AUDIT + TEST-ONLY CHARACTERIZATION INCREMENT; production predicates unchanged; new CEK execution not yet observed.
+
+### Lifecycle reconciliation — Issue is not the uncovered edge
+
+A source cross-check of `plutus/MintPolicy.hs` confirms that Issue's mandatory Ticket NFT mint path calls `atomicPoolReservationValid`. That helper requires the complete B1 Pool input `Value` to equal the continuing Pool output `Value`, as well as the corresponding datum deltas. B1's own `TicketIssued` branch does not independently compare Value, but the ticket cannot be issued through the normal mint path without the MintPolicy predicate. Therefore exact physical Pool Value preservation during Issue is already enforced by the mandatory MintPolicy guard; do not classify TicketIssued as the current missing transition.
+
+`TicketExpired` also explicitly requires full Pool input/output Value equality.
+
+### New source-level gap — TicketRevealed
+
+B1's `TicketRevealed` branch checks the accounting datum transition (liquidity unchanged, liabilities/reserve/count updated) but contains no Pool input/output Value-preservation predicate. The compiled PrizeValidator Reveal path separately preserves the **Prize UTxO's** Value; its B1 cross-check reads the Pool datum and checks PrizeHash, affordability, liquidity, liabilities, reserve and count, but it does not compare the Pool input/output Values.
+
+Consequently, source analysis indicates that both validators may accept a balanced Reveal transaction that leaves `ppTotalLiquidity` unchanged while diverting approved tUSDM from the Pool. This is not yet a PASS claim: the exact combined CEK fixture must execute to establish the compiled predicate result.
+
+### New combined Reveal fixture committed for CEK execution
+
+Test-only commit: `3b1b7d3a7e1a73ca0c900f1a48302a5251394989` (subsequently extended by the canonical FundTreasury fixture commit below).
+
+`plutus/test/B1DirectUsdmTransitionCharacterizationTest.hs` now constructs a fixed Reveal vector with:
+- a canonical target, player commitment, ticket commitment, Beacon value, game seed, generated two-row result and payout;
+- one shared, exactly Value-balanced `TxInfo` evaluated separately by compiled PrizeValidator `Reveal` and compiled B1 `TicketRevealed`;
+- EV3-canonical Pool input/output baskets containing only Pool singleton, approved tUSDM and ADA;
+- physical tUSDM diversion of 1,000,000 atomic units to a PubKey output while Pool `ppTotalLiquidity` remains 1,000 accounting units.
+
+The fixture asserts both compiled validators accept and separately asserts exact full-transaction Value balance and the direct tUSDM delta. This is test intent, not yet an observed CEK result. No Reveal predicate or V3 code was edited.
+
+### New EV3-canonical FundTreasury substitution fixture
+
+Test-only commit: `52b295be6597b3921a2401c6f23682670a4b96dd`.
+
+The previous FundTreasury fixture contained a foreign asset in the continuing Pool and remains explicitly historical/non-EV3. A second fixture now uses only the approved tUSDM, ADA and Pool singleton in both Pool baskets:
+- Pool input: 10,000,000 tUSDM atomic + 1,600,000 lovelace (the exact current min-UTxO floor).
+- Pool output: 9,000,000 tUSDM atomic + 2,700,000 lovelace.
+- The source input supplies 3,000,000 lovelace; the source output receives 1,000,000 tUSDM atomic and 1,900,000 lovelace.
+- The complete TxInfo balances exactly. The Pool loses 1,000,000 tUSDM atomic but gains 1,100,000 lovelace above min-UTxO.
+- With synthetic ADA and tUSDM Oracle quotes both set to 100, the legacy Oracle valuation computes Pool liquidity from 1,000 to 1,010 accounting subunits, while direct tUSDM quantity falls by 100 subunits.
+
+The ADA surplus is present in the actual Pool Value but is excluded from the approved Direct-USDM EEV profile. The new compiled CEK assertion is intended to establish whether the current FundTreasury predicate accepts this EV3-canonical basket; its result remains pending an exact run. This fixture is materially different from, and must not be confused with, the earlier foreign-asset historical case.
+
+### Evidence and status
+
+- Existing CEK run `#43749650325` remains SUCCESS for the earlier Claim/Fund suite on SHA `d2c713c850aecbc507af229251e3a39d63b66d30`. It establishes the Claim substitution counterexample; its Fund case is non-EV3.
+- New test changes are on `work/immortal-green-closure`; the latest test commit is `52b295be6597b3921a2401c6f23682670a4b96dd`.
+- The connected GitHub run/status lookups have not returned a workflow run or check status for the latest test commit. Therefore the new Reveal and canonical-ADA-Fund CEK assertions are **NOT YET EXECUTED / NOT YET QUALIFIED**. Do not promote them to PASS until an exact commit-bound run succeeds and its logs are inspected.
+
+### Current direct-USDM lifecycle matrix
+
+| Transition | Current source control | Agent A disposition |
+|---|---|---|
+| Issue / TicketIssued | MintPolicy atomic Pool reservation enforces complete Value equality | Existing guard; no new gap identified |
+| FundTreasury | Oracle values non-Pool assets, including ADA above min-UTxO; no direct tUSDM delta check | Canonical ADA substitution fixture added; CEK result pending |
+| Reveal / TicketRevealed | Datum transition only; PrizeValidator's Value-preservation applies to Prize UTxO, not Pool | Combined Reveal CEK fixture added; result pending |
+| Claim / TicketClaimed | Oracle-valued recipient and Pool delta; no exact approved-tUSDM payment binding | Compiled Claim substitution counterexample confirmed by run #43749650325 |
+| Expire / TicketExpired | Full B1 Pool Value equality | Existing guard |
+
+### Next review and guardrails
+
+Agent B independent review is still required for the Claim/Reveal shared-transaction fixtures, FundTreasury ADA quote/rounding and min-UTxO assumptions, and B1's factory design. The add-vs-replace alternatives remain those in §46.27; Option B (replace B1 Oracle parameters with the Direct-USDM asset identity while PrizeValidator retains Oracle) remains a candidate, not an adopted policy.
+
+No production B1, PrizeValidator, MintPolicy, factory, ABI, script hash/address, V3, Reveal semantics, 500×, economic constant, workflow, wallet, signature, deployment, funding or ledger state changed. Issue remains **NO-GO** pending test execution/review, R1/Kc/Ω, Registry P0, USD/USDM source qualification, fresh EV1–EV7/deployment approval and C1/PA1–PA7.
