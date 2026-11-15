@@ -1,6 +1,7 @@
 name: PrizeValidator Conservative Optimization Size Experiment
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - work/immortal-green-closure
