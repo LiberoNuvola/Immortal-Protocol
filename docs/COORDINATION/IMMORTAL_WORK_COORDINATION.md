@@ -7970,3 +7970,26 @@ The preceding steps completed successfully: compiled MintPolicy B1 Value-preserv
 **Agent B handoff requested:** independently review the Claim/Fund CEK fixtures once the suite compiles, focusing on OracleQuoteSet construction, shared TxInfo balance, Oracle value conversion, PrizeValidator Claim ownership/payment, and whether the FundTreasury Oracle-liquidity increase is accepted under the exact current validator. This is test review only; Agent B retains ownership of B1 Registry identity P0. No code ownership transfer requested.
 
 **Disposition:** R1/Kc/Ω remains OPEN; B1 Registry identity P0 remains under Agent B; first real Preprod Issue remains **NO-GO**.
+
+
+## 46.16 AGENT A — CLAIM/FUND DIRECT-USDM CEK CHARACTERIZATION CI PASS (2026-11-15)
+
+**Exact branch head:** `79561408528eecfe799a56259a19d77d8738907e`  
+**Haskell run:** [#43717981674](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43717981674) — **SUCCESS**.  
+**Job:** `haskell-conformance`, all 30 conformance steps completed successfully.
+
+The prior run #43715504315 did not reach compilation because a redundant second `cabal update` failed against the Hackage mirror with HTTP 403. Commit `79561408528eecfe799a56259a19d77d8738907e` removes only that duplicate workflow step; the Haskell setup action already performs the configured Cabal index update. The rerun completed successfully, including all following relevant suites:
+
+- Compiled MintPolicy B1 Value-preservation conformance — PASS.
+- B1 Reveal direct-USDM Pool Value characterization (synthetic CEK only) — PASS, including exact WCE boundary and mixed-price headroom cases.
+- B1 Direct-USDM Claim/FundTreasury transition characterization (synthetic CEK only) — PASS.
+
+**Claim CEK result:** the compiled PrizeValidator and B1 predicates both accept the constructed balanced Claim context. The fixture reconciles the Oracle-valued Pool delta and exact 200-subunit payout; physical Direct-USDM falls by 400 subunits (4 RU), while ProtectedCapital falls by only 200 subunits (2 RU).
+
+**FundTreasury CEK result:** the compiled B1 predicate accepts the constructed balanced FundTreasury context where Oracle-valued Pool liquidity rises by 1,000 subunits (10 RU) while physical Direct-USDM falls by 100 subunits (1 RU), with ProtectedCapital unchanged.
+
+These are now **observed compiled-CEK counterexamples**, not merely uncompiled fixtures. They establish that the current compiled predicates, under the exact synthetic shared TxInfo contexts, permit transitions inconsistent with the Direct-USDM EEV profile. They are not evidence of a native ledger/Yaci/Preprod submission, and they do not independently establish how every live transaction is reachable.
+
+**Required next engineering step:** treat these results as a substantive B1/Direct-USDM transition-integrity blocker. Determine the narrowest safe enforcement point and prove it without changing V3 or Reveal semantics, the 500× rule, datum/redeemer ABI or economic constants. Do not make a speculative validator patch. First reconcile the fixture against the canonical B1 transition contract and obtain Agent B's independent review of the Claim/Fund CEK contexts. Keep exact physical tUSDM observation and EEV derivation authoritative.
+
+**Disposition:** Haskell semantic-conformance CI is green on the stated exact head. This does not close R1/Kc/Ω proof-content verification or prove complete Ω successors. B1 Registry identity P0 remains owned by Agent B. EV1–EV7 must be regenerated from a fresh exact live Pool observation after the producer source changes. First real Preprod Issue remains **NO-GO**. No wallet signature, Issue transaction, deployment or ledger write was performed.
