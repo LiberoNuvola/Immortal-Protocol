@@ -80,12 +80,9 @@ function basketDigest(payload) {
 }
 
 /**
- * Pure EV3 acceptance-contract fixture.
- *
- * This module is intentionally not imported by the live source-set producer
- * yet. It specifies the complete positive-asset basket expected by the
- * PRE-RICH-EEV-USDM-DIRECT-V1 producer repair; its tests are not evidence that
- * the current producer already enforces this contract.
+ * Canonical positive-asset basket contract shared by EV3 source production,
+ * qualification and protected approval. This is evidence-layer validation;
+ * it does not change on-chain validator or economic semantics.
  */
 export function canonicalizeDirectUsdmBasket({
   poolOutputReference,
@@ -130,9 +127,13 @@ export function canonicalizeDirectUsdmBasket({
     }
   }
 
+  if (lovelaceQuantity <= 0n) throw new Error('Pool lovelace envelope must be strictly positive')
+
   const payload = {
     poolOutputReference: reference.canonical,
     poolAddress,
+    poolTokenUnit: poolUnit,
+    approvedTusdmUnit: tusdmUnit,
     lovelaceQuantity: lovelaceQuantity.toString(),
     positiveAssets,
   }
@@ -141,10 +142,39 @@ export function canonicalizeDirectUsdmBasket({
 
 export function verifyDirectUsdmBasket(basket) {
   if (!basket || typeof basket !== 'object' || Array.isArray(basket)) return false
-  const { basketDigest: claimedDigest, ...payload } = basket
-  if (typeof claimedDigest !== 'string' || !/^[0-9a-f]{64}$/.test(claimedDigest)) return false
+  const expectedKeys = [
+    'poolOutputReference',
+    'poolAddress',
+    'poolTokenUnit',
+    'approvedTusdmUnit',
+    'lovelaceQuantity',
+    'positiveAssets',
+    'basketDigest',
+  ].sort()
+  if (Object.keys(basket).sort().join('|') !== expectedKeys.join('|')) return false
+  if (typeof basket.basketDigest !== 'string' || !/^[0-9a-f]{64}$/.test(basket.basketDigest)) return false
+  if (!Array.isArray(basket.positiveAssets)) return false
   try {
-    return basketDigest(payload) === claimedDigest
+    const assetList = basket.positiveAssets.map((entry, index) => {
+      if (!entry || typeof entry.unit !== 'string' || typeof entry.quantity !== 'string') {
+        throw new Error('positive asset record ' + index + ' is malformed')
+      }
+      const unit = normalizeAssetUnit(entry.unit, 'positive asset unit')
+      return {
+        policy_id: unit.slice(0, POLICY_HEX_LENGTH),
+        asset_name: unit.slice(POLICY_HEX_LENGTH),
+        quantity: entry.quantity,
+      }
+    })
+    const canonical = canonicalizeDirectUsdmBasket({
+      poolOutputReference: basket.poolOutputReference,
+      poolAddress: basket.poolAddress,
+      poolTokenUnit: basket.poolTokenUnit,
+      approvedTusdmUnit: basket.approvedTusdmUnit,
+      lovelace: basket.lovelaceQuantity,
+      assetList,
+    })
+    return canonical.basketDigest === basket.basketDigest
   } catch {
     return false
   }
