@@ -6825,3 +6825,128 @@ The current leaf is a raw address-byte identity, with distinct addresses retaine
 | \`.github/workflows/m1-a-pre-snapshot-tests.yml\` | \`6fa47e974b370924fff2e3ca685105942339dffb\` |
 | \`docs/COORDINATION/AGENT-B-M1-A-LOCAL-NODE-INDEXER-EXECUTION-PROFILE-2026-11-08.md\` | \`96a2334c7b979c4c48de9bc8f94ec2e124e1ed2e\` |
 | \`docs/COORDINATION/AGENT-B-M1-A-TWO-NODE-LOCAL-DEVNET-RUNBOOK-2026-11-08.md\` | \`68d89cf3fa4e26c0484d899af76bdd56ca06ce1a\` |
+
+
+### 45.89 Whole-UTxO acquired-state bootstrap — concrete M1-A candidate
+
+**Audit date:** 2026-11-15  
+**Repository HEAD:** db9664c21935dfedabd87fa997fa6107c4ece36d  
+**Upstream interface pin:** CardanoSolutions/Ogmios v7.0.0  
+**Classification:** SOURCE-VERIFIED API CANDIDATE; LIVE COMPATIBILITY AND COMPLETENESS TEST NOT YET RUN.
+
+This pass found a concrete way to remove the manually supplied initialUtxos from an M1-A bootstrap experiment: Ogmios v7's JSON-RPC schema explicitly permits a whole-UTxO query. It can be issued inside the same acquired ledger-state session used for an exact point query.
+
+#### 45.89.1 Upstream API evidence
+
+The exact upstream Ogmios v7.0.0 schema defines:
+
+- QueryLedgerStateUtxo.params as optional and accepting UtxoByOutputReferences, UtxoByAddresses or WholeUtxo;
+- WholeUtxo as an empty object type;
+- QueryLedgerStateUtxoResponse.result as the typed Utxo array;
+- each Utxo entry with transaction ID, output index, address and value, plus optional datum/hash/script fields;
+- Ogmios Tip with slot, block ID and block height, while the point used by acquireLedgerState itself carries slot and block ID.
+
+The v7 user guide shows the direct JSON-RPC request queryLedgerState/utxo with no filter parameters. Therefore a raw JSON-RPC request with an explicit empty params object is the schema-level WholeUtxo request candidate.
+
+Important SDK limitation: the v7 TypeScript helper LedgerStateQuery.utxo(context, params?) declares only UtxoByOutputReferences or UtxoByAddresses; its typed wrapper does not expose WholeUtxo, even though the wire schema does. A first M1 probe would therefore use the generic JSON-RPC transport, not pretend the existing typed utxo() wrapper already implements whole-ledger retrieval.
+
+This evidence establishes the declared v7 request/response contract. It does not yet establish that the project's pinned Ogmios binary returns a full, untruncated result at realistic ledger scale. That is a live integration-test requirement.
+
+#### 45.89.2 Candidate bootstrap sequence
+
+The following is the bounded experiment to add to M1-A after its exact request/response contract has been tested. It does not select a production PRE asset or a GOV snapshot point.
+
+1. **Select a chain point with its height.** Obtain a ChainSync block/header observation or chain tip that binds slot, block hash/id and height to the same observed point. Do not combine the slot/hash returned by one request with a later independent queryNetwork/blockHeight result. The current reducer requires blockNo; queryLedgerState/tip in the v7 schema returns PointOrOrigin (slot/id), not a height. The bootstrap implementation must preserve the height from the matching ChainSync point/header, or use an already retained exact point-to-height mapping. If it cannot prove that mapping, it must not fabricate blockNo.
+2. **Acquire that exact point.** Send acquireLedgerState for the selected slot/id; require the acknowledgement to return the same point. An acquire failure, point mismatch or rollback ambiguity discards the attempt and requires a new chain point. The existing ogmios-ledger-state-session.mjs demonstrates exact acquire/ack matching and explicit release, but belongs to the Agent A C1 observation path; no ownership transfer or code reuse is made by this audit.
+3. **Query the whole UTxO set in the acquired session.** Issue queryLedgerState/utxo with no filter (wire-level WholeUtxo, optionally explicit empty params). The same acquired session must remain active for the entire query. Reject a JSON-RPC error, non-array result, malformed entry, duplicate TxIn, missing address/value, unsafe quantity, unsupported value representation or incomplete/failed response. An exception or transport interruption is not an empty set.
+4. **Filter locally by exact asset identity.** Parse all output values with BigInt-safe JSON handling. Match both the exact 28-byte policy ID and exact asset-name bytes; never match ticker, UTF-8 display name, policy alone or a similar token name. For each matching UTxO preserve the exact TxIn, raw Cardano address bytes and positive integer quantity. Reject duplicate references and zero/negative quantities. Aggregate by the selected test identity rule only after every returned UTxO has passed structural validation.
+5. **Create an auditable bootstrap manifest.** Bind network/genesis identity, acquired slot/hash, matching ChainSync block height, exact policy/name, total UTxO row count, matching PRE-bearing row count, exact aggregate quantity, filtered row digest, full raw-response digest, request/method, Ogmios/cardano-node versions and software/source pins. Retain the response or a reproducible local evidence file; a digest alone cannot reconstruct or prove the source response.
+6. **Initialize M1-A and continue from the same point.** Use the filtered rows as the complete initialUtxos for createPreSnapshotIndex, and bind the WAL manifest to the exact same point and full bootstrap evidence. ChainSync must then find that exact point on the same selected chain before applying the next block; the first forward block must extend the selected point. If the point is not retained, a rollback crosses the bootstrap anchor, or an intersection is absent, stop and rebuild from a newly established complete bootstrap. Never combine a full-UTxO query at point P with a ChainSync stream whose intersection begins after P or on another fork.
+7. **Repeat independently.** Each signer/node performs its own acquired-state WholeUtxo query and local filtering. Compare the complete PRE-bearing TxIn/address/quantity set, not only total or Merkle root, at the same network/genesis and exact point. Kupo may provide an additional exact-point independent-index comparison, but its result does not replace or authenticate the bootstrap query.
+
+The selected ChainSync point and the acquired ledger state must be the same point. The Ogmios point shape alone lacks block height; the current M1 reducer point includes it. Height provenance is an explicit implementation requirement, not incidental metadata.
+
+#### 45.89.3 What this closes — and what it does not
+
+If the live test succeeds, this candidate closes a specific operational gap: M1-A no longer needs an operator to author a partial initialUtxos array. The starting UTxO set can be acquired from the local node's ledger state at a point, then reduced to exact-asset rows and followed incrementally.
+
+It does not by itself establish:
+
+- that an endpoint is an authentic Cardano node for the intended network/genesis;
+- independence between two signer nodes if they share one operator, host, image or compromised software;
+- correctness of the Cardano node binary or of a custom indexer's parser;
+- the authoritative production PRE policy/name, voting-start point, eligibility/exclusion perimeter or GOV entity/credential mapping;
+- whether two distinct payment addresses map to the same GOV entity or whether stake credentials should aggregate them;
+- Cardano-verifiable completeness to a Plutus validator;
+- Mithril signer adoption, stake threshold, genesis/circuit-key trust or a custom PRE certification module;
+- a historical point that the local node can no longer acquire or whose state was not retained by the local indexer.
+
+An acquired ledger state gives coherent answers at one acquired point. Ogmios documents that arbitrary historical points cannot always be acquired and that acquired states can expire. For future governance snapshots, the signer-local index should therefore bootstrap once and follow ChainSync continuously, retaining exact point history and rollback data; the WholeUtxo call is not a solution for repeatedly querying arbitrary old voting-start points.
+
+#### 45.89.4 Cost and production boundary
+
+Cardano API documentation classifies QueryUTxOWhole as O(n) time and O(n) space in the size of the UTxO set. It explicitly warns that obtaining the whole UTxO set is not efficient because the result can be huge. The Ogmios wire response is also one whole result array, so the experiment must measure:
+
+- node-side query latency and peak memory;
+- response bytes and JSON parse peak memory;
+- number of total UTxOs versus matching-asset UTxOs;
+- filtering/index initialization time;
+- WAL manifest size and durable-write time;
+- behavior under interruption, timeout and acquired-state expiry;
+- recovery/restart time and exact-point continuity;
+- results at increasing chain/index sizes.
+
+This candidate is appropriate as a one-time experimental bootstrap/reference. It is not yet a production cadence decision. A signer-local incremental index after a complete bootstrap remains the candidate for repeated snapshots. If the full result cannot be acquired within bounded resources, use a separately proven full-replay/index bootstrap path; do not fall back to a hosted provider's holder list or silently accept a partial result.
+
+#### 45.89.5 Relationship to existing code and ownership boundaries
+
+| Existing source | Current role | Permitted conclusion |
+|---|---|---|
+| audit/cardano-integration/ogmios-ledger-state-session.mjs | Generic acquire/query/release lifecycle in Agent A C1 path | Useful structural precedent for exact acquire/ack matching; it does not perform a WholeUtxo query or a PRE census. |
+| audit/cardano-integration/preprod-c1-acquired-point-observer.mjs | Queries five caller-supplied component addresses at one acquired Preprod point | Demonstrates same-point address queries only. Its own source states that candidate identity is untrusted and authority/C1 qualification are false. It does not establish complete global UTxO population. |
+| audit/cardano-integration/preSnapshotUtxoIndex.mjs | Accepts caller-provided initial UTxOs and applies normalized blocks | Can represent the resulting exact-asset bootstrap after a separate decoder/manifest step; currently it does not call Ogmios WholeUtxo. |
+| audit/cardano-integration/ogmiosV7PreSnapshotAdapter.mjs | Decodes full ChainSync blocks and their transaction outputs into the reducer contract | Its internal output decoder is not yet a verified WholeUtxo-response adapter. The new bootstrap must have its own tests and exact response-shape pin, including Byron address validation. |
+| audit/cardano-integration/preSnapshotJournal.mjs | Stores a supplied bootstrap set and WAL events | Can durably preserve a bootstrap result, but its SHA-256 chain is integrity checking, not source authentication. |
+
+Do not modify Agent A's C1 observer or Ogmios session as part of this experiment without a separately coordinated write slot. Keep M1-A as a separate component and import/reuse only a generic interface after owner/agent coordination.
+
+#### 45.89.6 Required tests before calling this a real bootstrap path
+
+The new M1-A module and tests must prove at least:
+
+- exact WholeUtxo request shape against the pinned Ogmios v7.0.0 binary;
+- the returned UTxO array is handled as a complete result and the result count is retained; no pagination/truncation assumptions;
+- all value-map forms, BigInt-safe quantities, empty asset names, exact policy/name matching and decoy policies/token names;
+- Bech32 Shelley address checks plus full Byron CBOR/checksum validation before a production completeness claim;
+- duplicate/malformed TxIn, invalid address, malformed value, unknown era/schema and non-array/error responses fail closed;
+- the selected ChainSync point's slot/hash/height is the exact point acquired and the anchor of the resulting WAL;
+- a block arriving between point selection and acquire, an acquire-point mismatch, rollback, interruption, truncated response, oversized payload, acquired-state expiry and release failure cannot produce PASS;
+- two independent local nodes reproduce byte-identical full matching UTxO rows and canonical message at the same point;
+- Kupo's strict checkpoint and exact-asset unspent rows match the bootstrap output at that same point.
+
+Only after those tests are added and run on the pinned toolchain may M1-A live acceptance start. The private M1TEST experiment still qualifies local plumbing only; it is not a PRE-RICH electorate.
+
+#### 45.89.7 Exact pins and references
+
+Repository sources at db9664c21935dfedabd87fa997fa6107c4ece36d:
+
+| Source | Blob SHA | Finding |
+|---|---|---|
+| audit/cardano-integration/ogmios-ledger-state-session.mjs | 53dbc105c86c64a82399023d9365264131472a18 | Acquire exact point, verify acknowledgement, query only while acquired, release lifecycle |
+| audit/cardano-integration/preprod-c1-acquired-point-observer.mjs | 1874885ed214b91563295e6fab8935097926a6c6 | Same-point address UTxO query; explicitly not authority or full census |
+| audit/cardano-integration/preprod-c1-cardinality-decoder.mjs | ddcfeb5479b474a6e9fd7808162c9017b9955703 | Ogmios UTxO value/address cardinality decode; not a WholeUtxo census |
+| audit/cardano-integration/preSnapshotUtxoIndex.mjs | 08ee34ab4db1642ebd66410c1f17d8db9fb021b0 | Reducer consumes supplied bootstrap UTxO rows |
+
+Upstream Ogmios v7.0.0:
+
+| Source | Blob SHA | Finding |
+|---|---|---|
+| clients/TypeScript/packages/schema/src/index.ts | 1d26902d1ab7a4322e72cb955b993bc032b47ed0 | Wire schema includes optional WholeUtxo {}, Utxo[] response and Tip.height |
+| clients/TypeScript/packages/client/src/LedgerStateQuery/query/utxo.ts | b1f6c9c2e4193d6a512c4432f9b34dc6cf68b52e | Public TypeScript helper omits WholeUtxo from its params type |
+
+**External API references:**
+- Ogmios v7 ledger-state queries: https://ogmios.dev/mini-protocols/local-state-query/ (acquire a point, query within the acquired state; direct unfiltered queryLedgerState/utxo example).
+- Ogmios v7 QueryLedgerStateUtxo schema: https://ogmios.dev/typescript/api/interfaces/_cardano_ogmios_schema.QueryLedgerStateUtxo.html (WholeUtxo is an accepted request type).
+- Cardano API QueryUTxOWhole: https://cardano-api.cardano.intersectmbo.org/cardano-api/Cardano-Api-Query.html (whole UTxO query cost is O(n) time and space).
+
+**Non-effects:** design/evidence documentation only. No source/test/workflow changed; no Ogmios node was contacted; no full UTxO response was requested; no local testnet, wallet, key, transaction or asset was created; no M1TEST submit, Preprod/Mainnet query, Mithril operation, governance decision, Plutus verification, V3/Reveal/Factory/Registry or economic state was changed.
