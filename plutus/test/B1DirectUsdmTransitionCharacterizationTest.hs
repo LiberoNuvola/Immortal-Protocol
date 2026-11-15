@@ -433,11 +433,29 @@ main = do
     (prizeContext, poolContext) = makeClaimContexts
     prizeInputDatum = prizeDatum Revealed 200
     poolInputDatum = poolDatum 400 200
-    poolOutputOracleValue = 200
     claimedAmount = 200
-    claimDirectDelta =
-      directUsdmSubunits 2_000_000 - directUsdmSubunits 4_000_000
     claimInfo = scriptContextTxInfo prizeContext
+    poolAddress = Address (ScriptCredential poolHash) Nothing
+    poolInputs =
+      filter ((== poolAddress) . txOutAddress . txInInfoResolved)
+        (txInfoInputs claimInfo)
+    poolOutputs =
+      filter ((== poolAddress) . txOutAddress) (txInfoOutputs claimInfo)
+    poolInputValue =
+      foldr ((<>) . txOutValue . txInInfoResolved) mempty poolInputs
+    poolOutputValue =
+      foldr ((<>) . txOutValue) mempty poolOutputs
+    poolInputOracleValue =
+      Economic.poolUsdmValue claimInfo oracleState oraclePublisher
+        poolPolicy poolName poolInputValue
+    poolOutputOracleValue =
+      Economic.poolUsdmValue claimInfo oracleState oraclePublisher
+        poolPolicy poolName poolOutputValue
+    claimDirectDelta =
+      directUsdmSubunits
+        (valueOf poolOutputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName))
+        - directUsdmSubunits
+            (valueOf poolInputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName))
     ownerAddress = Address (PubKeyCredential ownerPkh) Nothing
     ownerOutputs =
       filter ((== ownerAddress) . txOutAddress) (txInfoOutputs claimInfo)
@@ -459,8 +477,9 @@ main = do
       ++ show claimPrizeAccepted ++ ", poolAccepted=" ++ show claimPoolAccepted)
 
   assert
-    (poolOutputOracleValue == 200
-      && 400 - poolOutputOracleValue == claimedAmount)
+    (poolInputOracleValue == 400
+      && poolOutputOracleValue == 200
+      && poolInputOracleValue - poolOutputOracleValue == claimedAmount)
     "Claim fixture reconciles Oracle-valued Pool delta and exact 200-subunit crystallized payout"
 
   assert
