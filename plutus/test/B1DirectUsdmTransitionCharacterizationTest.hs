@@ -46,7 +46,7 @@ import qualified Economic
 import qualified PrizeValidator
 import GameRules (defaultPrizeTable)
 import OracleTypes
-  ( OracleDatum (OracleQuoteSet)
+  ( OracleDatum (..)
   , OracleQuote (..)
   , OracleStateId (..)
   )
@@ -187,6 +187,22 @@ oracleOutput quotes =
     (Address (PubKeyCredential oraclePublisher) Nothing)
     (singleton (CurrencySymbol oraclePolicy) (TokenName oracleName) 1)
     (OutputDatum (Datum (PlutusTx.toBuiltinData (OracleQuoteSet quotes))))
+    Nothing
+
+oracleLegacyAdaOutput :: TxOut
+oracleLegacyAdaOutput =
+  TxOut
+    (Address (PubKeyCredential oraclePublisher) Nothing)
+    (singleton (CurrencySymbol oraclePolicy) (TokenName oracleName) 1)
+    (OutputDatum
+      (Datum
+        (PlutusTx.toBuiltinData
+          (OracleDatum
+            Builtins.emptyByteString
+            Builtins.emptyByteString
+            100
+            1_500
+            oraclePublisher))))
     Nothing
 
 oracleQuote :: Builtins.BuiltinByteString -> Builtins.BuiltinByteString -> Integer -> OracleQuote
@@ -453,8 +469,8 @@ makeRevealDrainContexts =
 -- above the 1.6 ADA minimum-UTxO floor. The transaction replaces 1 USDM of
 -- physical tUSDM (100 accounting subunits) with 1.1 ADA (110 oracle subunits),
 -- so the Oracle-valued datum rises by 10 while direct-USDM EEV falls by 100.
-makeCanonicalFundAdaContext :: ScriptContext
-makeCanonicalFundAdaContext =
+makeCanonicalFundAdaContext :: TxOut -> ScriptContext
+makeCanonicalFundAdaContext oracleRefOutput =
   let
     poolRef = TxOutRef (TxId (rawBytes [131])) 0
     sourceRef = TxOutRef (TxId (rawBytes [132])) 0
@@ -489,7 +505,7 @@ makeCanonicalFundAdaContext =
     oracleReference =
       TxInInfo
         (TxOutRef (TxId (rawBytes [133])) 0)
-        (oracleOutput [adaQuoteAt 100, tusdmQuote 100])
+        oracleRefOutput
 
     info =
       TxInfo
@@ -759,7 +775,14 @@ main = do
     "Reveal drain fixture: canonical Prize/Pool Value balances, but 1,000,000 approved tUSDM atomic units leave the Pool and reach a PubKey output"
 
   let
-    canonicalAdaFundContext = makeCanonicalFundAdaContext
+    canonicalAdaFundContext =
+      makeCanonicalFundAdaContext
+        (oracleOutput [adaQuoteAt 100, tusdmQuote 100])
+    adaOnlyFundContext =
+      makeCanonicalFundAdaContext oracleLegacyAdaOutput
+    adaOnlyFundAccepted =
+      evalAccepts
+        (applyB1Validator (poolDatum 1_000 0) FundTreasury adaOnlyFundContext)
     canonicalAdaFundInfo = scriptContextTxInfo canonicalAdaFundContext
     canonicalAdaFundAccepted =
       evalAccepts (applyB1Validator (poolDatum 1_000 0) FundTreasury canonicalAdaFundContext)
@@ -800,6 +823,10 @@ main = do
       && canonicalAdaFundInputTusdm - canonicalAdaFundOutputTusdm == 1_000_000
       && canonicalAdaFundTotalInputValue == canonicalAdaFundTotalOutputValue)
     "Canonical FundTreasury counterexample: Pool loses 1,000,000 tUSDM atoms, receives 1.1 ADA above min-UTxO, Oracle datum rises 10, and Value balances"
+
+  assert
+    (not adaOnlyFundAccepted)
+    "Legacy ADA-only Oracle datum: FundTreasury fails closed when it tries to value the Pool's non-zero tUSDM without a tUSDM quote"
 
   let
     fundContext = makeFundContext
