@@ -113,7 +113,7 @@ export function canonicalizeDirectUsdmBasket({
     if (quantity > 0n) positiveAssets.push({ unit, quantity: quantity.toString() })
   }
 
-  positiveAssets.sort((a, b) => a.unit.localeCompare(b.unit))
+  positiveAssets.sort((a, b) => a.unit < b.unit ? -1 : a.unit > b.unit ? 1 : 0)
   const quantityByUnit = new Map(positiveAssets.map(({ unit, quantity }) => [unit, BigInt(quantity)]))
   if (quantityByUnit.get(poolUnit) !== 1n) {
     throw new Error('Exact Pool singleton must have quantity exactly one')
