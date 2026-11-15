@@ -7875,3 +7875,22 @@ These controls make the CEK countermodels coherent with Cardano Value conservati
 ### 46.10.6 CI workflow wiring refinement
 
 Current workflow inspection confirms that `pre-rich-direct-usdm-conformance.yml` already path-triggers on and executes `preprod-direct-usdm-source-set.test.mjs`; new EV3 basket cases should extend that existing suite, not create another EV3 workflow. `immortal-haskell-conformance.yml` already filters on `plutus/**` and executes the compiled Plutus Haskell suites; add the new CEK Cabal target and one step there. Optionally run the existing EV3 test command as a prerequisite inside the read-only `preprod-eev-qualification.yml` job if the qualification job itself must fail closed before artifact materialization. The protected EEV approval workflow must remain separate.
+
+## 46.11 AGENT A — EV3 FULL-BASKET SOURCE PRODUCER IMPLEMENTED (2026-11-15)
+
+**Implementation checkpoint:** `c6fdf0d5088ee40ef2c08c5f6e2b35c80aae0d42`  
+**Report:** `docs/COORDINATION/AGENT-A-EV3-BASKET-PRODUCER-IMPLEMENTATION-2026-11-15.md`  
+**Report commit:** `117c92e0133c213c9ee5f692da0bc41944327ba9`  
+**Classification:** EVIDENCE-PRODUCER / QUALIFICATION-INTEGRITY IMPLEMENTATION; NO PROTOCOL OR DEPLOYMENT CHANGE.
+
+The EV3 source-set producer now invokes the existing canonical Direct-USDM basket contract and persists the exact positive-asset basket plus its digest. The basket binds the exact Pool out-reference/address, Pool singleton=1, approved physical tUSDM>0 and lovelace envelope; any additional positive native asset is rejected. Basket verification reconstructs the canonical contract, so recomputing a digest over a forged foreign-asset list does not make it admissible.
+
+The EV3 qualification now validates and binds the basket digest and exact imported basket-contract source digest to its snapshot/source-set evidence. The protected approval validator independently re-verifies the basket, its Pool identity and the matching qualification digests. Tests include a self-digested foreign-asset forgery and source/approval binding cases.
+
+**Changed paths:** `audit/cardano-integration/preprod-direct-usdm-basket-contract.mjs`; its test; `preprod-direct-usdm-source-set.mjs` and test; `preprod-direct-usdm-qualification.mjs`; `eev-approval-integrity.mjs` and test; `preprod-direct-usdm-approve.mjs` and test.
+
+**Verification limit:** exact-head GitHub Actions execution was not independently observed at this checkpoint. Do not label the tests PASS until the existing `PRE-RICH Direct-USDM Conformance` workflow completes successfully. No live Koios source-set materialization, EV1–EV7 qualification, protected deployment approval, wallet action, transaction, deployment or ledger write was executed.
+
+**Required follow-through:** the EV3 producer/source digest and source-set schema have changed; regenerate EV1–EV7 qualification against a fresh exact live Pool observation. The historical October approval cannot be reused as approval for these changed source bytes. Keep the protected approval workflow separate and uninvoked pending exact-head CI and independent review.
+
+**Disposition:** EV3 source producer/qualification inconsistency = IMPLEMENTED / CI VERIFICATION PENDING. R1/Kc/authoritative Ω remains OPEN; B1 Registry identity remains BLOCKED / P0 under Agent B; first Preprod Issue remains **NO-GO**. No V3, Reveal, MintPolicy, B1 validator, datum/redeemer ABI, 500× rule, EEV conversion or economic parameter changed.
