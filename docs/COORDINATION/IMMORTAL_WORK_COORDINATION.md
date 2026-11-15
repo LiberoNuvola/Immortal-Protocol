@@ -7449,3 +7449,57 @@ The overall workflow is not complete, and no final workflow conclusion is claime
 **T04 size experiment:** run `43679611905`, job `132707159426`, remains **IN_PROGRESS** at step 8 `Compile, measure baseline, then compare the isolated candidate`. Restore and artifact-upload steps are still pending; no candidate byte count or final clean-worktree evidence is yet available.
 
 **Non-effects:** no source, ABI, validator, mint policy, transaction, wallet, deployment, Preprod/Mainnet or protocol parameter changed in this observation.
+
+
+## 46.01 AGENT B — HASKELL SEMANTIC CONFORMANCE COMPLETATO / COUNTER YACI HARNESS API FIX DIAGNOSI (2026-11-15)
+
+**Shared branch HEAD prima della nota:** `8b301e95795e98d7066103debb81ce0693080202`  
+**Haskell workflow:** [run 43678893331](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43678893331)  
+**Source SHA testato:** `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`  
+**Job:** `132704991081` — `haskell-conformance`  
+**Job/workflow conclusion osservata:** **SUCCESS**  
+**Classificazione:** CI HASKELL CONFORMANCE SUCCESS + COUNTER TEST-HARNESS ROOT-CAUSE; NO PROTOCOL IMPLEMENTATION.
+
+### 46.01.1 Haskell workflow: risultato finale
+
+Il workflow Haskell Semantic Conformance, precedentemente registrato come in-progress in §46.00, è terminato **SUCCESS**. Il job unico `haskell-conformance` ha concluso senza alcuno step failure.
+
+Il job log conferma in modo esplicito:
+- `cabal test beacon-registry-adversarial-tests --test-show-details=direct`;
+- tutte le caratterizzazioni Pending/Ready, publisher, round, Value, lookalike e reference ambiguity eseguite;
+- `Test suite beacon-registry-adversarial-tests: PASS`;
+- `1 of 1 test suites (1 of 1 test cases) passed`.
+
+La stessa suite ha stampato le finding come `CHARACTERIZATION`. Il workflow verde è quindi una conformance positiva del **test runner** e delle sue asserzioni, non una qualificazione di sicurezza del comportamento caratterizzato. Le righe che mostrano che Issue/SyncBeacon accettano input Registry contraffatti restano finding aperti.
+
+Anche le conformance successive del workflow, incluse Beacon commitment cross-language e i passaggi successivi fino a Genesis regime carrier, sono state completate nel job senza failure. La suite è ora integrata e non rimane più solo una prova eseguita incidentalmente nel Cardano Lab.
+
+### 46.01.2 Counter lookalike Yaci: causa confermata nella superficie API Lucid
+
+Il fallimento separato del test Counter è:
+`TypeError: Cannot read properties of undefined (reading 'from_scripthash')`
+in `audit/cardano-integration/counter-lookalike-ledger-trace.ts:122`.
+
+La dipendenza effettiva del trace è `@lucid-evolution/lucid@0.6.5` (`audit/cardano-integration/package.json`). La release upstream esatta è identificata dal tag `@lucid-evolution/lucid@0.6.5`; i sorgenti a quel tag mostrano:
+
+- `packages/lucid/src/core.ts` esporta il namespace CML da `@anastasia-labs/cardano-multiplatform-lib-nodejs`;
+- `packages/lucid/src/index.ts` esporta `core.ts`, quindi il namespace CML usato dal trace è quello effettivo della release;
+- `packages/utils/src/credential.ts` nella stessa release costruisce indirizzi base con `CML.BaseAddress.new(..., CML.Credential.new_script(...), CML.Credential.new_pub_key(...))`.
+
+Il trace Counter usa invece la vecchia API:
+`CML.StakeCredential.from_scripthash(...)` e `CML.StakeCredential.from_keyhash(...)`.
+Queste chiamate sono incompatibili con l'API documentata/consumata dalla release 0.6.5. Il trace si arresta prima del bootstrap e prima di qualunque submit: nessun outcome ledger Counter è stato prodotto.
+
+**Proposta tecnica circoscritta per una futura slot di test-harness:** costruire i due credentials tramite `CML.Credential.new_script(CML.ScriptHash.from_hex(counterHash))` e `CML.Credential.new_pub_key(CML.Ed25519KeyHash.from_hex(walletPaymentHash))`, mantenendo invariati network id, payment hash, stake hash, indirizzo canonico e twin lookalike. Serializzare il risultato attraverso `CML.BaseAddress.new(...).to_address().to_bech32(undefined)`, come fa la funzione upstream `credentialToAddress`. La patch deve poi essere provata in isolamento fino alla costruzione e submit Yaci; non presumere che il trace passi solo perché l'errore API è rimosso.
+
+### 46.01.3 Perimetro e autorizzazioni
+
+La diagnosi è deterministica, ma il file `audit/cardano-integration/counter-lookalike-ledger-trace.ts` non rientra nel manifest di scrittura precedentemente stabilito per T07, e la slot T07 era stata restituita. Issue #43 non autorizza una modifica di protocollo o di ABI. Pertanto **non è stata applicata alcuna patch al Counter harness** in questo passaggio: la correzione è proposta per un successivo slot esplicito di test-only, con manifest limitato a trace/test e nessun cambio a CounterValidator, MintPolicy, PrizeValidator, ABI o produzione.
+
+### 46.01.4 Stato workflow size T04 al checkpoint
+
+Il run `43679611905` resta `IN_PROGRESS` (conclusion `null`), sul source SHA `637e7709aa07b802e3accc7acba4a2915f76d523`. Al poll, il job `132707159426` era ancora allo step 8 `Compile, measure baseline, then compare the isolated candidate`; restore e upload sono pending. Nessun candidate byte count né clean-worktree restoration claim è disponibile. T04 Haskell V2 rimane **RESOURCE BLOCKED / NOT RUN** fino alla misura e alle successive verifiche indipendenti.
+
+**Disposition:** Haskell Semantic Conformance = **SUCCESS**; BeaconRegistry adversarial CEK harness = **SUCCESS con finding CHARACTERIZATION**; Counter Yaci test = **HARNESS FAILURE pre-submit, API incompatibility identified, repair not applied**; T04 size experiment = **IN PROGRESS**; Registry authenticity = **BLOCKED**.
+
+**Non-effects:** nessun file di protocollo o di harness modificato in questa nota; nessun ABI, script, validator, MintPolicy, Factory, V3/Reveal, economic rule, B2, Treasury o Materios change. Nessuna transazione, firma, wallet, Preprod/Mainnet query, deployment o ticket issuance.
