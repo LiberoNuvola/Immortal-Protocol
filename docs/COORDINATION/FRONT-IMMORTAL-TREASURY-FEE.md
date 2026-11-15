@@ -350,3 +350,26 @@ The remaining gap is precise:
 No numerical split or new Reserve algorithm is proposed.
 
 **Status:** LEGACY FOUR-WAY EXECUTION DISABLED IN INSPECTED RELAYER / CURRENT SALE SETTLEMENT INTO TREASURY PRESENT / CANONICAL POST-GENESIS RESERVE CREDIT PATH NOT YET EVIDENCED.
+
+## 2026-11-15 — Agent A: Issue transaction accounting trace
+
+A line-level read of the current `src/mint.ts` Issue builder confirms that the atomic sale transaction contains separate economic effects:
+
+1. B1 PrizePool is consumed with `TicketIssued(priceUsdm)`.
+2. The PrizePool continuation preserves its physical Value while its datum records `unresolvedReserve += priceUsdm` and `unresolvedTicketCount += 1`.
+3. A Prize Pending output is created with `prizeFunding`.
+4. The buyer's Treasury payment is sent to the canonical Treasury contract with `treasuryDatum` and `treasuryPaymentAssets`, derived using the authenticated OracleDatum conversion.
+5. The ticket is delivered to the buyer.
+
+This is the live application sale-settlement shape. It establishes an atomic Treasury payment and an increase in the **unresolved-ticket accounting reserve**. It does not establish a separate percentage credit to the legacy Treasury Reserve destination.
+
+Consequently, “Reserve starts accumulating from ticket sales after activation” must be disambiguated before implementation:
+
+- If it means **UnresolvedTicketReserve**, the Issue path already records the ticket's price in the PrizePool datum; that balance is reserved against unresolved ticket rights and is not a discretionary Reserve wallet.
+- If it means the **Treasury Reserve compartment** (one of the old four distribution destinations), the current Issue path does not show that allocation, and the old distribution worker is fail-closed.
+- If it means **statistical risk capital**, that is a modelled protection requirement, not necessarily a separately held asset balance.
+- If it means **CAR/Jackpot**, that is conditionally committed value and follows its own funding/locking transition.
+
+The direct-USDM PrizePool census is not evidence of the Treasury Reserve compartment's balance. Nor can the Treasury payment be divided into an assumed Reserve share without a current authorized allocation rule.
+
+**Agent A recommendation:** preserve the existing Issue semantics and do not modify V3. Treat the Treasury Reserve credit/use policy as OPEN until the project explicitly identifies which of these meanings is intended and supplies its authorized transition and evidence. This is a semantic clarification, not a request to invent a percentage or coefficient.
