@@ -12,6 +12,9 @@ export const EEV_REPO_FILES = Object.freeze({
   EV7: 'docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md',
 })
 
+export const EEV_EV3_BASKET_CONTRACT_FILE =
+  'audit/cardano-integration/preprod-direct-usdm-basket-contract.mjs'
+
 export const EEV_EVIDENCE_REFERENCES = Object.freeze({
   EV1: EEV_REPO_FILES.EV1 + '#EV1-Source-specification-and-verification-predicate',
   EV2: EEV_REPO_FILES.EV2 + '#direct-usdm-v1',
@@ -98,5 +101,34 @@ export async function assertQualificationEvidenceMatchesRepository(
     if (actual.toLowerCase() !== entry.digest.toLowerCase()) {
       throw new Error(key + ' digest does not match the current repository source bytes')
     }
+  }
+
+  const sourceSetEvidence = qualification.sourceSet
+  if (!sourceSetEvidence || typeof sourceSetEvidence !== 'object') {
+    throw new Error('EEV qualification is missing EV3 canonical source-set binding')
+  }
+  if (sourceSetEvidence.basketContractReference !== EEV_EV3_BASKET_CONTRACT_FILE) {
+    throw new Error('EV3 basket contract reference does not match the canonical source reference')
+  }
+  if (typeof sourceSetEvidence.basketContractDigest !== 'string' ||
+      !/^[0-9a-fA-F]{64}$/.test(sourceSetEvidence.basketContractDigest)) {
+    throw new Error('EV3 basket contract digest must be a 32-byte hex digest')
+  }
+  if (typeof sourceSetEvidence.assetBasketDigest !== 'string' ||
+      !/^[0-9a-fA-F]{64}$/.test(sourceSetEvidence.assetBasketDigest)) {
+    throw new Error('EV3 asset basket digest must be a 32-byte hex digest')
+  }
+  let basketContractBytes
+  try {
+    basketContractBytes = await readFileImpl(resolve(repoRoot, EEV_EV3_BASKET_CONTRACT_FILE))
+  } catch (error) {
+    throw new Error(
+      'EV3 basket contract source bytes are unavailable: ' +
+      (error instanceof Error ? error.message : String(error)),
+    )
+  }
+  const actualBasketContractDigest = createHash('sha256').update(basketContractBytes).digest('hex')
+  if (actualBasketContractDigest.toLowerCase() !== sourceSetEvidence.basketContractDigest.toLowerCase()) {
+    throw new Error('EV3 basket contract digest does not match the current repository source bytes')
   }
 }
