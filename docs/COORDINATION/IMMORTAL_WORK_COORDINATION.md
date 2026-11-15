@@ -8239,3 +8239,58 @@ On the same test commit `d2c713c850aecbc507af229251e3a39d63b66d30`, GitHub Actio
 The log also contains a B1 diagnostic that reaches the deliberately mismatched Prize-input price guard; this is explicitly a construction/evaluation probe and not a submitted transaction or full two-script Reveal qualification.
 
 **Disposition:** this run is a real failed CI gate and must not be hidden by the independent Haskell Semantic Conformance PASS in §46.22. Agent A has made no changes to Reveal, V3, PrizeValidator ABI, emulator scripts, cost model, transaction builder or size handling. Hand this failure evidence to the Reveal/V3 owner for separate triage. It does not alter the confirmed Claim CEK finding or authorize a Reveal change as part of the Direct-USDM Claim work.
+
+## 46.24 AGENT A — DIRECT-USDM CEK COVERAGE AUDIT / REVIEW PACKAGE (2026-11-15)
+
+**Classification:** TEST-SCOPE AUDIT + REVIEW PACKAGE; DOCUMENTATION ONLY; NO PRODUCTION OR TEST CODE CHANGE.
+
+### Exact tested baseline and branch reconciliation
+
+- Compiled CEK characterization commit: `d2c713c850aecbc507af229251e3a39d63b66d30`.
+- Haskell Semantic Conformance run: [#43749650325](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43749650325), job `haskell-conformance`, completed SUCCESS.
+- Test: `plutus/test/B1DirectUsdmTransitionCharacterizationTest.hs`, suite `b1-direct-usdm-transition-characterization-tests`.
+- Source reviewed: `plutus/B1PrizePool.hs`; current branch still has the Oracle-valued FundTreasury and Claim predicates described in §§46.20–46.22.
+- A branch comparison from the tested commit to `work/immortal-green-closure` reports three commits ahead, zero behind, and only `docs/COORDINATION/IMMORTAL_WORK_COORDINATION.md` changed. Thus the branch's current production/test source remains identical to the tested code; this is not a new exact-HEAD run.
+
+### What the current CEK suite actually proves
+
+1. One synthetic shared `TxInfo` is evaluated against both compiled PrizeValidator Claim and compiled B1 `TicketClaimed 200`.
+2. Both predicates accept the same transaction.
+3. The B1 Pool input/output basket is EV3-canonical (Pool singleton + approved tUSDM + ADA; no foreign positive asset in the Pool).
+4. The Pool loses 2,000,000 tUSDM atomic units, equivalent to 200 accounting subunits; the exact ticket owner receives zero tUSDM and receives a foreign asset whose Oracle-equivalent value is 200 subunits.
+5. Therefore the CEK run confirms a compiled-predicate Claim payout-substitution gap for this synthetic fixture.
+
+The FundTreasury case in the same suite is explicitly historical/non-EV3: it puts a foreign positive asset into the continuing Pool. Its PASS characterizes the legacy Oracle-vs-direct discrepancy only; it is not a counterexample against an EV3-canonical Pool.
+
+### Test coverage gaps — do not overstate the current PASS
+
+The checked-in suite contains one composite Claim substitution fixture and one historical non-EV3 FundTreasury fixture. It does **not** yet establish the following candidate enforcement cases:
+
+- valid exact Claim: Pool tUSDM atomic decrease equals `claimedAmount * 10_000`, with the same aggregate atomic quantity paid to the ticket owner's payment credential;
+- owner receives less than, more than, or zero approved tUSDM; wrong recipient; foreign/ADA-only Oracle-equivalent payout;
+- split owner outputs, including outputs to the same payment credential with different staking credentials, aggregate to the exact required quantity;
+- residual atomic dust just below, at, and above a 10,000-atomic-unit accounting boundary;
+- Pool decrease exceeds or falls short of exact payout while the remaining Pool basket stays EV3-canonical;
+- canonical EV3 FundTreasury exact positive tUSDM deposit with consistent datum; foreign-only valuation increase, compensating foreign input, decreasing tUSDM, and mismatched datum;
+- Issue/Reveal physical tUSDM preservation and regression against any accidental changes to their current semantics.
+
+The test helper `directUsdmSubunits` uses integer division/flooring. It is a fixture measurement helper, not production code, but its current use only checks round quantities. The production relation and the test oracle for exact transfer must compare raw token atomic quantities directly; a rounded subunit quotient can conceal residual atomic dust.
+
+### Review request to Agent B
+
+Please independently review the exact shared-transaction fixture and the proposed B1 enforcement boundary, specifically:
+
+1. Confirm that the Pool input/output are EV3-canonical and that all Value components balance in the synthetic TxInfo.
+2. Confirm that both compiled validators are evaluated against the same TxInfo and that the output aggregation correctly identifies the ticket owner's payment credential.
+3. Review whether a policy/name parameter added to B1's factory is the correct immutable binding for the accepted Preprod tUSDM identity, and identify every ABI/factory/deployment artifact affected.
+4. Review the positive/negative matrix above and flag any omitted transition or false-positive risk before implementation.
+
+No PR review is claimed by this request. The GitHub review list for PR #19 remains empty; a previous review of other Reveal/Registry material would not satisfy this specific review.
+
+### Disposition and guardrails
+
+- Preprod tUSDM identity remains accepted only for its narrow physical accounting role; B1 does not yet receive that identity as a validator parameter.
+- The current Claim gap is confirmed by compiled CEK; the current FundTreasury historical fixture is not EV3-canonical.
+- No B1, PrizeValidator, MintPolicy, script factory, ABI, V3, Reveal, 500×, economic constant, workflow, wallet, signature, deployment, funding or ledger state changed.
+- The explicit factory-parameter/redeployment approach remains an engineering candidate pending Agent B review and controlled migration approval. No old Pool UTxO is assumed to migrate.
+- R1/Kc/Ω, Registry identity P0, USD/USDM Option B source qualification, fresh EV1–EV7/deployment approval and C1/PA1–PA7 remain independently open. First real Preprod Issue remains **NO-GO**.
