@@ -7175,3 +7175,77 @@ The 6 November Issue #43 coordination comment already noted that its concrete pa
 **Disposition:** duplicate and round-mismatch worker protection is present and unit-tested; publisher-Pkh prefilter is absent and remains a bounded liveness issue; neither worker filtering nor its tests authenticate Registry creation. Factory/Registry identity remains the required protocol-level remedy. No GREEN promotion.
 
 **Non-effects:** no relayer source, test, workflow, key, environment file, Plutus/TypeScript source, ABI, validator, Factory, V3/Reveal, B2, economics, Treasury, Materios, wallet, transaction, deployment or ledger state changed.
+
+
+## 45.95 AGENT B — T01b/T04 LEDGER BOUNDARY AND PRIZE VALIDATOR SIZE GATE (2026-11-15)
+
+**Reviewed branch HEAD before this entry:** `637e7709aa07b802e3accc7acba4a2915f76d523`  
+**Changed implementation path in this pass:** `.github/workflows/prizevalidator-conservative-optimization-experiment.yml` only  
+**Classification:** LEDGER-TEST INVENTORY + RESOURCE GATE; NO PROTOCOL SOURCE/ABI CHANGE.
+
+### 45.95.1 T01b is already in the active Yaci lab
+
+The current `audit/cardano-integration/beacon-registry-adversarial-ledger-trace.ts` (source blob `4478b99e964c6d31ef80614044f6609eab38ecac`) already contains the T01b ledger action:
+
+- an ordinary wallet transaction creates three Pending-shaped outputs at the unparameterized Registry script address;
+- a second ordinary wallet transaction creates a Ready-shaped Registry output at that same script address;
+- the direct Ready transaction has no Registry spending input, does not attach the Registry validator, and does not execute its spending validator;
+- the script confirms the exact seven-field datum and Value on the resulting UTxO;
+- the same local trace also performs balanced RegistryPublish twins for a Registry continuation Value reduction and a `brRound != btRound(target)` characterization.
+
+The active `.github/workflows/immortal-cardano-lab.yml` invokes this file as step `beacon_registry_b0_yaci` ("Execute B0 BeaconRegistry adversarial Yaci ledger characterization"). At the time of this entry, run `43678893383` on source commit `53edd61177968ad4f2e1d0dc761c9c5d152bab1e` had reached that step, which was still `in_progress`. No PASS/FAIL result is claimed in this entry.
+
+The trace's own evidence limitation is explicit: its direct Ready output does not prove that a PrizeValidator accepts that Ready as a SyncBeacon reference. It is T01b / Registry creation-and-publication evidence only.
+
+### 45.95.2 The existing SyncBeacon Yaci trace is Aiken V3, not Haskell V2
+
+`audit/cardano-integration/aiken-sync-beacon-ledger-trace.ts` exercises an Aiken Plutus V3 Prize candidate against local Yaci and includes ordinary-payment Ready-shaped Registry reference cases. It is useful for transaction/reference-input mechanics and the Aiken candidate's consumer behavior, but it is not a ledger twin for the canonical Haskell V2 `PrizeValidator.compiledValidatorFactory`.
+
+The existing `plutus/test/BeaconRegistryAdversarialTest.hs` suite executes the actual Haskell V2 production wrapper in CEK over synthetic `ScriptContext` values. Its direct Ready / derived-consistent fake Ready cases remain CEK characterizations, not native-ledger acceptance evidence.
+
+### 45.95.3 Haskell V2 T04 is currently blocked by the 16,384-byte transaction ceiling
+
+The existing resource audit records the canonical parameterized Haskell V2 PrizeValidator baseline at **16,443 bytes**, while the active Cardano transaction size ceiling is **16,384 bytes**. A prior Haskell V2 reference-script publication trace measured **16,540 bytes**. Those are not small transaction-builder defects: the parameterized validator/reference-script publication does not fit the current transaction envelope. Do not create a fake T04 success by raising the local maxTxSize, swapping in Aiken V3, using a different validator hash, or claiming CEK/evaluateTx as a ledger submission.
+
+Accordingly, the Haskell V2 T04 ledger twin is **RESOURCE BLOCKED** until an exact canonical Haskell V2 artifact can be published/referenced within the active limit, or an already-published byte-identical reference script is independently found and authenticated. Even after size feasibility is restored, the test must still:
+- create a synthetic Pending Prize UTxO using the exact parameterized Haskell V2 script;
+- create a Ready-shaped Registry UTxO by ordinary payment, with no Registry validator execution;
+- spend only the Prize UTxO via Haskell V2 SyncBeacon and pass the Ready Registry only through reference inputs;
+- record script hash, full transaction CBOR/size, evaluator mode/ExUnits, ledger accept/reject, and pre/post UTxO state;
+- classify construction/size failure separately from Plutus semantic rejection.
+
+### 45.95.4 Existing conservative size experiment enabled for repeatable execution
+
+The repository already contains `.github/workflows/prizevalidator-conservative-optimization-experiment.yml`. It:
+1. asserts an exact baseline script/factory hash and size before proceeding;
+2. temporarily adds only the Plinth compiler's `conservative-optimisation` option to `plutus/PrizeValidator.hs` inside the ephemeral runner;
+3. recompiles and measures the isolated candidate;
+4. restores the source/generated artifacts in an `always()` cleanup and verifies no tracked worktree diff remains;
+5. uploads size-only evidence.
+
+The comparison is explicitly **compile-size only**. Its projected publication byte count is a projection, not a built transaction; it claims no CEK-cost/semantic equivalence, no transaction, no Yaci acceptance and no production artifact qualification.
+
+Added `workflow_dispatch` to the workflow's existing path-filtered push trigger so this bounded experiment can also be launched manually later. The push itself started run **43679611905** on `637e7709aa07b802e3accc7acba4a2915f76d523`; at the time of this entry it was still in progress during dependency installation. No candidate size result is claimed yet.
+
+The measured baseline and threshold remain:
+- canonical parameterized baseline: **16,443 bytes**;
+- active max transaction size: **16,384 bytes**;
+- conditional candidate threshold: **16,287 bytes**, based on the experiment's 97-byte non-script remainder projection.
+
+Passing the 16,287-byte size threshold would only justify a subsequent independent CEK/adversarial equivalence run and a real reference-publication/ledger feasibility test. It would not itself authorize use of the candidate as a production validator.
+
+### 45.95.5 Current dispositions and non-effects
+
+| Gate | Disposition |
+|---|---|
+| T01b direct Ready output creation | Implemented in current Yaci trace; current run result pending |
+| RegistryPublish Value-delta / round-mismatch ledger characterization | Implemented in same Yaci trace; current run result pending |
+| Aiken V3 SyncBeacon Yaci characterization | Separate existing trace; not Haskell V2 evidence |
+| Haskell V2 SyncBeacon CEK characterization | Implemented in BeaconRegistry adversarial suite; exact-HEAD CI pending |
+| Haskell V2 T04 Yaci ledger twin | **RESOURCE BLOCKED** by script/reference-publication transaction size |
+| Conservative compiler size experiment | Run `43679611905` started; result pending |
+| Registry authenticity / Factory identity | **BLOCKED** |
+
+**Disposition:** T01b is not missing code; its active Yaci result must be read before claiming the ledger characterization has passed. T04 is not safely executable on the canonical Haskell V2 artifact under the recorded transaction-size measurements. Size feasibility is the next prerequisite; semantic qualification remains a separate gate after it.
+
+**Non-effects:** no `PrizeValidator.hs`, `BeaconRegistry.hs`, `Types.hs`, datum/redeemer ABI, Registry consumer, V3, Reveal, B2, economic policy, Treasury or Materios semantics changed. No maxTxSize was raised, no wallet/network secrets were used, no Preprod/Mainnet action was performed, and no production validator artifact was replaced.
