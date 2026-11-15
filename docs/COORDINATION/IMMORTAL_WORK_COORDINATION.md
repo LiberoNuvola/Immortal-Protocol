@@ -8621,3 +8621,41 @@ The separate 2026-11-15 feasibility/perimeter audits provide the current R1 conc
 **First real Preprod Issue:** **NO-GO**, independently also blocked by Agent B's B1 Registry identity P0.
 
 No validator, kernel, V3, Reveal, 500×, economic constant, Issue ABI, workflow, wallet, signature, deployment, funding or ledger state changed by this status refresh.
+
+## 46.32 AGENT A — CORRECTION: EV3 SOURCE-SET FULL-BASKET CONSISTENCY GAP RESOLVED IN CURRENT SOURCE (2026-11-15)
+
+**Classification:** CURRENT-BRANCH SOURCE RECONCILIATION / STALE-AUDIT CORRECTION; no code change in this section.
+
+### Why the earlier §45.?? / snapshot dossier statement is stale
+
+The read-only EEV snapshot audit's §7.2 was inspected at historical HEAD `e149f52e2371acc8d7baa810703ecaf972ba730e`. A compare from that exact inspected HEAD to the current `work/immortal-green-closure` branch shows 76 commits ahead, zero behind, including modifications to the EV3 producer, its tests, the basket contract and qualification/approval integrity scripts.
+
+At the **current branch source**, `audit/cardano-integration/preprod-direct-usdm-source-set.mjs`:
+- imports and invokes `canonicalizeDirectUsdmBasket` on the exact matched live Pool Koios asset list;
+- requires the exact Pool out-reference, Pool address, Pool singleton unit and approved tUSDM unit;
+- the pure basket contract rejects any other positive native-asset unit, duplicate units, non-positive tUSDM, malformed/negative quantities and malformed identities;
+- persists the full canonical `assetBasket`, `poolAssetBasketDigest`, and the contract reference/digest in the source-set artifact.
+
+This is materially different from the historical producer described in the earlier audit. The current producer does not merely decode assets and discard the unapproved part of the basket.
+
+### Current deterministic tests
+
+- `preprod-direct-usdm-source-set.test.mjs` statically asserts that the live EV3 producer invokes `canonicalizeDirectUsdmBasket` and persists `poolAssetBasketDigest`; its negative execution also verifies that an unapproved tUSDM unit is rejected before manifest/network access.
+- `preprod-direct-usdm-basket-contract.test.mjs` includes:
+  - a positive basket with ADA envelope + exactly one Pool singleton + positive approved tUSDM;
+  - rejection of an additional foreign positive native asset;
+  - rejection of absent/zero tUSDM, wrong Pool singleton quantity, missing Pool singleton, malformed/negative/duplicate records;
+  - canonical ordering/digest determinism and rejection of a self-digested forged basket containing a foreign positive asset.
+- `preprod-direct-usdm-conformance.yml` currently runs both Node test files, along with the EEV approval integrity, Oracle datum and first-Issue readiness suites.
+
+### Corrected disposition
+
+- **EV3 source-set full-basket check:** implemented in current source.
+- **Pure full-basket deterministic characterization:** present in current tests.
+- **Latest exact workflow execution:** not established by the available run/status lookup in this review; therefore do not claim the latest source/test blobs are CI-PASS until a matching run is inspected.
+- **Current Issue runtime observer:** independently remains fail-closed and uses the same positive-asset perimeter.
+- **Historical same-point Pool observation:** the 2026-11-15 acquired-point snapshot reported only ADA, Pool singleton and approved tUSDM; this is observation evidence for that point, not a current live read.
+
+The earlier statement that the EV3 source-set producer “does not iterate the assets object” and “does not persist the complete asset basket” must be read as a historical finding against HEAD `e149f52e...`, not as the current branch disposition. Do not continue to list that specific source mismatch as an open blocker. The independent R1/Kc/Ω, B1 Registry identity P0, current live source/approval freshness and C1/PA1–PA7 gates remain open.
+
+No production validator, economic rule, Issue ABI, V3/Reveal semantics, 500×, workflow execution, wallet, signature, deployment, funding or ledger state changed in this correction.
