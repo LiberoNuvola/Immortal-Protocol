@@ -518,6 +518,11 @@ main = do
       (registryContext pendingRegistry readyRegistry [relayerPkh] 0 1 True))
   putStrLn "PASS: RegistryPublish rejects an empty receipt commitment"
 
+  assertEvaluatesWithError
+    (applyRegistry pendingRegistry (RegistryPublish mcHash emptyByteString)
+      (registryContext pendingRegistry readyRegistry [relayerPkh] 0 1 True))
+  putStrLn "PASS: RegistryPublish rejects an empty Materios context"
+
   -- These two passing CEK cases intentionally document existing gaps.
   -- Their synthetic contexts are not balanced and make no ledger claim.
   let roundMismatchInput =
@@ -534,6 +539,26 @@ main = do
       (registryContext pendingRegistry readyRegistry [relayerPkh] 0 1 False))
   putStrLn "CHARACTERIZATION: current RegistryPublish accepts a continuing-output Value delta (CEK only; unbalanced context)"
 
+  -- Negative SyncBeacon controls: current source does reject a Pending entry,
+  -- a round mismatch and a target mismatch before copying a Ready beacon.
+  assertEvaluatesWithError
+    (applySyncBeacon (syncContext pendingRegistry (scriptAddress registryHash)))
+  putStrLn "PASS: SyncBeacon rejects a Pending Registry reference"
+
+  assertEvaluatesWithError
+    (applySyncBeacon
+      (syncContext
+        (readyRegistry { brRound = btRound target - 1 })
+        (scriptAddress registryHash)))
+  putStrLn "PASS: SyncBeacon rejects a Registry round mismatch"
+
+  assertEvaluatesWithError
+    (applySyncBeacon
+      (syncContext
+        (readyRegistry { brTarget = target { btVersion = "V2" } })
+        (scriptAddress registryHash)))
+  putStrLn "PASS: SyncBeacon rejects a Registry target/version mismatch"
+
   -- A Registry reference input is data, not a Registry validator invocation.
   -- SyncBeacon currently accepts a non-derived fake Ready beacon, no relayer
   -- signature, and a lookalike full Address sharing only the payment ScriptHash.
@@ -548,6 +573,15 @@ main = do
   assertEvaluatesSuccessfully
     (applySyncBeacon (syncContext fakeReady canonicalRegistryAddress))
   putStrLn "CHARACTERIZATION: SyncBeacon accepts a non-derived fake Ready Beacon without Registry execution or relayer signature"
+
+  let emptyReceiptReady =
+        fakeReady
+          { brMcHash = emptyByteString
+          , brMateriosContext = emptyByteString
+          }
+  assertEvaluatesSuccessfully
+    (applySyncBeacon (syncContext emptyReceiptReady canonicalRegistryAddress))
+  putStrLn "CHARACTERIZATION: SyncBeacon accepts Ready Registry data with empty mcHash and Materios context"
 
   assertEvaluatesSuccessfully
     (applySyncBeacon (syncContext fakeReady lookalikeRegistryAddress))
