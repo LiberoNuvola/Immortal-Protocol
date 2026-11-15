@@ -130,9 +130,8 @@ test('rejects duplicate TxIn, malformed identifiers, missing ADA and non-positiv
     { name: 'missing ADA', rows: [{ ...output('07'.repeat(32), 0, 1n), value: { [policyIdHex]: { [assetNameHex]: 1n } } }], error: /WHOLE_UTXO_INVALID_OBJECT/ },
     { name: 'zero quantity', rows: [output('08'.repeat(32), 0, 0n)], error: /WHOLE_UTXO_NON_POSITIVE_INTEGER/ },
     { name: 'negative quantity', rows: [output('09'.repeat(32), 0, -1n)], error: /WHOLE_UTXO_NON_POSITIVE_INTEGER/ },
-    { name: 'invalid matching address', rows: [output('0a'.repeat(32), 0, 1n, {}) .withAddress], error: /WHOLE_UTXO_BYRON_OR_UNSUPPORTED_ADDRESS_NOT_QUALIFIED/ }
+    { name: 'invalid matching address', rows: [{ ...output('0a'.repeat(32), 0, 1n), address: 'not-an-address' }], error: /WHOLE_UTXO_BYRON_OR_UNSUPPORTED_ADDRESS_NOT_QUALIFIED/ } 
   ]
-  cases[cases.length - 1].rows = [{ ...output('0a'.repeat(32), 0, 1n), address: 'not-an-address' }]
   for (const item of cases) {
     await t.test(item.name, async () => {
       const { session, calls } = makeSession({ result: item.rows })
