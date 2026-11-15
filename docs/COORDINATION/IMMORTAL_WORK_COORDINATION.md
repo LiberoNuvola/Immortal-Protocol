@@ -7858,3 +7858,15 @@ No deployment approval, wallet signing or ledger transaction is part of this sli
 **Disposition:** specification is ready for cross-agent review. It does not close any test gap until tests are implemented and run. R1/Kc/authoritative Ω remains OPEN; B1 Registry identity remains BLOCKED / P0; first real Preprod Issue remains **NO-GO**.
 
 **Non-effects:** no source/test/cabal/workflow/validator/policy/ABI/parameter/V3/Reveal/500×/wallet/signature/deployment/ledger state changed or executed.
+
+
+### 46.10.5 CEK fixture realism addendum
+
+Specification addendum commit `2a00b7193faa32be2fff2ef6eba52383c217163d` adds ledger-balance controls and Oracle fixture requirements:
+
+- include the Pool ADA min-UTxO envelope and a zero-price ADA quote in OracleQuoteSet, because current `Economic.totalUsdmValue` asks for a quote before the min-UTxO exclusion;
+- include a zero-price ticket-NFT quote in Claim's owner NFT+payout output;
+- balance Reveal's remaining tUSDM to a separate output, Claim's exact 20,000-atom owner payment against the Pool decrease, and FundTreasury's 100,000-atom residual to a change output;
+- preserve the Pool singleton and exact ADA envelope in each positive/negative comparison.
+
+These controls make the CEK countermodels coherent with Cardano Value conservation rather than relying on an impossible synthetic Value imbalance. They remain synthetic CEK tests, not native-ledger execution.
