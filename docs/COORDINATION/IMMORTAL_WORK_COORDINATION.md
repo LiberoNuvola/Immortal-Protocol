@@ -7814,3 +7814,47 @@ This is a qualification-provenance/duplicated-observation consistency gap, not e
 Closure requirement: align EV3 with the runtime asset allowlist, persist the full observed unit set/digest, add a deterministic foreign-asset fixture for EV3, then regenerate the source-set/qualification/approval chain against the live candidate. No code or tests were changed or authorized here.
 
 **Disposition:** runtime Issue observation is stricter than reusable EEV qualification materialization; first-Issue gates remain unchanged: R1/Kc/Ω OPEN, B1 Registry P0 BLOCKED, Issue NO-GO.
+
+
+## 46.10 AGENT A — B1 DIRECT-USDM CEK / EV3 TEST-EXECUTION SPECIFICATION (2026-11-15)
+
+**Source baseline:** `ec0f56429c291b59167bf49886dfcc7814d9c693`  
+**Specification:** `docs/COORDINATION/AGENT-A-B1-CEK-EV3-TEST-EXECUTION-SPEC-2026-11-15.md`  
+**Spec commit:** `cdd4ff72788284bfd50539af5cded81c6f8e0f0b`  
+**Classification:** TEST-ONLY SPECIFICATION; NOT EXECUTED; NOT AN IMPLEMENTATION CHANGE.
+
+### 46.10.1 EV3 full-basket tests
+
+The specification defines the positive Pool basket as the exact singleton Pool NFT quantity 1 + exact approved tUSDM positive quantity + ADA/lovelace envelope, and requires any other positive native-asset unit to fail closed. It requires the full normalized basket and digest to be retained in EV3 source-set evidence. It provides positive/negative test cases for foreign assets, missing tUSDM, malformed/duplicate entries, singleton errors, stale/duplicate exact out-references and tampered basket digest.
+
+At the audited source baseline, the EV3 producer still lacks that full-basket check, while the runtime Issue observer rejects foreign positive assets. The EV3 foreign-asset test is expected to expose the current producer gap, not falsely pass it.
+
+### 46.10.2 Compiled Plutus CEK cases and exact countermodels
+
+The proposed new `B1DirectUsdmTransitionCharacterizationTest.hs` uses the actual compiled B1 PrizePool validator factory and the existing `B1RevealHeadroomTest.hs` / `EconomicOracleTest.hs` fixture patterns.
+
+- **Reveal:** P=1 RU, loss payout Y=0; Pool tUSDM moves from 10,000,000 atoms (1,000 RU) to 4,990,000 atoms (499 RU); datum remains accounting-consistent with 1,000 RU and releases the one ticket's WCE. `ΔEEV_direct=-501 RU` versus required `ΔProtectedCapital=-500 RU`. The current B1 + PrizeValidator predicates do not compare the Pool's full Value in Reveal.
+- **Claim:** a single qualified tUSDM Pool basket suffices. With tUSDM Oracle quote price 50 per 1,000,000 atomic units, input 1,000,000 atoms values at 50 RU; output 980,000 atoms values at 49 RU; Claim is 1 RU. The owner receives 20,000 tUSDM atoms, which the same Oracle values at 1 RU. B1 Oracle equality and payout conditions can therefore match, while direct physical EEV falls 2 RU against a 1-RU liability reduction. Current Oracle price validation does not bind this quote to the Direct-USDM 100-RU conversion.
+- **FundTreasury:** with a 112-RU Oracle quote per 1,000,000 tUSDM atoms, output quantity 900,000 atoms recomputes to `ceil(100.8)=101 RU), above pre-datum 100 RU; the validator's current liquidity-increase predicate can accept it even though direct physical EEV falls from 100 to 90 RU.
+- **Expire:** Pending, Revealed Loss and Revealed Win variants retain exact physical Pool Value; the current B1 validator explicitly rejects any complete Value mutation. These are positive safety controls, not proposed open gaps.
+- **Issue:** retain the existing compiled MintPolicy full-Value preservation suite as the Issue control; it is not equivalent to testing B1 TicketIssued in isolation.
+
+The spec also includes a separate ticket NFT burn / Claim / expiry representation test, since the burn branch is outside the five B1 PrizePool redeemer constructors but affects Claim owner derivation and eventual liability expiry.
+
+### 46.10.3 Proposed test-only files / workflow
+
+The spec proposes:
+- EV3 deterministic source-set basket cases and a pure no-network basket helper;
+- a new Plutus CEK test suite;
+- cabal registration and a Haskell CI step;
+- read-only EV3 unit tests before qualification.
+
+No deployment approval, wallet signing or ledger transaction is part of this slice. No validator, MintPolicy, ABI, economic constant, V3 or Reveal semantics are changed.
+
+### 46.10.4 Cross-agent review and disposition
+
+**Agent B review requested:** review compiled CEK fixture validity, especially OracleState QuoteSet/singleton construction, raw/typed owner signatory binding for Claim, PrizeDatum own-Value preservation, and whether shared-TxInfo dual-validator coverage is required for each case. The review is a test-specification handoff only.
+
+**Disposition:** specification is ready for cross-agent review. It does not close any test gap until tests are implemented and run. R1/Kc/authoritative Ω remains OPEN; B1 Registry identity remains BLOCKED / P0; first real Preprod Issue remains **NO-GO**.
+
+**Non-effects:** no source/test/cabal/workflow/validator/policy/ABI/parameter/V3/Reveal/500×/wallet/signature/deployment/ledger state changed or executed.
