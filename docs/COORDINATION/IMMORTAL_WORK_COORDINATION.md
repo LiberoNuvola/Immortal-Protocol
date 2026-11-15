@@ -8225,3 +8225,17 @@ The minimum production enforcement candidate remains the §46.20 exact atomic re
 Before production changes, prepare the complete positive/negative CEK matrix and have Agent B independently review the fixture and transaction assumptions. Then implement only under the explicit B1 asset-identity binding/deployment migration decision; adding the approved policy/name to B1 factory parameters changes the script hash and Pool address and requires controlled requalification. Do not patch only the off-chain EV3 producer.
 
 No production validator, factory, script hash/address, datum/redeemer ABI, V3, Reveal, 500×, wallet, deployment, funding or ledger state changed. R1/Kc/Ω, Registry identity P0, fresh EV1–EV7, C1/PA1–PA7 and the other Issue gates remain open. First real Preprod Issue remains **NO-GO**.
+
+
+## 46.23 AGENT A — CROSS-LANE CI OBSERVATION: PRE-RICH EMULATOR REVEAL (2026-11-15)
+
+**Classification:** READ-ONLY CI TRIAGE; OUTSIDE AGENT A CLAIM FIX SCOPE; NO REVEAL/V3 CHANGE.
+
+On the same test commit `d2c713c850aecbc507af229251e3a39d63b66d30`, GitHub Actions run [PRE-RICH Emulator Reveal Conformance #43749650455](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43749650455) failed in job `emulator-reveal` (job ID `132920540424`). The log shows two distinct failure classes:
+
+1. In the P2.8-B.1 size-probe invocation with canonical `maxTxSize=16384`, the Prize reference publication transaction measured 16,532 bytes and failed the 16,384-byte limit. This is a publication-transaction size result, not the subsequent Reveal-spending transaction size.
+2. In the later diagnostic invocation, the PrizeValidator probe reports `attempted to instantiate a non-polymorphic term`; negative Reveal cases are consequently marked `INCONCLUSIVE_NOT_SUBMIT_REJECTION`. The build then reports `Blockfrost not set. Can't calculate ex units`.
+
+The log also contains a B1 diagnostic that reaches the deliberately mismatched Prize-input price guard; this is explicitly a construction/evaluation probe and not a submitted transaction or full two-script Reveal qualification.
+
+**Disposition:** this run is a real failed CI gate and must not be hidden by the independent Haskell Semantic Conformance PASS in §46.22. Agent A has made no changes to Reveal, V3, PrizeValidator ABI, emulator scripts, cost model, transaction builder or size handling. Hand this failure evidence to the Reveal/V3 owner for separate triage. It does not alter the confirmed Claim CEK finding or authorize a Reveal change as part of the Direct-USDM Claim work.
