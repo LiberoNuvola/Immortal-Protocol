@@ -193,9 +193,12 @@ oracleQuote :: Builtins.BuiltinByteString -> Builtins.BuiltinByteString -> Integ
 oracleQuote policy name price =
   OracleQuote policy name price 1_500 oraclePublisher
 
+adaQuoteAt :: Integer -> OracleQuote
+adaQuoteAt =
+  oracleQuote Builtins.emptyByteString Builtins.emptyByteString
+
 adaQuote :: OracleQuote
-adaQuote =
-  oracleQuote Builtins.emptyByteString Builtins.emptyByteString 0
+adaQuote = adaQuoteAt 0
 
 tusdmQuote :: Integer -> OracleQuote
 tusdmQuote = oracleQuote tusdmPolicy tusdmName
@@ -443,6 +446,67 @@ makeRevealDrainContexts =
     ( ScriptContext info (Spending prizeRef)
     , ScriptContext info (Spending poolRef)
     )
+
+
+-- EV3-canonical FundTreasury fixture: Pool inputs/outputs contain only the
+-- Pool singleton, approved tUSDM and ADA. The ADA quote values the amount
+-- above the 1.6 ADA minimum-UTxO floor. The transaction replaces 1 USDM of
+-- physical tUSDM (100 accounting subunits) with 1.1 ADA (110 oracle subunits),
+-- so the Oracle-valued datum rises by 10 while direct-USDM EEV falls by 100.
+makeCanonicalFundAdaContext :: ScriptContext
+makeCanonicalFundAdaContext =
+  let
+    poolRef = TxOutRef (TxId (rawBytes [131])) 0
+    sourceRef = TxOutRef (TxId (rawBytes [132])) 0
+
+    beforePool = poolDatum 1_000 0
+    afterPool = poolDatum 1_010 0
+
+    poolInputValue =
+      singleton (CurrencySymbol poolPolicy) (TokenName poolName) 1
+        <> singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 10_000_000
+        <> singleton adaSymbol adaToken 1_600_000
+    poolOutputValue =
+      singleton (CurrencySymbol poolPolicy) (TokenName poolName) 1
+        <> singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 9_000_000
+        <> singleton adaSymbol adaToken 2_700_000
+
+    poolInput =
+      TxInInfo poolRef
+        (scriptOut poolHash poolInputValue (PlutusTx.toBuiltinData beforePool))
+    sourceInput =
+      TxInInfo sourceRef
+        (pubkeyOut sourcePkh
+          (singleton adaSymbol adaToken 3_000_000))
+
+    poolOutput =
+      scriptOut poolHash poolOutputValue (PlutusTx.toBuiltinData afterPool)
+    sourceChange =
+      pubkeyOut sourcePkh
+        (singleton (CurrencySymbol tusdmPolicy) (TokenName tusdmName) 1_000_000
+          <> singleton adaSymbol adaToken 1_900_000)
+
+    oracleReference =
+      TxInInfo
+        (TxOutRef (TxId (rawBytes [133])) 0)
+        (oracleOutput [adaQuoteAt 100, tusdmQuote 100])
+
+    info =
+      TxInfo
+        [poolInput, sourceInput]
+        [oracleReference]
+        [poolOutput, sourceChange]
+        mempty
+        mempty
+        []
+        AssocMap.empty
+        (interval (POSIXTime 1_000) (POSIXTime 2_000))
+        [sourcePkh]
+        AssocMap.empty
+        AssocMap.empty
+        (TxId (rawBytes [134]))
+  in
+    ScriptContext info (Spending poolRef)
 
 -- Historical Oracle-vs-direct FundTreasury characterization only. Its Pool output
 -- deliberately contains a foreign positive asset and is therefore NOT an
@@ -693,6 +757,49 @@ main = do
       && revealOwnerTusdm == 1_000_000
       && revealTotalInputValue == revealTotalOutputValue)
     "Reveal drain fixture: canonical Prize/Pool Value balances, but 1,000,000 approved tUSDM atomic units leave the Pool and reach a PubKey output"
+
+  let
+    canonicalAdaFundContext = makeCanonicalFundAdaContext
+    canonicalAdaFundInfo = scriptContextTxInfo canonicalAdaFundContext
+    canonicalAdaFundAccepted =
+      evalAccepts (applyB1Validator (poolDatum 1_000 0) FundTreasury canonicalAdaFundContext)
+    canonicalAdaFundPoolAddress = Address (ScriptCredential poolHash) Nothing
+    canonicalAdaFundPoolInputs =
+      filter ((== canonicalAdaFundPoolAddress) . txOutAddress . txInInfoResolved)
+        (txInfoInputs canonicalAdaFundInfo)
+    canonicalAdaFundPoolOutputs =
+      filter ((== canonicalAdaFundPoolAddress) . txOutAddress)
+        (txInfoOutputs canonicalAdaFundInfo)
+    canonicalAdaFundInputValue =
+      foldr ((<>) . txOutValue . txInInfoResolved) mempty canonicalAdaFundPoolInputs
+    canonicalAdaFundOutputValue =
+      foldr ((<>) . txOutValue) mempty canonicalAdaFundPoolOutputs
+    canonicalAdaFundInputOracleValue =
+      Economic.poolUsdmValue canonicalAdaFundInfo oracleState oraclePublisher
+        poolPolicy poolName canonicalAdaFundInputValue
+    canonicalAdaFundOutputOracleValue =
+      Economic.poolUsdmValue canonicalAdaFundInfo oracleState oraclePublisher
+        poolPolicy poolName canonicalAdaFundOutputValue
+    canonicalAdaFundInputTusdm =
+      valueOf canonicalAdaFundInputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
+    canonicalAdaFundOutputTusdm =
+      valueOf canonicalAdaFundOutputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
+    canonicalAdaFundTotalInputValue =
+      foldr ((<>) . txOutValue . txInInfoResolved) mempty
+        (txInfoInputs canonicalAdaFundInfo)
+    canonicalAdaFundTotalOutputValue =
+      foldr ((<>) . txOutValue) mempty (txInfoOutputs canonicalAdaFundInfo)
+
+  assert
+    canonicalAdaFundAccepted
+    "OBSERVED EV3-CANONICAL GAP: compiled FundTreasury accepts an ADA-for-tUSDM substitution with an Oracle-valued liquidity increase"
+
+  assert
+    (canonicalAdaFundInputOracleValue == 1_000
+      && canonicalAdaFundOutputOracleValue == 1_010
+      && canonicalAdaFundInputTusdm - canonicalAdaFundOutputTusdm == 1_000_000
+      && canonicalAdaFundTotalInputValue == canonicalAdaFundTotalOutputValue)
+    "Canonical FundTreasury counterexample: Pool loses 1,000,000 tUSDM atoms, receives 1.1 ADA above min-UTxO, Oracle datum rises 10, and Value balances"
 
   let
     fundContext = makeFundContext
