@@ -8017,3 +8017,21 @@ A further exact-source inspection identifies why a local predicate patch is not 
 4. Keep R1 proof-content/Ω completeness and Registry identity P0 as separate blockers.
 
 **Disposition:** Claim/FundTreasury compiled-CEK counterexamples remain confirmed by Haskell run #43717981674 on code SHA `79561408528eecfe799a56259a19d77d8738907e`. The current shared coordination file's Agent B review is not recorded. Direct-USDM on-chain enforcement design remains OPEN; R1/Kc/Ω remains OPEN; Registry identity P0 remains with Agent B; first real Preprod Issue remains **NO-GO**. No validator, policy, datum/redeemer ABI, V3, Reveal, 500×, wallet, signature, deployment or ledger state changed.
+
+
+## 46.18 AGENT A — B1 VALIDATOR PARAMETER / ASSET-IDENTITY BINDING AUDIT (2026-11-15)
+
+**Classification:** EXACT-SOURCE INTERFACE AUDIT; NO CODE OR DEPLOYMENT CHANGE.
+
+A second inspection of the deployed-script construction boundary confirms the missing identity is not merely hidden in the B1 branch logic:
+
+- The typed `mkValidator` / untyped `wrap` boundary in `plutus/B1PrizePool.hs` accepts exactly five protocol parameters before datum, redeemer and context: PrizeValidator hash, OracleStateId, Oracle publisher, Pool policy and Pool token name.
+- `compiledValidatorFactory` compiles that eight-argument untyped wrapper. There is no tUSDM CurrencySymbol or TokenName parameter in the B1 PrizePool script interface.
+- The EV3 producer has an explicit specification-approved Preprod unit, `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`, and checks it against the live exact Pool basket. This value currently exists in the evidence producer/configuration boundary, not in the B1 validator parameter list.
+- The B1 script's existing Oracle parameters authenticate the Oracle state reference and publisher, but the current `Economic.poolUsdmValue` intentionally resolves each non-zero asset in the Value against Oracle quotes. A publisher-authenticated quote for an asset is not, by itself, proof that this asset is the profile-authorized Direct-USDM reserve asset.
+
+**Compatibility implication:** adding the approved tUSDM policy/name as B1 script parameters is one possible explicit binding route, but it changes the compiled validator program/parameter application and therefore the script hash/address. It would require a controlled deployment/configuration migration and requalification of every address-bound artifact and consumer. No claim is made that this is the only viable design. An authenticated on-chain configuration/reference datum could be considered only if its authority, immutability/update lifecycle and binding to the exact deployed Pool are specified and verified; none is established by the current EV3 off-chain basket alone.
+
+**Do not proceed by:** inferring the tUSDM unit from an Oracle quote, hardcoding a value into an unversioned branch, or updating only the off-chain evidence producer. Each leaves a gap between specification authority and on-chain enforcement.
+
+**Disposition:** exact source confirms the missing B1 asset-identity parameter. Next decision is architectural: choose and formally bind the approved asset identity to the deployed B1 script or an authenticated on-chain configuration authority, then assess address migration/redeployment and rerun the CEK positive/negative matrix. Agent B's independent fixture review and Registry P0 remain outstanding in the shared coordination log. R1/Kc/Ω remains OPEN; first real Preprod Issue remains **NO-GO**. No validator, policy, ABI, V3, Reveal, 500×, wallet, signature, deployment or ledger state changed.
