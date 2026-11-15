@@ -390,3 +390,14 @@ Recommended balanced flows:
 All Oracle quotes must be included on the same singleton reference UTxO, have a unique policy/name identity, the configured publisher, a timestamp that satisfies the actual `TxInfo` validity upper bound and non-negative price. All B1 datum/PrizeDatum/payout fields must otherwise satisfy the real compiled branch. A fixture that omits required ADA/NFT quotes or fails Value conservation is `FIXTURE_INVALID`, not evidence against or for the target predicate.
 
 This clarification does not upgrade synthetic CEK contexts to a native-ledger execution claim.
+
+
+## 11. CI wiring verified against the current workflow tree
+
+A final workflow-path inspection refines §7:
+
+- `.github/workflows/pre-rich-direct-usdm-conformance.yml` already includes `audit/cardano-integration/preprod-direct-usdm-source-set.test.mjs` in its push path filters and runs it with `node --test`. Add EV3 basket cases to that existing test file; no parallel dedicated EV3 workflow is needed.
+- `.github/workflows/preprod-eev-qualification.yml` is the read-only live requalification path. It currently runs source-script syntax checks and live source qualification, but not the source-set test itself. If the project wants the live qualification job to fail before materializing a qualification artifact whenever the EV3 unit suite fails, add the existing `node --test` command as a prerequisite step there too. This is a workflow-gating decision, not a required new test suite.
+- `.github/workflows/immortal-haskell-conformance.yml` already runs the compiled Haskell test suites. Register the new CEK test stanza in `plutus/pre-rich-plutus.cabal` and add one step there. Its existing `plutus/**` path filter already covers the new Haskell test file and cabal change.
+
+Do not add the EV3 test command to the protected EEV deployment-approval workflow. The approval workflow must remain a separate protected action after live requalification.
