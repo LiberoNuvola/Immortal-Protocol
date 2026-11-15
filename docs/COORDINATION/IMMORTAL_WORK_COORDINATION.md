@@ -7894,3 +7894,20 @@ The EV3 qualification now validates and binds the basket digest and exact import
 **Required follow-through:** the EV3 producer/source digest and source-set schema have changed; regenerate EV1–EV7 qualification against a fresh exact live Pool observation. The historical October approval cannot be reused as approval for these changed source bytes. Keep the protected approval workflow separate and uninvoked pending exact-head CI and independent review.
 
 **Disposition:** EV3 source producer/qualification inconsistency = IMPLEMENTED / CI VERIFICATION PENDING. R1/Kc/authoritative Ω remains OPEN; B1 Registry identity remains BLOCKED / P0 under Agent B; first Preprod Issue remains **NO-GO**. No V3, Reveal, MintPolicy, B1 validator, datum/redeemer ABI, 500× rule, EEV conversion or economic parameter changed.
+
+## 46.12 AGENT A — SIGNED ISSUE AUTHORITY IS NOT YET R1 PROOF VERIFICATION (2026-11-15)
+
+**Report:** `docs/COORDINATION/AGENT-A-R1-SIGNED-AUTHORITY-PROOF-VERIFICATION-BOUNDARY-2026-11-15.md`  
+**Report commit:** `e48d707e32705bd94e43f7d870ed3dd83c56e2cf`  
+**Classification:** READ-ONLY SECURITY / CERTIFICATION-BOUNDARY AUDIT; NO IMPLEMENTATION.
+
+A current-source review distinguishes the genuine authority controls from the remaining proof obligation:
+
+- **Implemented:** signed authority envelope verification; separate carrier-binding signature; exact Counter/B2/Pool/carrier/class/price/observation binding; freshness validation; exact Direct-USDM observation; Haskell recomputation and matching of signed state/action/post-state digests; ProtectedCapital arithmetic and carrier-source binding.
+- **Not established:** the verifier checks VC1–VC6/E1–E10 references and 32-byte digest syntax but does not retrieve or verify the proof contents. It does not independently evaluate the characteristic predicate, derive a total witness selector, enumerate the full accepted action inventory or prove Ω completeness/sound over-approximation.
+- **Ω boolean:** allOmegaSuccessorsCertified is included in the signed authority payload. Haskell admission checks that its output matches the same input and that it is true; it does not independently derive the Ω claim. The signature establishes attribution/integrity of the assertion, not the truth or completeness of the assertion itself.
+- **Lifecycle tests:** PreRichLifecycleTransitionTest uses synthetic witness records and supplied safety/representation booleans. It validates the pure predicate only, not deployment Ω, authenticated state or ledger execution. EconomicAdmissionTest similarly tests boolean gate composition using synthetic values.
+
+This does not invalidate the signed-authority transport or its live-state binding; it limits the claim that may be made from them. The correct classification is **SIGNED ASSERTION + CROSS-BINDING IMPLEMENTED / R1 PROOF CONTENT AND Ω COMPLETENESS OPEN**.
+
+**Disposition:** Agent A still owns R1/Kc/Ω closure; Agent B still owns B1 Registry identity P0. First real Preprod Issue remains **NO-GO**. No new certificate format, proof system, coefficient, RiskMode, action restriction, B1 redeemer or validator change is selected. No source/test/validator/ABI/workflow/wallet/signature/transaction/deployment/ledger state changed or executed.
