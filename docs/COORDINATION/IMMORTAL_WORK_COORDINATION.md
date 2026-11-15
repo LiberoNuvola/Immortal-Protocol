@@ -5669,3 +5669,25 @@ A future transaction-intent binding review should define, from already-governed 
 Positive and mutation-negative tests should demonstrate that changing any governed field after admission causes rejection before wallet signing. A separate test should demonstrate that a syntactically valid witness cannot be reused with a different transaction body. Tests must not invent a new economic projection or change on-chain semantics; the projection must be explicitly specified and versioned first.
 
 **Disposition:** the adapter now enforces useful exact-input and post-validation immutability checks, but it does not establish complete transaction-to-economic-decision equivalence. This is a residual admission-boundary proof gap, not evidence that a specific live transaction has bypassed on-chain validators. Keep it separate from the B2 reference binding gap and the independent R1/Kc/Ω, ProtectedCapital, Genesis and USD/USDM blockers.
+
+## 45.78 AGENT B — TREASURY / RESERVE CROSS-REVIEW AND A→B HANDOFF (2026-11-15)
+
+**Classification:** independent read-only cross-review of the 15 November Agent B audit supplied in the coordination session, reconciled against the current integration-branch HEAD `4779d67fdb2ec2dd1e271a12791366b55ca19b53` and Agent A §§45.68–45.73. This entry records coordination only; it does not transfer Treasury ownership to Agent B or authorize protocol changes.
+
+### Confirmed cross-review findings
+
+- Keep `Treasury Reserve`, `UnresolvedTicketReserve`, `WorstCaseExposure`, `PendingWinningLiabilities`, `LockedJackpot` and `ReserveProtection` as distinct economic/accounting positions. `ReserveProtection` is a protected-capital requirement, not a liquid asset or a PrizePool deposit.
+- The reported Preprod snapshot (slot 139026723 / block 5413649) observed zero Treasury UTxOs and zero sale receipts at the derived Treasury address, alongside one B1 PrizePool UTxO with 100,000 USDM subunits in the supplied manifest. This is a bounded address/snapshot observation, not proof of the complete Treasury history or continuity across snapshots.
+- The receipt↔ticket crosswalk's `identityCrosswalkComplete=true` on empty populations is vacuous structural success. Agent B recommends an explicit `EMPTY_INPUT_POPULATIONS` outcome and regression, while preserving all economic-posting and spend-authorization flags as false.
+- The Reveal headroom observation is separate from the 500× WCE rule: for one unresolved ticket, a pre-Reveal liquidity amount of exactly `500P` can yield `EffectivePool = 500P - P = 499P`. This is a proof/affordability gap to reconcile, not authority to raise the payout cap or invent a Reserve parameter.
+- The current `FundTreasury` path and a ReserveProtection scalar must not be treated as proof of new physical USDM in the exact B1 PrizePool. Any Treasury→PrizePool funding claim needs source-category authorization and matched physical debit/credit evidence.
+
+### Ownership and handoff
+
+- **A-owned:** Treasury receipt journal, Treasury category accounting, EEV/ProtectedCapital producer and approval, and any normative/economic decision. Agent B does not modify these paths or select a Reserve policy.
+- **B-owned:** BeaconRegistry/Plutus/Cardano execution and bounded transaction/evidence conformance, under the existing security and ABI review gates. The Registry authenticity issue in §44.62 remains a separate B security blocker; this Treasury review does not displace it.
+- **C-owned:** Materios B3 provenance/execution-proof work on `work/b3-materios-provenance-evidence`; no B3 path or C-owned file is changed by this handoff.
+- **Handoff to Agent A:** reconcile the four cross-review findings above with §§45.68–45.73; specifically decide whether the empty-population state should be recorded in the canonical crosswalk contract/tests, and preserve the distinction between protected-capital requirement and physically funded PrizePool liquidity. No normative decision is implied.
+- **Next Agent B focus:** resume the existing BeaconRegistry authenticity/consumer-boundary work in §44.62 and its already-recorded acceptance matrix. No V3, Reveal, B2 ABI, economic constants, Treasury logic or deployment change is authorized by this review.
+
+**Result:** cross-review complete; Treasury findings handed to A; no code/test/workflow/ledger change; no GREEN promotion.
