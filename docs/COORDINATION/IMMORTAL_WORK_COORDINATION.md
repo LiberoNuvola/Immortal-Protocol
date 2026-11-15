@@ -6477,3 +6477,176 @@ Therefore the correct interim condition is **permissionless retry where canonica
 
 **Non-effects:** failure-mode/source analysis only. No code, ABI, policy, validator, test, workflow, CI, wallet, transaction, branch topology, deployment or ledger state changed. No reset, migration or recovery mechanism was selected.
 
+
+
+---
+
+## 45.86 AGENT B — MINIMUM APPLICATION-CONFIG CARRIER INTERFACE
+
+**Date:** 2026-11-15  
+**Exact reviewed HEAD:** `9638c7e85abc391ad5704b79542a49a26e94729d`  
+**Classification:** INTERFACE / SECURITY CONTRACT — NON-NORMATIVE; NO ABI OR IMPLEMENTATION AUTHORITY  
+**Scope:** separate canonical governance state, adopted PRE-RICH application configuration, Factory progression state and per-round Registry state. No new policy values are selected.
+
+### 45.86.1 Why a separate application-config layer is necessary
+
+The owner direction in Issue #49 comment `6717544912` explicitly separates:
+
+1. immutable governance/genesis anchor;
+2. ledger-verifiable governance transitions preserving GOV-16/17/18;
+3. authenticated application-config carrier;
+4. permissionless Factory transition;
+5. independently authenticated Materios target inputs.
+
+The application-config state is not the governance event log and is not the Factory sequence state. It is the *currently adopted, versioned application-policy projection* that Factory must read. A vote, Haskell replay, event JSON, canonicalization record or hash alone is not the carrier's trust root.
+
+The required separation is:
+
+```text
+immutable deployment / governance genesis
+                 |
+                 v
+Cardano-verifiable canonical GOV lifecycle
+                 |
+                 v
+current adopted application-config state
+                 |
+                 +---- deterministic progression rule
+                 |
+                 +---- target-resolver contract
+                 |
+                 v
+authenticated Factory STT + progression state
+                 |
+                 v
+permissionless OpenRound + authenticated target witness
+                 |
+                 v
+one per-round identity + one immutable Pending Registry
+```
+
+This does not mean each box must necessarily be a separate datum or script. It means their state, authority and transition predicates must not be collapsed into one mutable object whose provenance cannot be distinguished.
+
+### 45.86.2 Minimum application-config content
+
+The following is a **field-group contract**, not a selected Plutus datum/ABI or exact serialization. A future implementation may use typed fields, a canonical committed substructure or an equivalent authenticated representation, provided the on-chain verifier can establish every property required by OpenRound.
+
+| Field group | Minimum information to bind | Status / constraint |
+|---|---|---|
+| Schema and state identity | Config schema/version, unique application/deployment namespace, identity of the Factory instance this config governs | Required; exact identifiers/bytes OPEN |
+| Network/deployment domain | Exact network/deployment identity and the declared meaning/source of `BeaconTarget.networkId` | Required; do not infer semantics from the current DApp default `0` |
+| Registry binding | Exact Registry payment credential/address form expected by the Factory and consumers | Required; exact script/address topology OPEN pending hash-acyclic design |
+| B1 trust profile | Explicit B1-only profile for this Issue #49 Factory generation; no implicit B2/B3/B4 fallback | Owner direction recorded; no trust-mode overloading into `btVersion` |
+| B1 publisher | The configured publisher identity used for *new* rounds under this config version | Required; not the OpenRound submitter; actual PKH and future rotation semantics not selected |
+| Application/ruleset identity | Adopted application ruleset/version and the configuration commitment to which the proposal was canonicalized | Required; does not amend IMMORTAL economics |
+| Round-progression contract | Deterministic rule identity/version and all parameters/state inputs needed to evaluate progression and any allowed skip | Required; exact next-round, skip, pause or stop predicates remain OPEN |
+| Target-resolution contract | Deterministic resolver identity/version, declared source/network domain, and the semantics of every BeaconTarget field—especially `mainchainRef`—plus the required authenticated proof relation | Required; canonical round/checkpoint/anchor mapping remains BLOCKED |
+| Governance provenance | Exact proposal/decision/canonicalization identity, ruleset version, prior config commitment and conformance/adoption evidence that authorizes this config version | Required as authenticated provenance; non-empty strings or a bare hash are insufficient |
+| Version continuity | Monotonic config/state version and predecessor binding so a stale, replayed or forked config cannot be mistaken for current state | Required; exact encoding/transition ABI OPEN |
+
+**Important distinction — commitment versus executable meaning:** `configHash` may bind canonical bytes, but it does not make an opaque policy executable. If Factory must evaluate a progression or target rule, the relevant rule identifier and parameters must either be interpreted by a fixed on-chain evaluator or be accompanied by a proof that the on-chain validator can independently verify. An unknown rule identifier, unsupported version or opaque hash with no verifiable semantics must fail closed.
+
+Similarly, a target-resolver identifier does not prove an AnchorRecord belongs to a round. It must connect to the adopted round-selection rule and the independent Materios authenticity/key-value/semantic-binding obligations in §45.83 and Issue #49 comment `6817241935`.
+
+### 45.86.3 Minimum Factory-state separation
+
+Factory owns *progression state and uniqueness*, not application policy adoption or external truth.
+
+Its minimum conceptual state is:
+
+- the unique Factory STT identity and namespace binding;
+- a versioned Factory state/transition nonce;
+- the progression cursor/state needed by the adopted progression evaluator (which may include the last accepted round, but this document does not select a numeric progression rule);
+- the immutable identity/location of the canonical application-config carrier it is required to read;
+- any minimal binding necessary to ensure the referenced config belongs to this Factory namespace.
+
+For each `OpenRound`, the Factory transition must consume exactly one authenticated Factory predecessor and read exactly one current authenticated application-config state. The config reference must be checked by its exact configured credential/address, singleton identity asset and quantity, namespace, schema/version and decodable datum. Absence, duplication, wrong identity, stale state, malformed datum or unsupported rule version fails closed.
+
+The application-config state is not consumed merely because a round opens; it remains the current adopted configuration until a valid governance/canonicalization transition replaces it. Factory consumes and advances only its own STT. This preserves the owner-required distinction between governance/configuration changes and ordinary round execution.
+
+The exact mechanism that makes a config UTxO the unique *current* state, binds the config token to immutable genesis, and handles configuration-update/OpenRound races still requires a separately reviewed script contract. It must guarantee that a transaction cannot successfully open a round against a stale config after that config has been superseded.
+
+### 45.86.4 Configuration transition and effect on already-open rounds
+
+A valid application-config update must be a versioned consequence of the canonical governance lifecycle, not an operator or publisher edit.
+
+Minimum properties:
+
+1. The current config predecessor is authenticated and uniquely identified.
+2. The proposed new config is bound to the exact canonicalized application decision and required conformance/compatibility result.
+3. The transition preserves one config-state identity and produces one canonical continuing config state; no parallel current configs or silent fork.
+4. The new config carries a new version and an explicit predecessor link/commitment.
+5. The transition cannot alter IMMORTAL economic invariants or bypass the existing GOV-16/17/18 lifecycle.
+6. A config change affects only future OpenRound transitions. It cannot rewrite the target, publisher, trust assumption or identity of an already-created Registry UTxO.
+7. A stale config reference cannot be used after a newer config state becomes canonical.
+
+No per-round governance vote is required by this boundary. Ordinary OpenRound reads the latest adopted config and applies its deterministic predicate. Governance changes the long-lived rules/configuration; Factory applies those rules.
+
+**Not selected:** exact governance state-carrier topology, config token minting policy, config address, field encoding, hash domain, update redeemer, version-increment rule, upgrade compatibility or race-resolution implementation.
+
+### 45.86.5 OpenRound read/validation contract
+
+The future OpenRound validation boundary must independently establish, in one atomic transaction:
+
+1. Exactly one authenticated Factory input carrying the expected STT and exactly one continuing Factory output preserving it.
+2. Exactly one current application-config reference with the expected singleton identity, full configured address/credential, namespace and decodable/version-supported config.
+3. The config's governance provenance is valid under the authenticated canonical GOV state—not merely a caller-supplied commitment or Haskell witness.
+4. The progression rule is recognized and evaluated against the actual Factory progression state; caller-supplied round numbers cannot override the result.
+5. The target resolver is recognized and the complete `BeaconTarget` is derived/verified from the same config, round and authenticated external inputs. Caller/publisher/SDK defaults cannot choose fields.
+6. The full target, expected B1 publisher and the current config version are fixed in the newly created Pending Registry.
+7. Exactly one new per-round identity token is minted and exactly one Pending Registry output at the exact configured address carries it.
+8. The Factory progression state, new identity and Registry output advance atomically; no other Factory mint/burn or duplicate Registry is accepted.
+9. The submitter's PKH has no bearing on the result. Any eligible subject may construct, submit or retry the same valid transition.
+10. A concurrent config update or competing OpenRound cannot leave a successful opening based on a superseded config or duplicate the same progression transition.
+
+This is a boundary checklist only. It does not authorise appending fields to the seven-field Registry datum or changing existing consumers. The current per-round Registry identity remains carried in Value under the §45.81–§45.82 design candidate.
+
+### 45.86.6 Existing carrier reuse assessment
+
+The exact current source inventory at `9638c7e85abc391ad5704b79542a49a26e94729d` contains no `ApplicationConfig`, `GovernanceState` or `BeaconRegistryFactory/OpenRound` production module. The Plutus export set includes the existing Genesis, V3 economic-state and PreRichControl carriers; it exports no governance validator or canonical application-config carrier.
+
+Relevant precedents are limited:
+
+- `GenesisCarrierMintPolicy.hs` is a one-shot seed-UTxO/token mint constraint. It does not by itself constrain the destination output/datum/configuration.
+- `GenesisRegimeCarrier.hs` shows a singleton transition pattern: exact carrier token conservation, one continuing output, state-version/nonce progression and a deterministic predicate. Its semantics are specific to PRE_GENESIS→GENESIS and authenticated Treasury/Oracle observations; it is not the application-config authority.
+- `PreRichControlCarrier.hs` explicitly requires a configured authority signature for each transition. Reusing it as the OpenRound/config-governance authority would violate the owner's no-privileged-signer direction.
+- `V3EconomicStateCarrier.hs` has an explicit authority-signature binding in its action. It is an economic-state carrier, not a permissionless governance/configuration authority.
+- `GovernanceCanonicalizationWitness.hs` is a pure Haskell projection. It checks record fields, strings and boolean evidence flags; it does not verify a Cardano transaction signer, complete PRE snapshot, on-chain governance lifecycle or canonical config UTxO.
+
+Therefore there is no exact existing carrier that can simply be parameterized and reused as the Factory's adopted application-config state without changing its trust model or semantics.
+
+### 45.86.7 Blocking gates and next owner-independent work
+
+| Gate | Evidence needed | Current disposition |
+|---|---|---|
+| G1 — Governance root | Authentic/complete PRE snapshot, credential-bound votes/delegations, full Cardano-verifiable GOV-16/17/18 lifecycle and canonicalization | **BLOCKED** |
+| G1-F — Config projection | Versioned app-config state linked to verified canonicalization, with a unique authenticated state identity | **DESIGN CONTRACT ONLY** |
+| G2 — Target resolver | Adopted `mainchainRef` meaning and canonical round→checkpoint→anchor rule plus external proof | **BLOCKED** |
+| G3 — Progression | Exact adopted deterministic progression/skip/stop function and executable representation | **OPEN** |
+| G4 — Bootstrap | Immutable deployment/genesis commitment binds initial config, Factory namespace, Registry identity, trust profile and seed | **OPEN / NOT DEPLOYED** |
+| G5 — Factory | STT bootstrap/OpenRound implementation, concurrency proof and exact Registry output | **NOT IMPLEMENTED** |
+| G6 — Resource/compatibility | Pinned-toolchain script-hash/CEK/transaction-size proof, legacy Registry inventory and owner-authorized changed paths | **BLOCKED** |
+
+The next bounded work is a **field/proof traceability review**, not code:
+
+- for each field group above, identify the authoritative source, on-chain verifier and exact evidence that makes it current;
+- explicitly mark any field for which the verifier is not yet implemented;
+- do not fill missing values with a signer, operator, API, SDK default, fixed calendar or off-chain replay;
+- do not assign the progression rule or `mainchainRef` semantics in this audit.
+
+**Disposition:** the minimum application-config interface can be described, but no authenticated current application-config state exists on the reviewed branch. A hash-only pseudo-carrier would not close the governance gap. Factory remains design-only until G1, G2 and the progression/config contracts are independently closed and implementation is separately authorized.
+
+**Non-effects:** documentation/source crosswalk only. No production code, datum/redeemer ABI, governance rule, validator, minting policy, Factory source, Registry consumer, V3/Reveal semantics, economic rule, tests, workflow, CI run, wallet, transaction, deployment, branch topology or ledger state was changed or executed.
+
+### 45.86.8 Exact source pins reviewed
+
+| Source | Blob SHA | Finding |
+|---|---|---|
+| `PRE-RICH/onchain/GenesisCarrierMintPolicy.hs` | `c95a16b03258201a29b2593daecb8aa512fb259b` | One-shot seed consumption and singleton mint amount/name only |
+| `PRE-RICH/onchain/GenesisRegimeCarrier.hs` | `276b09deace4475853320356375a12f9ee5f1d60` | Domain-specific singleton/value-preserving transition |
+| `PRE-RICH/onchain/PreRichControlCarrier.hs` | `ce5a73dd29894367f031924e5a282935d8d3d66f` | Configured authority signature required |
+| `PRE-RICH/onchain/V3EconomicStateCarrier.hs` | `f2d0beb9aeeddc0e95b21583d846d56786936dec` | Authority-signature binding for economic state |
+| `IMMORTAL/governance/GovernanceCanonicalizationWitness.hs` | `8957b631183e5f69f759fddae0070d35815fb4ec` | Pure Haskell canonicalization projection, not ledger proof |
+| `plutus/export/Export.hs` | `b33cd08b2d9dc6800215e771f18d561c87bc34c7` | Existing exports; no governance or ApplicationConfig validator |
+| `plutus/pre-rich-plutus.cabal` | `49d2f812350710f44c13a7f8850f8abf6eeba376` | Governance Haskell modules/tests packaged, not a Plutus governance script |
+
