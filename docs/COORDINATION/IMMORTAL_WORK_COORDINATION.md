@@ -6266,3 +6266,126 @@ A proof package that only says “this AnchorRecord exists” is insufficient at
 | `docs/research/B3-C-POC2-MATERIOS-ANCHOR-KEY-TRIANGULATION-2026-09-27.md` | `ebc464d9839fdfd523b2cb5806e0aa63a53c144a` | Caller-supplied anchor key and open semantic relation |
 | `docs/04-guides/14_BEACON_FAILOVER_AND_ROUND_FREEZE_v0.1.md` | `6bfb95892c10a795070fa7317fb412a6cd5ec443` | Trust-mode freeze only; not a target resolver |
 
+
+
+---
+
+## 45.84 AGENT B — OWNER AUTHORITY / PROGRESSION / BOOTSTRAP RECOVERY DECISION CROSSWALK
+
+**Date:** 2026-11-15  
+**Exact reviewed HEAD before this entry:** `ad392cdb9b6aae6125df48470e35d8fbf81cdcda`  
+**Classification:** OWNER-DIRECTION RECONCILIATION + SOURCE AUDIT — NON-NORMATIVE REGISTER ENTRY; NO IMPLEMENTATION AUTHORITY  
+**Primary record:** GitHub Issue #49, owner comments `6713720482`, `6714052413`, `6714159371`, `6717381867`, `6717492532`, `6717518494`, `6817241935`, `6817451638`.
+
+### 45.84.1 Owner direction: permissionless OpenRound; no per-round signing authority
+
+Issue #49 contains a later explicit owner clarification that supersedes the earlier proposed `RoundDefinitionAuthority` signature model:
+
+- Comment `6717381867` described a separate `RoundDefinitionAuthority` signature as an implementation-planning baseline.
+- Comment `6717492532` explicitly rejects that as the default/runtime trust root: `OpenRound` must not depend on a single PKH, B1 publisher, relayer/keeper, maintainer/admin wallet, off-chain server signature or manual approval.
+- Comment `6717518494` confirms that a per-round signer must not be reintroduced under another name. A Haskell replay result, JSON event, API response, off-chain signature or bare hash cannot replace a missing Cardano-verifiable governance/configuration state.
+- The owner requires the round-opening predicate to derive from canonical adopted application configuration and authenticated Factory state; any eligible participant may construct, submit or retry a valid transition. Factory performs independent on-chain revalidation and serializes competing submissions.
+
+**Reconciliation:** do not carry the earlier `RoundDefinitionAuthority` proposal forward as an unresolved option or transitional shortcut. It is rejected for this lifecycle. A valid future design must derive authorization from authenticated canonical state, not from a per-round privileged signer.
+
+Role separation remains:
+
+- Application governance establishes long-lived versioned rules/configuration through its canonical lifecycle.
+- Factory checks the adopted state, deterministic progression and authenticated target inputs; it does not decide external truth.
+- Any eligible participant may submit/relay; submitter identity does not affect the result.
+- The configured B1 publisher publishes observation data only for a Registry target already opened.
+- B3/B4 proof providers supply their separate canonicality evidence; they are not implied by B1 publisher identity or Factory token ownership.
+
+### 45.84.2 Progression: the predicate is constrained; the exact function is not adopted here
+
+The owner has required that progression and any skip derive from canonical protocol state/rules. Manual operator skip, freeze, reorder or reopen is prohibited. Competing attempts must serialize through the same authenticated Factory predecessor; stale attempts fail and can be rebuilt by any participant.
+
+The following proposals appear in earlier Issue #49 comments:
+
+- `target.round == lastOpenedRound + 1`;
+- a separate explicit `SkipRound` transition for an intentionally skipped number;
+- alternatively, earlier discussion considered strictly increasing rounds with gaps.
+
+They are not interchangeable. The later owner clarification fixes the **source and authority of the rule** (canonical state, not operator discretion), but does not itself select one exact numeric predicate or skip lifecycle. The exact progression function, whether skips exist, their eligibility/evidence, and their effect on history remain OPEN until the adopted application configuration specifies them.
+
+Do not implement `round+1`, implicit gaps, skip, pause, reopen or reorder based solely on an earlier recommendation or a DApp default.
+
+### 45.84.3 Target authority: B1 observation is downstream of target selection
+
+The owner requires a complete target to be determined before B1 publication. The target selector cannot be the caller, B1 publisher, relayer, keeper, API, SDK default or off-chain replay.
+
+The 12 November source revalidation in Issue #49 comment `6817241935` makes the Materios boundary precise:
+
+1. Materios `submit_anchor` accepts `anchor_id`, `content_hash`, `root_hash` and `manifest_hash` as supplied extrinsic arguments; the runtime does not recompute or enforce `anchor_id == SHA256(root_hash || manifest_hash)`.
+2. Orynq SDK's `SHA256(rootHash || manifestHash)` is therefore an observed producer/verifier convention, not a consensus-enforced Materios rule.
+3. A storage proof authenticates an `AnchorRecord` at a selected key; it does not establish that this record is the canonical record for a PRE-RICH round.
+4. The required proof remains three-part: adopted round-selection rule → independently verified Materios finality/authority/state → authenticated key/value and exact round/config/network/version binding.
+
+Therefore `mainchainRef` semantics and the round → checkpoint → anchor selection relation remain BLOCKED. Do not promote the Orynq formula, a selected historical test anchor, `canonicalAnchorKey`, or `UTF8("pre-rich-round-" + round)` into protocol law.
+
+### 45.84.4 Bootstrap: one-shot provenance is not initial-state correctness or recovery
+
+The existing `PRE-RICH/onchain/GenesisCarrierMintPolicy.hs` pattern:
+
+- consumes one configured `TxOutRef`;
+- permits exactly one configured token name at quantity one under its own currency symbol;
+- rejects extra token entries and any different mint quantity/name.
+
+The paired `GenesisRegimeCarrier.hs` checks the carrier token in the consumed and continuing state, a unique continuing output, exact Value continuity and a deterministic transition predicate. This is useful structural precedent only.
+
+It does **not** establish a ready-made Factory deployment:
+
+- the seed out-ref, Factory script identity, initial Factory token name, Factory namespace, Registry credential and initial config commitment are not selected for a deployed Factory;
+- one-shot minting alone does not prove correct datum/configuration or token placement; the spending-state validator must enforce the exact canonical continuing Factory output;
+- the reviewed branch tree contains no `BeaconRegistryFactory` / `OpenRound` production source;
+- the existing Genesis carrier has no generic Factory reset, token re-issuance or admin repair mechanism to reuse.
+
+The owner requires the seed to be finite bootstrap provenance only. It cannot confer continuing admin, pause, arbitrary mint, publisher override, target selection or upgrade powers. The exact initial deployment manifest and reproducible genesis commitment remain an implementation/deployment prerequisite, not an assumed current fact.
+
+### 45.84.5 Recovery: separate operational rediscovery from Factory-state restoration
+
+The P0 liveness contract permits permissionless re-discovery/re-submission of objectively eligible work, safe retries against current state, and replacement of an unavailable observer or relayer. A missed wake-up must not destroy eligibility; when no submitter is active, the system may remain in a safe stall.
+
+That operational recovery is **not** authority to:
+
+- recreate or remint a lost Factory STT;
+- reset `lastOpenedRound` or erase used round identities;
+- replace the Factory namespace/policy ID under the same identity;
+- choose a new target or publisher;
+- repair a malformed Factory datum through an administrator key;
+- migrate old Registry UTxOs or reissue a round identity.
+
+No Factory-specific loss/corruption/recovery transition, seed reconstitution process, namespace replacement rule or upgrade route is present in the reviewed source or selected in Issue #49. The current Genesis carrier precedent supplies no such generic reset path.
+
+**Safe disposition:** the normal path must preserve one authenticated Factory continuation atomically. If that state becomes unavailable or invalid, the design must fail closed rather than invent an operator recovery key. Whether the instance remains permanently halted, or a deterministic protocol-level recovery/migration can be proven without duplicating history or identities, is an explicit OPEN owner/design decision. The P0 rediscovery rule does not settle it.
+
+### 45.84.6 Decision status matrix
+
+| Question | Owner direction / evidence | Status |
+|---|---|---|
+| Multiple Registry instances | One independently authenticated Registry identity per round; instances coexist | **DIRECTION SELECTED** |
+| Factory STT + per-round identity tokens | Preferred uniqueness/serialization design candidate | **DESIGN BASELINE; NOT IMPLEMENTED** |
+| Per-round signer / `RoundDefinitionAuthority` | Explicitly rejected; no per-round privileged signer | **REJECTED** |
+| Permissionless submitter | Any eligible participant may submit/retry; submitter is not authority | **OWNER REQUIREMENT** |
+| Progression authority | Deterministic rule from canonical adopted config + Factory state | **OWNER REQUIREMENT** |
+| Exact progression / skip function | `lastRound+1` and explicit skip were proposals; exact lifecycle not fixed | **OPEN** |
+| B1 publisher role | Observation only for already-opened target; not target/round authority | **OWNER REQUIREMENT** |
+| `mainchainRef` meaning and round→checkpoint→anchor mapping | No selected canonical function; Materios accepts caller-supplied anchor ID | **BLOCKED** |
+| Governance-to-Cardano canonical state | Haskell replay exists; authentic complete PRE snapshot/credential-bound lifecycle/config carrier not demonstrated | **BLOCKED** |
+| Bootstrap seed/config | One-shot seed allowed as finite provenance; exact deployment commitment/out-ref/identity absent | **OPEN / NOT DEPLOYED** |
+| Factory state loss/recovery | Safe rediscovery is not token/state restoration; no approved recovery mechanism | **OPEN** |
+| Legacy Registry migration | Old unauthenticated UTxOs fail closed; no migration approved | **OPEN / NO AUTOMATIC MIGRATION** |
+
+### 45.84.7 Next bounded work
+
+Do not reopen the rejected signer model. Do not implement the Factory yet.
+
+The next design work should be restricted to two concrete interfaces:
+
+1. **Progression/config interface:** specify the minimum fields the authenticated application-config state must commit to, and test whether the exact numeric progression/skip semantics can be derived without adding any new privileged actor.
+2. **Fail-stop/recovery interface:** classify Factory failure cases (normal stale transaction, missed wake-up, unavailable observer, consumed/malformed state, script defect, lost seed) and distinguish retryable operational failures from irreversible identity/state failures. Produce no reset/migration authority without an owner-approved deterministic proof contract.
+
+G1 governance authenticity and G2 target derivation remain independent blockers. Haskell V2 size/CEK feasibility, legacy inventory and explicit implementation authorization remain required before any consumer or Factory source change.
+
+**Non-effects:** source/decision reconciliation only. No protocol code, datum/redeemer ABI, policy, script, validator, workflow, test, CI dispatch, wallet, transaction, deployment, branch topology or ledger state changed. No Factory recovery path or progression formula was selected.
+
