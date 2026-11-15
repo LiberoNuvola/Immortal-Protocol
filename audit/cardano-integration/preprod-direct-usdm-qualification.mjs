@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { verifyDirectUsdmBasket } from './preprod-direct-usdm-basket-contract.mjs'
 
 const EVIDENCE_DIR = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
 const DEPLOYMENT_MANIFEST =
@@ -156,6 +157,55 @@ if (
   throw new Error('source-set must be the fresh pre-qualification state')
 }
 
+// EV3 must carry the exact canonical Pool basket, not just a matching tUSDM
+// quantity. Revalidate both the basket digest and the imported contract bytes.
+const assetBasket = sourceSet.assetBasket
+if (!verifyDirectUsdmBasket(assetBasket)) {
+  throw new Error('EV3 source-set is missing a valid canonical Direct-USDM asset basket')
+}
+const basketContractReference = 'audit/cardano-integration/preprod-direct-usdm-basket-contract.mjs'
+if (sourceSet?.implementation?.basketContractReference !== basketContractReference) {
+  throw new Error('EV3 source-set basket contract reference is not canonical')
+}
+const basketContractDigest = requireHexDigest(
+  sourceSet?.implementation?.basketContractDigest,
+  'sourceSet.implementation.basketContractDigest',
+)
+const currentBasketContractDigest = createHash('sha256')
+  .update(await readFile(basketContractReference))
+  .digest('hex')
+if (basketContractDigest !== currentBasketContractDigest) {
+  throw new Error('EV3 source-set basket contract digest does not match current repository bytes')
+}
+if (
+  assetBasket.poolOutputReference !== sourceSet.source.b1PrizePoolUtxo ||
+  assetBasket.poolAddress !== sourceSet.source.b1PrizePoolAddress ||
+  assetBasket.poolTokenUnit !== sourceSet.source.poolSingletonUnit.toLowerCase() ||
+  assetBasket.approvedTusdmUnit !== directUsdmUnit.toLowerCase() ||
+  sourceSet.source.poolAssetBasketDigest !== assetBasket.basketDigest
+) {
+  throw new Error('EV3 source-set canonical basket is not bound to the exact deployed Pool candidate')
+}
+if (assetBasket.positiveAssets.length !== 2) {
+  throw new Error('EV3 source-set Pool basket must contain exactly Pool singleton and approved tUSDM')
+}
+const basketPoolAsset = assetBasket.positiveAssets.find(
+  asset => asset.unit === assetBasket.poolTokenUnit,
+)
+const basketTusdmAsset = assetBasket.positiveAssets.find(
+  asset => asset.unit === assetBasket.approvedTusdmUnit,
+)
+if (basketPoolAsset?.quantity !== '1' || !basketTusdmAsset || BigInt(basketTusdmAsset.quantity) <= 0n) {
+  throw new Error('EV3 source-set Pool basket does not contain the exact singleton and positive approved tUSDM')
+}
+if (
+  sourceSet.derivation.atomicQuantity !== basketTusdmAsset.quantity ||
+  sourceSet.derivation.verifiedUsdmSubunits !==
+    ((BigInt(basketTusdmAsset.quantity) * 100n) / 1_000_000n).toString()
+) {
+  throw new Error('EV3 direct-USDM derivation does not match the canonical observed basket')
+}
+
 const evidence = {}
 for (const [key, path] of Object.entries(REPO_FILES)) {
   const body = await readFile(path, 'utf8')
@@ -204,6 +254,9 @@ const snapshot = {
     sourceSet?.evidenceHash,
     'sourceSet.evidenceHash',
   ),
+  assetBasketDigest: assetBasket.basketDigest,
+  basketContractReference,
+  basketContractDigest,
   evidence,
 }
 
@@ -237,6 +290,9 @@ const qualification = {
     observedUsdmSubunits: sourceSet.derivation.verifiedUsdmSubunits,
     freshnessModel: sourceSet.freshness.model,
     sourceEvidenceHash: sourceSet.evidenceHash,
+    assetBasketDigest: assetBasket.basketDigest,
+    basketContractReference,
+    basketContractDigest,
   },
   governance: {
     qualificationMeaning:
