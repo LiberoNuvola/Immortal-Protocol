@@ -8659,3 +8659,48 @@ This is materially different from the historical producer described in the earli
 The earlier statement that the EV3 source-set producer “does not iterate the assets object” and “does not persist the complete asset basket” must be read as a historical finding against HEAD `e149f52e...`, not as the current branch disposition. Do not continue to list that specific source mismatch as an open blocker. The independent R1/Kc/Ω, B1 Registry identity P0, current live source/approval freshness and C1/PA1–PA7 gates remain open.
 
 No production validator, economic rule, Issue ABI, V3/Reveal semantics, 500×, workflow execution, wallet, signature, deployment, funding or ledger state changed in this correction.
+
+## 46.33 AGENT A — NEW CEK FIXTURE STATIC REPRODUCTION / CI STEP ALIGNMENT (2026-11-15)
+
+**Classification:** READ-ONLY FIXTURE VERIFICATION + CI LABEL CORRECTION; no compiled test result claimed.
+
+### Reveal cryptographic fixture independently reproduced
+
+The new `makeRevealDrainContexts` fixture in `plutus/test/B1DirectUsdmTransitionCharacterizationTest.hs` was checked against the actual `Beacon.hs`, `GameRules.hs` and `PrizeValidator.validateReveal` equations.
+
+Independent byte-level recomputation matched all four hard-coded 32-byte values:
+- `pdPlayerCommitment` from `playerCommitment(round=1, nonce=11, secret=[33,34,35,36])`;
+- `pdCommitment` from the ticket NFT name, player commitment, game version, nonce, price and encoded `BeaconTarget`;
+- `pdBeaconValue` from the exact network/round/mainchain reference/MC hash/Materios context/version;
+- `pdResult` from `resultBinding(sha2_256(symbolsSeed), expectedSymbols)`.
+
+The reproduced Classic-6 output is six bytes `050201020202`: row 1 is loss (tier 0), row 2 is tier 2, and the summary tier is 2. With price 2 and the canonical tier-2 base multiplier 5, `rowPayoutTotal` gives 5 sub-units, matching the output PrizeDatum. The target/commitment and the expected result therefore match the source derivation, not merely arbitrary internally consistent bytes.
+
+### Shared TxInfo and action checks
+
+The same `TxInfo` is evaluated against:
+- compiled PrizeValidator `Reveal playerSecret`, which checks the pending ticket, deadline, beacon, player commitment, ticket commitment, deterministic symbols/result, payout, unchanged Prize UTxO Value and B1 datum transition;
+- compiled B1 `TicketRevealed 2`, which checks ticket identity/status/price, payout affordability, unchanged `ppTotalLiquidity`, exact reserve/count/liability datum deltas and solvency.
+
+The synthetic transaction conserves the full transaction `Value`:
+- Pool singleton remains exactly one;
+- Prize script ADA Value is unchanged;
+- Pool ADA envelope is unchanged;
+- 10,000,000 tUSDM atoms in equals 9,000,000 in the Pool plus 1,000,000 in the source PubKey output;
+- no foreign positive Pool asset is used.
+
+The proposed counterexample is thus a valid source-derived Reveal vector at the synthetic CEK context level. **No claim of compiled CEK acceptance is made until the workflow result is observed.** A compile failure or rejection must be diagnosed from the exact run logs before calling it a validator gap or a fixture defect.
+
+### Cabal and workflow registration
+
+- `plutus/pre-rich-plutus.cabal` registers `b1-direct-usdm-transition-characterization-tests` with `B1DirectUsdmTransitionCharacterizationTest.hs`.
+- `.github/workflows/immortal-haskell-conformance.yml` already invokes this Cabal suite in its push workflow for `work/immortal-green-closure`.
+- The test file now also includes the shared Reveal and canonical-ADA FundTreasury vectors, so the workflow step label was updated to: “B1 Direct-USDM Claim, FundTreasury and Reveal transition characterization (synthetic CEK only)”.
+
+Workflow-label commit: `b2fa5f5e2c0ebb01146cb4b6256899e796f18d44`. Its push path is configured to trigger the Haskell conformance workflow. The current connected status lookup returned no statuses and no workflow run record for that exact push commit; the new suite remains **PENDING / NOT YET QUALIFIED**.
+
+### Disposition
+
+The fixture's static cryptographic and Value arithmetic has been independently reproduced; the compiled Haskell evaluation is still the required next evidence. Existing Claim CEK acceptance remains bound only to run #43749650325 and its exact earlier SHA. The new combined Reveal and ADA-for-tUSDM FundTreasury acceptance assertions must not be reported as PASS before a matching successful run.
+
+No production validator, MintPolicy, PrizeValidator, B1 ABI, V3, Reveal semantics, 500×, economic constant, transaction, wallet, signature, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO** under §46.31.
