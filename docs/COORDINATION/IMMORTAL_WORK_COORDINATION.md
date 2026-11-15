@@ -7621,3 +7621,37 @@ Other commit checks observed SUCCESS: Documentation Link Check `43681459992`, Po
 **Disposition:** API mismatch repair applied to the single authorized test path; Cardano Lab native-Yaci outcome is pending. No claim is made yet that the Counter validator accepted either spend. Issue #43 remains OPEN, B1 Registry authenticity and first Issue remain blocked/NO-GO, and the V2 T04 size experiment is unrelated and remains separately unresolved.
 
 **Non-effects:** no production or protocol source, ABI, validator, policy, Factory, V3/Reveal semantics, economics, Treasury or Materios changed. No Preprod signing, transaction, deployment or ticket issuance occurred.
+
+## 46.04 AGENT B — COUNTER LOOKALIKE TWO-SPEND TRACE ACCEPTED BY LOCAL YACI (2026-11-15)
+
+**Run:** [IMMORTAL Cardano Integration Lab 43681459956](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43681459956)  
+**Exact tested source SHA:** `7396e042eb65db8ab81f49445052ca349addc503`  
+**Job:** `132712783738` (`devnet-integration`)  
+**Step 30:** `Execute Counter lookalike identity spend characterization on local Yaci` — **COMPLETED / SUCCESS**  
+**Prior repair commit:** `7396e042eb65db8ab81f49445052ca349addc503` (only the Counter trace file changed).
+
+### 46.04.1 What the successful trace establishes
+
+The trace source is fail-closed and reaches `CHARACTERIZATION_COMPLETED` only after all of the following operations and assertions return successfully:
+
+1. Creates three synthetic Counter-shaped outputs through an ordinary payment to local Yaci: one at the canonical Counter Enterprise address and two at the lookalike Base address with the same Counter payment ScriptHash and a distinct wallet Key stake credential.
+2. Queries both addresses and confirms the exact output counts and initial inline datum `0`.
+3. Independently spends lookalike input #1 and input #2 with the compiled Plutus V2 CounterValidator through Yaci. Each trace evaluates exactly one spending redeemer, signs with the **ephemeral local-devnet CI wallet**, submits the transaction and waits for confirmation.
+4. After each spend, observes exactly one continuing lookalike output from that transaction and verifies inline datum `1`.
+5. Re-queries the canonical Counter Enterprise address and verifies its original UTxO reference is unchanged and its datum remains `0`.
+
+Because step 30 concluded SUCCESS on the exact tested SHA, the legacy CML constructor error is resolved and the entire script reached its terminal success condition. This is native local-Yaci evidence that the Counter validator permits both independently-created same-payment-ScriptHash / alternate-stake-address spends while the canonical-address UTxO remains unspent.
+
+### 46.04.2 Evidence boundary
+
+The trace does **not** execute MintPolicy during a native-ledger Issue, does not mint a Ticket NFT, and does not prove duplicate ticket supply. The paired MintPolicy lookalike result remains CEK-only. This synthetic local-devnet result is not Preprod/Mainnet qualification and does not alter the existing P0 Issue/Registry findings.
+
+The script writes `audit/yaci-evidence/counter-lookalike-identity-characterization.json` including both transaction hashes and output references. The overall Lab job was still active when this note was written, so the uploaded artifact and exact transaction IDs were not yet independently fetched. This note records the verified step conclusion and the source-level assertions it executes; it does not invent or transcribe unavailable tx hashes.
+
+### 46.04.3 Overall Lab at poll
+
+The overall Cardano Lab remained **IN_PROGRESS** after step 30, proceeding through subsequent Aiken V3/Haskell traces. No failed step was present at that poll. Step 30 itself is independently completed SUCCESS and does not depend on the overall job's later outcome.
+
+**Disposition:** Counter lookalike harness/API repair = **VALIDATED**; two independent lookalike spends = **ACCEPTED BY LOCAL YACI**; exact canonical Counter UTxO = **OBSERVED UNCHANGED**. B0 Registry = SUCCESS in the same run. The test-only objective is complete.
+
+**Non-effects:** only the test-harness address construction was changed in commit `7396e042`; no CounterValidator, MintPolicy, PrizeValidator, datum/redeemer, policy, ABI, production script or economic rule changed. The two transactions use the ephemeral local Yaci CI wallet only. No production wallet, Preprod signature, Preprod/Mainnet transaction, deployment or ticket issuance occurred.
