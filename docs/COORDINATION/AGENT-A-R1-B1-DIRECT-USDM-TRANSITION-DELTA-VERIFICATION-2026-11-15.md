@@ -229,3 +229,39 @@ This report does not decide to disable Reveal, Claim, Expire or FundTreasury. No
 - Authoritative Ω and VC1–VC6/E1–E10 remain absent.
 
 **Decision:** this closes the algebra and identifies the exact source-level predicates that remain missing. It does not close R1/Kc/Ω. First real PRE-RICH Preprod Issue remains **NO-GO**, independently also blocked by B1 Registry identity P0.
+
+
+## 9. Lifecycle carrier composition — exact on-chain limitation
+
+The current `GenesisRegimeCarrier` is an application-owned singleton carrier, but its Plutus action set contains only `ActivateGenesis`. Its output predicate only accepts the tag transition `PreGenesis (0) → Genesis (1)`, increments nonce/version once, and preserves its singleton Value.
+
+Critically, `mkValidator` also requires:
+
+```text
+not (anyScriptInput prizePoolHash txInfoInputs)
+and
+not (anyScriptOutput prizePoolHash txInfoOutputs)
+```
+
+So the deployed Genesis activation is expressly **not atomic with the B1 PrizePool**. This is a positive invariant for the existing Genesis edge, but it means that the existing carrier cannot serve as the joint Genesis→Active/Quiescent + Pool QNE transaction without a separately designed edge.
+
+The separate `PreRichLifecycleTransition` module remains a pure transition/QNE helper; it is not imported by `GenesisRegimeCarrier`, `PreRichEconomicAdmission`, or the B1 PrizePool validator. The current source tree has no Plutus lifecycle maintenance validator/carrier that composes these states and scripts.
+
+### Minimal transaction shape required for a future design (not authorized for implementation)
+
+A candidate Quiescent maintenance transition would have to consume and continue, in **one Cardano transaction**:
+
+1. the unique B1 PrizePool authority UTxO, with its complete physical Value and economic datum preserved;
+2. the unique lifecycle singleton UTxO, changing only its approved regime/version/nonce fields;
+3. the canonical V3 state carrier, either preserved exactly or bound to its exact state hash if the selected certificate includes it;
+4. the control/authority singleton(s) required by the already-approved PRE-RICH profile.
+
+Both the lifecycle validator and B1 Pool validator must independently reject missing, duplicate, stale or mismatched counterpart state. The B1 branch must require the exact continuing Pool Value, not an Oracle-valued proxy. This makes the Pool singleton a serialization point: competing Reveal/Claim/Expire/FundTreasury/Issue spends cannot be ordered independently of the lifecycle transition.
+
+This needs an explicit accepted on-chain Pool action (for example, a new B1 lifecycle-maintenance redeemer branch) or another already-approved transaction mechanism that invokes the B1 validator. There is no current B1 redeemer branch that can consume/continue the Pool for a pure lifecycle nonce update. The separate Lifecycle carrier alone cannot spend the Pool, and a reference input alone does not serialize later Pool spends.
+
+Any such design would be a B1/lifecycle protocol change, likely including a redeemer/action ABI update and a new script deployment. It must undergo script-size/transaction-size/CPU checks under Cardano limits. It does **not** require a new V3 economic constructor or a change to Reveal semantics, but it is not a zero-change implementation and is not authorized by this report.
+
+The existing `ActivateGenesis` no-Pool-input/no-Pool-output invariant should remain intact for that existing transition. A new Active/Quiescent path must be separately specified rather than weakening Genesis activation's boundary.
+
+**Disposition:** the lifecycle candidate now has a clear atomicity requirement. No currently deployed on-chain path meets it; the existing Genesis carrier is deliberately disjoint from the PrizePool.
