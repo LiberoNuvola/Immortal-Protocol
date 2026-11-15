@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { canonicalizeDirectUsdmBasket } from './preprod-direct-usdm-basket-contract.mjs'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
 const EVIDENCE_DIR = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
@@ -21,17 +22,6 @@ function parseRef(value, field) {
   const match = /^([0-9a-fA-F]{64})#(\d+)$/.exec(value)
   if (!match) throw new Error(field + ' must be an exact txHash#outputIndex reference')
   return { txHash: match[1], outputIndex: Number(match[2]) }
-}
-
-function decodeAssets(assetList = [], lovelace) {
-  const assets = { lovelace: BigInt(lovelace) }
-  for (const asset of assetList) {
-    if (!asset || typeof asset.policy_id !== 'string' || typeof asset.asset_name !== 'string' || asset.quantity === undefined) {
-      throw new Error('Koios returned malformed asset evidence')
-    }
-    assets[asset.policy_id + asset.asset_name] = BigInt(asset.quantity)
-  }
-  return assets
 }
 
 async function post(endpoint, body) {
@@ -89,16 +79,31 @@ if (matches.length !== 1) {
 }
 
 const pool = matches[0]
-const assets = decodeAssets(pool.asset_list, pool.value)
-
-if (assets[poolTokenUnit] !== 1n) {
-  throw new Error('exact live PrizePool UTxO does not contain the deployed Pool singleton')
+const assetBasket = canonicalizeDirectUsdmBasket({
+  poolOutputReference: poolRef,
+  poolAddress,
+  poolTokenUnit,
+  approvedTusdmUnit: TUSDM_UNIT,
+  lovelace: pool.value,
+  assetList: pool.asset_list,
+})
+if (
+  assetBasket.poolOutputReference !== poolRef ||
+  assetBasket.poolAddress !== poolAddress
+) {
+  throw new Error('canonical Direct-USDM basket is not bound to the exact live Pool output')
 }
-
-const atomicQuantity = assets[TUSDM_UNIT] ?? 0n
-if (atomicQuantity <= 0n) {
-  throw new Error('exact live PrizePool UTxO does not contain the deployment-approved physical tUSDM')
+const directAsset = assetBasket.positiveAssets.find(
+  asset => asset.unit === TUSDM_UNIT.toLowerCase(),
+)
+if (!directAsset) {
+  throw new Error('canonical Direct-USDM basket is missing approved physical tUSDM')
 }
+const atomicQuantity = BigInt(directAsset.quantity)
+const basketContractReference = 'audit/cardano-integration/preprod-direct-usdm-basket-contract.mjs'
+const basketContractDigest = createHash('sha256')
+  .update(await readFile(new URL('./preprod-direct-usdm-basket-contract.mjs', import.meta.url)))
+  .digest('hex')
 
 const eevUsdmSubunits =
   (atomicQuantity * IMMORTAL_USDM_SUBUNITS_PER_USDM) /
@@ -120,6 +125,12 @@ const sourceSet = {
     b1PrizePoolUtxo: poolRef,
     poolSingletonUnit: poolTokenUnit,
     directUsdmUnit: TUSDM_UNIT,
+    poolAssetBasketDigest: assetBasket.basketDigest,
+  },
+  assetBasket,
+  implementation: {
+    basketContractReference,
+    basketContractDigest,
   },
   derivation: {
     version: 'direct-usdm-v1',
