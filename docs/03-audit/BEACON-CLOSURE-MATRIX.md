@@ -20,9 +20,25 @@ The downstream game pipeline is intentionally unchanged across the ladder: canon
 
 | Layer | What is established | Closure status | Remaining condition |
 |---|---|---|---|
-| **B1 — Authorized** | Beacon derivation, round/target binding, Registry pending/ready boundary, relayer authorization, exact derived Beacon checks, and downstream consumption are implemented. | **GREEN / operational model** | Real deployment witness remains deployment evidence, not a change to the B1 model. |
+| **B1 — Authorized** | Beacon derivation and parts of Pending→Ready validation exist, but Registry initialization/publisher binding and reference provenance are not authenticated. Haskell CEK and local-Yaci adversarial evidence confirms counterfeit Pending/Ready acceptance, Registry Value mutation and round mismatch. | **BLOCKED / P0 Registry identity** | Factory-authenticated per-round identity; exact/unique reference checks in Issue and SyncBeacon; immutable publisher binding; round and full Value continuity. Governance and canonical target derivation remain independent prerequisites for trustless OpenRound. |
 | **B2 — Attested** | The trust model and threshold-attestation concept are specified as a transitional model. B2 does not remove the underlying-source canonicality problem by itself. | **CLOSED AS ARCHITECTURAL MODE / NOT DEPLOYED** | No B2 deployment is claimed. A live B2 implementation would require its own normative attestation format, threshold semantics, and evidence. |
 | **B3 — Canonical** | Domain separation, deterministic Beacon derivation, 20,000-domain rejection sampling, replay vectors, round/target binding, and the proof/anchor architecture are established. | **GREEN INTERNAL / EXTERNAL PROOF OPEN** | Publisher-independent Materios finality + storage proof + Cardano-verifiable canonicality must still be executed and evidenced. |
+
+
+## 2026-11-15 — B1 Registry identity and publisher boundary reclassified
+
+The B1 cryptographic derivation and the security of a particular Registry instance are separate claims. The deterministic `deriveBeacon` function can correctly bind a target, `mcHash` and Materios context without proving that those values came from an authentic Registry transition.
+
+Exact local evidence on the current IMMORTAL branch includes:
+
+- Cardano Integration Lab run [`43678893383`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43678893383), source SHA `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`: T01b Yaci step **SUCCESS**. Ordinary payment created a Ready-shaped Registry output without Registry validator execution; balanced RegistryPublish accepted a 6M→5M lovelace Value change and accepted `brRound=41` with `btRound(target)=42`.
+- In the same run, compiled Haskell V2 adversarial CEK suite **PASS as a test harness**, with findings classified as `CHARACTERIZATION`: positive-price MintPolicy accepts buyer-controlled Pending Registry reference; SyncBeacon accepts fake Ready (including attacker-chosen but correctly derived context), empty commitment/context, same-payment-ScriptHash address with alternate staking credential, and multiple matching references (first match).
+- Aiken Plutus V3 SyncBeacon Yaci harness completed with `FAKE_READY_ACCEPTED=true` and `REFERENCE_AMBIGUITY_ACCEPTED=true`. This is separate V3 evidence, not Haskell V2 T04.
+- The Counter lookalike Yaci step failed before transaction construction because the test harness expected `CML.StakeCredential.from_scripthash`, which is absent from the Lucid CML surface in that runtime. That harness failure is not a Registry ledger rejection and does not reverse the independent B0 step success.
+
+These are synthetic local-devnet/CEK results, not Preprod/Mainnet qualification. The Haskell V2 native-ledger SyncBeacon twin T04 remains resource-blocked by the measured 16,443-byte parameterized validator against the 16,384-byte transaction limit. Registry authenticity, Issue acceptance and production issuance remain unqualified.
+
+**Interpretation:** retain B1 as an explicitly named authorized-publisher trust profile, but do not describe the current Registry implementation as an authenticated/operational B1 instance or mark it release-green. This correction does not change B2, the internal Beacon derivation/game algorithm, Reveal, or the independent B3 external-proof requirements.
 
 ## What we must not claim
 
