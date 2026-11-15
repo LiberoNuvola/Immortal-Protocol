@@ -7126,3 +7126,52 @@ The current branch HEAD was verified as `53edd61177968ad4f2e1d0dc761c9c5d152bab1
 **Disposition:** derived-consistent fake Ready behavior now has a named compiled-wrapper CEK characterization. Registry authenticity, publication provenance and the full T04/T01b ledger proof remain **BLOCKED**.
 
 **Non-effects:** no production validator/policy, on-chain ABI, DApp/relayer code, V3, Reveal, B2, economics, Factory, Materios, workflow trigger, wallet, transaction, deployment or ledger state changed.
+
+
+## 45.94 AGENT B — RELAYER WORKER PENDING-SELECTION REVALIDATION (2026-11-15)
+
+**Audited branch:** `work/immortal-green-closure` (re-fetched during this pass)  
+**Classification:** READ-ONLY WORKER / TEST / CI CROSSWALK; NO RELAYER OR PROTOCOL SOURCE CHANGED.
+
+### 45.94.1 Current active selection path
+
+The current `relayer/relayer.js::beaconWorker` calls the extracted pure `selectPendingRegistryCandidates(registryUtxos, decodeRegistryDatum)` helper. It no longer uses the older inline grouping behavior described in the 6 November comments.
+
+The helper currently:
+
+- rejects datum decode failures and undecodable datums;
+- selects only `BeaconPending` (`status === 0`);
+- requires both round fields to decode as BigInt;
+- rejects `brRound != btRound(target)`;
+- groups by `target.round`;
+- selects only a single candidate in a round and refuses every duplicated round.
+
+The current deterministic Node test file contains six cases for duplicates, round mismatch, malformed datum, semantically unqualified Pending, Ready exclusion and independent distinct rounds. The dedicated `beacon-registry-worker-conformance.yml` workflow runs this test file on Node 22 and watches the active worker, selector, test and workflow paths.
+
+### 45.94.2 Remaining worker boundary
+
+The active worker obtains the wallet from `RELAYER_PRIVATE_KEY`, then calls `beaconWorker(lucid)`. The selection helper and `beaconWorker` do not compare `datum.relayerPkh` to the actual wallet payment credential before attempting publication.
+
+Consequences:
+
+- A singleton Pending with a foreign `brRelayerPkh` can be selected and submitted by the worker; the on-chain Registry validator then rejects the transaction because the selected datum Pkh did not sign.
+- A foreign-Pkh candidate can contribute to a duplicate-round refusal if another otherwise-qualified Pending exists for the same target round.
+- The worker catches publication errors, so the failure is retried on a later polling iteration rather than changing the on-chain state.
+
+This is a worker liveness/resource-selection gap, not a way to forge the configured wallet's signature.
+
+### 45.94.3 Why a local Pkh filter would not authenticate Registry creation
+
+Even if a future worker filter checks the datum's publisher Pkh against the wallet's derived Pkh, that remains an operational filter only. The Pkh is public, and the current Pending builder can put that same public Pkh into an ordinary script-address output without executing `BeaconRegistry`. A caller can therefore construct a lookalike Pending that passes such a local Pkh comparison.
+
+Only an authenticated on-chain opening/identity mechanism can prevent that class of counterfeit Pending from being treated as canonical. The worker filter may reduce pointless attempts but cannot replace the Factory/STT and per-round identity design.
+
+The selector also groups on numeric target round rather than independently authenticating the complete `BeaconTarget` tuple, Registry namespace or per-round identity. It is a deterministic queue filter, not a trust boundary.
+
+### 45.94.4 Scope and disposition
+
+The 6 November Issue #43 coordination comment already noted that its concrete path manifest did not enumerate `relayer/relayer.js`, `relayer/beaconRegistrySelection.js` or `relayer/__tests__/`. No change to those paths is made in this pass. Any follow-up implementation must first reconcile the Issue #43 changed-path manifest/owner review so that worker selection is not modified outside its agreed write perimeter.
+
+**Disposition:** duplicate and round-mismatch worker protection is present and unit-tested; publisher-Pkh prefilter is absent and remains a bounded liveness issue; neither worker filtering nor its tests authenticate Registry creation. Factory/Registry identity remains the required protocol-level remedy. No GREEN promotion.
+
+**Non-effects:** no relayer source, test, workflow, key, environment file, Plutus/TypeScript source, ABI, validator, Factory, V3/Reveal, B2, economics, Treasury, Materios, wallet, transaction, deployment or ledger state changed.
