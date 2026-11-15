@@ -7101,3 +7101,28 @@ Do not change the seven-field datum, redeemer ABI, Registry policy, consumers, V
 **Disposition:** CEK matrix expanded and CI command wired; exact-HEAD execution not yet evidenced; Registry authenticity remains **BLOCKED**; no GREEN promotion.
 
 **Non-effects:** no production Haskell/TypeScript source, datum/redeemer ABI, validator/policy, Registry or Factory mechanism, V3/Reveal/B2/economic/Treasury/Materios code, workflow trigger, wallet, transaction, deployment or ledger state changed. No wallet or network action was taken.
+
+
+## 45.93 AGENT B — DERIVED-CONSISTENT FAKE READY CHARACTERIZATION (2026-11-15)
+
+**Base HEAD:** `ec4e784d899e13b5b69164cfda6c4305ab3f9861`  
+**Test commit:** `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`  
+**Changed path:** `plutus/test/BeaconRegistryAdversarialTest.hs` only  
+**Classification:** ADDITIONAL CEK CHARACTERIZATION; NO VALIDATOR OR PROTOCOL SEMANTICS CHANGED.
+
+Added a second Ready-reference characterization that is stronger and more realistic than the existing arbitrary non-derived fake Beacon case:
+
+1. The fixture chooses attacker-controlled non-empty `mcHash` and `materiosContext`.
+2. It computes `brBeaconValue` using the actual production `deriveBeacon` function over the exact target and those values.
+3. It creates a synthetic Ready Registry reference datum carrying those values and a buyer-controlled `brRelayerPkh`.
+4. The compiled production `PrizeValidator.compiledValidatorFactory` SyncBeacon branch accepts the context although there is no Registry spending input, Registry redeemer, Registry validator execution or relayer signature in that Prize transaction.
+
+This narrows the security interpretation: the bypass is not dependent on an obviously invalid arbitrary Beacon. A caller can supply a Beacon internally consistent with its own chosen receipt fields, and SyncBeacon only checks/copies those fields rather than authenticating their publication provenance.
+
+**Evidence limit:** this is a synthetic CEK context and proves only the current SyncBeacon predicate accepts that context. It is not a balanced Yaci/Preprod transaction, does not itself execute the Reveal branch, does not measure whether a buyer can grind a particular payout, and does not authenticate any deployed Registry instance. The wider buyer-grinding path remains a source-derived B0 risk recorded in Issue #43 and still needs its complete ledger twin/evidence.
+
+The current branch HEAD was verified as `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`; the test blob is `f17a9b8686fa1d0851a249d76b27a169b5a8db94`. Combined commit status was empty at verification time; no exact-HEAD CI result is claimed.
+
+**Disposition:** derived-consistent fake Ready behavior now has a named compiled-wrapper CEK characterization. Registry authenticity, publication provenance and the full T04/T01b ledger proof remain **BLOCKED**.
+
+**Non-effects:** no production validator/policy, on-chain ABI, DApp/relayer code, V3, Reveal, B2, economics, Factory, Materios, workflow trigger, wallet, transaction, deployment or ledger state changed.
