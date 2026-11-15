@@ -8178,3 +8178,50 @@ Test-only commits on `work/immortal-green-closure`:
 The Haskell Semantic Conformance workflow has a push trigger for this branch and includes `b1-direct-usdm-transition-characterization-tests`. As of this entry, the GitHub commit status endpoint returned no statuses and the available commit-run wrapper returned no runs (it filters PR-triggered runs); therefore no CI or CEK PASS is claimed. Obtain and inspect the exact workflow run/job log before relying on the result.
 
 No production code, B1 factory parameters, script hashes/addresses, datum/redeemer ABI, V3, Reveal, 500×, wallet, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO**. R1/Kc/Ω, Registry identity P0, fresh EV1–EV7, C1/PA1–PA7 and the other §46.20 gates remain open.
+
+
+## 46.22 AGENT A — EV3-CANONICAL CLAIM COUNTEREXAMPLE CONFIRMED BY COMPILED CEK (2026-11-15)
+
+**Classification:** COMPILED PLUTUS CEK CHARACTERIZATION CONFIRMED ON EXACT COMMIT; OBSERVED ON-CHAIN ENFORCEMENT GAP; NO PRODUCTION CODE CHANGE.
+
+### Exact CI evidence
+
+GitHub Actions workflow **IMMORTAL Haskell Semantic Conformance** completed successfully for the exact test commit:
+
+- Repository: `LiberoNuvola/Immortal-Protocol`
+- Branch: `work/immortal-green-closure`
+- Tested code SHA: `d2c713c850aecbc507af229251e3a39d63b66d30`
+- Workflow run: [#43749650325](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43749650325)
+- Job: `haskell-conformance`, job ID `132920540131`, completed / success
+- Test command: `cabal test b1-direct-usdm-transition-characterization-tests --test-show-details=direct`
+- Test suite result: `b1-direct-usdm-transition-characterization-tests: PASS`
+- Run log timestamp for the test: 2026-11-15 19:16:17 UTC.
+
+The job log explicitly records:
+
+```text
+PASS: OBSERVED GAP: compiled PrizeValidator and B1 accept balanced Claim; prizeAccepted=True, poolAccepted=True
+PASS: Claim fixture reconciles Oracle-valued Pool delta and exact 200-subunit crystallized payout
+PASS: Claim counterexample: EV3-canonical Pool loses 200 direct subunits while owner receives zero tUSDM and an Oracle-equivalent foreign payout
+PASS: HISTORICAL NON-EV3 CASE: compiled FundTreasury accepts Oracle-valued liquidity increase while physical direct tUSDM falls
+ALL B1 DIRECT-USDM CLAIM / FUND TREASURY CEK CHARACTERIZATIONS PASSED
+Test suite b1-direct-usdm-transition-characterization-tests: PASS
+```
+
+The same workflow job completed successfully overall. The test compiled and evaluated the Plutus predicates; this is synthetic CEK evidence, not a Yaci, native-ledger or Preprod transaction. GHC emitted non-fatal warnings (missing signatures and type defaulting in the test fixture); do not describe the build as warning-free.
+
+### Finding
+
+The corrected Claim fixture is EV3-canonical at both Pool input and continuing Pool output. The foreign asset is paid to the exact ticket-owner PubKey output, not retained in the Pool. The shared transaction context is accepted by both compiled validators even though the Pool loses 200 accounting subunits of physical approved tUSDM and the owner receives zero physical tUSDM, while the foreign asset supplies the same Oracle-valued payout.
+
+This is now a confirmed compiled-predicate characterization of the Claim gap, not merely a source-level hypothesis. It still does not establish that a live Preprod Pool transaction has occurred or that any funds have moved.
+
+The FundTreasury characterization remains explicitly historical/non-EV3 because its Pool output contains a foreign positive asset. Its CEK PASS must not be represented as an exploit against an EV3-qualified Pool.
+
+### Engineering consequence / next gate
+
+The minimum production enforcement candidate remains the §46.20 exact atomic relation: approved tUSDM Pool decrease must equal the crystallized Claim amount multiplied by 10,000 atomic units, and the aggregate approved tUSDM paid to the exact ticket owner must equal that same quantity. Foreign assets, ADA, Oracle-equivalent basket values and payments to other recipients cannot satisfy either side. Preserve existing ticket identity, status, liability and solvency conditions.
+
+Before production changes, prepare the complete positive/negative CEK matrix and have Agent B independently review the fixture and transaction assumptions. Then implement only under the explicit B1 asset-identity binding/deployment migration decision; adding the approved policy/name to B1 factory parameters changes the script hash and Pool address and requires controlled requalification. Do not patch only the off-chain EV3 producer.
+
+No production validator, factory, script hash/address, datum/redeemer ABI, V3, Reveal, 500×, wallet, deployment, funding or ledger state changed. R1/Kc/Ω, Registry identity P0, fresh EV1–EV7, C1/PA1–PA7 and the other Issue gates remain open. First real Preprod Issue remains **NO-GO**.
