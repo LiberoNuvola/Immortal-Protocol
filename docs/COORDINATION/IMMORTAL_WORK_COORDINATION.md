@@ -5839,3 +5839,151 @@ The existing hierarchy remains unchanged: **B3_VERIFIED → B2_ATTESTED → B1_A
 **Handoff:** Agent B retains the Registry/Plutus/Cardano security boundary. No task or decision is transferred to A or C by this comparison. Agent A retains economics/admission; Agent C retains Materios B3 provenance. No cross-agent code or runtime action is requested.
 
 **Result:** source comparison recorded; Registry authenticity remains **BLOCKED**; design/ABI gate remains **OPEN**; no code/tests/workflows/ledger changed; no GREEN promotion.
+
+## 45.81 AGENT B — FACTORY / PER-ROUND REGISTRY IDENTITY INVARIANT CONTRACT (2026-11-15)
+
+**Reviewed coordination HEAD:** `fed551d98e6f507d35b2690a8821033a8aa344ab`  
+**Classification:** design-only invariant contract derived from the current Registry sources, §44.62/§45.79/§45.80 and the recorded Issue #49 Factory direction. This section is **NON-NORMATIVE** and grants no implementation authority. The Notion source “PRE-RICH — Dual-Level Risk & Adaptive Issue Capacity Contract v0.1” (section 18, verification state reported as `unverified`) is used only as a recorded design direction, not as verified normative authority.
+
+### 1. Three distinct security properties — do not collapse them
+
+The current design discussion contains three related but non-equivalent claims:
+
+1. **Factory / OpenRound uniqueness:** at most one canonical round-opening transition may succeed against a given current Factory state; replay/stale-state attempts fail.
+2. **Cardano BeaconRegistry identity:** each opened round has exactly one independently authenticated Registry instance/anchor, with multiple round instances coexisting and each lifecycle preserving its own identity.
+3. **External target canonicality:** the complete `BeaconTarget` — especially `mainchainRef` — is derived from an authenticated application configuration and an authenticated Materios checkpoint/anchor relation.
+
+A Factory uniqueness token or state transition can address property 1. A per-round Registry identity and its lifecycle/consumer checks address property 2. Neither proves property 3 by itself. A valid storage proof for a selected Materios `AnchorRecord` authenticates that selected key/value under a StateRoot; it does not, without the separate semantic relation, prove that the key is the canonical anchor for this PRE-RICH round.
+
+**Terminology for this contract:** “Factory STT” means the Factory singleton-token / state-transition candidate already recorded for Issue #49. “Registry identity token” means the independently authenticated per-round identity required by Issue #43/Issue #49. These labels describe separate obligations; they do not select two specific asset implementations. It remains an OPEN decision whether one mechanism could satisfy both obligations. No equivalence is assumed.
+
+### 2. Canonical OpenRound and target invariants
+
+Let `F_n` denote the authenticated current Factory state, `C_v` the authenticated, versioned adopted application configuration, and `R_n` the round identity produced by the still-to-be-specified canonical progression function.
+
+A conforming round-opening relation must satisfy:
+
+- **O1 — Authenticated configuration:** OpenRound reads the canonical adopted governance/application configuration and its version from a ledger-verifiable state. A caller-provided JSON/configuration copy, Haskell replay output, indexer assertion or unverified snapshot is not authority.
+- **O2 — Deterministic progression:** the next round identity and complete target are derived/verified from `F_n` plus `C_v` and their authenticated inputs. The exact progression function remains unspecified. Do not assume `round + 1`, contiguous numbering, skip/reset behavior, overflow handling or recovery semantics.
+- **O3 — Target field provenance:** `networkId` comes from immutable network/application configuration; `round` is the canonical round identity produced by O2; `version` comes from the authenticated adopted configuration; `mainchainRef` is derived from a separately specified and authenticated source relation for the exact round.
+- **O4 — No caller-selected target:** any participant may assemble/submit OpenRound, but cannot choose an arbitrary `BeaconTarget`, supply the authority that validates its own target, or nominate itself as a privileged round opener. A permissionless submitter is a transaction assembler, not an authority.
+- **O5 — At-most-one transition:** competing valid submissions against the same current Factory state serialize so that at most one canonical state transition succeeds. A losing submitter may retry against the new authenticated state; a stale/replayed Factory state must fail.
+- **O6 — State continuity:** the accepted transition preserves the exact Factory identity and governed state/value continuity required by the eventual Factory specification, and advances only the canonical progression state. Extra, duplicate, malformed or conflicting continuation outputs must fail.
+
+The exact semantic meaning of `BeaconTarget.mainchainRef` remains OPEN. No implementation may silently equate it with a Materios finalized block hash, Orinq `anchor_id`, `AnchorRecord.root_hash`, checkpoint leaf, manifest hash or another byte string. The inspected Materios pallet accepts `anchor_id` as a caller-supplied key; the Orynq SDK convention `SHA256(rootHash || manifestHash)` remains observed producer behavior, not adopted protocol law.
+
+The governance/configuration prerequisite is also independent: the recorded Issue #49 design says canonical adoption state, exact target derivation and an authentic/complete PRE governance snapshot remain to be proven on-chain. Agent B does not define those governance rules or change Agent A's ownership.
+
+### 3. Factory STT and per-round Registry identity
+
+**F-STT — Factory singleton / replay boundary (candidate):**
+
+- The Factory STT candidate must identify the canonical Factory instance and bind the current state used by OpenRound.
+- The round-opening transaction must prove use of the current valid state and an authorized transition to its unique continuation; competing submissions against that same state cannot both succeed.
+- The exact policy identity, token name, bootstrap, redeemer, current datum/state, mint/burn lifecycle, recovery and restart semantics are not specified by the inspected material. These remain OPEN.
+- Factory STT must not be treated as proof of Materios finality, canonical external data, the truth of the target, or the Registry publisher's authority.
+
+**R-ID — Per-round Registry identity (separate obligation):**
+
+- Each canonical round has one independently authenticated Registry identity.
+- Multiple rounds may coexist; opening a later round must not overwrite, mutate or make an earlier round's Registry identity ambiguous.
+- The identity must bind the canonical round and full target/configuration context under an explicit versioned rule.
+- Its policy/name encoding is not selected here. A deterministic token name alone is not a uniqueness proof: the creation policy/state transition and complete output placement must enforce exactly-once issuance, and later lifecycle rules must prevent burn/reissue or identity substitution.
+- Do not assume Factory STT itself is the per-round Registry identity. If a future design proposes one asset/mechanism for both roles, it must separately prove both the global Factory replay property and the per-round Registry identity/lifecycle property.
+
+### 4. Canonical Registry creation and immutable identity
+
+- **R1 — Exclusive creation path:** only the canonical OpenRound transition may create an authenticated Pending Registry anchor. A normal output sent to the Registry script address is not sufficient; direct script-address output creation does not execute the Registry spending validator.
+- **R2 — Authenticated mint/creation:** the anchor creation policy/state transition must authenticate the exact current Factory state and bind its accepted transition to the canonical next round and complete target/configuration commitment.
+- **R3 — Exact output placement:** the creation transaction must produce exactly one canonical Pending Registry output at the exact configured **full Cardano address** (payment credential and staking credential), with exactly one Registry identity token under the expected policy/name and quantity 1.
+- **R4 — Exact datum binding:** the Pending datum must match the canonical round/target/configuration/trust commitment required by the approved schema. Current on-chain `BeaconRegistryDatum` remains the seven-field ABI; this contract does not add fields or authorize an ABI change.
+- **R5 — No alternate outputs:** reject duplicate Registry outputs, duplicate anchors for one round, wrong address/stake credential, missing/wrong/extra token, wrong policy/name/quantity, token placed in a noncanonical output, conflicting datum, burn/reissue or any alternate route that creates an apparently valid Pending/Ready datum.
+- **R6 — Publisher not self-nominated:** the creator of Pending cannot choose the authority root used to authorize its own publication. The authorized publisher/verifier must be resolved from the authenticated application configuration and selected trust-mode evidence. Under B1, the publisher may publish only for the already-fixed target; it is not the round-opening authority, target chooser or economic gatekeeper.
+
+### 5. Pending → Ready lifecycle invariants
+
+A valid Registry publication must prove all of the following in the transaction that actually spends the canonical Registry input:
+
+- exactly one Registry input at the exact canonical full address, with the expected Pending datum and the exact per-round identity token;
+- exactly one continuing Registry output at that same exact full address;
+- the same immutable per-round identity token, same policy/name and quantity 1 in the spent input and continuing output;
+- exact preservation of the complete `Value` and all immutable identity/target/configuration fields, unless a separately adopted normative rule specifies another allowed value transition;
+- `brRound == btRound(brTarget)`;
+- selected trust mode, evidence commitment, verifier/version identity and the frozen fallback/qualification record remain unchanged;
+- only the authorization/verifier appropriate to the selected mode can publish the corresponding Ready state.
+
+The current seven-field Registry validator is not yet enforcing all these properties: in particular, the characterization suite records acceptance of `brRound /= btRound(target)` and a continuing-output Value delta. Those are defects to reject in the eventual acceptance suite, not accepted semantics.
+
+The trust hierarchy is unchanged: **B3_VERIFIED → B2_ATTESTED → B1_AUTHORIZED**. Selection must be made for a new round only, with a valid round-bound object from that mode's own verifier. The chosen mode and Beacon value are frozen before ticket commitments. Missing/invalid evidence, verifier failure, timeout, conflict or temporary unavailability cannot silently downgrade an already-open round. Record the attempted tiers, specific reproducible failure code(s), selected mode, evidence reference/digest, verifier/version and relevant observation time as required by the approved evidence contract. No new fallback policy is defined here.
+
+### 6. Issue and SyncBeacon consumer invariants
+
+Reference inputs are data; including a Registry UTxO as a reference input does **not** execute its spending validator. Therefore both consumers must authenticate the Registry identity and lifecycle from the fields/tokens available in the transaction context.
+
+For **every** active Haskell and Aiken consumer:
+
+- enumerate all reference inputs matching the configured Registry payment ScriptHash; never return the first match;
+- reject zero matches and reject more than one match, regardless of ordering or whether one reference looks valid and another is malformed/a lookalike;
+- for the single allowed match, require the exact canonical full address, including staking credential;
+- require the exact per-round Registry token policy/name and quantity 1 in that reference output, and reject missing, duplicated, wrong-policy, wrong-name, wrong-quantity or mislocated identity tokens;
+- decode the datum fail-closed and compare exact canonical round, full `BeaconTarget`, network, version and frozen trust/evidence commitment against the ticket/action context;
+- Issue may consume only the canonical **Pending** reference; SyncBeacon may consume only the canonical **Ready** reference;
+- reject arbitrary Ready-shaped outputs that were not created by the canonical authenticated lifecycle; a copied datum, deterministic beacon hash or relayer field alone is not proof of that lifecycle.
+
+The current reader is singular and the selected acceptance contract is singular. Any future batch/multi-round transaction semantics require a separately specified rule; do not infer that one Issue/SyncBeacon transaction may use multiple round references.
+
+### 7. Ticket-commitment compatibility boundary
+
+The trust mode and its evidence commitment must be fixed before ticket commitments exist. If a future approved schema extends the ticket commitment to bind trust/evidence, Issue and Reveal must use the same canonical versioned encoding and recompute the same commitment. A change to Issue alone is invalid. This contract does not change current ticket datum/commitment ABI, does not change Reveal semantics, and does not authorize a migration.
+
+### 8. Adversarial acceptance matrix
+
+The following is the proposed minimum acceptance contract. It is not evidence that these tests have been implemented or executed.
+
+| ID | Positive / negative case | Required result |
+|---|---|---|
+| F01 | Permissionless participant submits OpenRound using authenticated current Factory/config state | Accept only the derived canonical target; submitter cannot choose target/authority |
+| F02 | Two competing OpenRound submissions consume/advance the same current Factory state | At most one succeeds; stale/replay attempt rejects; other participant may retry on new state |
+| F03 | Missing/wrong Factory identity, stale state, malformed datum, wrong state/value continuation, duplicate continuation or replay | Reject |
+| R01 | Canonical OpenRound mints/creates one per-round identity in one Pending Registry output | Accept only exact policy/name/quantity/address/datum binding |
+| R02 | Duplicate Pending anchor or duplicate round identity attempted | Impossible to create or unusable by all consumers; reject |
+| R03 | Ordinary output creates Pending or Ready directly at Registry script address without canonical identity | Must not be accepted by Issue or SyncBeacon |
+| R04 | Wrong payment/staking credential, token policy/name/quantity, missing/duplicate token, token in another output, burn/reissue | Reject |
+| R05 | RegistryPublish uses `brRound /= btRound(brTarget)`, adds/removes asset/value, duplicates continuation or changes immutable target/identity | Reject |
+| R06 | Wrong publisher/authority for selected trust mode; missing, stale, malformed or failed evidence | Reject |
+| R07 | Trust mode/evidence/fallback commitment altered after the round has been frozen | Reject |
+| C01 | Issue references exact canonical Pending anchor for the ticket target | Accept only if all other Issue gates also pass |
+| C02 | SyncBeacon references exact canonical Ready anchor for the ticket target | Accept only if all other SyncBeacon gates also pass |
+| C03 | Buyer-created/fake Ready, non-derived Beacon, unauthorized relayer, no Registry spend lifecycle | Reject |
+| C04 | Multiple references sharing Registry payment ScriptHash, including valid + malformed/lookalike, in either order | Reject as ambiguous |
+| C05 | Same payment ScriptHash but wrong full address/staking credential | Reject |
+| T01 | If trust/evidence is added to ticket binding under an approved version | Issue and Reveal recompute identical commitment; mismatch/version replay rejects |
+| B301 | Proof authenticates a selected Materios `AnchorRecord`, but its round/checkpoint-to-anchor relation is absent or wrong | Do not accept it as the canonical target; reject |
+| B302 | Wrong chain/network, round, checkpoint, anchor ID, root, storage key or proof block | Reject |
+
+CEK/unit fixtures must first exercise the compiled production wrappers and distinguish current characterization failures from desired post-fix rejection. Then use balanced native-Yaci transaction twins, classifying script rejection separately from builder/serialization/funding/resource failure. Measure ExUnits and actual CBOR against the active protocol parameters; do not raise max transaction size to make a fixture pass. CI must be bound to the exact source SHA. Deployment certification additionally requires exact deployed script/policy hashes, parameters, full addresses and observed UTxO evidence. No test result or deployment state is implied by this matrix.
+
+### 9. Dependencies and decisions still OPEN
+
+This contract intentionally does not decide:
+
+1. Factory STT policy/identity, datum/state, bootstrap, exact redeemer transition, lifetime, mint/burn rules, recovery/restart and loss handling.
+2. Whether Factory STT and per-round Registry identity are distinct assets or a dual-purpose mechanism; any unification must prove both properties.
+3. Canonical round progression semantics (sequential, sparse, externally assigned or other), including skips, resets, migration and recovery.
+4. Authenticated governance/application configuration and complete PRE governance snapshot proof required by the recorded Factory direction.
+5. The exact meaning of `mainchainRef` and canonical `round → checkpoint → anchor_id → AnchorRecord → root` relation; external B3-A/B3-B/B3-C finality, storage and verification remain separate and OPEN.
+6. Trust/evidence datum schema, canonical encoding, selected-mode authority contract and fallback record.
+7. Existing Registry/ticket ABI migration and Issue/Reveal commitment compatibility.
+8. Deployment/bootstrap funding, reference-script topology, liveness and denial-of-service/recovery model.
+9. Owner approval and a bounded write slot for any implementation; the recorded Issue #49 direction explicitly remains design-only.
+
+### 10. Ownership and disposition
+
+- **Agent B:** Registry identity, Plutus validators/policies, Issue/SyncBeacon consumer boundary, Cardano CEK/Yaci and deployment-evidence conformance.
+- **Agent A:** economic policy, EEV/Treasury/ProtectedCapital and admission; no economic decision is reopened.
+- **Agent C:** Materios B3 provenance, GRANDPA/finality, storage/execution proof; no B3 ownership is moved to Agent B.
+- No task or authority is transferred among agents by this contract.
+
+**Disposition:** Factory/OpenRound identity and per-round Registry anchor are now expressed as separate testable obligations; canonical target provenance remains an independent dependency. Issue #43 Registry authenticity remains **BLOCKED**; Issue #49 remains **DESIGN ONLY / OWNER APPROVAL OPEN**; exact CEK/Yaci evidence for this contract has not been executed; no GREEN promotion.
+
+**Non-effects:** documentation only. No Haskell/Aiken/TypeScript source, datum/redeemer ABI, validator/policy, test, workflow, deployment, wallet, transaction or ledger state was changed.
