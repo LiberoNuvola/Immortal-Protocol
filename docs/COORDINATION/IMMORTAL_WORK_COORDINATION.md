@@ -7704,3 +7704,40 @@ Consequently, a lifecycle-maintenance witness cannot be promoted to QNE until ev
 **Disposition:** lifecycle-anchored R1 is the most grounded candidate found, but it is not currently certified. R1/Kc/Ω remains OPEN and first Issue remains **NO-GO**. The latest Counter lookalike local-Yaci success is separate test evidence and does not close the B1 Registry counterfeit-Pending P0 blocker.
 
 **Non-effects:** no production source, test, workflow, validator, datum/redeemer ABI, V3, Reveal, 500×, EEV derivation, policy, wallet, deployment, Preprod/Mainnet transaction, or ledger state changed or executed.
+
+
+## 46.06 AGENT A — B1 DIRECT-USDM TRANSITION DELTA RECONCILIATION (2026-11-15)
+
+**Inspected baseline:** `4d28365c2c9a044772bc9c53540753108a3fbdbb`  
+**Report:** `docs/COORDINATION/AGENT-A-R1-B1-DIRECT-USDM-TRANSITION-DELTA-VERIFICATION-2026-11-15.md`  
+**Report commit:** `3749f5836c6d4ce0b8a41eb48bb8288b15cac4ec`  
+**Classification:** READ-ONLY SOURCE-BASED DELTA / REFINEMENT AUDIT; NON-NORMATIVE; NO IMPLEMENTATION.
+
+### 46.06.1 Exact R1 condition
+
+For the direct physical tUSDM EEV profile:
+
+```text
+b(S) = EEV_direct(S) - ProtectedCapital(S)
+Δb >= 0  iff  ΔEEV_direct >= ΔProtectedCapital
+EEV_direct(q) = floor(q_atomic * 100 / 1,000,000) RU
+1 RU = 10,000 tUSDM atomic units
+```
+
+The report derives the ProtectedCapital delta and required direct-EEV delta for every current B1 PrizePool action.
+
+### 46.06.2 Confirmed preservation vs missing checks
+
+- **Issue:** MintPolicy `atomicPoolReservationValid` proves complete Pool Value equality and exact reserve/count updates. Direct-EEV delta is zero; Issue consumes `500P) of margin and is not QNE.
+- **Expire:** B1 PrizePool explicitly proves complete input/output Value equality. Direct-EEV delta is zero. The Revealed-expiry liability-release mapping into V3 remains missing.
+- **Reveal:** B1 checks unchanged Oracle-valued `ppTotalLiquidity` but not direct tUSDM quantity; required inequality `ΔEEV_direct >= Y - 500P` is not established.
+- **Claim:** B1 checks an Oracle-valued aggregate Pool delta of `Y`, which does not imply direct-EEV delta `>= -Y`. The report includes a source-level Value-composition countermodel (not an executed transaction).
+- **FundTreasury:** B1 verifies Oracle-valued output liquidity increases, not physical direct-tUSDM monotonicity `ΔEEV_direct >= 0`. The descriptive comment in `plutus/Types.hs` overstates the complete physical Value comparison actually implemented in `B1PrizePool.hs`.
+
+### 46.06.3 Consequence
+
+The exact inequalities are now specified, but no validator predicates were changed. The lifecycle-anchored QNE candidate cannot be certified over the current full permissionless B1 action surface until these transition/refinement gaps are closed, or an explicitly governed accepted-action perimeter is specified that preserves all existing ticket rights and is sound under authoritative Ω.
+
+**Disposition:** R1/Kc/Ω remains OPEN; B1 Registry identity P0 remains independently BLOCKED; first Preprod Issue remains **NO-GO**. The report does not authorize a new B1 action, redeemer constructor, validator change, or ABI modification.
+
+**Non-effects:** no production source, test, validator, policy, workflow, V3, Reveal, 500×, EEV derivation, datum/redeemer ABI, wallet, signature, deployment or ledger state changed or executed.
