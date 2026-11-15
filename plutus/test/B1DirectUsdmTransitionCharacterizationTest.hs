@@ -309,6 +309,9 @@ makeClaimContexts =
     , ScriptContext sharedInfo (Spending poolRef)
     )
 
+-- Historical Oracle-vs-direct FundTreasury characterization only. Its Pool output
+-- deliberately contains a foreign positive asset and is therefore NOT an
+-- EV3-canonical basket; it is not evidence of a reachable EV3-qualified attack.
 makeFundContext :: ScriptContext
 makeFundContext =
   let
@@ -477,12 +480,12 @@ main = do
 
   assert
     fundAccepted
-    "OBSERVED GAP: compiled FundTreasury accepts Oracle-valued liquidity increase while physical direct tUSDM falls"
+    "HISTORICAL NON-EV3 CASE: compiled FundTreasury accepts Oracle-valued liquidity increase while physical direct tUSDM falls"
 
   assert
     (fundOutputOracleValue > 1_000
       && fundDirectDelta == -100)
-    "FundTreasury counterexample: Oracle accounting rises 10 RU while direct EEV falls 1 RU"
+    "Non-EV3 FundTreasury characterization: Oracle accounting rises 10 RU while direct EEV falls 1 RU"
 
   putStrLn "ALL B1 DIRECT-USDM CLAIM / FUND TREASURY CEK CHARACTERIZATIONS PASSED"
 
