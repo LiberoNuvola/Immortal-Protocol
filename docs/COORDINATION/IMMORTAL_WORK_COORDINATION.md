@@ -8494,3 +8494,45 @@ The ADA surplus is present in the actual Pool Value but is excluded from the app
 Agent B independent review is still required for the Claim/Reveal shared-transaction fixtures, FundTreasury ADA quote/rounding and min-UTxO assumptions, and B1's factory design. The add-vs-replace alternatives remain those in §46.27; Option B (replace B1 Oracle parameters with the Direct-USDM asset identity while PrizeValidator retains Oracle) remains a candidate, not an adopted policy.
 
 No production B1, PrizeValidator, MintPolicy, factory, ABI, script hash/address, V3, Reveal semantics, 500×, economic constant, workflow, wallet, signature, deployment, funding or ledger state changed. Issue remains **NO-GO** pending test execution/review, R1/Kc/Ω, Registry P0, USD/USDM source qualification, fresh EV1–EV7/deployment approval and C1/PA1–PA7.
+
+## 46.29 AGENT A — ORACLE QUOTE AVAILABILITY / FUND TREASURY REACHABILITY QUALIFICATION (2026-11-15)
+
+**Classification:** SOURCE CONFIGURATION CROSS-CHECK; CONDITIONAL CEK VECTOR; NO LIVE ORACLE-UTXO CLAIM.
+
+### Exact Preprod Oracle bootstrap source
+
+The prescribed `audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs` currently configures:
+- `ADA_ASSET_POLICY_HEX = ''`;
+- `ADA_ASSET_NAME_HEX = ''`;
+- `ADA_PRICE_USDM_SUBUNITS_PER_LOVELACE = 100n`;
+- a legacy `OracleDatum` constructor-0 record with exactly one asset identity: ADA/lovelace.
+
+The direct-USDM deployment bootstrap (`preprod-direct-usdm-bootstrap.mjs`) reads and binds that Oracle State UTxO in its deployment manifest and explicitly describes it as a compatibility oracle for the existing fixed Preprod ADA settlement path; it says direct-USDM EEV itself is derived from the concrete Pool UTxO and does not perform Oracle valuation.
+
+This is the repository's prescribed bootstrap configuration. It is not, by itself, a fresh observation of the currently materialized live Oracle State UTxO; that requires reading the exact current singleton out-reference and datum on Preprod.
+
+### Consequence for B1's current Oracle-valued Pool functions
+
+`Economic.totalUsdmValue` traverses every non-zero asset quantity (subtracting only the minimum lovelace floor for ADA), and calls `oraclePriceFor` for every such asset. A missing quote fails closed with `Economic: oracle missing`.
+
+Therefore, under the prescribed ADA-only Oracle datum:
+- B1 `FundTreasury` cannot calculate `poolUsdmValue` for a Pool containing non-zero approved tUSDM unless a separate tUSDM quote is present in the authenticated Oracle reference;
+- B1 `TicketClaimed` has the same Pool valuation dependency;
+- PrizeValidator's existing Oracle-valued Claim recipient predicate also cannot value a non-zero tUSDM output without a tUSDM quote.
+
+The test-only canonical-ADA FundTreasury vector in §46.28 deliberately supplies **both** ADA and tUSDM quotes at 100. It characterizes the validator predicate if those authenticated quotes are present, but the prescribed bootstrap source does not create that multi-quote set. It must remain **CONDITIONAL / NOT PROVEN REACHABLE** for the currently described deployment until the exact live Oracle datum or an authorized quote-set publication path proves the tUSDM quote is present.
+
+### Architectural implication
+
+This strengthens the rationale for removing B1's Oracle valuation dependency from Direct-USDM FundTreasury and Pool-liquidity delta checks. It does **not** by itself resolve PrizeValidator Claim: if the intended Claim payout is physically approved tUSDM, PrizeValidator's legacy Oracle basket payout predicate also needs a compatible authorized tUSDM quote or a separately reviewed direct-asset predicate. Replacing Oracle parameters only in B1 while retaining the current PrizeValidator Oracle-only Claim rule can create a transaction-level incompatibility: B1 demands exact physical tUSDM while PrizeValidator still requires an Oracle-valued recipient basket.
+
+The combined Reveal fixture is independent of this quote-availability issue: the current PrizeValidator Reveal predicate derives beacon/game output and checks B1 datum fields, while B1 TicketRevealed does not call Oracle valuation. The new shared Reveal fixture should therefore be qualified separately by its exact CEK run.
+
+### Corrected disposition
+
+- **Claim:** compiled Oracle-substitution counterexample confirmed by the earlier CEK run; direct-tUSDM Claim enforcement must be compatible across both B1 and PrizeValidator.
+- **Reveal:** source-level Pool Value preservation gap confirmed; new full shared Reveal CEK fixture added but not yet executed.
+- **FundTreasury:** Oracle/direct asset design mismatch confirmed; the new ADA-for-tUSDM CEK vector is conditional on a tUSDM Oracle quote and is not a proven live exploit under the prescribed ADA-only bootstrap. Separately, missing tUSDM quote can make the current Oracle-valued FundTreasury path fail closed.
+- **Issue:** mandatory MintPolicy `atomicPoolReservationValid` preserves complete Pool Value on the normal Issue/mint path.
+
+No assertion is made that a live Preprod Oracle datum currently contains ADA-only or ADA+tUSDM; fetch and decode the exact singleton to establish that. No on-chain state, Oracle datum, validator, workflow, wallet, signature, deployment, funding or ledger state changed.
