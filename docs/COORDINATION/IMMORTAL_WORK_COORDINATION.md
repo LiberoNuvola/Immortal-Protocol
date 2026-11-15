@@ -7870,3 +7870,8 @@ Specification addendum commit `2a00b7193faa32be2fff2ef6eba52383c217163d` adds le
 - preserve the Pool singleton and exact ADA envelope in each positive/negative comparison.
 
 These controls make the CEK countermodels coherent with Cardano Value conservation rather than relying on an impossible synthetic Value imbalance. They remain synthetic CEK tests, not native-ledger execution.
+
+
+### 46.10.6 CI workflow wiring refinement
+
+Current workflow inspection confirms that `pre-rich-direct-usdm-conformance.yml` already path-triggers on and executes `preprod-direct-usdm-source-set.test.mjs`; new EV3 basket cases should extend that existing suite, not create another EV3 workflow. `immortal-haskell-conformance.yml` already filters on `plutus/**` and executes the compiled Plutus Haskell suites; add the new CEK Cabal target and one step there. Optionally run the existing EV3 test command as a prerequisite inside the read-only `preprod-eev-qualification.yml` job if the qualification job itself must fail closed before artifact materialization. The protected EEV approval workflow must remain separate.
