@@ -8573,3 +8573,51 @@ This reconciliation removes one false dependency from the first-ticket path: **a
 - all required Issue admission evidence and transaction-body binding.
 
 **Disposition:** standard ADA Issue settlement path is compatible with the prescribed ADA-only Oracle configuration at source level, and MintPolicy already preserves the entire Pool Value during TicketIssued. No live wallet/CI/Preprod transaction has been executed in this step. First real Preprod Issue remains **NO-GO** until every independent admission/deployment gate is freshly evidenced.
+
+## 46.31 AGENT A — ECONOMIC ADMISSION / PROTECTED CAPITAL EXACT CI RESULT (2026-11-15)
+
+**Classification:** HISTORICAL EXACT-COMMIT TEST RESULT REFRESH; no new source or test change in this section.
+
+### Exact run and tested file
+
+- Haskell Semantic Conformance [run #43367228583](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43367228583), exact tested commit `5f6dbcd74eb617fc985485d413d636bbbf5dccb8`.
+- Job `haskell-conformance`: completed **SUCCESS**.
+- Step `Economic Admission conformance` / `cabal test economic-admission-tests`: **PASS**.
+- Step `Protected Capital conformance` / `cabal test protected-capital-conformance-tests`: completed **SUCCESS**.
+- The current branch's `plutus/test/EconomicAdmissionTest.hs` blob is exactly the same as at the tested commit (`c9bcce0e7edda462575a1a1b1c23448c47baa560)); no later change to this test invalidates the result. This does not imply the entire current branch has an exact-HEAD Haskell run.
+
+### Exact log assertions recovered
+
+The Economic Admission test log records:
+- explicit pre-Issue EEV and unchanged candidate EEV on the declared synthetic Preprod fixture;
+- executable liquidity remains separately represented as 500 USDM sub-units;
+- class-0 Issue adds 500 RU worst-case exposure;
+- the immediate candidate post-state remains solvent exactly at its arithmetic boundary;
+- candidate EEV 499 RU with unchanged executable liquidity is rejected;
+- the declared synthetic S0 starts with a 500-RU unclamped protection buffer;
+- the same EEV-invariant Issue consumes that complete 500-RU buffer;
+- the exact RawSurplus/protection-buffer erosion is `−500 RU`.
+
+The test suite logs `ALL ECONOMIC ADMISSION TESTS PASSED` and `Test suite economic-admission-tests: PASS`. The Protected Capital suite completed successfully as a separate step.
+
+### Correct proof interpretation
+
+This closes the previously pending test-execution question for that exact EconomicAdmissionTest source. It does **not** close R1/Kc/QNE:
+- post-state solvency at equality is not non-erosion;
+- the S0 `Issue(0,1)` remains an exact `−500 RU` margin transition;
+- `allOmegaSuccessorsInCertifiedKernel` is still a supplied synthetic boolean, not an independently derived or verified authoritative Ω proof;
+- the lifecycle `qneAcrossOmega` helper tests caller-supplied witnesses, not a deployment-bound complete successor set or on-chain atomic Pool/lifecycle transition.
+
+The separate 2026-11-15 feasibility/perimeter audits provide the current R1 conclusion:
+- under the literal four-action V3-only closure with finite class caps, the rank `(Σ(cap_i−issued_i), unresolvedCount, crystallizedLiabilities)` strictly descends on every valid transition; no non-empty inductive witness set exists for that restricted graph;
+- the wider deployed system has additional B1, ticket NFT, burn/transfer, Registry/Control/Genesis, external UTxO/time and revealed-expiry transitions, so the restricted theorem is not a complete deployment-wide impossibility theorem;
+- the candidate lifecycle-anchored selector `EnterQuiescent / MaintainQuiescent` is not currently reachable/atomic with the exact B1 Pool and V3 carrier. Direct-EEV closure for Reveal/Claim/FundTreasury and the authoritative Ω package are still missing.
+
+### Disposition
+
+**Economic Admission synthetic harness:** PASS on exact tested source.  
+**Protected Capital conformance:** PASS on exact tested run.  
+**R1/Kc/authoritative Ω deployment certificate:** **OPEN / MISSING**.  
+**First real Preprod Issue:** **NO-GO**, independently also blocked by Agent B's B1 Registry identity P0.
+
+No validator, kernel, V3, Reveal, 500×, economic constant, Issue ABI, workflow, wallet, signature, deployment, funding or ledger state changed by this status refresh.
