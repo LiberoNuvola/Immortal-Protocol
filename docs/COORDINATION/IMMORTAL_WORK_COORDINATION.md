@@ -6389,3 +6389,91 @@ G1 governance authenticity and G2 target derivation remain independent blockers.
 
 **Non-effects:** source/decision reconciliation only. No protocol code, datum/redeemer ABI, policy, script, validator, workflow, test, CI dispatch, wallet, transaction, deployment, branch topology or ledger state changed. No Factory recovery path or progression formula was selected.
 
+
+
+---
+
+## 45.85 AGENT B — FACTORY FAILURE / LIVENESS / RECOVERY MATRIX
+
+**Date:** 2026-11-15  
+**Exact reviewed HEAD before this entry:** `6b02a60fc0a1039e5f7a022e196c8a37075db382`  
+**Classification:** FAILURE-MODE ANALYSIS — NON-NORMATIVE; NO IMPLEMENTATION AUTHORITY  
+**Sources:** Issue #49 owner comments `6717492532`, `6717518494`, `6817451638`; P0 permissionless execution contract; current Genesis one-shot carrier sources.
+
+### 45.85.1 Classification rule
+
+The critical distinction is between:
+
+1. **Operational rediscovery/retry:** the authenticated canonical state still exists and the same valid transition can be reconstructed and submitted by any participant.
+2. **Authenticated state restoration:** a missing, corrupted or unusable Factory identity/state would have to be recreated, reset, reissued, migrated or replaced.
+
+P0 supports the first category: missed wake-ups do not remove eligibility; any submitter may rediscover and retry; stale transactions fail; unavailable observers/relayers may be replaced; absent submitters may produce a safe stall.
+
+P0 does not create authority for the second category. In particular it does not authorize reminting a consumed Factory STT, resetting round history, replacing a Factory policy ID, or creating an administrator recovery key.
+
+### 45.85.2 Failure matrix
+
+| Failure condition | Correct classification | Permitted handling under current owner direction | Not permitted / unresolved |
+|---|---|---|---|
+| Missed wake-up, worker down, no keeper active | **RETRYABLE OPERATIONAL** | Rediscover eligible work from canonical state; any participant can submit | Worker uptime must not be a correctness dependency |
+| Two OpenRound attempts consume the same predecessor | **RETRYABLE STALE** | At most one succeeds; loser rereads the new Factory state and rebuilds | Reusing the stale input or creating a second identity |
+| Temporary RPC/indexer/observer outage before valid inputs are obtained | **RETRYABLE EVIDENCE ACQUISITION** | Replace observer/source transport and retry against the same canonical inputs; fail closed until verified | API output or observer signature becoming authority |
+| B3 finality/storage proof unavailable or invalid | **SAFE STALL / FAIL CLOSED** | No B3-qualified target/round is admitted until required proof is available | Downgrade an existing B3 round to B1/B2, or let B1 publisher choose a replacement target |
+| B1 publisher unavailable | **PROFILE-SPECIFIC STALL** | Existing Registry remains bound to its configured B1 publisher; repair of that publisher's observation infrastructure may retry under the same identity | Arbitrary publisher substitution for an already-opened Registry; B1 publisher is not permissionlessly replaceable under the current B1 contract |
+| B1 publisher key lost/revoked | **UNRESOLVED INSTANCE/LIFECYCLE FAILURE** | Keep the affected Registry's original publisher binding intact unless a separately approved canonical migration exists | Rewriting `brRelayerPkh` on the live Registry or silently using a new key |
+| Canonical governance/config carrier unavailable or not verifiable | **SAFE STALL / FAIL CLOSED** | No new OpenRound; retry only when the same adopted config can be authenticated | Substitute Haskell replay, signed JSON, API, maintainer or per-round signer |
+| Target/AnchorRecord missing, ambiguous, stale or wrong | **SAFE STALL / FAIL CLOSED** | Reacquire/verify evidence for the exact protocol-selected target, if the canonical rule and target already exist | Select a different anchor/round through caller, SDK default, publisher or keeper |
+| Factory input is stale because another valid transition won | **RETRYABLE STALE** | Re-read the sole continuing state and reconstruct the same rule-derived next action | Treating stale failure as authority to skip, reopen or reorder |
+| Factory token missing, duplicated, wrong quantity/policy/name; datum malformed or config mismatch | **FAIL CLOSED / STATE INTEGRITY FAILURE** | Reject every transition; preserve evidence and do not mint a substitute | Admin reset, token re-mint, hidden burn/replacement, accepting a lookalike policy |
+| Factory state consumed but no valid continuing state exists | **SHOULD BE UNREACHABLE UNDER THE REQUIRED VALIDATOR CONTRACT** | Future Factory validator must make consumption and exact continuing STT state atomic; invalid transition must fail and leave predecessor unspent | Assuming the existing one-shot mint policy alone enforces output placement/continuity |
+| Bootstrap seed unavailable before it is consumed | **BOOTSTRAP BLOCKED** | No bootstrap until an independently approved deployment manifest binds the exact seed and initial commitment | Choosing an alternate seed after deployment identity is fixed without a new approved instance/manifest |
+| Bootstrap seed consumed but Factory token/config is placed incorrectly | **POTENTIAL IRRECOVERABLE BOOTSTRAP FAILURE** | Bootstrap must validate exact token, datum/config, address and unique output in the mint/bootstrap transition | Assuming seed consumption alone proves correct Factory initialization; unapproved second mint or admin rescue |
+| Factory script/parameterization defect makes the state permanently unspendable | **SAFE STALL / INSTANCE FAILURE** | No upgrade/recovery route is assumed; require separate reviewed protocol-level migration or new instance decision | Admin upgrade key, silent policy-ID replacement, reusing the same round namespace under a new script |
+| Legacy Registry has no Factory identity token | **UNSUPPORTED / FAIL CLOSED** | Keep it outside the authenticated consumer path | Automatic migration, fake identity attachment or legacy first-match fallback |
+
+### 45.85.3 Evidence from reusable Genesis carrier precedent
+
+The current `GenesisCarrierMintPolicy.hs` is a one-shot mint constraint: it consumes the configured seed `TxOutRef` and permits exactly one configured token under its own currency symbol. It does not, by itself, prove that the minted token was placed at the intended state address with the correct datum/configuration.
+
+The paired `GenesisRegimeCarrier.hs` spending validator then verifies one carrier token in the consumed state and one in the sole continuing state, exact Value continuity and the deterministic `ActivateGenesis` transition. It has no generic reset/reissue/repair action. This supports two separate conclusions:
+
+- **Bootstrap must constrain placement and initial state atomically**, not merely consume a seed and mint a token.
+- **A singleton continuation invariant prevents ordinary transition-level loss only when the actual Factory validator enforces it.** It does not define recovery after a bad bootstrap, permanently unusable script, or broken deployment parameterization.
+
+This is a pattern/evidence reference, not proof that the Factory has been implemented. The reviewed branch contains no Factory/OpenRound production source.
+
+### 45.85.4 Consequences for the Factory contract
+
+The future Factory contract must separately prove:
+
+1. Bootstrap consumes one exact seed once and creates exactly one Factory STT at the exact Factory state output, with the exact approved initial datum/config and no additional Factory token.
+2. Every successful OpenRound consumes exactly one authenticated Factory predecessor and creates exactly one valid continuing Factory state with the same STT and the approved progression/config continuity.
+3. The per-round identity mint and exactly one Pending Registry creation are atomic with that Factory continuation.
+4. A stale competing transaction cannot alter canonical state; a participant can reread and retry.
+5. No failure/recovery branch can mint or transfer an already-used round identity, erase history, change the publisher of a live Registry or replace the Factory policy identity without a separate canonical protocol transition.
+6. If any required source/config/proof is missing, malformed or non-canonical, the transition fails closed.
+
+These are acceptance properties to test, not an ABI or implementation decision.
+
+### 45.85.5 Owner decisions still required
+
+The evidence supports no automatic answer for:
+
+- whether an irrecoverable Factory state means permanent SAFE STALL for that namespace or permits a deterministic migration/new namespace;
+- what proof could establish that migration without reusing a round identity or rewriting canonical history;
+- how to handle an unavailable/revoked B1 publisher for already-open Pending registries, given that the publisher is deliberately fixed per Registry;
+- whether there is any recovery procedure before initial bootstrap versus after the one-shot seed has been consumed;
+- how a deployment manifest is amended before bootstrap if the selected seed/config is invalid, without allowing a post-deployment reset.
+
+Do not invent a recovery key, owner rescue transaction, burn/re-mint path or replacement policy. Such a path would be a new authority surface and would need an explicit protocol decision plus an adversarial uniqueness proof.
+
+### 45.85.6 Disposition
+
+**Operational liveness is designable without a privileged keeper:** re-discovery, competing submissions, stale-state retry and observer replacement follow the P0 model.
+
+**Factory identity restoration is not yet design-closed:** the owner explicitly forbids per-round privileged signing and ongoing administrator capabilities, while no deterministic recovery/migration mechanism exists in the reviewed Factory source (there is no Factory source yet).
+
+Therefore the correct interim condition is **permissionless retry where canonical state remains intact; fail-closed safe stall where authenticated Factory identity/state is missing or invalid**. This is not a claim that permanent halt is the final desired policy; it is the only non-invented disposition until a recovery proof contract is selected.
+
+**Non-effects:** failure-mode/source analysis only. No code, ABI, policy, validator, test, workflow, CI, wallet, transaction, branch topology, deployment or ledger state changed. No reset, migration or recovery mechanism was selected.
+
