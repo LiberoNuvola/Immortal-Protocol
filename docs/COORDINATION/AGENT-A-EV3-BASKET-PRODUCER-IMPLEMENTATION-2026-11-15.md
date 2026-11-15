@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-15  
 **Branch:** `work/immortal-green-closure`  
-**Implementation checkpoint:** `c6fdf0d5088ee40ef2c08c5f6e2b35c80aae0d42`  
+**Implementation checkpoint:** `fc33c2df30e1f678d946a72ce4fdeeea133a9716`  
 **Classification:** EVIDENCE-PRODUCER / QUALIFICATION-INTEGRITY IMPLEMENTATION — NOT A PROTOCOL OR DEPLOYMENT CHANGE  
 **Status:** IMPLEMENTED IN THE SHARED BRANCH; WORKFLOW EXECUTION NOT YET VERIFIED IN THIS NOTE.
 
@@ -22,7 +22,7 @@ The canonical basket binds:
 - sorted, normalized positive asset units and quantities;
 - a basket digest.
 
-The basket verifier reconstructs the canonical basket from its contents before accepting the digest. It therefore rejects a foreign positive asset even when an attacker recomputes a syntactically valid basket digest.
+The basket verifier reconstructs the canonical basket from its contents before accepting the digest. It therefore rejects a foreign positive asset even when an attacker recomputes a syntactically valid basket digest. Canonical asset ordering uses locale-independent lexical comparison so basket hashes do not depend on runtime locale.
 
 The source-set artifact now stores the complete canonical basket, its digest, and the exact basket-contract source digest. EV3 qualification verifies the basket, binds it to the deployment Pool reference/address/asset identities, rechecks the current basket-contract source bytes, and includes both digests in its snapshot and source-set evidence. The protected approval validator repeats the basket verification and checks that qualification is bound to the same basket and implementation digest.
 
@@ -44,7 +44,7 @@ The existing `PRE-RICH Direct-USDM Conformance` workflow already includes the ba
 
 Added/retained deterministic cases cover a valid ADA + Pool singleton + approved tUSDM basket, foreign positive assets, missing/zero tUSDM, incorrect Pool singleton quantity, malformed/negative/duplicate records, canonical order, digest tampering, exact Pool reference uniqueness, and a self-digested foreign-asset forgery. Approval fixtures exercise rejection of a forged basket after the outer source-set and qualification hashes are recomputed.
 
-**CI status:** not independently observed yet. These source changes must not be reported as passing tests until the exact-head workflow completes successfully.
+**CI status:** not independently observed yet. The latest follow-up `fc33c2df30e1f678d946a72ce4fdeeea133a9716` replaces locale-sensitive asset ordering with deterministic lexical ordering. These source changes must not be reported as passing tests until the exact-head workflow completes successfully.
 
 No live Koios query, source-set materialization, EV1–EV7 qualification, protected deployment-approval workflow, wallet operation, transaction, deployment, or ledger write was executed by this implementation.
 
