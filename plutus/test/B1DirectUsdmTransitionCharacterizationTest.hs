@@ -371,7 +371,7 @@ applyB1Validator datum action context =
         (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData oracleState))
     configured2 =
       PlutusTx.unsafeApplyCode configured1
-        (Lift.liftCode plcVersion100 oraclePublisher)
+        (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData oraclePublisher))
     configured3 =
       PlutusTx.unsafeApplyCode configured2
         (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData poolPolicy))
