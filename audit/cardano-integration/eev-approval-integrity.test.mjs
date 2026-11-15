@@ -9,6 +9,7 @@ import {
   assertQualificationEvidenceMatchesRepository,
   digestJson,
   EEV_EVIDENCE_REFERENCES,
+  EEV_EV3_BASKET_CONTRACT_FILE,
   EEV_REPO_FILES,
 } from './eev-approval-integrity.mjs'
 
@@ -30,7 +31,16 @@ async function currentQualificationFixture(repoRoot = root) {
       digest: createHash('sha256').update(bytes).digest('hex'),
     }
   }
-  return { status: 'qualified', evidence }
+  const basketContractBytes = await readFile(resolve(repoRoot, EEV_EV3_BASKET_CONTRACT_FILE))
+  return {
+    status: 'qualified',
+    evidence,
+    sourceSet: {
+      assetBasketDigest: 'a'.repeat(64),
+      basketContractReference: EEV_EV3_BASKET_CONTRACT_FILE,
+      basketContractDigest: createHash('sha256').update(basketContractBytes).digest('hex'),
+    },
+  }
 }
 
 {
@@ -62,6 +72,20 @@ async function currentQualificationFixture(repoRoot = root) {
   await assert.rejects(
     assertQualificationEvidenceMatchesRepository(tamperedReference, root),
     /EV3 reference does not match the canonical source reference/,
+  )
+
+  const tamperedBasketContract = structuredClone(qualification)
+  tamperedBasketContract.sourceSet.basketContractDigest = '0'.repeat(64)
+  await assert.rejects(
+    assertQualificationEvidenceMatchesRepository(tamperedBasketContract, root),
+    /EV3 basket contract digest does not match the current repository source bytes/,
+  )
+
+  const missingBasketBinding = structuredClone(qualification)
+  delete missingBasketBinding.sourceSet.assetBasketDigest
+  await assert.rejects(
+    assertQualificationEvidenceMatchesRepository(missingBasketBinding, root),
+    /EV3 asset basket digest must be a 32-byte hex digest/,
   )
 }
 
