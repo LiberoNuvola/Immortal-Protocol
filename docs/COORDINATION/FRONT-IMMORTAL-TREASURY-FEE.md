@@ -278,3 +278,46 @@ The universal fee front remains:
 with no automatic inference from destination address to ProtectedCapital, RawSurplus, reward budget or distributable value.
 
 **Status:** TREASURY / FEE CAPTURE OPEN / CURRENT-TREE USAGE CENSUS COMPLETED / LEGACY DISTRIBUTION AUTHORITY STILL UNPROVEN / NO NORMATIVE CHANGE.
+
+## 2026-11-15 — Agent A: Treasury / Reserve accounting boundary and live Preprod observation
+
+### Read-only evidence
+
+The dedicated Treasury observation workflow completed successfully on branch `work/immortal-green-closure`:
+
+- Commit: `b1a0b5b9d59689f3a36babf3448fb493c28d4d5c`
+- Workflow run: [#16 — Treasury receipt journal read-only observation](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43668317108)
+- Artifact: `preprod-treasury-receipt-journal-b1a0b5b9d59689f3a36babf3448fb493c28d4d5c`
+- Artifact SHA-256: `8ff97e23040ea3bf3983fe92951c0aa7a108466b5bd3d0c4f4b2ec552544969b`
+
+At the shared observed tip (Preprod slot `139026723`, block height `5413649`, hash `8504cab7bdebe04f2a1bc510438d8eee84b153673736b501bfdb9cfd30adf5db`):
+
+- Treasury address history returned zero output rows and zero transaction rows from the configured Koios queries.
+- Prize Validator census returned zero current UTxOs.
+- B1 PrizePool census returned one UTxO: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- That UTxO contained `1,000,000,000` atomic units of the exact direct-USDM asset unit recorded in the deployment manifest. The manifest reports `100,000` USDM subunits under the candidate profile conversion.
+- The Treasury Journal and ProtectedCapital census had the exact same observed slot. Their identity crosswalk completed with 0 receipts, 0 ProtectedCapital items and 0 matches.
+
+These are provider-observed facts for this snapshot, not proof of lifetime emptiness or complete accounting. The census explicitly leaves provider snapshot pinning, provider attestation, manifest authority authentication, source completeness, R7/L6 emptiness and L2 lifecycle proof unqualified. The receipt observer also reports zero rows; this does not establish that no historical receipt or extinguished ticket ever existed. The cross-snapshot comparison is structural and does not prove prior-tip ancestry.
+
+### Accounting classification — do not conflate these balances
+
+The current repository documents several distinct concepts:
+
+1. **PendingWinningLiabilities** — crystallized, immutable winning obligations.
+2. **UnresolvedTicketReserve** — deterministic protected exposure for unresolved tickets; the application also has a separate statistical risk-reserve model.
+3. **LockedJackpotLiquidity / CAR** — conditionally committed value, protected once locked and not ordinary surplus.
+4. **Treasury custody / residual value** — protocol-controlled custody is not automatically ProtectedCapital, RawSurplus or distributable value.
+
+The legacy Cardano Treasury distribution surface has four destinations (Prize, Stake, Reserve, Maintenance), but its percentage split is not the current canonical PRE-RICH allocation rule. `src/treasuryPolicy.ts` explicitly marks that policy deprecated; `plutus/Treasury.hs` remains a legacy/application validator whose current economically material usage has not been established. Its four output destinations must not be confused with the four economic classifications above.
+
+The current PRE-RICH specification keeps Treasury and PrizePool distinct: player payments enter protocol-controlled Treasury, while Treasury-to-PrizePool funding is a separate protocol-controlled transition that must preserve crystallized liabilities, unresolved reserve, deterministic exposure, locked Jackpot and safety capital. Genesis does not implicitly move bootstrap value into PrizePool.
+
+### Agent A disposition
+
+- No percentage allocation, new coefficient or replacement Reserve policy is introduced.
+- No current Preprod amount is posted to EEV or treated as freely distributable surplus by this observation alone.
+- The project decision that Reserve is not funded at Genesis and begins accumulating only after activation through the applicable ticket-sale flow remains a separate policy constraint; the observed zero receipt history does not yet demonstrate that funding path.
+- Before any Reserve balance can be recognized, its exact asset/account identity, source event, permitted classification and accounting transition must be evidenced. Destination identity alone is insufficient.
+
+**Status:** READ-ONLY PREPROD OBSERVATION SUCCESS / ZERO CURRENT TICKET POPULATION OBSERVED / FULL HISTORICAL PROTECTED-CAPITAL COMPLETENESS OPEN / TREASURY FOUR-WAY LEGACY DISTRIBUTION NOT PROMOTED.
