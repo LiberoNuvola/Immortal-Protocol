@@ -7017,3 +7017,27 @@ This implementation creates a bounded adapter candidate to remove operator-autho
 | `.github/workflows/m1-a-pre-snapshot-tests.yml` | `1afad8022d91d0037b5a4d2de7b11d113eb6b927` |
 
 **Non-effects:** No Agent A C1 observer/session, Treasury implementation, V3, Reveal, economics, governance rules, Registry, production Cardano network, node, wallet, key, transaction or asset was changed or contacted. No M1TEST fixture transaction, Mithril operation, deployment or production action was executed.
+
+
+## 45.91 AGENT B — BEACON REGISTRY ADVERSARIAL CEK SUITE WIRED INTO HASKELL CI (2026-11-15)
+
+**Base HEAD:** `639110ff6574c64cfb020653204d28f3560a94c0`  
+**Implementation commit:** `0482d6a1fc51a3546f4325bf4296cb11c534a5ce`  
+**Changed path:** `.github/workflows/immortal-haskell-conformance.yml` only  
+**Classification:** CI TEST-WIRING ONLY; NO PROTOCOL OR VALIDATOR SEMANTICS CHANGED.
+
+The existing Cabal test suite `beacon-registry-adversarial-tests` was registered in `plutus/pre-rich-plutus.cabal` and the source `plutus/test/BeaconRegistryAdversarialTest.hs` existed, but the branch's `immortal-haskell-conformance.yml` did not invoke it.
+
+Added the workflow step:
+
+```yaml
+- name: BeaconRegistry adversarial characterization (CEK only)
+  working-directory: plutus
+  run: cabal test beacon-registry-adversarial-tests --test-show-details=direct
+```
+
+The step runs the existing compiled-wrapper CEK suite. Its output deliberately includes CHARACTERIZATION acceptances for known gaps (including caller-controlled Pending Registry references, `brRound`/target mismatch, Registry Value delta, fake Ready Beacon, same-payment-ScriptHash lookalike and multiple matching Registry references). Those CHARACTERIZATION passes are evidence of current-source behavior, not security approvals. The suite is not balanced-ledger, Yaci, Preprod or deployment evidence.
+
+**Verification:** branch HEAD and workflow contents were re-fetched after the write; HEAD is `0482d6a1fc51a3546f4325bf4296cb11c534a5ce`, and the exact Cabal command is present. The commit combined-status endpoint returned an empty status list at verification time; no CI PASS is claimed yet.
+
+**Non-effects:** no Haskell/TypeScript source, datum/redeemer ABI, validator, minting policy, Registry identity mechanism, Factory, V3, Reveal, B2, economic rule, Treasury, workflow trigger, wallet, transaction, deployment or ledger state was changed. No CI run was manually dispatched and no live network was contacted. This change does not close Issue #43 or Issue #49 and does not promote Registry authenticity to GREEN.
