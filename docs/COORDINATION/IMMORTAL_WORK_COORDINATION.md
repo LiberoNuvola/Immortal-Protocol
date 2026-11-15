@@ -7249,3 +7249,42 @@ Passing the 16,287-byte size threshold would only justify a subsequent independe
 **Disposition:** T01b is not missing code; its active Yaci result must be read before claiming the ledger characterization has passed. T04 is not safely executable on the canonical Haskell V2 artifact under the recorded transaction-size measurements. Size feasibility is the next prerequisite; semantic qualification remains a separate gate after it.
 
 **Non-effects:** no `PrizeValidator.hs`, `BeaconRegistry.hs`, `Types.hs`, datum/redeemer ABI, Registry consumer, V3, Reveal, B2, economic policy, Treasury or Materios semantics changed. No maxTxSize was raised, no wallet/network secrets were used, no Preprod/Mainnet action was performed, and no production validator artifact was replaced.
+
+
+## 45.96 AGENT B — T01b / REGISTRY-PUBLISH LOCAL YACI STEP PASSED (2026-11-15)
+
+**Lab run:** `43678893383`  
+**Lab source SHA:** `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`  
+**Job:** `132705524504` (`devnet-integration`)  
+**Step:** `beacon_registry_b0_yaci` — "Execute B0 BeaconRegistry adversarial Yaci ledger characterization"  
+**Step conclusion observed:** **SUCCESS**  
+**Audited current branch HEAD while recording this result:** `34c10ba08ff9400116cf3fe6c8d352efe5eac4a2`
+
+### 45.96.1 What the successful step establishes
+
+The exact trace source at the lab SHA is `audit/cardano-integration/beacon-registry-adversarial-ledger-trace.ts` (blob `4478b99e964c6d31ef80614044f6609eab38ecac`). Its success exit requires all of these assertions to hold on the ephemeral local Yaci ledger:
+
+- three distinct seven-field Pending-shaped Registry UTxOs were created by an ordinary wallet transaction at the Registry script address;
+- a Ready-shaped Registry output was created by an ordinary wallet payment, without a Registry spending input, attached Registry validator or Registry validator execution;
+- that direct Ready UTxO's exact datum fields and lovelace Value were recovered from Yaci;
+- RegistryPublish consumed the nominated Pending and successfully submitted a balanced transaction whose Registry continuation fell from 6,000,000 to 5,000,000 lovelace while 1,000,000 lovelace was returned to the wallet;
+- RegistryPublish accepted a datum where `brRound=41` and `btRound(target)=42`;
+- the competing same-round Pending remained unspent.
+
+The successful GitHub Actions step means the script's explicit assertions did not throw. It is local synthetic Yaci evidence only; it is not Preprod deployment or production Registry identity evidence.
+
+### 45.96.2 What remains unproven
+
+This trace does **not** spend a Prize UTxO through Haskell V2 SyncBeacon and does not prove T04. The separate Aiken V3 SyncBeacon trace is also not a substitute for canonical Haskell V2.
+
+The Cardano Integration Lab run remained `in_progress` after the B0 step, at the subsequent Counter lookalike / Aiken preflight area. The Counter lookalike step itself reported **FAILURE** in its job summary; that failure is a separate characterization and is not a B0 step failure. The overall lab run has no final conclusion claimed here.
+
+### 45.96.3 Remaining CI / size states at observation time
+
+- Haskell Semantic Conformance run `43678893331`, SHA `53edd61177968ad4f2e1d0dc761c9c5d152bab1e`: still in progress at `Compiled MintPolicy B1 Value-preservation conformance`; BeaconRegistry adversarial suite step was still pending. No exact Beacon CEK PASS is claimed yet.
+- Conservative size experiment run `43679611905`, SHA `637e7709aa07b802e3accc7acba4a2915f76d523`: running, having completed Node/runtime setup and still executing the canonical Plutus toolchain setup. No candidate byte count is available yet.
+- The current shared branch is `34c10ba08ff9400116cf3fe6c8d352efe5eac4a2`; subsequent changes since those test SHAs are workflow/documentation only, not modifications to the B0 Yaci source or the adversarial Haskell test source.
+
+**Disposition:** **T01b and RegistryPublish characterization: LOCAL YACI STEP SUCCESS.** Haskell V2 T04 remains **RESOURCE BLOCKED / NOT RUN** until size feasibility is demonstrated; Registry authenticity remains **BLOCKED**; no GREEN promotion.
+
+**Non-effects:** no Registry/Prize validator, datum/redeemer ABI, production deployment, Preprod/Mainnet network, wallet secret, economic policy, V3/Reveal semantics, B2, Treasury or Materios code changed. No production signing or ticket issuance took place.
