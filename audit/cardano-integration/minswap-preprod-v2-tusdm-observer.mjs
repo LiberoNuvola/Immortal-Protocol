@@ -150,30 +150,48 @@ export function classifyMinswapV2PoolRows(rows) {
     getPaymentCredential(row) === MIN_SWAP_V2.poolPaymentScriptHash
   );
   const authenticatedPools = [];
+  const decodeErrors = [];
+  let authenticatedPoolUtxoCount = 0;
   for (const row of onPoolScript) {
     if (!Array.isArray(row.asset_list)) {
       throw new Error("MIN_SWAP_POOL_UTXO_ASSET_LIST_MISSING");
     }
     const authQuantity = getAssetQuantity(row, AUTH_UNIT);
     if (authQuantity !== 1n) continue;
-    if (!row.inline_datum) continue;
+    authenticatedPoolUtxoCount += 1;
+    if (!row.inline_datum) {
+      decodeErrors.push({ outRef: String(row.tx_hash) + "#" + String(row.tx_index), reason: "INLINE_DATUM_MISSING" });
+      continue;
+    }
 
-    const poolDatum = decodePoolV2DatumAssetUnits(row.inline_datum);
-    const tokenQuantity = getAssetQuantity(row, token.policyId + token.tokenName);
+    let poolDatum;
+    try {
+      poolDatum = decodePoolV2DatumAssetUnits(row.inline_datum);
+    } catch (error) {
+      decodeErrors.push({
+        outRef: String(row.tx_hash) + "#" + String(row.tx_index),
+        reason: String(error?.message ?? error),
+      });
+      continue;
+    }
+
+    for (const token of TUSDM_CANDIDATES) {
+      const tokenUnit = token.policyId + token.tokenName;
+      const pair = [poolDatum.assetA, poolDatum.assetB];
+      if (!pair.includes("lovelace") || !pair.includes(tokenUnit)) continue;
+      const tokenQuantity = getAssetQuantity(row, tokenUnit);
       if (tokenQuantity === null || tokenQuantity <= 0n) continue;
       const lpUnit = computeMinswapV2LpUnit(token.policyId, token.tokenName);
-      const pair = [poolDatum.assetA, poolDatum.assetB].sort();
-      if (!pair.includes("lovelace") || !pair.includes(token.policyId + token.tokenName)) continue;
 
       const lovelace = BigInt(String(row.value ?? "0"));
       if (lovelace <= MIN_SWAP_V2.minPoolAdaLovelace) continue;
-      const adaReserve = lovelace - MIN_SWAP_V2.minPoolAdaLovelace;
+      const valueAdaReserve = lovelace - MIN_SWAP_V2.minPoolAdaLovelace;
       const inlineDatumBytes =
         typeof row.inline_datum === "string"
           ? row.inline_datum
           : String(row.inline_datum.bytes ?? "");
       const datumDigest = createHash("sha256").update(inlineDatumBytes, "utf8").digest("hex");
-      const datumTokenReserve = poolDatum.assetA === token.policyId + token.tokenName
+      const datumTokenReserve = poolDatum.assetA === tokenUnit
         ? BigInt(poolDatum.reserveA)
         : BigInt(poolDatum.reserveB);
       const datumAdaReserve = poolDatum.assetA === "lovelace"
@@ -182,7 +200,7 @@ export function classifyMinswapV2PoolRows(rows) {
 
       authenticatedPools.push({
         candidate: token.label,
-        exactTokenUnit: token.policyId + token.tokenName,
+        exactTokenUnit: tokenUnit,
         exactLpUnit: lpUnit,
         outRef: String(row.tx_hash) + "#" + String(row.tx_index),
         address: String(row.address ?? ""),
@@ -192,12 +210,13 @@ export function classifyMinswapV2PoolRows(rows) {
         tusdmQuantityAtomic: tokenQuantity.toString(),
         lovelaceIncludingMinPoolAda: lovelace.toString(),
         minPoolAdaLovelace: MIN_SWAP_V2.minPoolAdaLovelace.toString(),
-        adaReserveLovelace: adaReserve.toString(),
-        adaPerTusdmValue: decimalRatio(adaReserve, tokenQuantity),
+        adaReserveLovelace: valueAdaReserve.toString(),
+        adaPerTusdmValue: decimalRatio(valueAdaReserve, tokenQuantity),
         datumAdaReserve: datumAdaReserve.toString(),
         datumTusdmReserve: datumTokenReserve.toString(),
         adaPerTusdmDatum: decimalRatio(datumAdaReserve, datumTokenReserve),
-        datumValueReservesMatch: datumTokenReserve === tokenQuantity && datumAdaReserve === adaReserve,
+        datumValueReservesMatch:
+          datumTokenReserve === tokenQuantity && datumAdaReserve === valueAdaReserve,
         datumAssetA: poolDatum.assetA,
         datumAssetB: poolDatum.assetB,
         datumTotalLiquidity: poolDatum.totalLiquidity,
@@ -210,12 +229,13 @@ export function classifyMinswapV2PoolRows(rows) {
         inlineDatumByteLength: inlineDatumBytes.length / 2,
         inlineDatumSha256: datumDigest,
       });
+    }
   }
   return {
     poolScriptUtxoCount: onPoolScript.length,
-    authenticatedPoolUtxoCount: onPoolScript.filter((row) =>
-      getAssetQuantity(row, AUTH_UNIT) === 1n
-    ).length,
+    authenticatedPoolUtxoCount,
+    datumDecodeErrorCount: decodeErrors.length,
+    datumDecodeErrorSamples: decodeErrors.slice(0, 10),
     matches: authenticatedPools,
   };
 }
