@@ -10159,3 +10159,63 @@ Exact test log:
 This is software regression evidence, not a live readiness result. The test deliberately uses synthetic fixtures and does not contact the authority endpoint or Preprod. It proves the preflight cannot claim readiness from those fixtures; it does not prove the missing external evidence exists.
 
 **Non-effects:** no privileged workflow dispatch; no endpoint request; no secret, key or wallet seed read; no wallet signature, transaction, funding, deployment or ledger mutation. No Oracle datum, GOV-30 decision, V3, Reveal, ABI, 500× or economic semantics changed.
+
+
+## 46.58 — AGENT A — MAINNET USDM/ADA MARKET LEAD VS PREPROD tUSDM IDENTITY (2026-11-16)
+
+**Classification:** READ-ONLY public-market, exact-asset-identity and provider-path reconciliation. No code, feed, Oracle datum, wallet, workflow, signature, transaction, deployment or ledger state changed.
+
+### 1. A genuinely active Cardano USDM/ADA market was found — on Mainnet
+
+A current public market-indexer result identifies the Minswap V2 USDM/ADA pool:
+- Pool NFT/reference identity prefix: `f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171`.
+- Exact token shown by the market page: Moneta Mainnet USDM, policy prefix `c48cbb3d5e57...`.
+- Captured market metrics: approximately 2.16M ADA / 330.4K USDM reserves, about $659K liquidity, about $187.9K 24-hour volume and 531 24-hour transactions.
+
+Sources: [GeckoTerminal Minswap USDM/ADA pool](https://www.geckoterminal.com/cardano/pools/f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c7dd6988c5a86693c76aeec1ea94afa41770be0de21a775ca7a2a1eabdb6a0171), [Minswap liquidity listing](https://minswap.org/liquidity), [Moneta USDM product identity](https://moneta.global/products/usdm/).
+
+This is a substantive Mainnet market lead, not merely a ticker search result. It is still an indexer-reported market snapshot, not an authenticated Preprod observation, a complete manipulation-resistance assessment, or an on-chain PRE-RICH price witness.
+
+### 2. Exact network identity proves it cannot currently price the Preprod tUSDM
+
+The Cardano x402 exact-payment scheme publishes both asset units side by side and explicitly labels them as different:
+- Mainnet Moneta USDM: policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`, asset name `0014df105553444d`.
+- Preprod tUSDM: policy `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`, asset name `0014df10745553444d`.
+
+The specification states that **both policy and asset-name parts differ** and distinguishes the CIP-68 labels USDM (Mainnet) / tUSDM (Preprod). See [x402 Cardano exact scheme](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_cardano.md).
+
+This independently confirms the boundary already used in PRE-RICH Issue #37: the accepted `e675...` identity is a Preprod test asset, not the Mainnet Moneta asset `c48...`. A Mainnet USDM/ADA market price cannot silently be assigned to Preprod tUSDM merely because both have a USDM-like ticker or share a test purpose. The specification authority's existing Preprod acceptance is narrowly for physical quantity in the qualified B1 Pool; it does not approve Mainnet equivalence, redemption, USD parity or a market-price mapping.
+
+### 3. Option-B implication
+
+A potential *Mainnet* derivation can be studied using:
+- a Mainnet ADA/USD source; and
+- the exact Mainnet Moneta USDM/ADA market state.
+
+For pair orientation, if the pool gives ADA per USDM and the oracle gives USD per ADA, the dimensional conversion is their product (equivalently, use the reciprocal USDM-per-ADA form from the canonical Option-B memo). Any such route would still require source-set governance, exact pool-state verification, freshness/skew rules, liquidity/manipulation bounds, rational arithmetic and an on-chain consumer proof.
+
+It does **not** solve the current Preprod first-Issue source gate. A cross-network valuation mapping from Mainnet Moneta USDM to Preprod tUSDM would itself require an explicit governed decision and evidence. None was found or introduced in this pass.
+
+### 4. Pyth remains a technically suitable Cardano verification path, not a discovered USDM/USD feed
+
+The current Cardano Developer Portal describes Pyth's pull model: signed update included in the transaction, verified by the Cardano Aiken library, with freshness enforced by the consumer. The Pyth Pro catalog exposes feed identity, instrument type, exponent, minimum publishers, lifecycle state and other reference data. These capabilities make Pyth a plausible technical path for a qualified ADA/USD leg or a future specifically activated feed; they do not establish that an exact Moneta USD/USDM spot feed is available and entitled for this deployment.
+
+Sources: [Cardano Pyth integration](https://developers.cardano.org/docs/build/integrate/oracles/pyth/), [Pyth Pro symbol/reference-data contract](https://docs.pyth.network/pro/symbology-reference), [Pyth feed catalogue](https://docs.pyth.network/pro/price-feed-ids).
+
+The repository's prior exact-feed/catalogue audit remains controlling for the candidate found so far: `Crypto.NAV.USDM/RESERVES` is a NAV/reserve instrument, not a USD-per-USDM spot unit quote. No new exact Preprod USD/USDM feed or source-authorized activation was evidenced here.
+
+### 5. Updated disposition and next safe step
+
+| Candidate / obligation | Current classification |
+|---|---|
+| Minswap V2 Mainnet USDM/ADA market | **OBSERVED MARKET LEAD — MAINNET Moneta asset only** |
+| Mainnet USDM price transferred to Preprod tUSDM | **NOT AUTHORIZED / IDENTITY MISMATCH** |
+| Pyth Cardano signed-update verification architecture | **AVAILABLE TECHNICAL PATH; feed-specific qualification still required** |
+| Pyth Moneta USD/USDM spot feed | **NOT FOUND IN THE CURRENT QUALIFIED EVIDENCE** |
+| Preprod tUSDM/USD or exact source-qualified conversion | **NOT QUALIFIED** |
+| Option B implementation/PriceReference contract | **OPEN; no provider or source-set decision changed** |
+| First real Preprod Issue | **NO-GO** |
+
+The next safe work is to keep Mainnet market research as a separate future deployment lane and continue seeking a source that is valid for the exact Preprod economic reference under an expressly governed mapping. Do not alter the accepted Preprod tUSDM identity, assume cross-network equivalence, substitute a Mainnet DEX quote, use NAV as spot price, or change Oracle/MintPolicy/B1 semantics.
+
+No external provider was contacted, no custom feed was requested, and no protocol rule, Oracle schema, PriceReference, B1, MintPolicy, V3, Reveal, 500×, ABI, approval, wallet or ledger state changed.
