@@ -9940,3 +9940,74 @@ No fresh EV1–EV7 requalification, current hash-bound EEV deployment approval, 
 This newer observation supersedes the slot-139116604 point in §46.48 only as the latest acquired Preprod observation; it does not change the admission decision. Preserve the existing fail-closed gates and do not refresh the Oracle timestamp by rewriting the datum.
 
 **Non-effects:** no workflow dispatch was used; no secret, seed or key was read or generated; no quote was rewritten; no authority endpoint was contacted; no wallet signature, transaction, funding, deployment or ledger mutation occurred. No MintPolicy, B1 validator, Oracle schema, V3, Reveal, 500×, ABI or economic constant changed.
+
+
+
+## 46.54 — AGENT A — C1 FIVE-COMPONENT DEPLOYMENT-LINEAGE RECONCILIATION (2026-11-16)
+
+**Classification:** READ-ONLY SOURCE / WORKFLOW / MANIFEST CROSSWALK; no C1 live dispatch, no secrets read, no wallet, deployment, signature, transaction or ledger action.
+
+### 1. Existing C1 observer is reusable, but needs an authenticated five-component input envelope
+
+The exact-branch source already contains:
+- `audit/cardano-integration/preprod-c1-acquired-point-observer.mjs` — one acquired Ogmios session, Preprod network-magic check, raw query capture/digests and cardinality decoding for PrizeValidator, B1, Counter, V3 Carrier and B2 Control;
+- `audit/cardano-integration/preprod-c1-item-ledger-adapter.mjs` — strict conversion of acquired-point PrizeDatum rows into the existing item-ledger projection;
+- exact-HEAD software evidence: PRE-RICH Action Refinement Conformance #390 / run [43819536981](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43819536981), SUCCESS on `61b4736e429eebafcbc8b76101805ed907ce3d2c`.
+
+Neither component manufactures deployment authority. The observer requires a five-component envelope and explicitly returns `deploymentAuthorityVerified=false`, `cardinalityQualified=false`, `prizeValidatorPopulationClassified=false`, `c1Qualified=false`. The adapter separately keeps full ProtectedCapital, provider/source completeness, V3 aggregate reconciliation, historical Claim/Expire replay and R7 L6 proof false.
+
+### 2. The existing ProtectedCapital deployment loader is only a historical B1/Oracle cross-check
+
+`audit/cardano-integration/preprod-protected-capital-deployment-identity.mjs` loads only:
+- the Direct-USDM B1 deployment manifest; and
+- the Oracle State deployment manifest.
+
+It checks their self-digests, tUSDM identity, Pool singleton identity and address/payment-credential consistency for PrizeValidator/B1/Oracle. Its own return contract says:
+- `sourceMode=DEPLOYMENT_MANIFESTS_HASH_CHECKED`;
+- `manifestIntegrity=SELF_HASH_MATCH_NOT_SIGNATURE_AUTHENTICATION`;
+- `manifestAuthorityCryptographicallyVerified=false`;
+- address binding scope is payment-credential matching only, not Plutus bytecode re-derivation or manifest authentication.
+
+It contains no Counter, V3 or B2 deployment records and is not the five-component identity envelope required by the C1 addendum.
+
+### 3. B2 and V3 are produced by separate, non-unified deployment paths
+
+**B2 Control**
+- Current branch workflow `.github/workflows/pre-rich-b2-control-preprod.yml` is `workflow_dispatch` only and requires the DEMETER Blockfrost credential, the existing Preprod deployer seed and the separately supplied `PREPROD_CONTROL_TOKEN_NAME_HEX`.
+- It deterministically selects a wallet seed UTxO, then `scripts/deployPreRichControlCarrier.mts` derives the B2 minting policy from that seed and token name, derives the carrier address, submits the singleton and writes `audit/preprod-issue/b2-control-deployment.json`.
+- The generated evidence records a fixed descriptive deployment label, network, seed reference, policy/name/unit, address, deployment transaction/state references, datum and signer/authority fields. It does **not** record a common C1 `deploymentId`, source commit, script-artifact digest, parameter digest, immutable workflow/run provenance, or an independently authenticated deployment attestation.
+
+**V3 Economic State Carrier**
+- `scripts/deployV3Carrier.mts` is a separate local/admin Preprod deploy script. It requires an explicit seed reference, token name, initial datum and Issue-authority public key; derives its policy from the seed/token name and its carrier address from the parameterized validator; then writes `audit/preprod-issue/v3-carrier-deployment.json`.
+- Its output records a descriptive deployment label, network, seed reference, policy/name/unit, address, deployment transaction/state references, initial datum and signer/public key. It likewise does **not** record a common C1 `deploymentId`, source commit, script-artifact digest, parameter digest, immutable workflow/run provenance, or an independently authenticated deployment attestation.
+- The reviewed `.github/workflows/immortal-v3-carrier-fast.yml` builds/verifies V3 Plutus artifacts and executes the V3 carrier probe on a local Yaci devnet. It does not invoke `scripts/deployV3Carrier.mts` or materialize a Preprod V3 carrier. The separate read-only V3 Preprod observation job in `immortal-cardano-preprod.yml` was **SKIPPED** in run #43819536847.
+
+The two deployment outputs are therefore separate artifacts with independently derived seed/policy identities, not two records already bound to one approved source/deployment generation. Their existence or a self-hash cannot be used to synthesize the missing trust relationship.
+
+### 4. Current acquired Preprod point cannot be promoted to C1
+
+Run [IMMORTAL Cardano Preprod Context #43819536847](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43819536847) acquired slot 139128656, but the executed read-only context queried only the wallet, PrizeValidator and B1 addresses. Counter, V3 Carrier and B2 Control were not queried in that same session. The workflow's direct-USDM bootstrap, V3 observation, Preprod deployment and real Reveal jobs were all SKIPPED.
+
+Consequently, no evidence-supported five-component envelope can currently be assembled from the existing records without inventing at least one of:
+- a common deployment generation/source commit;
+- missing script/parameter digests and current live singleton identities;
+- a governed issuer/trust-root/attestation link authorizing the component set.
+
+The C1 observer is not run against a hand-filled candidate envelope: that would produce a candidate-address observation and still leave authority false, while risking a false impression that the queried components belong to one canonical deployment.
+
+### 5. Gate and next permissible work
+
+| Item | Current disposition |
+|---|---|
+| C1 observer and item-ledger adapter code/tests | **IMPLEMENTED / exact-HEAD software tests PASS** |
+| B1/Prize/Oracle historical deployment cross-check | **SELF-HASH + ADDRESS CONSISTENCY ONLY** |
+| B2 Preprod deployment record in common C1 format | **NOT PRESENT IN THE REVIEWED LIVE EVIDENCE** |
+| V3 Preprod deployment record in common C1 format | **NOT PRESENT IN THE REVIEWED LIVE EVIDENCE** |
+| Counter current deployment identity/lineage | **NOT BOUND TO THE SAME GENERATION** |
+| Five-component same-point live query | **NOT RUN** |
+| GOV-30 authorized deployment trust root | **OPEN — DRAFT IS NON-NORMATIVE** |
+| C1 / PA1–PA7 | **OPEN / NOT QUALIFIED** |
+
+Do not add a second identity manifest or generate guessed deployment IDs. The next work must reuse the actual, independently verified B2/V3 deployment outputs if they exist and bind them to exact source/artifact/parameter identities; otherwise those carriers remain unmaterialized or unqualified. The GOV-30 relying-authority decision is separate and cannot be created by Agent A source code. Agent A will keep the C1 observer read-only and fail-closed until the authority and identity inputs exist.
+
+**Non-effects:** no B2/V3 workflow dispatched; no secrets, wallet seeds or keys read; no deployment or C1 live observer executed; no signature, transaction, funding or ledger mutation; no V3, Reveal, 500×, ABI, B1, Treasury, Oracle or economic rule changed.
