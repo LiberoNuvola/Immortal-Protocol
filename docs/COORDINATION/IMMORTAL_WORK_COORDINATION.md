@@ -10011,3 +10011,49 @@ The C1 observer is not run against a hand-filled candidate envelope: that would 
 Do not add a second identity manifest or generate guessed deployment IDs. The next work must reuse the actual, independently verified B2/V3 deployment outputs if they exist and bind them to exact source/artifact/parameter identities; otherwise those carriers remain unmaterialized or unqualified. The GOV-30 relying-authority decision is separate and cannot be created by Agent A source code. Agent A will keep the C1 observer read-only and fail-closed until the authority and identity inputs exist.
 
 **Non-effects:** no B2/V3 workflow dispatched; no secrets, wallet seeds or keys read; no deployment or C1 live observer executed; no signature, transaction, funding or ledger mutation; no V3, Reveal, 500×, ABI, B1, Treasury, Oracle or economic rule changed.
+
+
+## 46.55 — AGENT A — COUNTER LOOKALIKE FINDING RECONCILED TO EXACT-HEAD LAB EVIDENCE (2026-11-16)
+
+**Classification:** READ-ONLY FIRST-ISSUE SECURITY IMPACT REVIEW OF AGENT B'S EXACT-HEAD TEST EVIDENCE. Agent A does not modify Agent B-owned Plutus/MintPolicy/Counter paths. No Preprod action or ledger mutation.
+
+### 1. Exact tested source and artifact
+
+- Source HEAD: `61b4736e429eebafcbc8b76101805ed907ce3d2c`.
+- Workflow: [IMMORTAL Cardano Integration Lab #2817 / run 43819537021](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43819537021).
+- Job `devnet-integration`: SUCCESS; both `Execute compiled MintPolicy Counter lookalike CEK characterization` and `Execute Counter lookalike identity spend characterization on local Yaci` completed successfully.
+- Artifact ID `14204408973`; ZIP SHA-256 `9f62e1cba6ce97cb8b12f56147acdebb086e9dea8788f7c924fb477944337e9d`. The ZIP was downloaded and its SHA-256 independently recomputed; it matches GitHub's artifact digest.
+
+### 2. Two separate positive characterizations
+
+**Compiled Plutus CEK — MintPolicy predicate**
+The test log explicitly reports:
+- `PASS: compiled CounterValidator accepts alternate-stake lookalike continuation`;
+- `PASS: compiled MintPolicy accepts Counter payment hash at an alternate staking credential`.
+
+In the current `plutus/MintPolicy.hs` source, `findCounterInputs` (lines 82–91) and `hasNextCounterOutput` (lines 93–111) compare only `addressCredential` / the payment `ScriptHash`. Neither predicate binds the full Cardano address including staking credential. The compiled CEK fixture therefore confirms that the current MintPolicy predicate accepts the alternate-staking lookalike input under its synthetic ScriptContext.
+
+**Local Yaci — CounterValidator and exact-address reader separation**
+The downloaded `counter-lookalike-identity-characterization.json` records:
+- canonical address `addr_test1wpv89jhjw5xgn9npvt34dgs7rywpfvsf4077kmsna9fuv8ceajjnx`;
+- lookalike address `addr_test1zpv89jhjw5xgn9npvt34dgs7rywpfvsf4077kmsna9fuv87gc3mppgmqxj4vdlzcsj9a4ewz0rvefl6s9sz52h3m8m5q35d9jt`;
+- same payment ScriptHash `5872caf2750c89966162e356a21e191c14b209abfdeb6e13e953c61f`, different full address;
+- two successful local-Yaci spends of the lookalike UTxOs, with datum 0 → 1;
+- canonical Counter out-reference `537e87d1e0d02b5063953992fe125ae555ca797315d1a38b8b2eaef7b4444231#0` remains unspent and exact canonical-address UTxO count remains one.
+
+### 3. Strict security interpretation
+
+This is sufficient to keep the first real Issue blocked pending Agent B's remediation/review:
+- the compiled MintPolicy predicate accepts a same-payment-hash/different-staking-credential Counter input in a CEK fixture;
+- the compiled CounterValidator accepts lookalike continuations on local Yaci;
+- the canonical Counter is not consumed by those lookalike spends.
+
+It is **not** evidence that a second Ticket NFT was minted or accepted by the Yaci ledger. The Yaci trace executes CounterValidator only; it does not execute MintPolicy. The CEK test executes MintPolicy against synthetic ScriptContext and is not a native-ledger Issue transaction. The artifact itself states both limitations and that the result is not Preprod/Mainnet qualification.
+
+### 4. Ownership and gate
+
+The production paths `plutus/MintPolicy.hs`, `plutus/CounterValidator.hs`, their Plutus tests and the Counter lookalike Yaci trace remain Agent B-owned. Agent A makes no code change and does not prescribe an unreviewed ABI/parameter change. Agent B must close the address-identity predicate and produce a negative lookalike test on the compiled MintPolicy plus a positive canonical path before this first-Issue P0 can be cleared.
+
+**Disposition:** `COUNTER.IDENTITY.MINT_POLICY.CEK` = ACCEPTS LOOKALIKE IN FIXTURE; `COUNTER.IDENTITY.LOOKALIKE.YACI` = TWO LOOKALIKE SPENDS ACCEPTED / CANONICAL UNTOUCHED; full duplicate Ticket NFT mint = NOT DEMONSTRATED; first real Preprod Issue = **NO-GO**.
+
+No V3, Reveal, 500×, datum/redeemer ABI, economic constant, wallet, signature, Preprod deployment, transaction, funding or ledger state was changed.
