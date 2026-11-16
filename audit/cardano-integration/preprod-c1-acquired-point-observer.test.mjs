@@ -173,9 +173,9 @@ test('decodes a valid Preprod enterprise script address and binds its payment cr
 
 test('rejects mainnet, non-Preprod network id, key credentials and invalid checksum', () => {
   const hash = 'a'.repeat(56)
-  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_PREPROD/)
+  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_TESTNET/)
   assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 0, 6), hash), /PAYMENT_CREDENTIAL_NOT_SCRIPT/)
-  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 0, 7, 'addr'), hash), /NOT_PREPROD/)
+  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 0, 7, 'addr'), hash), /NOT_TESTNET/)
   assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash.slice(0, 54)), hash), /SHELLEY_PAYLOAD/)
   const validAddress = enterpriseScriptAddress(hash)
   const replacement = validAddress.endsWith('q') ? 'p' : 'q'
