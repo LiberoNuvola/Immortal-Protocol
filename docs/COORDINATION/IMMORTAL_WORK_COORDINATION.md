@@ -10057,3 +10057,63 @@ The production paths `plutus/MintPolicy.hs`, `plutus/CounterValidator.hs`, their
 **Disposition:** `COUNTER.IDENTITY.MINT_POLICY.CEK` = ACCEPTS LOOKALIKE IN FIXTURE; `COUNTER.IDENTITY.LOOKALIKE.YACI` = TWO LOOKALIKE SPENDS ACCEPTED / CANONICAL UNTOUCHED; full duplicate Ticket NFT mint = NOT DEMONSTRATED; first real Preprod Issue = **NO-GO**.
 
 No V3, Reveal, 500×, datum/redeemer ABI, economic constant, wallet, signature, Preprod deployment, transaction, funding or ledger state was changed.
+
+
+## 46.56 — AGENT A — GOV-30 / NOTION AUTHORITY RECONCILIATION + EXACT-HEAD CI REFRESH (2026-11-16)
+
+**Classification:** READ-ONLY GOVERNANCE SOURCE TRIANGULATION + EXACT-HEAD CI INSPECTION; no authority decision, key, issuer, workflow dispatch, wallet, signature, deployment or ledger action.
+
+### 1. What the Notion sources actually authorize
+
+The Notion page **PRE-RICH Governance Architecture v0.1 — Application Governance Layer** (page last edited 2026-10-07) states that PRE-RICH is a future governance architecture, not an active DAO/community authority. During the development phase, specification authority remains with the project owner. This is authority to retain/adopt project specification decisions within the existing governance boundary; the page does not establish a separate production Issue issuer, issuer operator, public-key role, key custodian, deployment mandate or live signing service.
+
+The Notion page **GOV-02 — Authority / Permission Matrix v0.1** (last edited 2026-11-04) continues to distinguish:
+- P2 maintainer/implementation authority: prepare implementation and merge only after applicable gates; no unilateral normative/economic override and no evidence bypass;
+- P3 scientific/verification authority: assess and reject insufficient evidence, but no governance authority by virtue of review;
+- P4 canonicalization: only after all mandatory gates for the proposal class;
+- no authority merely from role, tokens, technical access or private agreement.
+
+GOV-02 expressly prohibits administrator/maintainer economic override, oracle/operator authority to define truth, relayer authority to alter canonical state, and treating private agreement as canonical without formal adoption. The project-owner specification role is therefore not a substitute for the missing Issuer/key-role mandate and deployment evidence.
+
+### 2. GOV-30 and EXP-06/12 have not been promoted to an operative trust root
+
+The current repository's `docs/01-formal-records/governance/GOV-30-AUTHORITY-ROLE-AND-KEY-LIFECYCLE-OPTIONS.md` remains **DISCUSSION DRAFT — NO NORMATIVE DECISION / NO IMPLEMENTATION AUTHORIZED**. The latest Notion PRE-RICH Control Center reconciliation confirms that the draft does not create a registry, signer, trust anchor, key lifecycle or deployment authority.
+
+The same Control Center records the limits of the prior EXP-06/12 work:
+- the trust-root/issuer lifecycle audit and Ed25519 verifier tests passed on their stated exact historical SHA;
+- the structural C17 partition does not authenticate source-universe completeness, valuation or authority;
+- the trust-root audit still found absent `issuerId`, `keyId`, `appraisalPolicyId`, audience, validity, revocation and supersession bindings in the current payload;
+- the Ed25519 regression uses ephemeral test keys and does not prove production custody, appointment or a deployed signer.
+
+The Control Center's 2026-11-02 producer audit also distinguishes the implemented in-repository Issue Authority **server/client verifier** from the external signed producer: `signIssueAuthorityEnvelope` is observed in tests only; the server does not call it to issue decisions and instead requires an external `ISSUE_AUTHORITY_SOURCE_URL` / `ISSUE_AUTHORITY_URL` and `ISSUE_AUTHORITY_PUBLIC_KEY`. No deployment descriptor/workflow, live health endpoint, production signer owner or key custodian was recovered from visible sources. This remains a bounded negative search, not proof that no private/third-party service exists.
+
+### 3. Exact-head CI recheck after §46.55
+
+Current shared branch HEAD: `3b141c11441af2f2914a2544f341613ec67c2d0f`.
+
+All six relevant push workflows completed SUCCESS on this exact SHA:
+- [Cardano Adapter Sale Conformance #43825420080](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43825420080) — frontend build and economic-conformance jobs SUCCESS; the C1 Counter-address evidence-boundary and C1 producer-provenance crosswalk regressions passed.
+- [Algorithmic Governability Adversarial Lab #43825420181](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43825420181) — no-result-dependent-authority job SUCCESS; PRE-RICH Issue Ed25519 authority verifier tests and EXP-01 C17 structural partition boundary passed.
+- [Documentation Link Check #43825420208](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43825420208) — SUCCESS.
+- [Flux Point DoD Pilot #43825420219](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43825420219) — SUCCESS.
+- [Protocol Declaration Conformance #43825420149](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43825420149) — SUCCESS.
+- [IMMORTAL Portability Conformance #43825420137](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43825420137) — SUCCESS.
+
+These runs verify the checked-in code/test and document boundaries only. They do not perform a governance adoption, appoint an Issue issuer, bind a production key to a mandate, establish key custody/revocation, deploy the authority server, fetch a live signed response, or execute an Issue transaction. They do not close the Counter lookalike P0, C1, PA1–PA7, R1/Kc/Ω or Oracle/source gates.
+
+### 4. Updated first-Issue authority disposition
+
+| Requirement | Result |
+|---|---|
+| Project-owner specification authority during development | **DOCUMENTED IN NOTION — LIMITED TO SPECIFICATION / GOVERNANCE SCOPE** |
+| GOV-02 permission boundaries | **DEFINED; no implementation or evidence bypass** |
+| GOV-30 issuer/key lifecycle decision | **DRAFT / NO NORMATIVE DECISION** |
+| Issue issuer role, mandate, audience and appraisal policy | **NOT APPOINTED / NOT VERIFIED** |
+| Production key custody, validity, revocation and supersession | **NOT VERIFIED** |
+| External signed Issue producer deployment and live health | **NOT VERIFIED** |
+| Current signed authority response bound to live Preprod references | **NOT PRODUCED** |
+| First real Preprod Issue | **NO-GO** |
+
+This corrects neither the governance model nor any prior authority statement. It prevents a category error: the project owner's current specification role cannot be re-labelled as a production signer mandate or a deployed Issue authority. A future issuer/key binding requires the applicable canonical decision and deployment evidence; Agent A cannot create that authority through a source patch.
+
+**Non-effects:** no Notion page edited; no GOV-30 option selected; no issuer or custodian invented; no key generated/read/rotated; no authority endpoint contacted; no workflow dispatched; no wallet signature, transaction, funding, deployment or ledger mutation. No V3, Reveal, ABI, 500× or economic semantics changed.
