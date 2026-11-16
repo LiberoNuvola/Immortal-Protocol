@@ -9804,3 +9804,64 @@ If Orcfax is to remain the chosen provider candidate, obtain a provider-supporte
 Only then can the existing Option-B rational conversion be implemented and cross-tested against Haskell/TypeScript. No direct parity assumption, off-chain displayed decimal, Mainnet-to-Preprod substitution, single-pool fallback, or feed timestamp rewrite is permitted.
 
 No workflow was dispatched by this audit; no feed update was requested; no credential, wallet seed or private key was read; no Oracle datum, source code, datum schema, MintPolicy, B1 validator, V3, Reveal, EEV approval, transaction, funding, deployment or ledger state was changed.
+
+
+## 46.52 — AGENT A — DIA CARDANO ORACLE RECHECK: TECHNICALLY VIABLE PROVIDER, NO PREPROD USD/USDM FEED MATERIALIZED (2026-11-16)
+
+**Classification:** READ-ONLY PUBLIC REPOSITORY / DEPLOYMENT / FEED-CATALOGUE REVIEW; no provider request, source deployment, code, datum or ledger action.
+
+### 1. What DIA has actually delivered on Cardano
+
+The public `diadata-org/dia-cardano-oracle` repository contains a complete Cardano integration:
+- Aiken Pair / Receiver / Config validators;
+- an off-chain feeder daemon which consumes DIA Lasernet `OracleIntent` events and publishes Cardano updates;
+- an indexer that reads live Pair/Receiver/Config UTxOs and returns exact reference inputs and Pair NFT identity;
+- an example consumer validator that authenticates a Pair NFT reference input and accepts/rejects based on price;
+- an operational CLI, monitoring and a published deployment/evidence pack.
+
+This makes DIA a technically substantive Cardano observation-provider candidate, not merely an API brand. The indexer can expose the actual on-chain UTxO to a consumer, and the Pair NFT can identify the feed. That still does not make an arbitrary DIA datum authoritative for IMMORTAL: the exact feed, asset identity, network, source methodology, freshness, and IMMORTAL's own source-admission authority must all be separately established.
+
+### 2. Latest published Cardano deployment evidence is not the required feed/network
+
+The official DIA Milestone 4 close-out report (completion date 2026-08-10) records:
+- Mainnet deployment live since 2026-06-16, with the continuously published Mainnet registry/feed pair `ARS/USDT` and a 40-update sustained verification window;
+- a Cardano Preview deployment with 16 distinct feeds: `ADA/USD`, `ARB/USD`, `BNB/USD`, `BTC/USD`, `DAI/USD`, `DOGE/USD`, `ETH/USD`, `LTC/USD`, `MATIC/USD`, `NEIRO/USD`, `SHIB/USD`, `SOL/USD`, `USDC/USD`, `USDT/USD`, `XRP/USD`, and `XVG/USD`;
+- no `USD/USDM`, `USDM/USD` or exact Moneta tUSDM feed in that published Preview list.
+
+The report demonstrates a real ADA/USD Pair/feed and a full Preview consume loop, but it does not provide a second USD/USDM observation. It is also **Cardano Preview**, not the **Cardano Preprod** network used by this PRE-RICH deployment. No exact Preprod deployment/feed UTxO or verifier identity for the accepted Preprod tUSDM asset was found in the reviewed DIA publication evidence.
+
+### 3. Free API versus an authenticated on-chain feed
+
+DIA's public Cardano ADA page exposes a free Cardano price API for testing/evaluation and explicitly says production/custom requirements use a dedicated, configured oracle. The DIA Cardano integration repository likewise documents a feed-request path for DIA's wider price/RWA catalogue. These are useful provider capabilities, not an existing production feed for the exact PRE-RICH asset.
+
+The off-chain API cannot be substituted for a Pair UTxO referenced by MintPolicy: an HTTP value alone is not the provider-authenticated, transaction-bound ledger observation required by the current on-chain verifier boundary. A custom feed request or a provider-operated custom publication would be a new external activation. No such request was made, and no feed was provisioned.
+
+The open-source feeder also depends on DIA Lasernet `OracleIntent` events as its upstream source. Running the Cardano feeder/indexer code locally would not independently create an authenticated market source or a USD/USDM observation; self-hosting the publication infrastructure is not equivalent to proving the upstream price and IMMORTAL's authority to admit it.
+
+### 4. Option-B disposition
+
+| DIA evidence | Status |
+|---|---|
+| Cardano-native Pair/Receiver/Config + feeder + indexer + consumer architecture | **IMPLEMENTED / DEPLOYED IN PUBLIC PROJECT** |
+| ADA/USD live feed on Cardano Preview | **OBSERVED IN THE M4 PREVIEW EVIDENCE PACK** |
+| Mainnet sustained feed | **OBSERVED — ARS/USDT in the published M4 evidence** |
+| USD/USDM or exact Moneta USDM/USD feed | **NOT FOUND IN THE PUBLISHED CARDANO FEED SET** |
+| Exact Preprod tUSDM feed / Preprod Pair NFT and UTxO | **NOT EVIDENCED** |
+| Source-qualified Option-B pair at one Preprod ledger cut | **NOT QUALIFIED** |
+| IMMORTAL source registry / admission authority | **OPEN** |
+
+DIA is a viable provider architecture if a future, governed custom feed is explicitly activated and its exact on-chain evidence is published. It is not a ready-made Option-B solution in the current repository/network state. Since this task is to obtain evidence already available to us, no external custom-feed request or provider contact has been initiated.
+
+### 5. Candidate inventory after this pass
+
+The source search now has a precise disposition:
+- **Pyth Pro:** existing ADA/USD observation-verifier probe exists, but the 2026-10-26 USDM catalogue query found no active exact Moneta USDM/USD market pair; returned USDM-like symbols refer to other instruments or reserve NAV.
+- **Charli3:** the exact Preprod ADA/USD and USDM/USD feed UTxOs were observed, but their on-chain datum records are expired/stale and lack pair/precision/provider-signatory metadata; current hosted service status is not qualified.
+- **Orcfax:** exact Mainnet ADA/USD + ADA-USDM pair configuration exists, but facts are stale, not time-coherent, and no exact Preprod feed deployment was evidenced.
+- **DIA:** Cardano Preview ADA/USD and a production-grade Pair/feeder/indexer stack exist, but no USD/USDM/Moneta feed or exact Preprod tUSDM deployment was found; a custom feed would require a new activation.
+- **DEX-derived cross-rate:** requires exact pool identity, depth/manipulation bounds, same-cut observation and source authority; no admissible Preprod witness for the exact tUSDM asset has been established.
+- **Issuer/reserve data:** do not establish a transaction-time USD/USDM secondary-market quote and cannot be relabelled as one.
+
+**Conclusion:** no presently recovered provider yields both Option-B legs as fresh, exact-asset-bound, transaction-verifiable observations on Cardano Preprod. This is a concrete source-availability gate, not a software adapter defect. Keep the existing single-publisher Oracle/MintPolicy path fail-closed. Do not select a substitute feed, silently use USD parity, or change the on-chain consumers. If the source cannot be independently obtained from existing evidence, the remaining route is a separately governed provider activation or a new source architecture, neither of which is performed in this pass.
+
+No custom feed was requested or activated. No external wallet, API secret or private key was read; no feeder was deployed; no Oracle State datum or source registry changed; no workflow was dispatched; no transaction, funding, deployment, MintPolicy, B1, V3, Reveal, EEV or Issue state changed.
