@@ -42,6 +42,10 @@ function rowsFor(observation, component) {
       found.rawUtxoCount !== found.rawOgmiosUtxoResult.length) {
     fail('RAW_COMPONENT_OBSERVATION_INVALID:' + component.componentId)
   }
+  if (found.queryCanonicalJsonSha256 !== sha256CanonicalJson(found.query) ||
+      found.rawOgmiosUtxoResultCanonicalJsonSha256 !== sha256CanonicalJson(found.rawOgmiosUtxoResult)) {
+    fail('RAW_COMPONENT_DIGEST_MISMATCH:' + component.componentId)
+  }
   const refs = new Set()
   for (const row of found.rawOgmiosUtxoResult) {
     const ref = reference(row, component.componentId)
