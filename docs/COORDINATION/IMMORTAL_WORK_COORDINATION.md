@@ -9002,3 +9002,58 @@ The separate `relayer/preprodIssueAdmissionProvider.js` can retrieve a signed Is
 | First real Preprod Issue | **NO-GO** |
 
 No deployment script, wallet, public-key rotation, signature, workflow dispatch, transaction, funding or ledger mutation was performed. No ABI, validator, V3, Reveal, 500× or economic constant changed.
+
+## 46.41 — AGENT A — CORRECTION: ISSUE PROVIDER COMPOSITION EXISTS; EXTERNAL AUTHORITY REMAINS OPEN (2026-11-16)
+
+**Classification:** CURRENT-BRANCH SOURCE RECONCILIATION; correction to §46.40; no runtime or economic change.
+
+### 1. Correction to §46.40: the end-to-end software composition is already present
+
+The previous statement that the concrete observation-source → Haskell provider → mint injection was not materialized was too broad. The current branch does contain the composition, and the source path is explicit:
+
+1. `src/main.ts` imports `ISSUE_AUTHORITY_ENDPOINT` and `createRemoteAuthoritativeIssueAdmissionProvider`. In the Issue handler it constructs the remote provider and passes it to `mintSerialNFTWithAuthoritativeAdmission` as `authoritativeIssueAdmissionProvider` (current source around lines 906–920). `issueExecutionConfigured()` keeps the UI path disabled unless the remote endpoint and deployment-bound V3 factory/carrier identity are configured.
+2. `src/remoteAuthoritativeIssueAdmissionProvider.ts` sends the exact Issue request to `POST` on the configured endpoint and revives the server's BigInt transport fields. It is a transport client, not an authority.
+3. `relayer/issueAuthorityServer.js` exposes `/issue-admission`, reads the real Cardano Preprod context through Blockfrost/Lucid, validates exact Counter/B2/Pool/V3 references and coordinates, and instantiates `PreprodAuthoritativeIssueProvider`. The server also restricts browser CORS to one configured origin. CORS is not a signer or governance trust root.
+4. `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` composes the exact live observation reader, `observePreprodDirectUsdmPool` and Pool-datum reconciliation, the external signed-authority fetch/verification, and `createHaskellIssueAdmissionProvider`.
+5. `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` executes the canonical Haskell `issue-admission` command and compares its action, state/action/post-state digests, EEV, executable liquidity, ProtectedCapital components and decision/observation references with the authenticated observation before constructing the runtime witness.
+6. `src/preRichIssueAdmissionBridge.ts` applies the fail-closed witness checks; `src/mint.ts` consumes it and encodes the carrier transition for on-chain Ed25519 verification.
+
+Therefore the software-composition gate is **IMPLEMENTED AT SOURCE LEVEL**. It is not accurate to call for another provider adapter or duplicate `buildDecisionContext` bridge.
+
+### 2. The actual unresolved dependency is the external signed authority
+
+`issueAuthorityServer.js` requires `ISSUE_AUTHORITY_SOURCE_URL` (or `ISSUE_AUTHORITY_URL`) and `ISSUE_AUTHORITY_PUBLIC_KEY`; it does not sign an Issue decision. It asks the external source for an already-signed authority envelope. `relayer/preprodIssueAuthorityEnvelope.js` can sign a precomputed witness, but its checked-in positive usage is test-only and generates an ephemeral Ed25519 keypair. The signing helper does not compute the economics or certify viability.
+
+The server process has a package command (`npm run issue-authority-server`) and a `/healthz` route, but a local command is not a deployed endpoint. No production signer owner/key custodian, external source endpoint, live service health, or deployed server instance was verified in this audit. `.env.example` leaves the endpoint and server-only authority settings blank/commented. The code therefore has an executable integration seam, but it cannot yield a real production witness until the external authority and deployment configuration are supplied and qualified.
+
+### 3. GOV-30 scope: do not conflate deployment trust root with an already-defined key registry
+
+The current C1 coordination entries use **GOV-30** as an open *deployment trust-root / authorized deployment-attestation* gate for the five-surface Preprod identity/census. In the audited `work/immortal-green-closure` source I did not identify a standalone normative GOV-30 specification, executable trust-root registry, or artifact that maps a particular Ed25519 key fingerprint to an issuer role, permitted network, deployment scope, validity and revocation.
+
+`IMMORTAL/governance/Governance.hs` implements proposal classification, review, voting, gates and lifecycle/finality states; it does not contain a key-role registry or a deployment-attestation verifier. `IMMORTAL/governance/RulesetRegistry.hs` registers immutable versioned ruleset commitments; it does not authorize signer keys. Neither may be presented as the missing key authorization without an explicit normative decision and implementation.
+
+Accordingly, keep two statements separate:
+- **C1 GOV-30:** deployment manifest issuer/trust root and attestation for the declared deployment identities remain open; the read-only observer's parsed-JSON digests do not authenticate the manifest issuer.
+- **V3 carrier Issue-authority key:** the deploy script embeds an Ed25519 public key in the validator and the validator verifies its signature, but the inspected branch evidence does not establish who is entitled to control that private key or bind its fingerprint to an approved issuer mandate. Do not claim GOV-30 already supplies that authorization; the normative link/schema has not been identified.
+
+### 4. R1 remains separate from signature validity
+
+The Preprod provider's external envelope path cryptographically verifies the payload and carrier-binding signatures and binds them to exact live UTxO references, direct-USDM units/amount, timestamps, EEV qualification and certificate deployment references. This protects integrity and prevents substitution across the observed transaction context.
+
+It does **not** complete R1. `validateViabilityCertificate` still checks E1–E10 and VC1–VC6 reference/digest shape; it does not retrieve and hash the referenced artifact bytes or independently discharge VC2–VC6, Ω containment, χ/Wit or the initial-state witness. A correctly signed payload can still carry placeholder proof URIs and placeholder digests. The current tests intentionally use generated keys and synthetic proof/evidence URIs; they are verifier regression tests, not an R1 deployment certificate.
+
+### 5. Corrected gate status and next work
+
+| Gate | Corrected classification |
+|---|---|
+| Browser → remote Issue provider → server → Preprod provider → Haskell → mint source composition | **IMPLEMENTED** |
+| Live Preprod provider execution / deployed public endpoint | **NOT VERIFIED** |
+| External signed authority producer, owner and key custodian | **NOT IDENTIFIED / NOT QUALIFIED** in accessible repository evidence |
+| C1 GOV-30 deployment trust root / signed manifest attestation | **OPEN** |
+| Governance binding of the V3 carrier Issue-authority key | **NOT EVIDENCED; no matching key-role schema found** |
+| R1 E1–E10 / VC1–VC6 semantic certification | **OPEN** — reference/digest shape only in current verifier |
+| First real Preprod Issue | **NO-GO** |
+
+Next action is not another software adapter: locate the accountable external authority/key custodian and its signed authority source (or obtain an explicit governance decision that defines it), then bind the exact public-key fingerprint to the deployed carrier identity and the C1 deployment attestation. In parallel, produce the real PRE-RICH R1 E1–E10/VC1–VC6 package and an independent verifier of its referenced artifacts. Only then should the already-existing remote→server→Haskell→mint composition be run with current Preprod state.
+
+No key was generated or rotated, no environment secret was read or changed, no server or external authority was deployed, no approval workflow was dispatched, and no wallet, signature, Issue transaction, funding or ledger state was actuated. No ABI, V3, Reveal, 500× or economic constant changed.
