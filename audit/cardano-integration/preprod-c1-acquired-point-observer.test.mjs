@@ -5,11 +5,65 @@ import {
   C1_COMPONENT_IDS,
   observeC1ComponentsAtAcquiredPoint,
   validateC1CandidateIdentityEnvelope,
+  decodePreprodScriptAddress,
   sha256CanonicalJson,
 } from './preprod-c1-acquired-point-observer.mjs'
 
 const commit = 'a'.repeat(40)
 const point = { slot: 123456, id: 'b'.repeat(64) }
+
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
+const BECH32_GENERATORS = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+
+function polymod(values) {
+  let checksum = 1
+  for (const value of values) {
+    const top = checksum >>> 25
+    checksum = ((checksum & 0x1ffffff) << 5) ^ value
+    for (let i = 0; i < BECH32_GENERATORS.length; i += 1) {
+      if (((top >>> i) & 1) !== 0) checksum ^= BECH32_GENERATORS[i]
+    }
+  }
+  return checksum >>> 0
+}
+
+function hrpExpand(hrp) {
+  return [
+    ...Array.from(hrp, character => character.charCodeAt(0) >>> 5),
+    0,
+    ...Array.from(hrp, character => character.charCodeAt(0) & 31),
+  ]
+}
+
+function convertBits(data, from, to) {
+  let accumulator = 0
+  let bits = 0
+  const result = []
+  const maxValue = (1 << to) - 1
+  for (const value of data) {
+    accumulator = (accumulator << from) | value
+    bits += from
+    while (bits >= to) {
+      bits -= to
+      result.push((accumulator >>> bits) & maxValue)
+    }
+  }
+  if (bits > 0) result.push((accumulator << (to - bits)) & maxValue)
+  return result
+}
+
+function enterpriseScriptAddress(paymentCredentialHash, networkId = 0, addressType = 7, hrp = 'addr_test') {
+  const payload = Buffer.concat([
+    Buffer.from([(addressType << 4) | networkId]),
+    Buffer.from(paymentCredentialHash, 'hex'),
+  ])
+  const data = convertBits([...payload], 8, 5)
+  const values = [...hrpExpand(hrp), ...data, 0, 0, 0, 0, 0, 0]
+  const checksum = (polymod(values) ^ 1) >>> 0
+  const checksumWords = []
+  for (let i = 0; i < 6; i += 1) checksumWords.push((checksum >>> (5 * (5 - i))) & 31)
+  return hrp + '1' + [...data, ...checksumWords].map(value => BECH32_CHARSET[value]).join('')
+}
 
 function fixture() {
   return {
@@ -21,7 +75,7 @@ function fixture() {
       componentId,
       deploymentId: 'deployment-generation-fixture-01',
       sourceCommit: commit,
-      address: 'addr_test_candidate_' + componentId,
+      address: enterpriseScriptAddress(String(index + 1).repeat(56)),
       paymentCredentialKind: 'script',
       paymentCredentialHash: String(index + 1).repeat(56),
       derivedScriptHash: String(index + 1).repeat(56),
@@ -68,6 +122,32 @@ test('rejects mixed deployment generations', () => {
   assert.throws(() => validateC1CandidateIdentityEnvelope(input), /GENERATION_MISMATCH:counter/)
 })
 
+test('decodes a valid Preprod enterprise script address and binds its payment credential', () => {
+  const hash = 'a'.repeat(56)
+  const address = enterpriseScriptAddress(hash)
+  assert.deepEqual(decodePreprodScriptAddress(address, hash), {
+    addressType: 7,
+    networkId: 0,
+    paymentCredentialHash: hash,
+  })
+})
+
+test('rejects mainnet, non-Preprod network id, key credentials and invalid checksum', () => {
+  const hash = 'a'.repeat(56)
+  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_PREPROD/)
+  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 6), hash), /PAYMENT_CREDENTIAL_NOT_SCRIPT/)
+  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 7, 'addr'), hash), /NOT_PREPROD/)
+  const damaged = enterpriseScriptAddress(hash).slice(0, -1) + 'q'
+  assert.throws(() => decodePreprodScriptAddress(damaged, hash), /CHECKSUM_INVALID/)
+})
+
+test('rejects an address whose payment credential differs from the declared derived hash', () => {
+  const input = fixture()
+  input.components[1].paymentCredentialHash = 'f'.repeat(56)
+  input.components[1].derivedScriptHash = 'f'.repeat(56)
+  assert.throws(() => validateC1CandidateIdentityEnvelope(input), /ADDRESS_PAYMENT_CREDENTIAL_HASH_MISMATCH/)
+})
+
 test('rejects a payment credential that differs from the independently derived script hash', () => {
   const input = fixture()
   input.components[1].derivedScriptHash = 'f'.repeat(56)
@@ -106,7 +186,7 @@ test('queries all five addresses in one acquired point and preserves raw respons
   })
 
   assert.deepEqual(ledgerSession.calls.map(call => call.params.addresses[0]),
-    C1_COMPONENT_IDS.map(id => 'addr_test_candidate_' + id))
+    fixture().components.map(component => component.address))
   assert.ok(ledgerSession.calls.every(call => call.method === 'queryLedgerState/utxo'))
   assert.deepEqual(result.acquiredLedgerState, point)
   assert.equal(result.digestAlgorithm, 'SHA256_CANONICAL_JSON_V1')
