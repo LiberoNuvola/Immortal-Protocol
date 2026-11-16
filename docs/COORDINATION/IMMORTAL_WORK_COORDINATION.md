@@ -9057,3 +9057,70 @@ It does **not** complete R1. `validateViabilityCertificate` still checks E1–E1
 Next action is not another software adapter: locate the accountable external authority/key custodian and its signed authority source (or obtain an explicit governance decision that defines it), then bind the exact public-key fingerprint to the deployed carrier identity and the C1 deployment attestation. In parallel, produce the real PRE-RICH R1 E1–E10/VC1–VC6 package and an independent verifier of its referenced artifacts. Only then should the already-existing remote→server→Haskell→mint composition be run with current Preprod state.
 
 No key was generated or rotated, no environment secret was read or changed, no server or external authority was deployed, no approval workflow was dispatched, and no wallet, signature, Issue transaction, funding or ledger state was actuated. No ABI, V3, Reveal, 500× or economic constant changed.
+
+## 46.42 — AGENT A — HISTORICAL DVM / V25 ARCHIVE AUDIT FOR R1 (2026-11-16)
+
+**Classification:** LIBRARY SOURCE + ARCHIVED RESEARCH EVIDENCE AUDIT; no production code or normative rule changed.
+
+### 1. Recovered DVM v1 is useful lineage, not an R1 certificate
+
+The Library artifact `PRE-RICH_dynamic_viability_machine_v1.py` (34,290 bytes; created 2026-09-10) explicitly labels itself a research/validation simulator, deliberately separate from the on-chain implementation, and disclaims that the repository enforces every modeled rule. It has useful economic-organism content: state, obligations, assets, regime, ticket lifecycle, Jackpot, liquidation/rebalancing, a named scenario set and a recursive viability search. It must remain Research/Reference evidence.
+
+Direct inspection identifies the following limits relevant to R1:
+
+- **No complete E1 model:** the Python state uses floating-point quantities and simplified asset valuation/liquidation. The selected `standard_omega()` / `expanded_omega()` scenarios are a finite hand-written menu, not a declared environment perimeter with evidence that it over-approximates all economically possible PRE-RICH events. No formal `Accept(S,a)` relation or deployment-versioned transition relation for every `(S,a,ω)` is supplied.
+- **No E2/E3 certificate procedures:** `ViabilityKernel._viable` returns a Boolean and counterexamples; there is no total deterministic characteristic predicate `χ` defining a certified `K_c`, nor a total deterministic `Wit(S)` selector that can be independently checked for every admitted state.
+- **Finite horizon, not inductive closure:** `KernelConfig` defaults to horizon 4, and `_viable` returns `True` when `depth <= 0` after only the local invariant check. That terminal convention cannot discharge the infinite-horizon VC3 obligation.
+- **The `HOLD` path is not QNE:** `_viable` appends a `HOLD` state copy, but then applies every selected external scenario to it. `Scenario.apply` can reduce price/liquidity and add OPEX. Thus HOLD does not establish `b(T(S,a0,ω)) >= b(S)` for all Ω; no margin proof or environment-stable no-op witness is present.
+- **The branch set is bounded/truncated:** only the first `max_unresolved` (default 4) unresolved tickets are enumerated, and candidate branches are sliced by `max_scenarios`. This is not a proof that every unresolved ticket or every admitted successor is covered.
+- **PRE_GENESIS is short-circuited:** `_viable` returns based on current executable solvency for `PRE_GENESIS` before applying any environment scenario. This is a terminal/no-sale convention, not a demonstration that its obligations remain safe under future Ω.
+- **Incomplete lifecycle/memo state:** `ActionKind` names `EXPIRE`, but this v1 file does not implement an `Expire` transition or enumerate expiry in `_viable`. The memoization fingerprint omits fields present in `State` (including `highest_ever_class`, `jackpot_active` and `genesis_activated`); no congruence proof establishes that these omissions are immaterial to all future transitions.
+- **Initial state is only a fixture:** `genesis_state()` constructs a floating-point 4,000-USDM model fixture. It is not a derivation from the deployed Preprod V3 carrier or a ledger-bound `S0` witness.
+
+The file's own `completeness_report()` labels `regime_hysteresis_placeholder` as a placeholder, the Monte Carlo runner as external/next stage, and `on_chain_equivalence_proof` as `not claimed`. It therefore cannot be promoted as E1–E8, nor can its HOLD branch discharge QNE.
+
+### 2. V25 archive is a numerical reference, not a recoverable transition certificate
+
+The Library lineage audit `PRE-RICH_V27_2_TRANSITION_SOURCE_LINEAGE_AUDIT.md` reports a V25 finite abstract universe of 3,645 states, with 2,997 initially locally safe, 648 locally unsafe, 1,515 locally safe but outside the stored kernel, and a recorded greatest-fixed-point membership count of 1,482. Its recorded iteration signature is `2,997 → 2,644 → 2,146 → 1,647 → 1,482 → 1,482`. The same archive preserves the separation `UnresolvedReserve = P×N` versus `WorstCaseExposure = 500×P×N`; these must not be double-counted.
+
+The same V27 lineage does **not** recover the exact V25 successor relation. Its differential evidence is decisive:
+
+- V27.5: the V23-lineage adapter reproduces the stored local-safety flags for 3,645/3,645 states, but its calculated greatest fixed point is only 4 states (versus 1,482 stored).
+- V27.7: source-supported variants yield 1,423 or 2,083–2,087 states; none reproduces the 1,482 count or full iteration signature.
+- V27.8: 372 combinations of non-empty Ω subsets, source-supported action variants, projection modes and PRE_GENESIS lifecycle variants were tested; none reproduces 1,482 or the reference iteration signature.
+- V27.9 continues to list exact state projection, action admissibility/order, Ω application relative to lifecycle recomputation, off-grid successor treatment, scenario semantics and fixed-point elimination as unknown.
+
+These are not failures of the stored V25 result. They are provenance/differential findings: the stored grid and K* count are available as reference data, but the exact transition function that generated them is not recovered. A matching final cardinality alone would not prove semantic equivalence. No transition or rounding rule may be tuned to force a match.
+
+### 3. R1 evidence mapping
+
+| R1 obligation | Historical material found | Correct disposition |
+|---|---|---|
+| E1 — exact `(S,A,Accept,Ω,T,Safe)` model | DVM v1 partial research state/actions/scenarios; V25 abstract grid dimensions | **NOT DISCHARGED** — neither is the exact adopted/deployed model and V25 transitions remain unrecovered |
+| E2 — deterministic total `χ` | finite-depth Boolean search in DVM v1; stored V25 membership grid | **NOT DISCHARGED** — no reproducible predicate bound to exact profile/deployment |
+| E3 — deterministic total `Wit` | DVM v1 does not publish a complete selector; V25 witness/transition source missing | **NOT DISCHARGED** |
+| E4 / VC2 — safety inclusion | DVM v1 local checks; V25 local-safety flags reproduce in an archived adapter | **PARTIAL RESEARCH EVIDENCE ONLY** — no proof over adopted `χ` |
+| E5 / VC3 — inductiveness | V25 fixed-point cardinality; V23 lineage adapters fail exact reproduction | **NOT DISCHARGED** — successor relation not recovered |
+| E6 / VC4 — `Accept` compatibility | no complete executable-action acceptance relation in the recovered DVM/V25 package | **NOT DISCHARGED** |
+| E7 / VC5 — Ω containment | finite hand-written DVM scenarios; archive differential testing | **NOT DISCHARGED** — no declared authoritative PRE-RICH Env and sound over-approximation proof |
+| E8 / VC6 — deployment `S0` | DVM `genesis_state()` fixture and V25 abstract grid | **NOT DISCHARGED** — neither is the initial state of the exact deployed Preprod carrier with derivation evidence |
+| E9 / E10 | research diagnostics exist; no accepted certificate report/digest bound to deployment version | **NOT DISCHARGED** |
+
+### 4. Correct engineering conclusion
+
+The recovered DVM v1 and V25/V27 archive are valuable source-lineage and differential-test inputs. They are **not** a missing certificate waiting to be renamed. The DVM's finite-horizon/terminal shortcuts, incomplete event coverage and non-QNE HOLD path are incompatible with claiming R1 closure; V25's transition provenance remains independently unrecovered despite its stored 1,482-state reference.
+
+The next valid R1 step is to recover the contemporaneous V25 generator/relation (not to infer it from the grid), or explicitly specify and govern a new exact PRE-RICH deployment model under the existing normative contract, then independently verify E1–E10/VC1–VC6 and bind the real `S0` to the Preprod carrier. Any new model/specification requires the appropriate normative approval before implementation; no new economic parameter or softened Ω may be introduced as an audit shortcut.
+
+### 5. Status after archive audit
+
+| Gate | Classification |
+|---|---|
+| DVM v1 research lineage | **RECOVERED; RESEARCH ONLY** |
+| DVM v1 QNE / infinite-horizon proof | **NOT PRESENT** |
+| V25 grid / K* numerical reference | **RECOVERED AS ARCHIVE EVIDENCE** |
+| Exact V25 transition relation / independent reproduction | **NOT RECOVERED** |
+| PRE-RICH R1 E1–E10 / VC1–VC6 | **OPEN / NOT CERTIFIED** |
+| First real Preprod Issue | **NO-GO** |
+
+No DVM, V25 or R1 parameter was changed. No statistical profile, new action, QNE assumption, Ω narrowing, fixture promotion, V3/Reveal/ABI change or 500× modification was introduced. No workflow, wallet, signing key, server, transaction, deployment, funding or ledger state was actuated.
