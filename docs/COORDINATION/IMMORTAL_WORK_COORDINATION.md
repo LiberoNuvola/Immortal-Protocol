@@ -9578,3 +9578,73 @@ The Preprod observer, B1 provenance producer, Yaci harness and candidate Reveal 
 No source code, validator, ABI, Oracle datum, B1 datum/redeemer, V3, Reveal semantics, 500× rule, economic constant or deployment was changed. No workflow was dispatched by this reconciliation; no endpoint authority request, wallet signing, transaction submission, funding or ledger mutation was performed.
 
 The R1 historical-material search also rechecked the V25/V27 archive and Notion source registry: the numerical V25 grid and `K*=1482` remain available, but the dedicated V25 transition generator/relation remains unrecovered. The existing V23 lineage and the 372 differential variants are not a substitute. Do not tune a reconstructed transition to force the historical fixed-point count; recover the contemporaneous generator or pursue a separately governed exact deployment model under the normative certification contract.
+
+
+## 46.49 — AGENT A — HISTORICAL V25 WITNESS-MAP RECOVERY / PARTIAL Wit EVIDENCE
+
+**Classification:** LIBRARY ARTIFACT RECOVERY + INDEPENDENT CSV CROSS-CHECK; historical research evidence only. No implementation or normative decision.
+
+### 1. Correction to the overly broad “Wit not identified” classification
+
+The Library contains an explicit state-to-action witness map:
+
+- `PRE-RICH_V27_4_GRID_STATE_MAP.csv` (3,645 rows; fields include `state_id`, `in_K_inf` and `witness_action`);
+- `PRE-RICH_V27_5_LOCAL_SAFETY_REPRODUCTION.csv` (3,645 rows; fields include `v25_in_K` and `v25_witness`);
+- `PRE-RICH_V27_9_V25_WITNESS_ACTION_COUNTS.csv` (aggregate action counts).
+
+Independent local parsing of the two full state CSVs established:
+
+- 3,645 unique state IDs; no duplicate state rows.
+- Exactly 1,482 rows have `in_K_inf=True`.
+- Every one of those 1,482 rows has a non-empty `witness_action`; no row outside the stored K* carries one.
+- Stored action distribution: `HOLD=1,006`, `REVEAL_LOSS=335`, `CLAIM=141`.
+- Stored K* regime distribution: 1,382 GENESIS states and 100 PRE_GENESIS states.
+- A coordinate-by-coordinate cross-check of `(regime,cash,unresolved,liabilities)` found **zero discrepancies** between V27.4's `in_K_inf/witness_action` and V27.5's `v25_in_K/v25_witness`.
+- The V27.9 aggregate count file independently matches the same 1,482 total and three action counts.
+
+Therefore a **historical finite-grid witness-action matrix does exist**. It is more accurate to classify the table as a stored candidate `Wit` mapping for the archived K* than to say that no witness selector has ever been recorded.
+
+### 2. Why this is not yet an R1 witness-selector certificate
+
+The action table does not by itself establish the property required by R1:
+
+`s ∈ Kc ⇒ Wit(s) ∈ Accept(s) and ∀ω ∈ Ω: T(s,Wit(s),ω) ∈ Kc`.
+
+The separate `PRE-RICH_V27_1_RECONSTRUCTION_PROVENANCE_LEDGER.csv` contains 218,700 rows (3,645 states × 12 abstract actions × 5 scenarios). Its transition classifications independently parse to:
+
+| Provenance classification | Rows |
+|---|---:|
+| `UNDEFINED_IN_RECOVERED_SOURCE` | 109,485 |
+| `SUCCESSOR_OFF_V25_GRID` | 70,583 |
+| `RECONSTRUCTED_V23_TRANSITION` | 24,202 |
+| `LOCAL_ACTION_REJECT` | 14,430 |
+
+Only **7 state/action groups** have all five scenarios reconstructed with every successor marked in K*. The seven are:
+- state 0 — PRE_GENESIS, cash 0, unresolved 0, liabilities 0, `HOLD`;
+- state 5 — PRE_GENESIS, cash 0, unresolved 1, liabilities 0, `EXPIRE`;
+- state 5 — same state, `REVEAL_LOSS`;
+- states 91, 182 and 453 — PRE_GENESIS `CLAIM` witnesses;
+- state 724 — GENESIS `CLAIM` witness.
+
+Of those seven groups, only **five start in the stored K***: state 0 `HOLD`, and the four `CLAIM` states 91/182/453/724. The two state-5 groups are outside K* and are not witness rows. Thus only **5 of 1,482** stored witness-action rows have a complete five-scenario successor group in this V23-lineage reconstruction. The one fully reconstructed in-K `HOLD` group is state 0; it does not prove the other 1,005 stored `HOLD` choices.
+
+The ledger labels these reconstructed rows `RECONSTRUCTED_V23_TRANSITION`, not exact V25 transitions. The V27.3 audit already classifies the same seven groups as a small partial coverage subset and explicitly refuses to promote them to V25 equivalence. V27.9 continues to list exact action admissibility/order, Ω application, off-grid successors, scenario semantics and fixed-point elimination as unknown. The V27.4 map's blank `first_failure_action/first_failure_scenario` columns are missing entries, not proof that no counterexample exists.
+
+### 3. Correct R1 interpretation
+
+| Obligation | Updated classification |
+|---|---|
+| Historical finite-grid K* membership table | **RECOVERED AS LIBRARY ARTIFACT — 1,482 rows** |
+| Historical finite-grid witness-action mapping | **RECOVERED AS CANDIDATE TABLE — 1,482 selected actions** |
+| Deterministic/total `Wit` for the exact governed V25 model | **NOT CERTIFIED** — transition admissibility and semantic provenance remain incomplete |
+| VC3 / inductive closure under every authoritative Ω successor | **NOT DISCHARGED** — only five in-K witness groups have complete V23-lineage five-scenario reconstruction |
+| Deployment-bound R1 `(S,A,Accept,Ω,T,Safe)`, χ and Wit for current Preprod S0 | **NOT ESTABLISHED** |
+| First real Preprod Issue | **NO-GO** |
+
+This finding partially advances E3/Wit evidence and corrects §46.39's unqualified `χ / Wit NOT IDENTIFIED` wording. It does not close E1–E10 or VC1–VC6, does not establish Ω completeness, and does not authorize a new `HOLD`/NoOp action in `EconomicTransitionV3`. The historical `HOLD` label must not be copied into production or treated as a universal non-eroding action.
+
+### 4. Next bounded R1 step
+
+Preserve the 1,482-row matrix as a historical reference and use it as an exact test oracle only for the state/action labels it actually contains. The remaining work is to recover the contemporaneous V25 transition generator or complete transition relation and independently prove each selected action against its full Ω successor set. If that generator cannot be recovered, any replacement must be a separately governed exact PRE-RICH deployment model; do not tune an inferred transition to reproduce the historical K* count.
+
+No R1 parameter, Ω set, 500× rule, ProtectedCapital component, V3/Reveal semantics, ABI, validator or production source changed. No test/workflow was dispatched, and no wallet, key, transaction, deployment, funding or ledger state was actuated.
