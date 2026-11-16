@@ -226,11 +226,24 @@ try {
     ISSUE_AUTHORITY_PUBLIC_KEY: authorityPublicKeyPem,
   }
 
-  const ready = runGate(env)
-  assert.equal(ready.code, 0, ready.stderr || JSON.stringify(ready.report.blockers, null, 2))
-  assert.equal(ready.report.status, 'READY_FOR_WALLET_REVIEW')
-  assert.equal(ready.report.safety.transactionsSubmitted, false)
-  assert.equal(ready.report.safety.walletSigned, false)
+  // A locally coherent/hash-bound EEV fixture, including a synthetic Oracle
+  // assertion and merely configured URL/key/provider path, is not enough to
+  // establish deployment R1, full ProtectedCapital, or live Issue authority.
+  const baseline = runGate(env)
+  assert.equal(baseline.code, 2)
+  assert.equal(baseline.report.status, 'BLOCKED')
+  assert.equal(baseline.report.safety.transactionsSubmitted, false)
+  assert.equal(baseline.report.safety.walletSigned, false)
+  assert.equal(baseline.report.safety.walletReviewAuthorized, false)
+  assert.equal(baseline.report.safety.issueAuthorized, false)
+  for (const label of [
+    'Oracle external price source is independently verified',
+    'Deployment-specific R1 E1-E10 and VC1-VC6 viability certificate is independently verified',
+    'ProtectedCapital PA1-PA7 profile completeness and current-source authority are verified',
+    'Live signed Issue authority response is verified against current Preprod references',
+  ]) {
+    assert.ok(baseline.report.blockers.some(item => item.label === label), label)
+  }
 
   const unverifiedOracle = setArtifactDigest({
     ...oracle,
@@ -318,7 +331,7 @@ try {
   ))
   await saveJson(qualificationPath, validQualification)
 
-  console.log('preprod-first-issue-readiness: passes valid evidence chain and blocks altered source digests and approval digest mismatch')
+  console.log('preprod-first-issue-readiness: fails closed without verified Oracle source, R1, full ProtectedCapital, and live signed Issue authority; altered source digests and approval mismatches are also blocked')
 } finally {
   await rm(evidenceRoot, { recursive: true, force: true })
 }
