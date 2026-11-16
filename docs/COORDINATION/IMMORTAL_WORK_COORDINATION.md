@@ -9335,9 +9335,11 @@ The checker is intentionally fail-closed: it cannot return `READY_FOR_WALLET_REV
 First real Preprod Issue remains **NO-GO**. No workflow was dispatched; no authority endpoint was contacted; no secret or wallet seed was read; no wallet signing, key operation, server deployment, transaction, funding or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry or economic constant was changed.
 
 
-## 46.46 — AGENT A — ISSUE AUTHORITY TRUST-ROOT / GOV-30 GAP (2026-11-16)
+## 46.46 — AGENT A — ISSUE AUTHORITY TRUST-ROOT / GOV-30 GAP FOLLOW-UP (2026-11-16)
 
-**Classification:** Read-only runtime trust-boundary audit + narrow fail-closed gate/test update; no authority endpoint request, server start, workflow dispatch, signing or chain action.
+**Relation to prior work:** This is an implementation/guard follow-up to §46.39 and `docs/COORDINATION/AGENT-A-R1-SIGNED-AUTHORITY-PROOF-VERIFICATION-BOUNDARY-2026-11-15.md`. The signed-envelope/R1 proof-content and GOV-30 key-root gaps were already identified there; this section does not claim a new discovery.
+
+**Classification:** Read-only runtime trust-boundary confirmation + narrow fail-closed gate/test update; no authority endpoint request, server start, workflow dispatch, signing or chain action.
 
 ### 1. Existing cryptographic path confirmed — with a governance trust gap
 
