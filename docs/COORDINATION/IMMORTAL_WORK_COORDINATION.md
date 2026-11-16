@@ -9179,3 +9179,111 @@ The workflow explicitly states that EV1–EV7 qualification and `DEPLOYMENT_APPR
 Next action is to verify whether a real approved EEV run artifact already exists and independently validate its manifest, hashes, actor/run provenance and exact live Pool out-reference. Do not dispatch the workflow merely to obtain that artifact: it may create Oracle State and PrizePool UTxOs and spend wallet assets. In parallel, continue only on the remaining R1 and Issue-authority evidence; do not build another EEV adapter or treat EEV approval as a substitute for R1.
 
 No workflow was dispatched; no seed or secret was read; no wallet, signing key, server, transaction, deployment, funding or ledger state was actuated. No V3, Reveal, ABI, 500×, payout, expiry or economic constant was changed.
+
+
+## 46.44 — AGENT A — HISTORICAL EEV APPROVAL + NOVEMBER SOURCE REFRESH RECONCILIATION (2026-11-16)
+
+**Classification:** READ-ONLY GitHub Actions artifact retrieval + independent ZIP/payload digest and cross-binding audit; no workflow dispatch, wallet, transaction or ledger action.
+
+### 1. Correction to §46.43: a historical EEV approval artifact exists and is verified
+
+The main-branch EEV approval workflow was actually run successfully on 2026-10-21:
+
+- Approval run: `39552468679`, workflow-definition SHA `97b09a38742098f17a61eb07734c401aeedccc06`.
+- Job `approve`: **completed / success**; all 14 operational steps completed successfully, including pinned checkout, Oracle State reuse/materialization, Pool deployment-manifest recovery, exact source-set observation, EV1–EV7 qualification, approval materialization, normalization, digest verification and artifact upload.
+- Artifact: `immortal-preprod-eev-approved`, ID `12324421376`.
+- GitHub Actions registered ZIP digest: `sha256:d219db29890d55e3a63dd9a7ff3b0f04ec53e710a7e77688c8a48610c06d094c`; independently recomputed local ZIP SHA-256 matches exactly.
+- The five contained JSON manifests were recovered. All five self-digests recompute correctly; deployment, source-set, qualification and Oracle identity cross-bindings match; the approval snapshot digest recomputes to `afd20f53321b624b0e38261fbbf6c8f52ce50a6b52c77d5268f049d7f140b1ab`; the approved top-level digest recomputes to `1a8191819f950288b7a8fae47e73d7d5eb81fb90735c01082e12704483aeb86e`.
+- The old workflow's source checkout is correctly pinned to `0e5fa575f84e3759655b6d0a3492b2f0b79aa446`; the workflow-definition SHA and pinned source SHA are distinct by design. The earlier 404 against EV2–EV5 at the workflow-definition SHA was not a broken provenance chain.
+
+**Corrected statement:** the direct-USDM candidate did receive a real historical EV1–EV7 qualification and separate `DEPLOYMENT_APPROVED` artifact. §46.43's phrase “no generated run artifact verified” is superseded for the 2026-10-21 run. This does not authorize Issue, nor establish that its source out-reference remains live.
+
+### 2. The historical approval is bound to the 21 October source snapshot
+
+The approved source-set records:
+
+- exact Pool out-reference `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`;
+- direct Preprod tUSDM unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`;
+- physical quantity `1,000,000,000` atomic units, converted with FLOOR to `100,000` IMMORTAL USDM sub-units;
+- observation time `2026-10-21T05:57:26.613Z`, chain tip slot `136879045`.
+
+The deployment manifest records `bootstrap.txHash=null` and `reusedExisting=true`: that deployment run reused an already existing Pool singleton; it did not prove a swap or a Treasury asset-to-USDM liquidation route. Its `treasuryHash` is a derived topology hash, not a binding to a configured Treasury address/UTxO.
+
+The approval is expressly conditional on `LIVE_UTXO_REVALIDATION`. Its input qualification/source-set hashes are fixed to the 21 October evidence and cannot be paired with a later source-set/qualification by relabelling or copying the approval record.
+
+### 3. Newer 2 November live source observation and EV1–EV7 qualification exist, but no new approval
+
+A separate read-only workflow run was completed on 2026-11-02:
+
+- Run `41410801435`, exact qualification-source SHA `41d0d2d6b4db7d94b378068282756dc8a5860899`.
+- Job `Re-observe exact Pool and qualify EV1-EV7 without approval`: **completed / success**, all 16 steps succeeded.
+- The steps include Oracle State datum observation, Koios provider/ticket item-ledger conformance, read-only PrizeValidator/Pool census, exact live Pool re-observation, EV1–EV7 requalification and exact source-digest verification.
+- Artifact `preprod-eev-qualified-source-41d0d2d6b4db7d94b378068282756dc8a5860899`, ID `13125402289`, registered ZIP digest `sha256:cd76d95959e80b3bcfb8f900d940386e5ae8adb6047eb69057b4319afcbec4f5`; independently recomputed ZIP digest matches.
+- All four manifest `evidenceHash` values (deployment, source-set, qualification and Oracle State) recompute correctly. Source-set, qualification and deployment continue to bind the exact Pool out-reference above and the exact tUSDM unit.
+- The 2 November source-set observation is `2026-11-02T08:08:29.986Z`, chain-tip slot `137923680`; physical quantity remains `1,000,000,000` atoms and derived EEV remains `100,000` sub-units.
+- The refreshed source-set is still `OBSERVED_NOT_QUALIFIED`; EV1–EV7 qualification has `status=qualified`, but `deploymentApproval=null` and governance status `PENDING`.
+
+**Important binding rule:** the 21 October `DEPLOYMENT_APPROVED` artifact is bound to the older 21 October qualification/source-set evidence hashes. It does not authorize the newer 2 November candidate record. A newly authorized approval would need to bind the exact refreshed/current source-set and qualification digests after current live revalidation.
+
+### 4. The 2 November ProtectedCapital census is useful but explicitly not a full qualification
+
+The same 2 November artifact includes `preprod-protected-capital-census.json`:
+
+- Read-only Koios observation; pagination complete, exact totals reconcile, tip remained unchanged across the scan, datum bytes are present for all scanned outputs, and the single required inline-datum/hash comparison matched.
+- PrizeValidator population: zero UTxOs / zero ticket datums at that snapshot.
+- B1 Pool: exactly one singleton UTxO, the same `b84fce...#0`; the ticket item-ledger reconciles internally with B1 Pool datum counters and reports no unclassified PrizeValidator outputs.
+- Its status is only `INTERNAL_RECONCILIATION_ONLY`, not an authoritative/full ProtectedCapital qualification.
+
+The census explicitly records:
+
+- `deploymentManifestAuthorityCryptographicallyVerified=false`;
+- `sourceCompletenessAuthorityVerified=false`;
+- `providerAttestationVerified=false`;
+- `providerSnapshotPinned=false`;
+- `sameBackendSnapshotVerified=false`;
+- `fullProtectedCapitalQualified=false`;
+- `r7L6EmptinessProven=false`;
+- `l2LifecycleProven=false`;
+- `liveL5RowsMayBePresent=true`;
+- `consumedL5ExpiryHistoryRequiresTransactionReplay=true`;
+- `consistencyAssessment=TIP_STABLE_BUT_NOT_QUERY_PINNED`.
+
+This is good bounded observational/reconciliation evidence, but it does not discharge complete ProtectedCapital source authority, historical expiry/lifecycle closure, or the full PC certificate.
+
+### 5. Oracle compatibility datum is stale and does not establish external market truth
+
+The 2 November Oracle State observation records the exact singleton UTxO and datum, but also:
+
+- timestamp age `2,125,749,858` ms against `maxAgeMs=3,600,000`;
+- `freshnessStatus=STALE`;
+- `externalPriceSourceVerified=false`;
+- `configuredPublisherTrustIndependentlyEliminated=false`;
+- `sourceQualificationStatus=NOT_PROVEN_BY_DATUM_ALONE`.
+
+The observer explicitly says datum shape, publisher field and timestamp do not prove external market-price truth. Do not reuse the old fixed compatibility quote as a fresh or externally qualified Oracle source. Direct tUSDM EEV is sourced from physical tUSDM in the exact Pool UTxO; do not conflate that with an externally qualified ADA/USD quote or claim the Oracle State proves direct-USDM value.
+
+### 6. Current live state and first-Issue readiness remain open
+
+No new successful Koios observation for 2026-11-16 could be obtained in this audit: the direct read-only request failed at DNS resolution for `preprod.koios.rest`. Therefore the 2 November observation is the latest exact Pool observation actually verified here; the Pool UTxO must not be described as live on 16 November without a new successful query.
+
+The branch-local `preprod-first-issue-readiness.mjs` is not yet a sufficient first-Issue gate. Its positive regression fixture sets `externalPriceSourceVerified=true` using a `synthetic://` evidence reference and a synthetic digest, and the script accepts that Boolean without resolving/verifying the external evidence. The script also does not load or verify a full authoritative ProtectedCapital census or the deployment-bound R1 E1–E10 / VC1–VC6 proof package; it checks for a provider path and parseable URL/public key but does not verify a real live signed Issue-authority response. Its `READY_FOR_WALLET_REVIEW` outcome is therefore only a preliminary configuration/readiness result, not permission to Issue. The actual 2 November Oracle manifest would block its external-price/freshness checks in any case.
+
+| Gate | Corrected status |
+|---|---|
+| 2026-10-21 EV1–EV7 deployment approval | **HISTORICAL APPROVAL VERIFIED; exact old hashes/out-ref only** |
+| 2026-11-02 exact Pool observation + EV1–EV7 requalification | **SUCCESSFUL READ-ONLY RUN; approval still PENDING** |
+| 2026-11-02 B1 ticket item-ledger census | **INTERNAL RECONCILIATION ONLY; NOT FULL PROTECTED CAPITAL QUALIFICATION** |
+| Oracle compatibility quote | **STALE / EXTERNAL PRICE SOURCE NOT VERIFIED** |
+| 2026-11-16 exact live Pool revalidation | **NOT OBTAINED IN THIS AUDIT** |
+| R1 E1–E10 / VC1–VC6 and external Issue-authority response | **OPEN / NOT CERTIFIED** |
+| First real Preprod Issue | **NO-GO** |
+
+### 7. Next safe work
+
+1. Obtain a fresh read-only observation of the exact B1 PrizePool, Oracle singleton, B2 control, V3 carrier and reference-script identity against one sufficiently consistent current Preprod snapshot.
+2. Reconcile the exact current Pool input, direct tUSDM unit/amount, current EV1–EV7 source digests and deployment/derivation versions; only then seek a separately authorized approval for that exact candidate. Do not copy the October approval into the November/current evidence.
+3. Close the ProtectedCapital evidence gap with an independently authorized source-completeness/provider-attestation and lifecycle/expiry evidence package; do not promote the current internal census.
+4. Correct the preliminary readiness checker and its tests so synthetic oracle assertions cannot produce a positive readiness result, and so missing R1/PC/live-authority evidence remains explicitly blocked. Do not weaken the requirement or manufacture missing evidence.
+5. Continue R1 E1–E10 / VC1–VC6 and the external signed Issue-authority/GOV-30 path independently. Only after those prerequisites are discharged should the already implemented remote→server→Preprod provider→Haskell→mint composition be exercised for the first Issue.
+
+No EEV workflow was dispatched in this audit. No wallet seed or secret was read; no wallet signing, key generation/rotation, server deployment, transaction, funding, or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry, or economic constant was changed.
