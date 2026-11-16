@@ -193,7 +193,8 @@ check(
   'Source-set digest matches its exact artifact',
 )
 // The qualification artifact is not itself a deployment approval.
-// Approval is evaluated only from the independent signed approval artifact below.
+// The following is a hash-bound EEV deployment-approval manifest, not a protocol
+// signature, GOV-30 mandate, or authoritative Issue-admission response.
 check(oracle?.status === 'MATERIALIZED' &&
   oracle?.network === 'cardano-preprod' &&
   oracle?.oracleState?.utxo === deployment?.oracleConfiguration?.utxo,
@@ -203,10 +204,13 @@ check(
     digestWithoutEvidenceHash(oracle) === oracle?.evidenceHash,
   'Oracle State evidence digest matches its exact manifest',
 )
+// A manifest Boolean is only an assertion. This preflight has no verifier that
+// resolves the referenced external-price evidence, so even a true Boolean plus
+// a synthetic:// reference must never count as independent source verification.
 check(
-  oracle?.qualification?.externalPriceSourceVerified === true,
+  false,
   'Oracle external price source is independently verified',
-  'datum shape, a matching publisher field, and a fresh timestamp do not prove external price-source truth; an unqualified compatibility quote must remain blocked',
+  'The manifest Boolean and evidenceReference/evidenceHash are claims, not verification. This script has no verifier for the referenced source evidence; fail closed until the real evidence is independently resolved and checked.',
 )
 
 const timestampText = oracle?.datumSemantics?.timestampMs
@@ -242,7 +246,7 @@ check(approvedQualification?.status === 'qualified' &&
   approvedQualification?.schema === 'PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1' &&
   /^[0-9a-f]{64}$/i.test(approvedQualification?.evidenceHash ?? '') &&
   digestWithoutEvidenceHash(approvedQualification) === approvedQualification?.evidenceHash,
-  'Approved qualification artifact exists and its digest matches the exact artifact')
+  'Hash-bound EEV deployment-approval artifact exists and its digest matches the exact artifact')
 check(deploymentApproval?.status === 'DEPLOYMENT_APPROVED' &&
   deploymentApproval?.profileVersion === 'PRE-RICH-EEV-USDM-DIRECT-V1' &&
   /^[0-9a-f]{64}$/i.test(deploymentApproval?.evidenceHash ?? ''),
@@ -286,9 +290,29 @@ check(validIssueAuthorityPublicKey,
   'External signed Issue authority verification key is a valid public key',
   'ISSUE_AUTHORITY_PUBLIC_KEY must be a PEM key accepted by the runtime verifier')
 
+// These deployment gates are deliberately blocked in this local preflight. The
+// current script does not consume or verify the concrete certificate/provenance
+// packets or obtain a live signed authority envelope. Presence of a provider
+// module, URL, PEM key, or hash-shaped strings cannot discharge these obligations.
+check(
+  false,
+  'Deployment-specific R1 E1-E10 and VC1-VC6 viability certificate is independently verified',
+  'R1 requires the concrete profile (S, A, Accept, Ω, T, Safe), executable χ, Wit, VC1-VC6 proofs, and deployment-bound E1-E10. This preflight does not load or verify that certificate package.',
+)
+check(
+  false,
+  'ProtectedCapital PA1-PA7 profile completeness and current-source authority are verified',
+  'An internal ticket-ledger reconciliation is not PA1-PA7. This preflight does not verify exhaustive asset/liability classes, provider authority, snapshot pinning, lifecycle/expiry replay, or the full ProtectedCapital profile certificate.',
+)
+check(
+  false,
+  'Live signed Issue authority response is verified against current Preprod references',
+  'A configured URL, parseable public key, and provider-module path are configuration only. This preflight does not fetch an authority envelope or verify its signature and exact Counter/Control/Pool/Carrier/state bindings.',
+)
+
 const blockers = checks.filter(c => c.status === 'blocked' || c.status === 'missing_or_invalid')
 const report = {
-  schema: 'IMMORTAL-PREPROD-FIRST-ISSUE-READINESS-v0.1',
+  schema: 'IMMORTAL-PREPROD-FIRST-ISSUE-READINESS-v0.2',
   network: 'cardano-preprod',
   status: blockers.length === 0 ? 'READY_FOR_WALLET_REVIEW' : 'BLOCKED',
   checks,
@@ -296,7 +320,9 @@ const report = {
   safety: {
     transactionsSubmitted: false,
     walletSigned: false,
-    meaning: 'This is a read-only evidence gate. READY_FOR_WALLET_REVIEW is not an authorization to submit a transaction.',
+    meaning: 'This is a local read-only preflight only. It cannot establish deployment R1, full ProtectedCapital, Oracle source truth, or a live signed Issue authority response; READY_FOR_WALLET_REVIEW is therefore withheld until those verifiers are implemented and their evidence is checked.',
+    walletReviewAuthorized: false,
+    issueAuthorized: false,
   },
 }
 report.reportDigest = createHash('sha256')
