@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto'
 import { Data } from '@lucid-evolution/lucid'
 import {
   validateC1CandidateIdentityEnvelope,
+  validatePreprodNetworkGenesis,
   sha256CanonicalJson,
   C1_COMPONENT_IDS,
 } from './preprod-c1-acquired-point-observer.mjs'
@@ -195,9 +196,15 @@ export async function buildC1ProtectedCapitalItemLedger({
   const point = observation.acquiredLedgerState
   if (!point || !Number.isSafeInteger(point.slot) || point.slot < 0 ||
       typeof point.id !== 'string' || !/^[0-9a-f]{64}$/i.test(point.id)) fail('ACQUIRED_POINT_INVALID')
-  if (observation.networkIdentity?.networkMagic !== 1 ||
-      observation.networkIdentity?.era !== 'shelley' ||
-      observation.networkIdentity?.network !== 'testnet') fail('PREPROD_NETWORK_IDENTITY_INVALID')
+  const genesisQuery = { method: 'queryNetwork/genesisConfiguration', params: { era: 'shelley' } }
+  if (JSON.stringify(observation.networkGenesisQuery) !== JSON.stringify(genesisQuery) ||
+      observation.networkGenesisQueryCanonicalJsonSha256 !== sha256CanonicalJson(genesisQuery) ||
+      observation.networkGenesisResultCanonicalJsonSha256 !== sha256CanonicalJson(observation.networkGenesisResult)) {
+    fail('NETWORK_GENESIS_EVIDENCE_DIGEST_MISMATCH')
+  }
+  const networkIdentity = validatePreprodNetworkGenesis(observation.networkGenesisResult)
+  if (JSON.stringify(networkIdentity) !== JSON.stringify(observation.networkIdentity)) fail('PREPROD_NETWORK_IDENTITY_INVALID')
+  if (JSON.stringify(observation.componentOrder) !== JSON.stringify(C1_COMPONENT_IDS)) fail('COMPONENT_ORDER_MISMATCH')
   if (BigInt(observedAtMs) < 0n) fail('OBSERVED_AT_INVALID')
 
   const identity = validateC1CandidateIdentityEnvelope(identityEnvelope)
@@ -234,6 +241,13 @@ export async function buildC1ProtectedCapitalItemLedger({
   const snapshotReference = 'cardano:preprod:' + point.slot + ':' + point.id.toLowerCase()
   const pool = await poolDatum(poolRow, prizeHash, snapshotReference)
   const prizeRows = rowsFor(observation, prizeComponent)
+  cardinality.prizeValidator = decodeC1ComponentCardinality({
+    component: prizeComponent,
+    rawUtxos: prizeRows,
+  })
+  if (cardinality.prizeValidator.cardinalityStatus !== 'NOT_APPLICABLE_POPULATION_CENSUS') {
+    fail('PRIZE_VALIDATOR_POPULATION_CENSUS_SHAPE_INVALID')
+  }
   const records = []
   const prizeDatumEvidence = []
   const unclassifiedUtxos = []
