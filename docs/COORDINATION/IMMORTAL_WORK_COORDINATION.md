@@ -8922,3 +8922,47 @@ Artifacts preserved by the run:
 **First real Issue remains NO-GO.** The independent B1 Registry identity P0 and Agent A R1/Kc/authoritative-Ω blockers remain unchanged. The local Cardano Integration Lab run `#43796391787` is a separate Yaci devnet execution and was still in progress at this follow-up; its unfinished Claim/expiry queue is not counted as a completed lab result.
 
 **Non-effects:** this update records existing workflow evidence only. No workflow was dispatched, and no wallet was signed, no transaction submitted, no script deployed, no funds moved, and no Preprod/Mainnet ledger state changed. No V3, Reveal, 500×, ABI, validator, or economic rule was modified.
+
+## 46.39 — AGENT A — R1/Kc + SIGNED ISSUE AUTHORITY PREFLIGHT (2026-11-16)
+
+**Classification:** READ-ONLY SOURCE AUDIT; no runtime change, no live dispatch, no ledger action.
+
+### 1. R1 is a concrete certificate obligation, not a label
+
+docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md requires a deployment-specific model (E1), deterministic characteristic predicate χ (E2), witness selector Wit (E3), and actual discharges of VC2–VC6 (E4–E8). E9/E10 complete the certificate package. The residual register correctly records that the theory/schema are closed but the concrete R1 instance is not.
+
+The present PRE-RICH profile source (PRE-RICH/onchain/PreRichEconomicProfile.hs) supplies version, eight class prices and the 500× normal-payout bound; it is not by itself the full model (𝒮, A, Accept, Ω, T, Safe). The action type in IMMORTAL/kernel/EconomicTransitionV3.hs contains Issue, Reveal, Claim and Expire only. No explicit Hold/NoOp action is defined there. Consequently the T-MARGIN QNE route must not be claimed from the current transition source: an always-available non-eroding witness has not been established. This does not prove that no other profile-specific certificate is possible; it identifies the missing demonstration.
+
+### 2. Current Issue admission consumes a viability assertion
+
+PRE-RICH/onchain/PreRichEconomicAdmission.hs and IMMORTAL/kernel/EconomicGate.hs evaluate the candidate transition, projection, solvency and gate inputs. The viability boundary receives allOmegaSuccessorsInCertifiedKernel as a Boolean. The source comments explicitly leave the actual CK1–CK8 certificate external. No χ membership procedure, Wit selector or authoritative-Ω successor enumeration is executed by these functions.
+
+### 3. Signed envelope is integrity protection, not R1 proof verification
+
+relayer/signedIssueAuthority.js verifies an Ed25519 signature over the canonical authority payload and a carrier-binding signature over the action/decision/state/post-state digests. It also binds the viability certificate to the live carrier reference, state hash, EEV snapshot and ProtectedCapital source reference. These are useful integrity/binding checks.
+
+However, validateViabilityCertificate currently checks that VC1–VC6 and E1–E10 each have non-empty references and syntactically valid 32-byte digest strings. It does not resolve those references, hash the referenced artifact bytes, or independently evaluate the contents of VC1–VC6. The signed allOmegaSuccessorsCertified=true field is therefore an issuer assertion, not a proof evaluated by this verifier.
+
+The positive fixture in relayer/signedIssueAuthority.test.js generates an ephemeral Ed25519 keypair and signs synthetic proof/evidence URIs and repeated placeholder digests. That test demonstrates signed-envelope parsing and binding behaviour; it does not discharge R1. The public key is injected through ISSUE_AUTHORITY_PUBLIC_KEY; the audited path does not itself demonstrate a GOV-30 governance authorization chain for that key. Do not infer that no external governance record exists; it has not been bound here.
+
+### 4. Updated classification
+
+| Gate | Classification |
+|---|---|
+| PRE-RICH economic profile constants | **PRESENT**; not a complete R1 model |
+| χ / Wit executable certificate | **NOT IDENTIFIED** |
+| VC2 / VC3 / VC4 / VC5 / VC6 deployment proofs | **NOT VERIFIED** |
+| E1–E10 referenced artifacts | **SHAPE-VALIDATION ONLY in signed-envelope path** |
+| Signed Issue payload integrity | **IMPLEMENTED; key authorization remains separately governed** |
+| GOV-30 key-root binding | **OPEN / NOT EVIDENCED IN THIS PATH** |
+| Actual Preprod R1-bound carrier state | **NOT ESTABLISHED** by the C1 three-address run |
+| First real Preprod Issue | **NO-GO** |
+
+### 5. Required next closure sequence
+
+1. Produce the GOV-30 governance record binding the authorized Issue-authority public-key fingerprint, issuer scope, network, validity/revocation and exact authority role. Do not treat an environment variable alone as that record.
+2. Publish a real PRE-RICH E1–E10 package: exact state/action/Accept/Ω/transition/Safe model, deterministic χ and Wit, VC2–VC6 discharges, S0 derivation and deployment-bound digest.
+3. Add an independent artifact resolver/verifier that retrieves each referenced artifact, recomputes its digest and verifies the proof/evidence semantics before promoting allOmegaSuccessorsCertified. A valid signature over placeholder references is insufficient.
+4. Bind that certificate to the authenticated live V3 carrier state and the exact Issue observation; then run the five-component same-acquired-point census and finish the separate Registry identity P0.
+
+No NoOp action, fixture S0, synthetic proof, narrowed Ω, or guessed authority key is introduced to force closure. No ABI, V3, Reveal, 500×, payout, expiry or economic constant is changed. No workflow, wallet, signature, transaction, deployment, funding or ledger state is actuated.
