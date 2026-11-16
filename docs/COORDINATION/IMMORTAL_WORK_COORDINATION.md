@@ -9865,3 +9865,78 @@ The source search now has a precise disposition:
 **Conclusion:** no presently recovered provider yields both Option-B legs as fresh, exact-asset-bound, transaction-verifiable observations on Cardano Preprod. This is a concrete source-availability gate, not a software adapter defect. Keep the existing single-publisher Oracle/MintPolicy path fail-closed. Do not select a substitute feed, silently use USD parity, or change the on-chain consumers. If the source cannot be independently obtained from existing evidence, the remaining route is a separately governed provider activation or a new source architecture, neither of which is performed in this pass.
 
 No custom feed was requested or activated. No external wallet, API secret or private key was read; no feeder was deployed; no Oracle State datum or source registry changed; no workflow was dispatched; no transaction, funding, deployment, MintPolicy, B1, V3, Reveal, EEV or Issue state changed.
+
+
+## 46.53 — AGENT A — CURRENT ACQUIRED PREPROD RE-OBSERVATION / ORACLE FRESHNESS RECHECK (2026-11-16)
+
+**Workflow:** [IMMORTAL Cardano Preprod Context #43819536847](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43819536847)  
+**Exact workflow/source HEAD:** `61b4736e429eebafcbc8b76101805ed907ce3d2c`  
+**Classification:** READ-ONLY ACQUIRED-POINT PREPROD OBSERVATION + ARTIFACT DIGEST RECOMPUTATION; no dispatch input, wallet, signature, transaction, deployment or ledger mutation.
+
+### 1. New acquired ledger point
+
+The `preprod-context` job completed SUCCESS. It acquired one Demeter/Ogmios v7 ledger state and used the same session for the wallet, PrizeValidator and B1 Pool queries:
+
+- acquired slot: **139128656**;
+- acquired block id/hash: `f9bd78a619132eee4972ec5400889829dbad8ab669693bb005e038a1a876e5dd`;
+- network block height: **5,418,302**;
+- epoch: **325**;
+- acquired tip before/after and network tip all match exactly;
+- acquisition observation time: `2026-11-16T06:51:26.694Z`.
+
+The uploaded context artifact is ID `14203986377`, ZIP size 112,707 bytes, registered digest `sha256:3a5fa62e2d91d698477a7e9e912ab8ebc6f3c054c8f86d0316d2340a2f29409b`. The ZIP was downloaded and its SHA-256 independently recomputed; it matches. Its internal context digest is `e895b0c49a5769a2ce0268493448cb61f1a52da14e2d479780c240d8b54c6006`.
+
+### 2. B1 Pool candidate reconfirmed at the same point
+
+The same exact historical candidate remains the only UTxO returned at the queried B1 Pool address:
+
+- address: `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`;
+- out-reference: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`;
+- value: 5,000,000 lovelace; one Pool singleton NFT; 1,000,000,000 atomic units of the already-approved Preprod tUSDM asset;
+- exact tUSDM unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`;
+- B1 datum: `ppTotalLiquidity=100000`, pending liabilities 0, unresolved reserve 0, unresolved count 0, locked Jackpot 0, threshold 10,000, suspended mask 0; PrizeValidator hash `93ec2ed27121c8b0b54bf1804b29d46cd71148c54128e8e68f7cffb2`.
+
+The independent `preprod-b1-script-provenance` job completed **PASS 21/21** on the same source HEAD. Its artifact ID is `14204150996`, registered digest `sha256:41db85f5e162884b8196c14c2307b3fcb2ddb3d87f3f4e0a56e1294245efb4fb`. This revalidates the parameterized B1/Prize script provenance and physical tUSDM-to-datum equality at this run's observation point; it is not an EEV approval.
+
+The PrizeValidator-address query returned **zero UTxOs** at this point. This is an address-population observation only; it does not establish global R7 L6 emptiness, consumed-ticket Claim/Expire history, or PA1–PA7 source completeness.
+
+### 3. Oracle singleton unchanged; freshness still fails
+
+The wallet observation returned 23 UTxOs and includes the same historical bootstrap-wallet Oracle singleton:
+
+- out-reference: `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`;
+- singleton: policy `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e`, token name `4f5241434c45`;
+- datum CBOR SHA-256: `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2` (independently recomputed from the exact 47 datum bytes);
+- decoded legacy ADA quote timestamp: **2026-10-08T17:38:50.142Z**;
+- wallet-query observation time: `2026-11-16T06:51:33.064Z`;
+- quote age at observation: **3,330,762,922 ms = 38 days, 13 hours, 12 minutes, 42.922 seconds**.
+
+The datum bytes and timestamp are unchanged from the November 2/November 16 historical revalidation. The current one-hour Oracle freshness predicate therefore still fails. This wallet UTxO observation also does not establish that the DApp's configured runtime Oracle address/policy/name/publisher are identical to this historical bootstrap-wallet identity.
+
+### 4. Exact scope and skipped operations
+
+The workflow's `preprod-context` job ran the acquired-state lifecycle, five-component C1 observer unit tests, C1 cardinality decoder tests, live wallet/PrizeValidator/B1 queries, Reveal-boundary conformance and snapshot binding. **It did not execute a five-component C1 acquired-point census.** Counter, V3 Carrier and B2 Control were not queried by this context acquisition.
+
+The following jobs were **SKIPPED**: `preprod-v3-carrier-observation`, `direct-usdm-preprod-bootstrap`, `preprod-deploy`, and `real-preprod-reveal`. The conformance binding explicitly records `ledger_aligned_evaluator_run=false` and `full_end_to_end_equivalence_claim=false`.
+
+No fresh EV1–EV7 requalification, current hash-bound EEV deployment approval, full PA1–PA7 evidence, R1/Kc/Ω certificate, GOV-30 key mandate, or live signed Issue-authority response was produced by this run. The workflow success is an acquired-point observation and script-provenance result only.
+
+### 5. Updated release gate
+
+| Gate | Current classification after run #43819536847 |
+|---|---|
+| Current same-session Preprod B1 Pool / physical tUSDM observation | **PASS — slot 139128656** |
+| Exact B1/Prize script provenance | **PASS — 21/21** |
+| PrizeValidator queried address population | **PASS — zero UTxOs at this point; not global L6/history** |
+| Oracle State quote freshness | **FAIL — 38d 13h old vs one-hour max** |
+| Option-B USD/USDM source qualification | **OPEN / NOT QUALIFIED** |
+| Five-component C1 live census | **NOT RUN / NOT QUALIFIED** |
+| EV1–EV7 requalification and approval bound to this point | **OPEN / NOT PRODUCED** |
+| Full ProtectedCapital PA1–PA7 | **OPEN / NOT QUALIFIED** |
+| R1 E1–E10 / VC1–VC6, Ω and QNE | **OPEN / NOT CERTIFIED** |
+| GOV-30 Issue-authority key mandate and live signed response | **OPEN / NOT QUALIFIED** |
+| First real Preprod Issue | **NO-GO** |
+
+This newer observation supersedes the slot-139116604 point in §46.48 only as the latest acquired Preprod observation; it does not change the admission decision. Preserve the existing fail-closed gates and do not refresh the Oracle timestamp by rewriting the datum.
+
+**Non-effects:** no workflow dispatch was used; no secret, seed or key was read or generated; no quote was rewritten; no authority endpoint was contacted; no wallet signature, transaction, funding, deployment or ledger mutation occurred. No MintPolicy, B1 validator, Oracle schema, V3, Reveal, 500×, ABI or economic constant changed.
