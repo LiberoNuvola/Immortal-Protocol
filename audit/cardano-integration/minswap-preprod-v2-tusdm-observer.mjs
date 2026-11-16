@@ -152,6 +152,7 @@ export function classifyMinswapV2PoolRows(rows) {
   const authenticatedPools = [];
   const decodeErrors = [];
   const pairMap = new Map();
+  const tUsdmLikePools = [];
   let authenticatedPoolUtxoCount = 0;
   for (const row of onPoolScript) {
     if (!Array.isArray(row.asset_list)) {
@@ -178,6 +179,53 @@ export function classifyMinswapV2PoolRows(rows) {
       };
       summary.poolCount += 1;
       pairMap.set(pairKey, summary);
+      const nonAdaUnit =
+        poolDatum.assetA === "lovelace" ? poolDatum.assetB :
+        poolDatum.assetB === "lovelace" ? poolDatum.assetA : null;
+      if (nonAdaUnit && nonAdaUnit.endsWith("0014df10745553444d")) {
+        const policyId = nonAdaUnit.slice(0, 56);
+        const tokenName = nonAdaUnit.slice(56);
+        const quantity = getAssetQuantity(row, nonAdaUnit);
+        if (quantity !== null && quantity > 0n) {
+          const lovelace = BigInt(String(row.value ?? "0"));
+          if (lovelace > MIN_SWAP_V2.minPoolAdaLovelace) {
+            const valueAdaReserve = lovelace - MIN_SWAP_V2.minPoolAdaLovelace;
+            const datumTokenReserve = poolDatum.assetA === nonAdaUnit
+              ? BigInt(poolDatum.reserveA) : BigInt(poolDatum.reserveB);
+            const datumAdaReserve = poolDatum.assetA === "lovelace"
+              ? BigInt(poolDatum.reserveA) : BigInt(poolDatum.reserveB);
+            tUsdmLikePools.push({
+              exactUnit: nonAdaUnit,
+              policyId,
+              tokenNameHex: tokenName,
+              tokenNameAscii: Buffer.from(tokenName, "hex").toString("utf8").replace(/[^\x20-\x7e]/g, "·"),
+              lpUnit: computeMinswapV2LpUnit(policyId, tokenName),
+              outRef: String(row.tx_hash) + "#" + String(row.tx_index),
+              address: String(row.address ?? ""),
+              poolAuthenticationUnit: AUTH_UNIT,
+              poolAuthenticationQuantity: authQuantity.toString(),
+              quantityAtomic: quantity.toString(),
+              lovelaceIncludingMinPoolAda: lovelace.toString(),
+              adaReserveLovelace: valueAdaReserve.toString(),
+              datumAdaReserve: datumAdaReserve.toString(),
+              datumTokenReserve: datumTokenReserve.toString(),
+              adaPerTokenValue: decimalRatio(valueAdaReserve, quantity),
+              adaPerTokenDatum: decimalRatio(datumAdaReserve, datumTokenReserve),
+              datumValueReservesMatch: datumTokenReserve === quantity && datumAdaReserve === valueAdaReserve,
+              datumAssetA: poolDatum.assetA,
+              datumAssetB: poolDatum.assetB,
+              feeANumerator: poolDatum.feeANumerator,
+              feeBNumerator: poolDatum.feeBNumerator,
+              blockHeight: row.block_height ?? null,
+              blockTime: row.block_time ?? null,
+              datumHash: row.datum_hash ?? null,
+              inlineDatumByteLength: (
+                typeof row.inline_datum === "string" ? row.inline_datum : String(row.inline_datum.bytes ?? "")
+              ).length / 2,
+            });
+          }
+        }
+      }
     } catch (error) {
       decodeErrors.push({
         outRef: String(row.tx_hash) + "#" + String(row.tx_index),
@@ -248,6 +296,7 @@ export function classifyMinswapV2PoolRows(rows) {
     datumDecodeErrorCount: decodeErrors.length,
     datumDecodeErrorSamples: decodeErrors.slice(0, 10),
     observedDatumPairs: [...pairMap.values()].sort((a, b) => b.poolCount - a.poolCount),
+    tUsdmLikePools,
     matches: authenticatedPools,
   };
 }
@@ -272,6 +321,14 @@ async function fetchJson(url, options = {}) {
     throw new Error("KOIOS_INVALID_JSON");
   }
   return { json, headers: response.headers };
+}
+
+async function fetchAssetInfo(unit) {
+  const policyId = unit.slice(0, 56);
+  const assetName = unit.slice(56);
+  const params = new URLSearchParams({ _asset_policy: policyId, _asset_name: assetName });
+  const result = await fetchJson(PREPROD_KOIOS + "/asset_info?" + params.toString());
+  return Array.isArray(result.json) ? result.json[0] ?? null : result.json ?? null;
 }
 
 async function fetchCurrentTip() {
@@ -352,6 +409,35 @@ async function main() {
       classification.matches.filter((match) => match.candidate === candidate.label),
     ])
   );
+  const similarAssetUnits = [...new Set(classification.tUsdmLikePools.map((pool) => pool.exactUnit))];
+  const similarAssetInfo = await Promise.all(similarAssetUnits.map(async (unit) => {
+    try {
+      const info = await fetchAssetInfo(unit);
+      if (!info) return { unit, status: "NO_ASSET_INFO_ROW" };
+      return {
+        unit,
+        policyId: info.policy_id ?? unit.slice(0, 56),
+        assetName: info.asset_name ?? unit.slice(56),
+        assetNameAscii: info.asset_name_ascii ?? null,
+        fingerprint: info.fingerprint ?? null,
+        mintingTxHash: info.minting_tx_hash ?? null,
+        totalSupply: info.total_supply ?? null,
+        mintCount: info.mint_cnt ?? null,
+        burnCount: info.burn_cnt ?? null,
+        creationTime: info.creation_time ?? null,
+        tokenRegistryMetadata: info.token_registry_metadata ? {
+          name: info.token_registry_metadata.name ?? null,
+          ticker: info.token_registry_metadata.ticker ?? null,
+          description: info.token_registry_metadata.description ?? null,
+          url: info.token_registry_metadata.url ?? null,
+          decimals: info.token_registry_metadata.decimals ?? null,
+        } : null,
+        latestMintMetadata: info.minting_tx_metadata ?? null,
+      };
+    } catch (error) {
+      return { unit, status: "ASSET_INFO_QUERY_FAILED", error: String(error?.message ?? error) };
+    }
+  }));
 
   let status = "NO_EXACT_TUSDM_ADA_POOL_FOUND";
   if (byCandidate.PRE_RICH_APPROVED_TUSDM.length > 0 &&
@@ -392,8 +478,11 @@ async function main() {
       authenticatedPoolUtxoCount: classification.authenticatedPoolUtxoCount,
       datumDecodeErrorCount: classification.datumDecodeErrorCount,
       distinctDatumPairCount: classification.observedDatumPairs.length,
+      tUsdmLikePoolCount: classification.tUsdmLikePools.length,
     },
     observedDatumPairs: classification.observedDatumPairs,
+    tUsdmLikePools: classification.tUsdmLikePools,
+    tUsdmLikeAssetInfo: similarAssetInfo,
     pools: classification.matches,
     chainTip: {
       slot: Number(tip.abs_slot ?? tip.absolute_slot),
