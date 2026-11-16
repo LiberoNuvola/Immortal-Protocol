@@ -9383,3 +9383,122 @@ The governance trust-root/key-role binding is still **not implemented or certifi
 Next engineering work must identify the actual normative GOV-30 trust-root / key-role artifact and its verifier, then bind the Issue authority key to that authority and scope. In parallel, the signed authority must consume independently verifiable R1 and PA1–PA7 evidence rather than only carrying references/digest-shaped fields. Do not invent a new mandate schema, key role, or trust root.
 
 No authority endpoint was contacted; no local server was started; no workflow was dispatched; no secret/public-key env value was read; no key was generated or rotated; no wallet, transaction, funding, deployment or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry or economic constant changed. First real Preprod Issue remains **NO-GO**.
+
+
+## 46.47 — AGENT A — GOV-30 DRAFT RECONCILIATION + VERIFIED PREPROD CENSUS #46 (2026-11-16)
+
+**Classification:** Read-only governance-source reconciliation + retrieval and independent digest audit of a historical Preprod source-qualification artifact. No authority request, workflow dispatch, wallet, signing, deployment or ledger action.
+
+### 1. GOV-30 exists as a real repository document — but is expressly non-normative
+
+The earlier §46.39/§46.46 conclusion is refined: a GOV-30 document does exist on this branch:
+
+- `docs/01-formal-records/governance/GOV-30-AUTHORITY-ROLE-AND-KEY-LIFECYCLE-OPTIONS.md`
+- Blob SHA: `226821e7454b95c428abbc5bac86028ae159ce43`.
+- [Open GOV-30 — Authority Roles & Key Lifecycle Options](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/01-formal-records/governance/GOV-30-AUTHORITY-ROLE-AND-KEY-LIFECYCLE-OPTIONS.md).
+
+Its opening status is explicit: **DISCUSSION DRAFT — NO NORMATIVE DECISION / NO IMPLEMENTATION AUTHORIZED**. The document states that it does not define or authorize a new envelope, key registry, issuer service, trust-anchor store, signer, quorum, cryptoperiod, revocation rule, timestamp authority, migration procedure, key creation/replacement/rotation/deployment or on-chain change.
+
+The document does, however, recover the open decision surface and distinguishes:
+- evidence producer / attester;
+- issuer;
+- key custodian / signer operator;
+- verifier / appraiser;
+- verifier-policy authority;
+- relying authority;
+- IMMORTAL admission gate;
+- adapter executor.
+
+It records three issuer/key-binding options (application-configured key, governed issuer-to-key binding, delegated trust chain), three key-purpose approaches (shared, separated, hybrid), alternative appraisal arrangements, and open decisions for scope/audience, activation, succession, retirement, revocation, compromise, historical verification, freshness, recovery and migration. **None is selected.**
+
+### 2. PRE-RICH-specific consequences are explicit in the draft
+
+GOV-30 confirms the following source boundary for the existing Issue path:
+
+- the configured Ed25519 public key is used off-chain for the Issue payload and carrier-binding signatures;
+- the same configured key is embedded as a V3 carrier-validator parameter and checked by the on-chain carrier validator;
+- `authorityVersion = '1'` is a payload/schema version, not an issuer identity or key identifier;
+- the audited payload does not yet bind issuer identity, key ID, relying-party audience, appraisal-policy identity, key validity interval, revocation or supersession;
+- the current freshness check uses the verifier host's `Date.now()`;
+- the off-chain verifier checks the full Issue payload, whereas the Plutus carrier validator checks the carrier-binding signature and does not independently appraise the full EEV payload;
+- changing the key embedded in the parameterized V3 validator changes the script identity/address and requires an explicit migration design.
+
+This confirms why a merely valid PEM or successful Ed25519 verification cannot be promoted to governed issuer authorization. It also confirms that key rotation is not a safe environment-variable edit.
+
+### 3. GOV-02 and EXP-06/12 do not silently complete GOV-30
+
+The Notion [GOV-02 — Authority / Permission Matrix v0.1](https://app.notion.com/p/3dfc4454d6d58107828eedf372de5242) (last edited 2026-11-04) retains the existing P0–P5 governance permission classes and prohibits deriving authority merely from role, maintainership, token balance or technical access. Its 2026-11-04 cross-reference to EXP-06/12 explicitly says that the crosswalk creates no new authority, schema, key registry, signer or deployment.
+
+The active branch's `docs/research/EXP-06-12-AUTHORITY-CLASS-RESPONSIBILITY-CROSSWALK-v1.md` (blob `7aed18bb6d5f8bbbeb2dc5c4f0505ec3748dc5a1`) is also labelled **research / non-normative**. It separates governance permission, resource control, operational mandate, observation, issuer/signing, proof verification, appraisal, reliance, economic admission, execution and settlement/finality. It expressly says the class labels are analytical, not a canonical enum or wire schema.
+
+The Notion [PRE-RICH Control Center](https://app.notion.com/p/3d9c4454d6d581e680d5e5d3f3a9df79) records the same GOV-30 status in its 2026-11-04 reconciliation: **DISCUSSION DRAFT — NON-NORMATIVE / NO IMPLEMENTATION AUTHORIZED**. Its recorded trust-root audit says `issuerId`, `keyId`, `appraisalPolicyId`, `audience`, `validity`, `revocation` and `supersession` are absent from the current payload, and that the test uses ephemeral keys. The historical CI runs listed there belong to SHA `251907b...`; they are not a current-head or production trust-root certification.
+
+**Correct disposition:** the draft and role vocabulary exist; the normative issuer/key binding decision, selected trust profile, key custody, policy authority, relying authority and deployment trust root do not. No GOV-30 implementation is authorized by the draft. The explicit GOV-30 blocker added in §46.46 remains correct.
+
+### 4. Recovered and independently checked the later Preprod ProtectedCapital census #46
+
+The Notion Control Center records a later source-qualification run than the 2026-11-02 artifact already audited in §46.44:
+
+- Workflow run [#41581487013 — Source Qualification Only #46](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41581487013).
+- Exact source commit: `257c90fffe02c6157e236150a57da6c6ef8fd145`.
+- Job `Re-observe exact Pool and qualify EV1-EV7 without approval`: **completed / success**; all operational steps in the job succeeded.
+- Artifact: `preprod-eev-qualified-source-257c90fffe02c6157e236150a57da6c6ef8fd145`, ID `13205288872`.
+- GitHub registered ZIP digest: `sha256:0b286fd0435de292d0da884b498884dd9462ad6dd16a4bf5a79fcd5455244114`.
+- Artifact was downloaded in this audit; independent local ZIP SHA-256 equals the GitHub digest exactly.
+- The ZIP contains five JSON files. All four files with `evidenceHash` (deployment, qualification, source-set and Oracle State) recompute to the exact embedded digest. The PC census has no separate `evidenceHash`; it is included within the GitHub-digest-bound artifact ZIP.
+
+The 2026-11-03 source observation records:
+- Koios Preprod block `5367465`, slot `137998892`, block hash `ea7b8e620fb9e7bcef9d14da6e49e96fc99156bf2868b7c11f5a54cb006a90b0`;
+- exact B1 Pool out-reference `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`;
+- direct tUSDM quantity `1,000,000,000` atomic units, converted by the declared FLOOR rule to `100,000` IMMORTAL USDM sub-units;
+- zero PrizeValidator UTxOs at that query, one exact B1 Pool UTxO, and matching inline-datum hash.
+
+The EEV qualification is `qualified` for EV1–EV7 at that exact snapshot, but:
+- source-set status is `OBSERVED_NOT_QUALIFIED`;
+- source-set deployment approval is `PENDING`;
+- qualification `deploymentApproval=null`;
+- governance `deploymentApprovalStatus=PENDING`.
+
+This is **not** a new deployment approval and does not promote the October approval to the new hash set.
+
+### 5. Census #46 remains internal reconciliation, not full ProtectedCapital
+
+The artifact's census scope is `PRIZE_VALIDATOR_TICKET_POPULATION_ONLY`. It reports an internally reconciled empty ticket population at the observed point, with zero PrizeValidator outputs and a Pool datum whose pending liabilities, unresolved reserve and ticket count are zero. It also records `l2Status=ZERO_AT_THIS_SNAPSHOT`.
+
+The same census explicitly records:
+- `manifestAuthorityCryptographicallyVerified=false`;
+- `sourceCompletenessAuthorityVerified=false`;
+- `providerAttestationVerified=false`;
+- `providerSnapshotPinned=false`;
+- `sameBackendSnapshotVerified=false`;
+- `fullProtectedCapitalQualified=false`;
+- `r7L6EmptinessProven=false);
+- `l2LifecycleProven=false`;
+- `liveL5RowsMayBePresent=true);
+- `consumedL5ExpiryHistoryRequiresTransactionReplay=true).
+
+The detailed PA1–PA7 classification in the Control Center remains:
+- PA1 partial: asset/commitment classes not exhaustively instantiated;
+- PA2 open: the census does not cover all asset/obligation origins or history;
+- PA3 partial: A4↔L3 and external classes not demonstrated;
+- PA4 partial: L1/L3 mappings exist; L2 lifecycle and other assets are unqualified;
+- PA5 partial/open: paired asset debit + liability settlement is not fully represented by R7's current delta list, and the legacy B1 Oracle-valued basket is not equivalent to the Direct-USDM EEV profile;
+- PA6 open: L6 emptiness and source completeness are not proven;
+- PA7 partial: existing negatives do not amount to adversarial review of every possible omitted obligation source.
+
+No second census reader or duplicate Provider is warranted. The next legitimate PA work is source-origin enumeration, operation-to-delta reconciliation and historical Claim/Expire replay under the existing R7 contract; any normative change to R7's delta semantics requires its own authorized decision.
+
+### 6. Corrected current Preprod observation statement
+
+Run #41581487013 is a **2026-11-03** observation and is later than the 2026-11-02 refresh summarized in §46.44. It is therefore the latest exact Pool observation independently verified in this work. It is still historical; no new successful 2026-11-16 live read was obtained here. Do not claim the Pool UTxO remains unspent today without a fresh read-only observation.
+
+### 7. Disposition and non-effects
+
+- GOV-30: draft recovered; non-normative; no implementation authorized.
+- GOV-02: existing governance permission matrix; not an Issue signer/key registry.
+- EXP-06/12: non-normative cross-domain boundary, not a trust root or relying decision.
+- Preprod census #46: ZIP digest and four manifest self-digests independently verified; internal ticket-ledger reconciliation only.
+- EV1–EV7: qualified on the exact 2026-11-03 source snapshot; separate deployment approval remains PENDING.
+- Full PA1–PA7, R1 E1–E10 / VC1–VC6, Ω completeness, GOV-30 key authorization and first Issue remain OPEN / **NO-GO**.
+
+No source or test code changed in this pass. No test or workflow was run or dispatched. No authority endpoint was contacted; no key was created, replaced or rotated; no wallet, signature, transaction, deployment, funding or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry or economic constant changed.
