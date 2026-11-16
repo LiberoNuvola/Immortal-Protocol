@@ -49,6 +49,108 @@ export function sha256CanonicalJson(value) {
   return createHash('sha256').update(canonicalJson(value), 'utf8').digest('hex')
 }
 
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
+const BECH32_GENERATORS = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+
+function bech32Polymod(values) {
+  let checksum = 1
+  for (const value of values) {
+    const top = checksum >>> 25
+    checksum = ((checksum & 0x1ffffff) << 5) ^ value
+    for (let i = 0; i < BECH32_GENERATORS.length; i += 1) {
+      if (((top >>> i) & 1) !== 0) checksum ^= BECH32_GENERATORS[i]
+    }
+  }
+  return checksum >>> 0
+}
+
+function bech32HrpExpand(hrp) {
+  return [
+    ...Array.from(hrp, character => character.charCodeAt(0) >>> 5),
+    0,
+    ...Array.from(hrp, character => character.charCodeAt(0) & 31),
+  ]
+}
+
+/**
+ * Decode only the address fields needed for the C1 payment-credential check.
+ * This verifies Bech32 syntax/checksum, Preprod HRP/network id, Shelley script
+ * payment credential type, and exact 28-byte payment credential. It does not
+ * authenticate the deployment manifest or prove that the script bytes were
+ * independently rebuilt from the declared source.
+ */
+export function decodePreprodScriptAddress(address, expectedPaymentCredentialHash) {
+  if (typeof address !== 'string' || address.trim() === '') {
+    throw new Error('C1_IDENTITY_ADDRESS_REQUIRED')
+  }
+  const value = address.trim()
+  if (value !== value.toLowerCase() && value !== value.toUpperCase()) {
+    throw new Error('C1_IDENTITY_ADDRESS_BECH32_MIXED_CASE')
+  }
+  const normalized = value.toLowerCase()
+  const separator = normalized.lastIndexOf('1')
+  if (separator < 1 || separator + 7 > normalized.length) {
+    throw new Error('C1_IDENTITY_ADDRESS_BECH32_FORMAT_INVALID')
+  }
+  const hrp = normalized.slice(0, separator)
+  if (hrp !== 'addr_test') {
+    throw new Error('C1_IDENTITY_ADDRESS_NOT_PREPROD')
+  }
+
+  const encoded = normalized.slice(separator + 1)
+  const words = []
+  for (const character of encoded) {
+    const word = BECH32_CHARSET.indexOf(character)
+    if (word < 0) throw new Error('C1_IDENTITY_ADDRESS_BECH32_CHARACTER_INVALID')
+    words.push(word)
+  }
+  if (bech32Polymod([...bech32HrpExpand(hrp), ...words]) !== 1) {
+    throw new Error('C1_IDENTITY_ADDRESS_BECH32_CHECKSUM_INVALID')
+  }
+
+  const data = words.slice(0, -6)
+  const bytes = []
+  let accumulator = 0
+  let bits = 0
+  for (const word of data) {
+    accumulator = (accumulator << 5) | word
+    bits += 5
+    while (bits >= 8) {
+      bits -= 8
+      bytes.push((accumulator >>> bits) & 0xff)
+    }
+  }
+  if (bits >= 5 || ((accumulator << (8 - bits)) & 0xff) !== 0) {
+    throw new Error('C1_IDENTITY_ADDRESS_BECH32_PADDING_INVALID')
+  }
+  if (bytes.length < 29) {
+    throw new Error('C1_IDENTITY_ADDRESS_SHELLEY_PAYLOAD_TOO_SHORT')
+  }
+
+  const addressType = bytes[0] >>> 4
+  const networkId = bytes[0] & 0x0f
+  if (networkId !== 0) {
+    throw new Error('C1_IDENTITY_ADDRESS_NETWORK_ID_NOT_PREPROD')
+  }
+  if (![1, 3, 5, 7].includes(addressType)) {
+    throw new Error('C1_IDENTITY_ADDRESS_PAYMENT_CREDENTIAL_NOT_SCRIPT')
+  }
+
+  const paymentCredentialHash = Buffer.from(bytes.slice(1, 29)).toString('hex')
+  const expected = requiredPaymentCredentialHash(expectedPaymentCredentialHash)
+  if (paymentCredentialHash !== expected) {
+    throw new Error('C1_IDENTITY_ADDRESS_PAYMENT_CREDENTIAL_HASH_MISMATCH')
+  }
+  return { addressType, networkId, paymentCredentialHash }
+}
+
+function requiredPaymentCredentialHash(value) {
+  if (typeof value !== 'string' || !/^[0-9a-fA-F]{56}$/.test(value)) {
+    throw new Error('C1_IDENTITY_PAYMENT_CREDENTIAL_HASH_INVALID')
+  }
+  return value.toLowerCase()
+}
+
 function requiredString(value, field) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error('C1_IDENTITY_' + field + '_REQUIRED')
@@ -100,7 +202,7 @@ export function validateC1CandidateIdentityEnvelope(envelope) {
     if (requiredHex(component.sourceCommit, 20, componentId + '_SOURCE_COMMIT') !== sourceCommit) {
       throw new Error('C1_IDENTITY_SOURCE_COMMIT_MISMATCH:' + componentId)
     }
-    requiredString(component.address, componentId + '_ADDRESS')
+    const componentAddress = requiredString(component.address, componentId + '_ADDRESS')
     if (component.paymentCredentialKind !== 'script') {
       throw new Error('C1_IDENTITY_PAYMENT_CREDENTIAL_KIND_INVALID:' + componentId)
     }
@@ -109,6 +211,7 @@ export function validateC1CandidateIdentityEnvelope(envelope) {
     if (paymentCredentialHash !== derivedScriptHash) {
       throw new Error('C1_IDENTITY_PAYMENT_CREDENTIAL_DERIVED_HASH_MISMATCH:' + componentId)
     }
+    decodePreprodScriptAddress(componentAddress, derivedScriptHash)
     requiredHex(component.scriptArtifactDigest, 32, componentId + '_SCRIPT_ARTIFACT_DIGEST')
     requiredHex(component.parameterDigest, 32, componentId + '_PARAMETER_DIGEST')
     const deploymentTxOutRef = requiredString(component.deploymentTxOutRef, componentId + '_DEPLOYMENT_TX_OUT_REF')
