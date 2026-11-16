@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   readExactParentAuthorityState,
+  type GrandpaAuthorityStateMethod,
   type ParentAuthorityReadClient,
 } from "../src/authority-state-source.js";
 
@@ -16,7 +17,7 @@ function client(
   return {
     chainGetBlockHash: vi.fn(async () => PARENT_HASH),
     chainGetHeader: vi.fn(async () => ({ number: "0x64" })),
-    stateCall: vi.fn(async (method) =>
+    stateCall: vi.fn(async (method: GrandpaAuthorityStateMethod) =>
       method === "GrandpaApi_current_set_id"
         ? SET_ID_HEX
         : AUTHORITIES_HEX,
@@ -35,8 +36,10 @@ describe("readExactParentAuthorityState", () => {
       rpc,
     );
 
-    expect(rpc.chainGetBlockHash).toHaveBeenCalledExactlyOnceWith(100);
-    expect(rpc.chainGetHeader).toHaveBeenCalledExactlyOnceWith(PARENT_HASH);
+    expect(rpc.chainGetBlockHash).toHaveBeenCalledTimes(1);
+    expect(rpc.chainGetBlockHash).toHaveBeenCalledWith(100);
+    expect(rpc.chainGetHeader).toHaveBeenCalledTimes(1);
+    expect(rpc.chainGetHeader).toHaveBeenCalledWith(PARENT_HASH);
     expect(rpc.stateCall).toHaveBeenNthCalledWith(
       1,
       "GrandpaApi_current_set_id",
