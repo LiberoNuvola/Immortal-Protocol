@@ -8845,7 +8845,7 @@ The acquired point/session state is rechecked immediately after the genesis quer
 
 Commits:
 - Observer: `81d1f90a81f929c30aa95bf908c0629f708ee386`.
-- Tests and acquired-session fixture updates: `cedf481367998e8c076a35df13623cc0b24d4cdc`, `5c4e04fd50cede7ae63816b6159b60a7c444e93a`, and final terminology/test correction `17c0e5ae47b6125f1e570c348c9b19d8e8c87dd3` (observer terminology correction `42f0cca0b0320d861c7c73be88a8259f60d81239`).
+- Tests and acquired-session fixture updates: `cedf481367998e8c076a35df13623cc0b24d4cdc`, `5c4e04fd50cede7ae63816b6159b60a7c444e93a`, terminology/test correction `17c0e5ae47b6125f1e570c348c9b19d8e8c87dd3` (observer terminology correction `42f0cca0b0320d861c7c73be88a8259f60d81239`), and test-description clarification `00112e93152bc060642ca8c609f8c38300a87e26`.
 
 ### Tests and remaining scope
 
