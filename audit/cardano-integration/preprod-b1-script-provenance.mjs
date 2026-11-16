@@ -11,7 +11,7 @@ import {
 } from '@lucid-evolution/lucid'
 
 import { buildScriptsFromLucid } from '../../src/loadValidator'
-import { PREPROD_TUSDM_CANDIDATE_UNIT } from '../../Adapter/CARDANO/observation/DirectUsdmEev'
+import { directUsdmEevFromAtomic, PREPROD_TUSDM_CANDIDATE_UNIT } from '../../Adapter/CARDANO/observation/DirectUsdmEev'
 import { decodeOracleStateDatum } from './preprod-oracle-state-datum.mjs'
 
 const EVIDENCE_DIR = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
@@ -277,14 +277,35 @@ async function main() {
     throw new Error('Observed Pool datum is not the expected eight-field B1 constructor-0 datum')
   }
   const poolDatumPrizeHash = fieldHex(poolDatum.fields[7], 'ppPrizeHash')
-  report.observed.poolDatum = {
+  const poolDatumIntegerFields = poolDatum.fields.slice(0, 7).map(
+    (field, index) => fieldInteger(field, `field[${index}]`),
+  )
+  const directUsdmEevSubunits = directUsdmEevFromAtomic(directUsdmQuantity)
+  const poolDatumTotalLiquidity = poolDatumIntegerFields[0]
+  const poolDatumObservation = {
     constructor: poolDatum.index,
     fieldCount: poolDatum.fields.length,
-    fields: poolDatum.fields.map((field, index) => index === 7
-      ? poolDatumPrizeHash
-      : fieldInteger(field, `field[${index}]`).toString()),
+    fields: poolDatumIntegerFields.map((value) => value.toString()).concat(poolDatumPrizeHash),
+    ppTotalLiquidity: poolDatumIntegerFields[0].toString(),
+    ppPendingLiabilities: poolDatumIntegerFields[1].toString(),
+    ppUnresolvedReserve: poolDatumIntegerFields[2].toString(),
+    ppUnresolvedTicketCount: poolDatumIntegerFields[3].toString(),
+    ppLockedJackpot: poolDatumIntegerFields[4].toString(),
+    ppJackpotThreshold: poolDatumIntegerFields[5].toString(),
+    ppSuspendedClasses: poolDatumIntegerFields[6].toString(),
     ppPrizeHash: poolDatumPrizeHash,
   }
+  addCheck(
+    'pool-datum-total-liquidity-matches-physical-direct-usdm',
+    poolDatumTotalLiquidity === directUsdmEevSubunits,
+    {
+      poolUtxoRef,
+      poolDatumTotalLiquidity: poolDatumTotalLiquidity.toString(),
+      directUsdmAtomicQuantity: directUsdmQuantity.toString(),
+      directUsdmEevSubunits: directUsdmEevSubunits.toString(),
+      conversion: 'atomicQuantity * 100 / 1000000',
+    },
+  )
 
   const oracleStatePolicyId = derivedAuthorityPolicyId
   const poolTokenPolicyId = derivedAuthorityPolicyId
@@ -334,7 +355,9 @@ async function main() {
       authorityQuantity: poolAuthorityQuantity.toString(),
       directUsdmUnit: PREPROD_TUSDM_CANDIDATE_UNIT,
       directUsdmAtomicQuantity: directUsdmQuantity.toString(),
+      directUsdmEevSubunits: directUsdmEevSubunits.toString(),
     },
+    poolDatum: poolDatumObservation,
   }
 
   report.derived = {
