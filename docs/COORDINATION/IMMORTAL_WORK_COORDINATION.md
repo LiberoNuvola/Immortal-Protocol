@@ -9333,3 +9333,51 @@ Updated `audit/cardano-integration/preprod-first-issue-readiness.test.mjs`. Its 
 The checker is intentionally fail-closed: it cannot return `READY_FOR_WALLET_REVIEW` until actual verifiers for the blocked deployment evidence are integrated and run. This is a guard against a false-positive preflight, **not a claim that R1, ProtectedCapital, Oracle source truth or Issue authority have been certified**.
 
 First real Preprod Issue remains **NO-GO**. No workflow was dispatched; no authority endpoint was contacted; no secret or wallet seed was read; no wallet signing, key operation, server deployment, transaction, funding or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry or economic constant was changed.
+
+
+## 46.46 — AGENT A — ISSUE AUTHORITY TRUST-ROOT / GOV-30 GAP (2026-11-16)
+
+**Classification:** Read-only runtime trust-boundary audit + narrow fail-closed gate/test update; no authority endpoint request, server start, workflow dispatch, signing or chain action.
+
+### 1. Existing cryptographic path confirmed — with a governance trust gap
+
+The following path exists in source:
+
+`relayer/issueAuthorityServer.js` → `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` → `relayer/signedIssueAuthority.js` → `relayer/preprodIssueObservationReader.js` → `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts`.
+
+Source review confirms these implemented controls:
+
+- live exact Counter, B1 Pool, V3 Carrier and B2 Control observations;
+- B1/V3 accounting aggregate reconciliation and B2/V3 control projection equality;
+- exact Pool out-reference and physical direct-USDM observation binding;
+- Ed25519 verification of the signed authority envelope and its carrier-binding signature against the configured PEM public key;
+- timestamp/freshness checks, exact Counter/Control/Pool/Carrier references, Issue class/price and state/action/post-state digest comparisons;
+- Haskell Issue decision execution and comparison against the authority-signed state/action/post-state digests;
+- cross-checks between authority-provided and Haskell-derived ProtectedCapital components and total.
+
+This is more than a placeholder provider. It is a real source-level composition, but no live endpoint, server or Preprod execution was invoked here.
+
+### 2. What that runtime path does not establish
+
+The verifier accepts the public key supplied by configuration (`ISSUE_AUTHORITY_PUBLIC_KEY`). The reviewed path verifies that a response was signed by that key; it does **not** independently authenticate the key's appointment, mandate, role or authorized scope against a governed GOV-30 trust root.
+
+In addition, the signed-authority and bridge validation paths check the presence, references and SHA-256-shaped digests for R1 VC1–VC6 / E1–E10 and the EEV/PC evidence. The Haskell provider recomputes the economic decision and cross-checks ProtectedCapital values, but these source paths do not independently resolve and re-hash the underlying R1 certificate/proof artifacts or establish PA1–PA7 source completeness. Those facts must not be inferred from a valid envelope signature alone.
+
+### 3. Readiness gate/test updated with the missing trust-root blocker
+
+The readiness script now adds an explicit blocked check:
+
+`Issue authority public key is bound to an authorized GOV-30 mandate and role`.
+
+The regression fixture must assert this blocker in addition to the existing Oracle, R1, full ProtectedCapital and live signed-response blockers. This prevents a parseable PEM or a successful signature check against an ungoverned configured key from being represented as an authorized Issue decision.
+
+- Readiness source commit: `a83a83bf232dd754e2e962231647a0ebb8604215`.
+- Regression test commit: `2be17d1d9da380bf667e5b92f19d136ec3193306`.
+
+### 4. Evidence boundary and next work
+
+The governance trust-root/key-role binding is still **not implemented or certified**. The local readiness script therefore remains deliberately unable to produce `READY_FOR_WALLET_REVIEW` from its current evidence checks.
+
+Next engineering work must identify the actual normative GOV-30 trust-root / key-role artifact and its verifier, then bind the Issue authority key to that authority and scope. In parallel, the signed authority must consume independently verifiable R1 and PA1–PA7 evidence rather than only carrying references/digest-shaped fields. Do not invent a new mandate schema, key role, or trust root.
+
+No authority endpoint was contacted; no local server was started; no workflow was dispatched; no secret/public-key env value was read; no key was generated or rotated; no wallet, transaction, funding, deployment or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry or economic constant changed. First real Preprod Issue remains **NO-GO**.
