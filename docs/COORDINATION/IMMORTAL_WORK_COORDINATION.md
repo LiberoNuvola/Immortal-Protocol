@@ -10219,3 +10219,73 @@ The repository's prior exact-feed/catalogue audit remains controlling for the ca
 The next safe work is to keep Mainnet market research as a separate future deployment lane and continue seeking a source that is valid for the exact Preprod economic reference under an expressly governed mapping. Do not alter the accepted Preprod tUSDM identity, assume cross-network equivalence, substitute a Mainnet DEX quote, use NAV as spot price, or change Oracle/MintPolicy/B1 semantics.
 
 No external provider was contacted, no custom feed was requested, and no protocol rule, Oracle schema, PriceReference, B1, MintPolicy, V3, Reveal, 500×, ABI, approval, wallet or ledger state changed.
+
+
+## 46.59 — AGENT A — MINSWAP PREPROD V2 EXACT TOKEN IDENTITY CENSUS (2026-11-16)
+
+**Classification:** READ-ONLY PREPROD UTxO / DATUM / TOKEN-METADATA observation. The observer uses public Koios only. No wallet, seed, signature, transaction, deployment, privileged workflow, Oracle configuration or ledger state was accessed or changed.
+
+### 1. Exact-head observer and evidence
+
+- Source HEAD: `1e22c42446a35a37035aeca6a9efc09bb1d28e84`.
+- Workflow: [PRE-RICH Minswap Preprod tUSDM V2 Read-only Observation #43859421381](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43859421381) — **SUCCESS**.
+- Test step: **6/6 PASS**, 0 failures. Cases pin the two exact candidate LP identities, validate e675 pair decoding, keep Masumi 16a55 separate, keep a third tUSDM-labelled policy separate, and reject lookalike script/auth/datum pairs.
+- Artifact [#14221808042](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43859421381/artifacts/14221808042), ZIP SHA-256 `1879ea91feda1d13ddd12037c9373ee118950a1ad64304c0d672c4d1ab9220dc`.
+- The observer is pinned to Minswap SDK commit `ee95d4317414ae1fe2cdc40549e14a1e185dcf59`: Preprod V2 pool payment credential, singleton pool-auth asset, V2 datum pair layout, and LP derivation are taken from the SDK. The corrected classifier does **not** require LP tokens to be held by the Pool UTxO; it derives the LP asset ID and validates the exact assets in the decoded inline datum.
+
+### 2. Complete current Minswap V2 pool-auth census
+
+At Koios Preprod tip:
+- slot `139145859`, block `5419054`;
+- block hash `8acb01064034d621ec074c8416664f8a5179d3de2a46aafbb416d5ae310da9dc`;
+- block time `2026-11-16T11:37:39Z`.
+
+The public `POST /asset_utxos` query for the official Minswap V2 pool-auth unit `d6aae2059baee188f74917493cf7637e679cd219bdfbbf4dcbeb1d0b4d5350` returned **472** UTxOs (`Content-Range: 0-471/472`). All 472:
+- use the expected Minswap V2 Pool payment ScriptHash `d6ba9b7509eac866288ff5072d2a18205ac56f744bc82dcd808cb8fe`;
+- carry the expected pool-auth asset at quantity exactly 1;
+- had an inline V2 datum successfully decoded (0 decode errors);
+- produced 472 distinct datum pairs in this point-in-time census.
+
+**Exact asset result:**
+- PRE-RICH-approved tUSDM `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`: **0 V2 ADA-pool matches**.
+- Masumi tUSDM `16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde0014df10745553444d`: **0 V2 ADA-pool matches**.
+- One other datum pair has a CIP-68-labelled `tUSDM` asset name, but under a **third policy ID**: `11c93226aabf1e9157620857d9ac013ba111680bd837f62a7ca90214`. The exact unit is `11c93226aabf1e9157620857d9ac013ba111680bd837f62a7ca902140014df10745553444d`. It is not either of the two candidate assets above.
+
+This third-policy pair is the only matching tUSDM-suffix/ADA pair in the current 472-pool V2 datum census and is therefore the on-chain candidate most consistent with the public Minswap Preprod `tUSDM-ADA` listing. The page's ticker label alone is not treated as identity evidence; the actual datum and full unit establish that the observed pool is for the `11c932...` asset. No mapping to the PRE-RICH `e675...` token is authorized.
+
+### 3. Third-policy pool and metadata
+
+The authenticated Minswap V2 pool UTxO is:
+- out-ref `8bab6b571abb60ec5b213da01ce4bde1d7ca4f550f46ae554711792518edbf8d#1`;
+- address `addr_test1zrtt4xm4p84vse3g3l6swtf2rqs943t0w39ustwdszxt3l5rajt8r8wqtygrfduwgukk73m5gcnplmztc5tl5ngy0upqhns793`;
+- datum pair: `lovelace` / third-policy tUSDM;
+- Minswap pool-auth NFT quantity: 1;
+- pool last updated at block height `5403737`, time `2026-11-12T13:35:28Z`.
+
+Koios `asset_info` for the third token reports:
+- fingerprint `asset1nuk688ht0z6z5etnutwgh2g29f5va6eff334et`;
+- reported total supply `30131000000000` atomic units;
+- 8 mint transactions and 3 burn transactions;
+- creation time `1743766259`;
+- `token_registry_metadata = null` and `minting_tx_metadata = null` in this response.
+
+The current pool output carries `238532670269` token atomic units and `382956972684` lovelace including the 4,500,000-lovelace Pool ADA allowance. The resulting value-side ADA reserve is `382952472684` lovelace. The Pool datum instead records ADA reserve `382952092836` and token reserve `238532670269`; the ADA reserve difference is **379,848 lovelace**. The observer records `datumValueReservesMatch = false`; this mismatch is not silently normalized away.
+
+The Minswap SDK's `getV2PoolPrice` calculates from datum `pool.reserveA/reserveB` after applying asset decimals. Its Maestro adapter obtains token decimals from `token_registry_metadata.decimals` and falls back to 0 if absent. Since the Koios metadata response for this third asset has no token-registry metadata, a normalized human-unit price is **not qualified** by the evidence gathered here. The two raw reserve quotients are recorded only as observations, not as a price feed or economic truth.
+
+### 4. First-Issue impact
+
+| Question | Result |
+|---|---|
+| Is the public Minswap Preprod V2 tUSDM label enough to establish exact asset identity? | **NO** |
+| Is there a current V2 pool datum for exact PRE-RICH `e675...` tUSDM/ADA? | **NOT FOUND — 0/472** |
+| Is the Masumi `16a55...` token in that pool? | **NOT FOUND — 0/472** |
+| What tUSDM-labelled token appears in the matching pool? | **Third policy `11c932...`** |
+| Is the third token mapped/approved as the PRE-RICH tUSDM? | **NO — distinct asset identity** |
+| Are decimals and normalized quote source-qualified? | **NO — metadata absent; pool datum/value ADA reserve also differs by 379,848 lovelace** |
+| Does the Minswap pool solve Option B or the USD/USDM oracle gate? | **NO** |
+| First real Preprod Issue | **NO-GO** |
+
+Do not substitute the third-policy token, infer parity or cross-policy equivalence, or feed the raw pool ratio into `OracleQuote`, `totalUsdmValue`, `MintPolicy`, EEV or Issue admission. The accepted `e675...` unit remains the only approved physical tUSDM identity for the B1 Pool observation; it still has no qualified exact-asset Preprod USD/USDM market source from this work.
+
+**Non-effects:** no token, pool, datum, oracle source, price reference, MintPolicy, B1, EEV, approval, economic rule, 500×, V3, Reveal, ABI, wallet or chain state changed. No transaction, signer or deployment was invoked.
