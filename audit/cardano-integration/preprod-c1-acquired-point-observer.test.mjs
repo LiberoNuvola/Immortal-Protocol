@@ -227,7 +227,7 @@ test('queries all five addresses in one acquired point and preserves raw respons
     identityEnvelope: fixture(),
   })
 
-  assert.deepEqual(ledgerSession.calls.map(call => call.params.addresses[0]),
+  assert.deepEqual(ledgerSession.calls.filter(call => call.method === 'queryLedgerState/utxo').map(call => call.params.addresses[0]),
     fixture().components.map(component => component.address))
   assert.equal(ledgerSession.calls[0].method, 'queryNetwork/genesisConfiguration')
   assert.deepEqual(ledgerSession.calls[0].params, { era: 'shelley' })
@@ -281,7 +281,13 @@ test('refuses a released or unacquired session before querying', async () => {
 
 test('rejects non-array UTxO responses and stops the census', async () => {
   const ledgerSession = session()
-  ledgerSession.query = async () => ({ malformed: true })
+  ledgerSession.query = async (method, params) => {
+    ledgerSession.calls.push({ method, params })
+    if (method === 'queryNetwork/genesisConfiguration') {
+      return { era: 'shelley', network: 'testnet', networkMagic: 1 }
+    }
+    return { malformed: true }
+  }
   await assert.rejects(
     observeC1ComponentsAtAcquiredPoint({ ledgerSession, identityEnvelope: fixture() }),
     /UTXO_RESPONSE_NOT_ARRAY:prizeValidator/,
