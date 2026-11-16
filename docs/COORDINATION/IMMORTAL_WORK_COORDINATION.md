@@ -9124,3 +9124,58 @@ The next valid R1 step is to recover the contemporaneous V25 generator/relation 
 | First real Preprod Issue | **NO-GO** |
 
 No DVM, V25 or R1 parameter was changed. No statistical profile, new action, QNE assumption, Ω narrowing, fixture promotion, V3/Reveal/ABI change or 500× modification was introduced. No workflow, wallet, signing key, server, transaction, deployment, funding or ledger state was actuated.
+
+
+## 46.43 — AGENT A — MAIN BRANCH PREPROD EEV APPROVAL WORKFLOW AUDIT (2026-11-16)
+
+**Classification:** READ-ONLY AUDIT OF MAIN WORKFLOW + PINNED SOURCE; no dispatch, signature, transaction, deployment or ledger action.
+
+### 1. New main-branch approval path identified
+
+Main now contains `.github/workflows/pre-rich-b1-eev-approval.yml` (workflow introduction commit `0d6e4886d813fc86fdd517590405272ebfe6885c`; governance-metadata alignment commit `97b09a38742098f17a61eb07734c401aeedccc06`). The workflow is manually dispatched with `approve_eev=true`, uses the GitHub environment `PREPROD-EEV-APPROVAL`, and checks for `PREPROD_EEV_APPROVAL_TOKEN`.
+
+The workflow checks out the protocol source at the fixed snapshot `0e5fa575f84e3759655b6d0a3492b2f0b79aa446`. It does not use the work branch as its executable source. Its intended output is a direct-USDM EEV `DEPLOYMENT_APPROVED` evidence artifact, not an Issue transaction.
+
+### 2. Side-effect boundary of the workflow
+
+The first two scripts are not read-only observers:
+
+- `preprod-direct-oracle-state-bootstrap.mjs` derives an Oracle State singleton from the configured Preprod wallet identity. If no singleton exists, it constructs a mint/pay transaction, signs it with the wallet loaded from `PREPROD_REVEAL_SEED`, submits it and waits for confirmation. If exactly one exists, it reuses it.
+- `preprod-direct-usdm-bootstrap.mjs` checks the wallet and derived B1 topology. If the Pool singleton does not already exist, it constructs a transaction minting the Pool token and placing the configured direct tUSDM amount in the exact PrizePool, signs with the same wallet seed, submits and waits for confirmation. The source constants target 100,000 IMMORTAL USDM sub-units (1,000 USDM at 100 sub-units/USDM). If one matching Pool already exists with the exact declared contents, it reuses it.
+
+Therefore a manual workflow dispatch can cause on-chain Preprod state changes and wallet expenditure when either bootstrap artifact is absent. The workflow was inspected only; it was **not dispatched**. No seed, secret or wallet configuration was read by this audit.
+
+### 3. Read-only qualification and approval stages
+
+After bootstrap/reuse:
+
+1. `preprod-direct-usdm-source-set.mjs` queries Koios and requires the exact Pool `txHash#outputIndex` to be live, with the Pool singleton and the exact configured tUSDM unit. It derives EEV with conservative FLOOR conversion and writes `OBSERVED_NOT_QUALIFIED` source evidence.
+2. `preprod-direct-usdm-qualification.mjs` binds the deployment, Oracle State and source-set manifests, hashes repository files EV1–EV7, and writes a `qualified` artifact with deployment approval still `PENDING`.
+3. `preprod-direct-usdm-approve.mjs` requires the explicit action `APPROVE_PREPROD_EEV` and a non-empty approval token. It records GitHub actor, run ID, `GITHUB_SHA`, candidate/source-set identity and input digests in an approval snapshot, computes SHA-256 evidence hashes, and writes `DEPLOYMENT_APPROVED`.
+4. The workflow's final normalization step changes governance-description metadata and recomputes the JSON evidence hash. It does not add a protocol signature or an Issue authorization.
+
+The workflow explicitly states that EV1–EV7 qualification and `DEPLOYMENT_APPROVED` apply only to the exact direct-USDM EEV candidate and **do not themselves authorize Issue admission**. The next step still requires live UTxO revalidation together with authenticated control state, ProtectedCapital provenance, viability/liquidity evidence and the authoritative Issue decision.
+
+### 4. Remaining provenance and governance checks
+
+- The workflow file is taken from `main`, while the executable protocol scripts are checked out at pinned commit `0e5fa575...`. The qualification script labels its verification reference using `GITHUB_SHA`; the approval script also records `GITHUB_SHA` as `workflowCommit`. These are the GitHub dispatch-context SHA values, not an explicit `git rev-parse HEAD` measurement of the pinned code checkout. The workflow YAML makes the pinned checkout visible, but the generated evidence should explicitly record both the workflow-definition SHA and the actual checked-out source SHA to remove ambiguity.
+- The approval script itself checks that the approval token is non-empty; it does not verify a cryptographic signature, an authorized-actor allowlist or a GOV-30 key-role mandate. Any reviewer restrictions configured on GitHub Environment `PREPROD-EEV-APPROVAL` are external repository settings and were not verified here. Do not infer that the environment has, or lacks, protected reviewers.
+- The EV1–EV7 qualification artifact is not the R1 E1–E10 / VC1–VC6 certificate. Its repository-file digests and source-set checks do not discharge `χ`, `Wit`, inductiveness, Ω containment, the deployment-specific `S0`, or the semantic verification of R1 artifacts.
+- The direct-USDM profile's EEV derivation does not use an oracle conversion for the physical tUSDM in the PrizePool. The Oracle State is still materialized as part of the wider B1 deployment topology/compatibility manifest; do not describe it as the source of direct-USDM EEV.
+
+### 5. Correct status for Agent A / first Issue
+
+| Gate | Classification |
+|---|---|
+| Main manual EV1–EV7 approval workflow | **IMPLEMENTED IN MAIN; NOT DISPATCHED IN THIS AUDIT** |
+| Oracle State / direct-USDM Pool bootstrap | **CAN SUBMIT PREPROD TRANSACTIONS IF MISSING; NO EXECUTION HERE** |
+| Exact live direct-USDM source observation | **IMPLEMENTED IN PINNED SOURCE; NO NEW OBSERVATION HERE** |
+| EEV `DEPLOYMENT_APPROVED` artifact | **WORKFLOW OUTPUT CONTRACT PRESENT; NO GENERATED RUN ARTIFACT VERIFIED HERE** |
+| EEV approval as Issue authority | **EXPLICITLY INSUFFICIENT** |
+| R1 E1–E10 / VC1–VC6 | **OPEN / NOT CERTIFIED** |
+| External Issue authority and GOV-30 key binding | **OPEN / NOT EVIDENCED** |
+| First real Preprod Issue | **NO-GO** |
+
+Next action is to verify whether a real approved EEV run artifact already exists and independently validate its manifest, hashes, actor/run provenance and exact live Pool out-reference. Do not dispatch the workflow merely to obtain that artifact: it may create Oracle State and PrizePool UTxOs and spend wallet assets. In parallel, continue only on the remaining R1 and Issue-authority evidence; do not build another EEV adapter or treat EEV approval as a substitute for R1.
+
+No workflow was dispatched; no seed or secret was read; no wallet, signing key, server, transaction, deployment, funding or ledger state was actuated. No V3, Reveal, ABI, 500×, payout, expiry or economic constant was changed.
