@@ -9648,3 +9648,95 @@ This finding partially advances E3/Wit evidence and corrects §46.39's unqualifi
 Preserve the 1,482-row matrix as a historical reference and use it as an exact test oracle only for the state/action labels it actually contains. The remaining work is to recover the contemporaneous V25 transition generator or complete transition relation and independently prove each selected action against its full Ω successor set. If that generator cannot be recovered, any replacement must be a separately governed exact PRE-RICH deployment model; do not tune an inferred transition to reproduce the historical K* count.
 
 No R1 parameter, Ω set, 500× rule, ProtectedCapital component, V3/Reveal semantics, ABI, validator or production source changed. No test/workflow was dispatched, and no wallet, key, transaction, deployment, funding or ledger state was actuated.
+
+
+## 46.50 — AGENT A — CHARLI3 PREPROD DATUMS + BOOTSTRAP ORACLE REVALIDATION AT NOVEMBER 16 ACQUIRED POINT (2026-11-16)
+
+**Classification:** READ-ONLY RETRIEVAL OF HISTORICAL GITHUB ACTIONS EVIDENCE + INDEPENDENT DIGEST / CROSS-SNAPSHOT CHECK; no Oracle, wallet, source, contract or ledger state changed.
+
+### 1. Exact Charli3 Preprod observation is real, but the feed data are not usable
+
+The latest repository-path observation retrieved in this audit is [workflow run #42195466659](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42195466659), source SHA `5ba800fd59f3952f53c23bea372d978c0e7eea79` (2026-11-06 09:29–09:30 UTC). All job steps succeeded, including the shared Charli3 datum decoder tests, the Mainnet/Preprod observer executions and artifact upload. This is not merely a workflow badge: the archived artifact `charli3-multinetwork-feed-observation-5ba800fd59f3952f53c23bea372d978c0e7eea79` (ID `13492175704`) was downloaded and inspected.
+
+Integrity checks:
+- GitHub's registered ZIP digest: `sha256:fab759cb5e563b73dd37fe5dcf9143b0289da749c04b427e365f0bfa268c1806`; independently computed ZIP SHA-256 matches.
+- Preprod JSON evidence digest: `0b7e18b9a0c0d56fe2474c4c0c4853550bcb6ad4369fa1d30648148fcb52665a`; independently recomputed from the JSON body (excluding the digest field) matches.
+- Observation timestamp: `2026-11-06T09:30:03.511Z`; network tip block `5379831`, absolute slot `138274202`, hash `728223c91c4a16501335c3e67059861625962f124f03559887e19d222a0d53c9`.
+- The artifact classifies the run `OBSERVED_NOT_QUALIFIED`; operation is `READ_ONLY`, unsigned, not submitted and no state changed.
+
+The two official Preprod feed NFT UTxOs were each unique at the documented address at that acquired point:
+
+| Feed | Exact NFT identity | Observed UTxO | Last price record | Datum blockers |
+|---|---|---|---|---|
+| `USDM/USD` | policy `424f268a65632944ddfe17967208178082058cbe9044f53aee28697d` + `OracleFeed` | `a71629ca1ef04971c27856830d5f4d5517462783df6c214357ca45e7be1777e5#1` | raw `894250000`; timestamp `2024-02-21T...` (`1708484427386` ms), expiry `1708488027386` | **STALE, EXPIRED, PRECISION ABSENT, PAIR FIELDS ABSENT, EXTENDED METADATA ABSENT** |
+| `ADA/USD` | policy `1116903479e7320b8e4592207aaebf627898267fcd80e2d9646cbf07` + `OracleFeed` | `6f518a1d46d9bcb00ca0a62cf467e111fe27a66deaf294db4472b0fe46014f52#1` | raw `407740`; timestamp `2025-12-14T...` (`1765707459510` ms), expiry `1765709259510` | **STALE, EXPIRED, PRECISION ABSENT, PAIR FIELDS ABSENT, EXTENDED METADATA ABSENT** |
+
+At observation time:
+- The `USDM/USD` record was `85,472,974,614` ms old against the documented one-hour interval.
+- The `ADA/USD` record was `28,249,942,490` ms old against the documented 30-minute interval.
+- Neither datum publishes `precision`, base/quote symbol/name or ID fields; the pair association is therefore bound only through the configured NFT address/policy, not through pair metadata in the datum.
+- Neither datum has Extended Data for provider ID, source count, signatory count or provider signature.
+- The feed observer correctly refuses to infer an exact decimal price or claim source qualification from those data.
+
+The official Preprod configuration documents five nodes and a three-of-five updated-node threshold for both pairs; it lists 30-minute ADA/USD freshness/frequency and one-hour USDM/USD freshness/frequency. Those are configured network parameters, not evidence that the observed expired datum was currently being updated or that its historical price record met the source-authentication requirements. [Official Preprod configuration](https://docs.charli3.io/oracles/resources/networks/preprod).
+
+### 2. Correct workflow interpretation
+
+An earlier attempt, run `42175230485`, failed two live-fixture decoder tests (`CHARLI3_INVALID_CONSTR`) before the feed-observation step; that run had no observation artifact and must not be treated as a feed read. The later run `42195466659` passed the decoder suite and actually executed the Preprod observer; its real output is the stale/expired evidence above. The workflow success therefore means **read-only acquisition and decoding completed**, not that the candidate passed freshness or qualification.
+
+The observer's code itself does not prove the provider's source truth, current node operation, price accuracy, aggregation transaction or provider/signatory trust. It records the exact UTxO, datum and hashes, and explicitly returns `OBSERVED_NOT_QUALIFIED`.
+
+### 3. Revalidation of IMMORTAL's historical bootstrap-wallet Oracle State
+
+The earlier [read-only Oracle quote-set workflow run #41422819880](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41422819880) on 2026-11-02 has two different outcomes that must not be conflated:
+
+- The observation job intended to read the *configured runtime* Oracle singleton failed before querying the chain. Its environment lacked `BLOCKFROST_PROJECT_ID`, `ORACLE_STATE_ADDRESS`, `ORACLE_STATE_POLICY_ID`, `ORACLE_STATE_TOKEN_NAME_HEX` and `ORACLE_PUBLISHER_PKH`. No configured-runtime observation artifact was produced.
+- The separate Koios observer of the **historically identified bootstrap-wallet singleton** succeeded and uploaded artifact ID `13129754997`. Its ZIP digest `sha256:13b43742d7f7dadd845d140f35484ce8aba81bd4947b9e5403c7d1a0b01c8963` and internal JSON evidence hash `6d05da2524ac799f98728ff4f5832370cf7259b9da81b7ae7be6b86468d9034e` were independently recomputed and match.
+
+That November 2 observation records:
+- bootstrap-wallet Oracle State reference `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`;
+- wallet address `addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4`;
+- singleton policy `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e`, token name `4f5241434c45`;
+- legacy single ADA quote, raw price `100`, timestamp `1791481130142` = **2026-10-08T17:38:50.142Z**, and publisher field matching the historical bootstrap-wallet key hash;
+- `ageMs=2,131,384,858` at the November 2 Koios chain tip; `fresh=false`, `usableForIssue=false`, `sourceTruthProven=false`, `configuredPublisherTrustIndependentlyEliminated=false`.
+
+### 4. New cross-snapshot binding: the same bootstrap-wallet Oracle UTxO remained live on November 16
+
+The 16-Nov acquired-point Preprod context artifact from run `43798562115` contains that same exact Oracle State UTxO inside `preprod-wallet-utxo.json`:
+- acquired ledger point slot `139116604`, block/id `a2e6355d7d97cf2324e4dfdb96e3cffcee7f76ea3a236d6aa0da5a21985218aa`;
+- exact same out-reference `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`;
+- exact same datum CBOR SHA-256 `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`.
+
+The datum timestamp therefore still equalled `2026-10-08T17:38:50.142Z` at the November 16 acquired point. Recomputing against `preprod-wallet-utxo.json`'s `observedAt=2026-11-16T03:31:09.294Z` gives age **3,318,739,152 ms = 38 days, 9 hours, 52 minutes**. The same UTxO and bytes, not a newly timestamped quote, were present.
+
+**Identity limit:** this is a live observation of the previously identified bootstrap-wallet singleton. It does not cure the November 2 missing-variable failure or prove that the DApp's current public/runtime `ORACLE_STATE_ADDRESS`, policy, token name and publisher variables are equal to this historical wallet identity. Do not silently equate the two.
+
+### 5. Source and consumer implications for the first Issue
+
+The existing source work in §46.29, §46.30 and §46.34 remains the correct distinction:
+
+- Standard ADA-funded `TicketIssued` is structurally compatible with a legacy ADA-only Oracle quote. MintPolicy checks that the exact Treasury output values to the ticket's `pdPriceUsdm`; the B1 `TicketIssued` transition preserves the entire Pool Value and increments reserve/count without Oracle-valuing the Pool. Therefore a tUSDM price is not required merely to execute the current standard ADA-funded Issue.
+- That structural compatibility is **not live readiness**: the historical bootstrap-wallet ADA quote observed on November 16 remains stale by more than 38 days and is not independently source-qualified. The exact configured runtime identity is also not confirmed by the failed configured-observer run.
+- Option B remains the recorded protocol choice: independently source-authenticate `ADA/USD` and `USD/USDM` (or an exact inverse), bind both observations under a governed timestamp-skew policy, and derive the settlement rate with exact integer/rational arithmetic and a single governed rounding operation. Do not assume parity or use a stale `USDM/USD` record.
+- The observed Charli3 records cannot supply either leg: both are expired, neither carries precision or datum pair fields, and neither carries Extended Data identifying source/signatory counts or a provider signature. Their raw integers cannot be converted into an exact settlement price.
+- The current IMMORTAL `OracleQuoteSet` is multiple asset quotes in one datum, not a multi-publisher quorum. `Economic.oraclePriceFor` still accepts one configured publisher. The multi-oracle implementation-gap audit states that production consumers do not yet implement independent source verification/aggregation or registry-currentness binding. A Charli3 datum cannot be copied into the current IMMORTAL datum and treated as authenticated without that separately governed consumer path.
+
+Public Charli3 material is also not a substitute for observed liveness: the Preprod feed catalogue still lists these historical feed identities and intervals, while the official Medium profile lists a 25-May announcement about pausing price feeds and the newer open-source documentation describes the V3 repositories and continuing project. Treat present hosted-provider operation as **NOT VERIFIED**; the decisive machine observation is that the on-chain records themselves were already stale and expired at the November 6 capture. References: [official Preprod feed configuration](https://docs.charli3.io/oracles/resources/networks/preprod), [Charli3 public announcement index](https://oraclecharli3.medium.com/), [open-source project documentation](https://docs.charli3.io/oracles/open-source-project).
+
+### 6. Gate and next action
+
+| Gate | Correct classification |
+|---|---|
+| Charli3 Preprod ADA/USD and USDM/USD NFT/address identity | **OBSERVED; unique UTxO at 2026-11-06 point** |
+| Charli3 ADA/USD freshness | **FAIL — expired; precision/pair metadata absent** |
+| Charli3 USDM/USD freshness | **FAIL — expired; precision/pair metadata absent** |
+| Charli3 source/signatory provenance | **NOT EVIDENCED BY OBSERVED DATUM** |
+| Historical bootstrap-wallet Oracle State UTxO live on 2026-11-16 | **PASS — same exact ref and same datum hash observed** |
+| Historical bootstrap-wallet ADA quote freshness | **FAIL — 38d 9h old at 16-Nov acquired point** |
+| Exact DApp/public runtime Oracle singleton identity | **NOT CONFIRMED — configured observer blocked by missing environment variables** |
+| Option B two-leg source/consumer implementation | **OPEN / NOT AUTHORIZED** |
+| First real Preprod Issue | **NO-GO** |
+
+Next bounded work is to obtain a fresh, independently authenticated ADA/USD + USD/USDM source path (or a separately approved direct ADA/USDM quote), bind the exact runtime Oracle identity without exposing secrets, and close the source-admission/registry authority and Option-B consumer contract before any wallet or Issue action. The existing bootstrap's reuse behavior must not be treated as a quote refresh: on an existing singleton it preserves the on-chain timestamp. Do not solve this by rewriting the old datum with a new timestamp.
+
+No workflow was dispatched by this audit; no secret, seed or private key was read; no quote was rewritten; no wallet signed; no transaction, funding, deployment or ledger mutation occurred. No Oracle schema, MintPolicy, B1 validator, ABI, V3, Reveal, 500× rule or economic constant changed.
