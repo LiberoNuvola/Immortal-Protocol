@@ -323,6 +323,116 @@ async function fetchJson(url, options = {}) {
   return { json, headers: response.headers };
 }
 
+
+async function fetchAssetUtxosForUnit(unit) {
+  const policyId = unit.slice(0, 56);
+  const assetName = unit.slice(56);
+  const rows = [];
+  let offset = 0;
+  let expectedTotal = null;
+  let pages = 0;
+  while (pages < MAX_PAGES) {
+    const end = offset + PAGE_SIZE - 1;
+    const url = PREPROD_KOIOS + "/asset_utxos?offset=" + offset + "&limit=" + PAGE_SIZE;
+    const result = await fetchJson(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Range-Unit": "items",
+        Range: offset + "-" + end,
+        Prefer: "count=exact",
+      },
+      body: JSON.stringify({
+        _asset_list: [[policyId, assetName]],
+        _extended: true,
+      }),
+    });
+    const page = result.json;
+    if (!Array.isArray(page)) throw new Error("KOIOS_CANDIDATE_ASSET_UTXOS_NOT_ARRAY");
+    const contentRange = result.headers.get("content-range");
+    if (!contentRange) throw new Error("KOIOS_CANDIDATE_ASSET_RANGE_MISSING");
+    if (contentRange === "*/0" && offset === 0 && page.length === 0) {
+      return { rows: [], pages: 1, total: 0, contentRange };
+    }
+    const match = /^(\d+)-(\d+)\/(\d+)$/.exec(contentRange);
+    if (!match) throw new Error("KOIOS_CANDIDATE_ASSET_RANGE_INVALID:" + contentRange);
+    const start = Number(match[1]);
+    const finish = Number(match[2]);
+    const total = Number(match[3]);
+    if (start !== offset || finish - start + 1 !== page.length) {
+      throw new Error("KOIOS_CANDIDATE_ASSET_PAGE_MISMATCH");
+    }
+    if (expectedTotal !== null && total !== expectedTotal) {
+      throw new Error("KOIOS_CANDIDATE_ASSET_COUNT_CHANGED_DURING_SCAN");
+    }
+    expectedTotal = total;
+    rows.push(...page);
+    offset += page.length;
+    pages += 1;
+    if (offset >= expectedTotal) return { rows, pages, total: expectedTotal, contentRange };
+    if (page.length === 0) throw new Error("KOIOS_CANDIDATE_ASSET_PAGINATION_STALLED");
+  }
+  throw new Error("KOIOS_CANDIDATE_ASSET_PAGE_LIMIT_EXCEEDED");
+}
+
+function summarizeCandidateAssetUtxos(unit, observation) {
+  const groups = new Map();
+  let totalQuantity = 0n;
+  let inlineDatumCount = 0;
+  for (const row of observation.rows) {
+    const quantity = getAssetQuantity(row, unit);
+    if (quantity === null || quantity <= 0n) throw new Error("KOIOS_CANDIDATE_ASSET_UTXO_QUANTITY_INVALID");
+    totalQuantity += quantity;
+    if (row.inline_datum) inlineDatumCount += 1;
+    const credential = getPaymentCredential(row) || "UNKNOWN";
+    const group = groups.get(credential) ?? {
+      paymentCredential: credential,
+      addresses: new Set(),
+      utxoCount: 0,
+      totalQuantity: 0n,
+      inlineDatumCount: 0,
+    };
+    group.addresses.add(String(row.address ?? ""));
+    group.utxoCount += 1;
+    group.totalQuantity += quantity;
+    if (row.inline_datum) group.inlineDatumCount += 1;
+    groups.set(credential, group);
+  }
+  const top = [...groups.values()]
+    .sort((a, b) => a.totalQuantity > b.totalQuantity ? -1 : a.totalQuantity < b.totalQuantity ? 1 : 0)
+    .slice(0, 25)
+    .map(group => ({
+      paymentCredential: group.paymentCredential,
+      addressCount: group.addresses.size,
+      addresses: [...group.addresses].slice(0, 5),
+      utxoCount: group.utxoCount,
+      totalQuantity: group.totalQuantity.toString(),
+      inlineDatumCount: group.inlineDatumCount,
+    }));
+  const samples = observation.rows.slice(0, 50).map(row => ({
+    outRef: String(row.tx_hash) + "#" + String(row.tx_index),
+    address: String(row.address ?? ""),
+    paymentCredential: getPaymentCredential(row),
+    quantity: getAssetQuantity(row, unit).toString(),
+    lovelace: String(row.value ?? "0"),
+    inlineDatumPresent: Boolean(row.inline_datum),
+    datumHash: row.datum_hash ?? null,
+    blockHeight: row.block_height ?? null,
+    blockTime: row.block_time ?? null,
+  }));
+  return {
+    unit,
+    utxoCount: observation.total,
+    pagesRead: observation.pages,
+    contentRange: observation.contentRange ?? null,
+    totalQuantity: totalQuantity.toString(),
+    distinctPaymentCredentials: groups.size,
+    inlineDatumUtxoCount: inlineDatumCount,
+    topPaymentCredentials: top,
+    sampleUtxos: samples,
+  };
+}
+
 async function fetchAssetInfo(unit) {
   const policyId = unit.slice(0, 56);
   const assetName = unit.slice(56);
@@ -438,6 +548,36 @@ async function main() {
       return { unit, status: "ASSET_INFO_QUERY_FAILED", error: String(error?.message ?? error) };
     }
   }));
+  const candidateAssetObservations = await Promise.all(TUSDM_CANDIDATES.map(async (candidate) => {
+    const unit = candidate.policyId + candidate.tokenName;
+    try {
+      const utxoObservation = await fetchAssetUtxosForUnit(unit);
+      const assetInfo = await fetchAssetInfo(unit);
+      const distribution = summarizeCandidateAssetUtxos(unit, utxoObservation);
+      return {
+        label: candidate.label,
+        status: "OBSERVED",
+        distribution,
+        assetInfo: assetInfo ? {
+          assetNameAscii: assetInfo.asset_name_ascii ?? null,
+          fingerprint: assetInfo.fingerprint ?? null,
+          mintingTxHash: assetInfo.minting_tx_hash ?? null,
+          totalSupply: assetInfo.total_supply ?? null,
+          mintCount: assetInfo.mint_cnt ?? null,
+          burnCount: assetInfo.burn_cnt ?? null,
+          creationTime: assetInfo.creation_time ?? null,
+          tokenRegistryMetadata: assetInfo.token_registry_metadata ?? null,
+          latestMintMetadata: assetInfo.minting_tx_metadata ?? null,
+        } : null,
+      };
+    } catch (error) {
+      return {
+        label: candidate.label,
+        status: "OBSERVATION_FAILED",
+        error: String(error?.message ?? error),
+      };
+    }
+  }));
 
   let status = "NO_EXACT_TUSDM_ADA_POOL_FOUND";
   if (byCandidate.PRE_RICH_APPROVED_TUSDM.length > 0 &&
@@ -483,6 +623,7 @@ async function main() {
     observedDatumPairs: classification.observedDatumPairs,
     tUsdmLikePools: classification.tUsdmLikePools,
     tUsdmLikeAssetInfo: similarAssetInfo,
+    candidateAssetObservations,
     pools: classification.matches,
     chainTip: {
       slot: Number(tip.abs_slot ?? tip.absolute_slot),
