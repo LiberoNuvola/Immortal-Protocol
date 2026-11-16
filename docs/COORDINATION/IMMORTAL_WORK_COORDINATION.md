@@ -9472,10 +9472,10 @@ The same census explicitly records:
 - `providerSnapshotPinned=false`;
 - `sameBackendSnapshotVerified=false`;
 - `fullProtectedCapitalQualified=false`;
-- `r7L6EmptinessProven=false);
+-  `r7L6EmptinessProven=false`;
 - `l2LifecycleProven=false`;
-- `liveL5RowsMayBePresent=true);
-- `consumedL5ExpiryHistoryRequiresTransactionReplay=true).
+-  `liveL5RowsMayBePresent=true`;
+-  `consumedL5ExpiryHistoryRequiresTransactionReplay=true`.
 
 The detailed PA1–PA7 classification in the Control Center remains:
 - PA1 partial: asset/commitment classes not exhaustively instantiated;
