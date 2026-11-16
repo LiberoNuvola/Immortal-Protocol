@@ -5,8 +5,9 @@ import {
   C1_COMPONENT_IDS,
   observeC1ComponentsAtAcquiredPoint,
   validateC1CandidateIdentityEnvelope,
-  decodePreprodScriptAddress,
+  decodeTestnetScriptAddress,
   sha256CanonicalJson,
+  validatePreprodNetworkGenesis,
 } from './preprod-c1-acquired-point-observer.mjs'
 
 const commit = 'a'.repeat(40)
@@ -99,10 +100,37 @@ function session() {
     point,
     async query(method, params) {
       calls.push({ method, params })
+      if (method === 'queryNetwork/genesisConfiguration') {
+        return { era: 'shelley', network: 'testnet', networkMagic: 1 }
+      }
       return [{ address: params.addresses[0], outputReference: { transaction: { id: 'c'.repeat(64) }, index: calls.length - 1 }, value: {} }]
     },
   }
 }
+
+test('accepts only the Shelley Preprod network magic', () => {
+  assert.deepEqual(validatePreprodNetworkGenesis({
+    era: 'shelley',
+    network: 'testnet',
+    networkMagic: 1,
+  }), { era: 'shelley', network: 'testnet', networkMagic: 1 })
+
+  assert.throws(() => validatePreprodNetworkGenesis({
+    era: 'shelley',
+    network: 'testnet',
+    networkMagic: 2,
+  }), /PREPROD_NETWORK_MAGIC_MISMATCH/)
+  assert.throws(() => validatePreprodNetworkGenesis({
+    era: 'shelley',
+    network: 'mainnet',
+    networkMagic: 764824073,
+  }), /NETWORK_CONFIGURATION_MISMATCH/)
+  assert.throws(() => validatePreprodNetworkGenesis({
+    era: 'alonzo',
+    network: 'testnet',
+    networkMagic: 1,
+  }), /NETWORK_CONFIGURATION_MISMATCH/)
+})
 
 test('validates exactly five component identities without granting authority', () => {
   const identity = validateC1CandidateIdentityEnvelope(fixture())
@@ -136,7 +164,7 @@ test('rejects mixed deployment generations', () => {
 test('decodes a valid Preprod enterprise script address and binds its payment credential', () => {
   const hash = 'a'.repeat(56)
   const address = enterpriseScriptAddress(hash)
-  assert.deepEqual(decodePreprodScriptAddress(address, hash), {
+  assert.deepEqual(decodeTestnetScriptAddress(address, hash), {
     addressType: 7,
     networkId: 0,
     paymentCredentialHash: hash,
@@ -145,14 +173,14 @@ test('decodes a valid Preprod enterprise script address and binds its payment cr
 
 test('rejects mainnet, non-Preprod network id, key credentials and invalid checksum', () => {
   const hash = 'a'.repeat(56)
-  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_PREPROD/)
-  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 6), hash), /PAYMENT_CREDENTIAL_NOT_SCRIPT/)
-  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 7, 'addr'), hash), /NOT_PREPROD/)
-  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash.slice(0, 54)), hash), /SHELLEY_PAYLOAD/)
+  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_PREPROD/)
+  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 0, 6), hash), /PAYMENT_CREDENTIAL_NOT_SCRIPT/)
+  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 0, 7, 'addr'), hash), /NOT_PREPROD/)
+  assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash.slice(0, 54)), hash), /SHELLEY_PAYLOAD/)
   const validAddress = enterpriseScriptAddress(hash)
   const replacement = validAddress.endsWith('q') ? 'p' : 'q'
   const damaged = validAddress.slice(0, -1) + replacement
-  assert.throws(() => decodePreprodScriptAddress(damaged, hash), /CHECKSUM_INVALID/)
+  assert.throws(() => decodeTestnetScriptAddress(damaged, hash), /CHECKSUM_INVALID/)
 })
 
 test('rejects an address whose payment credential differs from the declared derived hash', () => {
@@ -201,7 +229,12 @@ test('queries all five addresses in one acquired point and preserves raw respons
 
   assert.deepEqual(ledgerSession.calls.map(call => call.params.addresses[0]),
     fixture().components.map(component => component.address))
-  assert.ok(ledgerSession.calls.every(call => call.method === 'queryLedgerState/utxo'))
+  assert.equal(ledgerSession.calls[0].method, 'queryNetwork/genesisConfiguration')
+  assert.deepEqual(ledgerSession.calls[0].params, { era: 'shelley' })
+  assert.ok(ledgerSession.calls.slice(1).every(call => call.method === 'queryLedgerState/utxo'))
+  assert.deepEqual(result.networkIdentity, { era: 'shelley', network: 'testnet', networkMagic: 1 })
+  assert.match(result.networkGenesisQueryCanonicalJsonSha256, /^[0-9a-f]{64}$/)
+  assert.match(result.networkGenesisResultCanonicalJsonSha256, /^[0-9a-f]{64}$/)
   assert.deepEqual(result.acquiredLedgerState, point)
   assert.equal(result.digestAlgorithm, 'SHA256_CANONICAL_JSON_V1')
   assert.equal(result.digestScope, 'PARSED_JSON_OBJECTS_NOT_ORIGINAL_WEBSOCKET_WIRE_BYTES')
@@ -219,6 +252,21 @@ test('queries all five addresses in one acquired point and preserves raw respons
   assert.equal(result.deploymentAuthorityVerified, false)
   assert.equal(result.cardinalityQualified, false)
   assert.equal(result.c1Qualified, false)
+})
+
+test('refuses Preview network magic before any address census', async () => {
+  const ledgerSession = session()
+  ledgerSession.query = async (method, params) => {
+    ledgerSession.calls.push({ method, params })
+    return { era: 'shelley', network: 'testnet', networkMagic: 2 }
+  }
+  await assert.rejects(
+    observeC1ComponentsAtAcquiredPoint({ ledgerSession, identityEnvelope: fixture() }),
+    /PREPROD_NETWORK_MAGIC_MISMATCH/,
+  )
+  assert.deepEqual(ledgerSession.calls.map(call => call.method), [
+    'queryNetwork/genesisConfiguration',
+  ])
 })
 
 test('refuses a released or unacquired session before querying', async () => {
