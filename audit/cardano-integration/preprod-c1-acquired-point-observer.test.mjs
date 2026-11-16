@@ -117,6 +117,16 @@ test('rejects a missing component', () => {
   assert.throws(() => validateC1CandidateIdentityEnvelope(input), /COMPONENT_MISSING:counter/)
 })
 
+test('rejects duplicate or whitespace-padded component addresses', () => {
+  const reused = fixture()
+  reused.components[1].address = reused.components[0].address
+  assert.throws(() => validateC1CandidateIdentityEnvelope(reused), /ADDRESS_REUSED:b1Pool/)
+
+  const padded = fixture()
+  padded.components[0].address += ' '
+  assert.throws(() => validateC1CandidateIdentityEnvelope(padded), /ADDRESS_WHITESPACE_INVALID:prizeValidator/)
+})
+
 test('rejects mixed deployment generations', () => {
   const input = fixture()
   input.components[2].deploymentId = 'another-generation'
