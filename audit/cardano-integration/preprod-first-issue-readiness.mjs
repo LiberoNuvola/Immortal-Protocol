@@ -309,6 +309,11 @@ check(
   'Live signed Issue authority response is verified against current Preprod references',
   'A configured URL, parseable public key, and provider-module path are configuration only. This preflight does not fetch an authority envelope or verify its signature and exact Counter/Control/Pool/Carrier/state bindings.',
 )
+check(
+  false,
+  'Issue authority public key is bound to an authorized GOV-30 mandate and role',
+  'The runtime verifies an envelope against the configured PEM key, but this preflight does not authenticate that key, its role, or its mandate against an independently governed trust root. A parseable/configured key is not proof of authorization.',
+)
 
 const blockers = checks.filter(c => c.status === 'blocked' || c.status === 'missing_or_invalid')
 const report = {
