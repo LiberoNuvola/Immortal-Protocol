@@ -8966,3 +8966,39 @@ The positive fixture in relayer/signedIssueAuthority.test.js generates an epheme
 4. Bind that certificate to the authenticated live V3 carrier state and the exact Issue observation; then run the five-component same-acquired-point census and finish the separate Registry identity P0.
 
 No NoOp action, fixture S0, synthetic proof, narrowed Ω, or guessed authority key is introduced to force closure. No ABI, V3, Reveal, 500×, payout, expiry or economic constant is changed. No workflow, wallet, signature, transaction, deployment, funding or ledger state is actuated.
+
+## 46.40 — AGENT A — CARRIER SIGNATURE VERIFICATION AND PROVIDER COMPOSITION AUDIT (2026-11-16)
+
+**Classification:** READ-ONLY SOURCE RECONCILIATION; clarification to §46.39, no runtime change.
+
+### 1. Correction / additional positive finding: the carrier signature is verified on-chain
+
+`PRE-RICH/onchain/V3EconomicStateCarrier.hs` does not merely inspect the `AdvanceV3State` signature length. Its `bindingAuthorityValid` checks a 32-byte Ed25519 public key, a 64-byte signature, and calls Plutus `verifyEd25519Signature` over the canonical action/decision/observation/pre-state/action-fingerprint/post-state message. `bindingEndpointsValid` independently checks the pre/post state hashes against the actual carrier datum endpoints. This is a real on-chain cryptographic binding check.
+
+`scripts/deployV3Carrier.mts` requires `ISSUE_AUTHORITY_PUBLIC_KEY`, validates that it is an Ed25519 key, extracts the 32-byte public key and embeds it as a parameter to the deployed carrier validator. The script then constructs, signs and submits the one-shot carrier deployment transaction and writes `audit/preprod-issue/v3-carrier-deployment.json`. This script was inspected only; it was not run in this audit.
+
+`src/mint.ts` checks that the returned `carrierAuthoritySignature` is 64 bytes in hex and places it in the carrier redeemer. The cryptographic acceptance is enforced by the carrier validator, not by that TypeScript length check. This distinction supersedes any reading of §46.39 that might imply the carrier signature has no on-chain verifier.
+
+### 2. What remains unproven about that public key
+
+The deploy script's key-shape check and embedding establish technical verifier configuration, not the GOV-30 governance authorization of the key. The deployment artifact records the key fingerprint material (`issueAuthorityPublicKeyHex`) and signer/deployment references, but the inspected chain has not bound that key to a governance decision with authorized issuer scope, Preprod scope, validity/revocation and role. A validator can correctly verify a signature from a key whose authority has not been established.
+
+### 3. Provider composition is still an external seam
+
+`Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` can run the Haskell Issue executable, compare its computed state/action/post-state digests with `observationSource`'s supplied authority binding, and return the witness consumed by `src/preRichIssueAdmissionBridge.ts`. It does not create that observation source or verify the source's governance provenance itself.
+
+The separate `relayer/preprodIssueAdmissionProvider.js` can retrieve a signed Issue authority envelope through `fetchSignedIssueAuthority`; its verifier checks the Ed25519 payload and carrier-binding signatures and the expected live references. However, the viability-certificate validator still checks E1–E10 and VC1–VC6 references/digests syntactically rather than retrieving the artifacts and verifying their contents. No branch-local concrete composition of this relayer fetcher + qualified observation source + Haskell provider + mint injection was found in the audited call sites. `src/mint.ts` receives `authoritativeIssueAdmissionProvider` by injection; it does not instantiate this stack itself.
+
+### 4. Gate status after reconciliation
+
+| Subgate | Result |
+|---|---|
+| Carrier signature verification in Plutus | **IMPLEMENTED** — Ed25519 over canonical binding message |
+| Pre/post carrier state endpoint binding | **IMPLEMENTED** — actual datum hashes are checked |
+| Deployment key parameterization | **IMPLEMENTED** — public key embedded by deployment script |
+| GOV-30 authorization of the embedded key | **OPEN / NOT EVIDENCED** |
+| E1–E10 / VC1–VC6 semantic artifact verification | **OPEN** — references/digests are shape-checked by current certificate verifier |
+| Concrete observation-source → Haskell provider → mint injection | **NOT MATERIALIZED as a branch-local end-to-end composition** |
+| First real Preprod Issue | **NO-GO** |
+
+No deployment script, wallet, public-key rotation, signature, workflow dispatch, transaction, funding or ledger mutation was performed. No ABI, validator, V3, Reveal, 500× or economic constant changed.
