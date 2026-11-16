@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sha3_256 } from "@noble/hashes/sha3";
+import { Data } from "lucid-cardano";
 
 export const PREPROD_KOIOS = "https://preprod.koios.rest/api/v1";
 export const MIN_SWAP_V2 = Object.freeze({
@@ -98,6 +99,51 @@ function decimalRatio(numerator, denominator, places = 12) {
   return whole.toString() + "." + decimals;
 }
 
+
+export function decodePoolV2DatumAssetUnits(inlineDatum) {
+  const raw =
+    typeof inlineDatum === "string"
+      ? inlineDatum
+      : inlineDatum && typeof inlineDatum.bytes === "string"
+        ? inlineDatum.bytes
+        : null;
+  if (!raw || !/^(?:[0-9a-f]{2})+$/i.test(raw)) {
+    throw new Error("MIN_SWAP_POOL_INLINE_DATUM_CBOR_MISSING");
+  }
+  const root = Data.from(raw.toLowerCase());
+  if (!root || root.index !== 0 || !Array.isArray(root.fields) || root.fields.length !== 10) {
+    throw new Error("MIN_SWAP_POOL_DATUM_SHAPE_INVALID");
+  }
+  function assetUnit(value, field) {
+    if (!value || value.index !== 0 || !Array.isArray(value.fields) || value.fields.length !== 2) {
+      throw new Error("MIN_SWAP_POOL_DATUM_" + field + "_INVALID");
+    }
+    const policyId = value.fields[0];
+    const tokenName = value.fields[1];
+    if (typeof policyId !== "string" || typeof tokenName !== "string") {
+      throw new Error("MIN_SWAP_POOL_DATUM_" + field + "_INVALID");
+    }
+    if (policyId === "" && tokenName === "") return "lovelace";
+    assertHex(policyId.toLowerCase(), "MIN_SWAP_POOL_DATUM_POLICY_ID", 56);
+    assertHex(tokenName.toLowerCase(), "MIN_SWAP_POOL_DATUM_TOKEN_NAME");
+    return policyId.toLowerCase() + tokenName.toLowerCase();
+  }
+  const reserveA = root.fields[4];
+  const reserveB = root.fields[5];
+  if (typeof reserveA !== "bigint" || typeof reserveB !== "bigint" || reserveA <= 0n || reserveB <= 0n) {
+    throw new Error("MIN_SWAP_POOL_DATUM_RESERVES_INVALID");
+  }
+  return {
+    assetA: assetUnit(root.fields[1], "ASSET_A"),
+    assetB: assetUnit(root.fields[2], "ASSET_B"),
+    totalLiquidity: typeof root.fields[3] === "bigint" ? root.fields[3].toString() : null,
+    reserveA: reserveA.toString(),
+    reserveB: reserveB.toString(),
+    feeANumerator: typeof root.fields[6] === "bigint" ? root.fields[6].toString() : null,
+    feeBNumerator: typeof root.fields[7] === "bigint" ? root.fields[7].toString() : null,
+  };
+}
+
 export function classifyMinswapV2PoolRows(rows) {
   if (!Array.isArray(rows)) throw new Error("KOIOS_ASSET_UTXOS_NOT_ARRAY");
   const onPoolScript = rows.filter((row) =>
@@ -112,13 +158,12 @@ export function classifyMinswapV2PoolRows(rows) {
     if (authQuantity !== 1n) continue;
     if (!row.inline_datum) continue;
 
-    for (const token of TUSDM_CANDIDATES) {
-      const tokenUnit = token.policyId + token.tokenName;
-      const tokenQuantity = getAssetQuantity(row, tokenUnit);
+    const poolDatum = decodePoolV2DatumAssetUnits(row.inline_datum);
+    const tokenQuantity = getAssetQuantity(row, token.policyId + token.tokenName);
       if (tokenQuantity === null || tokenQuantity <= 0n) continue;
       const lpUnit = computeMinswapV2LpUnit(token.policyId, token.tokenName);
-      const lpQuantity = getAssetQuantity(row, lpUnit);
-      if (lpQuantity === null || lpQuantity <= 0n) continue;
+      const pair = [poolDatum.assetA, poolDatum.assetB].sort();
+      if (!pair.includes("lovelace") || !pair.includes(token.policyId + token.tokenName)) continue;
 
       const lovelace = BigInt(String(row.value ?? "0"));
       if (lovelace <= MIN_SWAP_V2.minPoolAdaLovelace) continue;
@@ -127,25 +172,37 @@ export function classifyMinswapV2PoolRows(rows) {
         typeof row.inline_datum === "string"
           ? row.inline_datum
           : String(row.inline_datum.bytes ?? "");
-      const datumDigest = inlineDatumBytes
-        ? createHash("sha256").update(inlineDatumBytes, "utf8").digest("hex")
-        : null;
+      const datumDigest = createHash("sha256").update(inlineDatumBytes, "utf8").digest("hex");
+      const datumTokenReserve = poolDatum.assetA === token.policyId + token.tokenName
+        ? BigInt(poolDatum.reserveA)
+        : BigInt(poolDatum.reserveB);
+      const datumAdaReserve = poolDatum.assetA === "lovelace"
+        ? BigInt(poolDatum.reserveA)
+        : BigInt(poolDatum.reserveB);
 
       authenticatedPools.push({
         candidate: token.label,
-        exactTokenUnit: tokenUnit,
+        exactTokenUnit: token.policyId + token.tokenName,
         exactLpUnit: lpUnit,
         outRef: String(row.tx_hash) + "#" + String(row.tx_index),
         address: String(row.address ?? ""),
         paymentCredential: getPaymentCredential(row),
         poolAuthenticationUnit: AUTH_UNIT,
         poolAuthenticationQuantity: authQuantity.toString(),
-        lpTokenQuantity: lpQuantity.toString(),
         tusdmQuantityAtomic: tokenQuantity.toString(),
         lovelaceIncludingMinPoolAda: lovelace.toString(),
         minPoolAdaLovelace: MIN_SWAP_V2.minPoolAdaLovelace.toString(),
         adaReserveLovelace: adaReserve.toString(),
-        adaPerTusdm: decimalRatio(adaReserve, tokenQuantity),
+        adaPerTusdmValue: decimalRatio(adaReserve, tokenQuantity),
+        datumAdaReserve: datumAdaReserve.toString(),
+        datumTusdmReserve: datumTokenReserve.toString(),
+        adaPerTusdmDatum: decimalRatio(datumAdaReserve, datumTokenReserve),
+        datumValueReservesMatch: datumTokenReserve === tokenQuantity && datumAdaReserve === adaReserve,
+        datumAssetA: poolDatum.assetA,
+        datumAssetB: poolDatum.assetB,
+        datumTotalLiquidity: poolDatum.totalLiquidity,
+        feeANumerator: poolDatum.feeANumerator,
+        feeBNumerator: poolDatum.feeBNumerator,
         blockHeight: row.block_height ?? null,
         blockTime: row.block_time ?? null,
         datumHash: row.datum_hash ?? null,
@@ -153,7 +210,6 @@ export function classifyMinswapV2PoolRows(rows) {
         inlineDatumByteLength: inlineDatumBytes.length / 2,
         inlineDatumSha256: datumDigest,
       });
-    }
   }
   return {
     poolScriptUtxoCount: onPoolScript.length,
