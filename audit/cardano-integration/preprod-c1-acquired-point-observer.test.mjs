@@ -40,8 +40,9 @@ function convertBits(data, from, to) {
   let bits = 0
   const result = []
   const maxValue = (1 << to) - 1
+  const maxAccumulator = (1 << (from + to - 1)) - 1
   for (const value of data) {
-    accumulator = (accumulator << from) | value
+    accumulator = ((accumulator << from) | value) & maxAccumulator
     bits += from
     while (bits >= to) {
       bits -= to
@@ -137,7 +138,10 @@ test('rejects mainnet, non-Preprod network id, key credentials and invalid check
   assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_PREPROD/)
   assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 6), hash), /PAYMENT_CREDENTIAL_NOT_SCRIPT/)
   assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 7, 'addr'), hash), /NOT_PREPROD/)
-  const damaged = enterpriseScriptAddress(hash).slice(0, -1) + 'q'
+  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash.slice(0, 54), hash), hash), /SHELLEY_PAYLOAD/)
+  const validAddress = enterpriseScriptAddress(hash)
+  const replacement = validAddress.endsWith('q') ? 'p' : 'q'
+  const damaged = validAddress.slice(0, -1) + replacement
   assert.throws(() => decodePreprodScriptAddress(damaged, hash), /CHECKSUM_INVALID/)
 })
 
