@@ -79,7 +79,7 @@ function bech32HrpExpand(hrp) {
  * authenticate the deployment manifest or prove that the script bytes were
  * independently rebuilt from the declared source.
  */
-export function decodePreprodScriptAddress(address, expectedPaymentCredentialHash) {
+export function decodeTestnetScriptAddress(address, expectedPaymentCredentialHash) {
   if (typeof address !== 'string' || address.trim() === '') {
     throw new Error('C1_IDENTITY_ADDRESS_REQUIRED')
   }
@@ -226,7 +226,7 @@ export function validateC1CandidateIdentityEnvelope(envelope) {
     if (paymentCredentialHash !== derivedScriptHash) {
       throw new Error('C1_IDENTITY_PAYMENT_CREDENTIAL_DERIVED_HASH_MISMATCH:' + componentId)
     }
-    decodePreprodScriptAddress(componentAddress, derivedScriptHash)
+    decodeTestnetScriptAddress(componentAddress, derivedScriptHash)
     requiredHex(component.scriptArtifactDigest, 32, componentId + '_SCRIPT_ARTIFACT_DIGEST')
     requiredHex(component.parameterDigest, 32, componentId + '_PARAMETER_DIGEST')
     const deploymentTxOutRef = requiredString(component.deploymentTxOutRef, componentId + '_DEPLOYMENT_TX_OUT_REF')
@@ -265,7 +265,31 @@ export function validateC1CandidateIdentityEnvelope(envelope) {
 }
 
 /**
+ * Verify the connected node's Shelley genesis against Cardano Preprod.
+ * Cardano addresses carry only the mainnet/testnet discriminant; the network
+ * magic distinguishes Preprod from Preview and other testnets.
+ */
+export function validatePreprodNetworkGenesis(genesis) {
+  if (!genesis || typeof genesis !== 'object' || Array.isArray(genesis)) {
+    throw new Error('C1_OBSERVER_PREPROD_GENESIS_CONFIGURATION_REQUIRED')
+  }
+  if (genesis.era !== 'shelley' || genesis.network !== 'testnet') {
+    throw new Error('C1_OBSERVER_NETWORK_CONFIGURATION_MISMATCH')
+  }
+  if (!Number.isSafeInteger(genesis.networkMagic) || genesis.networkMagic !== 1) {
+    throw new Error('C1_OBSERVER_PREPROD_NETWORK_MAGIC_MISMATCH')
+  }
+  return {
+    era: 'shelley',
+    network: 'testnet',
+    networkMagic: 1,
+  }
+}
+
+/**
  * Query the five exact candidate addresses at the same acquired ledger point.
+ * The Shelley genesis query is also performed in the active session to
+ * distinguish Preprod (network magic 1) from Preview (network magic 2).
  * Raw Ogmios responses are retained unchanged for independent decoding.
  */
 export async function observeC1ComponentsAtAcquiredPoint({
@@ -281,6 +305,16 @@ export async function observeC1ComponentsAtAcquiredPoint({
   const acquiredPoint = { ...ledgerSession.point }
   const observations = {}
   const identityEnvelopeCanonicalJsonSha256 = sha256CanonicalJson(identityEnvelope)
+  const genesisQuery = {
+    method: 'queryNetwork/genesisConfiguration',
+    params: { era: 'shelley' },
+  }
+  const genesisResult = await ledgerSession.query(genesisQuery.method, genesisQuery.params)
+  if (ledgerSession.isAcquired !== true || ledgerSession.isReleased !== false ||
+      JSON.stringify(ledgerSession.point) !== JSON.stringify(acquiredPoint)) {
+    throw new Error('C1_OBSERVER_LEDGER_SESSION_POINT_CHANGED:preprod-genesis')
+  }
+  const networkIdentity = validatePreprodNetworkGenesis(genesisResult)
 
   for (const component of identity.components) {
     const query = {
@@ -319,6 +353,11 @@ export async function observeC1ComponentsAtAcquiredPoint({
     sourceCommit: identity.sourceCommit,
     acquiredLedgerState: acquiredPoint,
     queryConsistency: 'ONE_ACQUIRED_OGMIOS_LEDGER_STATE',
+    networkIdentity,
+    networkGenesisQuery: genesisQuery,
+    networkGenesisQueryCanonicalJsonSha256: sha256CanonicalJson(genesisQuery),
+    networkGenesisResult: genesisResult,
+    networkGenesisResultCanonicalJsonSha256: sha256CanonicalJson(genesisResult),
     digestAlgorithm: 'SHA256_CANONICAL_JSON_V1',
     digestScope: 'PARSED_JSON_OBJECTS_NOT_ORIGINAL_WEBSOCKET_WIRE_BYTES',
     identityEnvelopeCanonicalJsonSha256,
