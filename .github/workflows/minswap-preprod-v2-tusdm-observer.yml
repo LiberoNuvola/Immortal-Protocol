@@ -1,0 +1,52 @@
+name: PRE-RICH Minswap Preprod tUSDM V2 Read-only Observation
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/minswap-preprod-v2-tusdm-observer.mjs"
+      - "audit/cardano-integration/minswap-preprod-v2-tusdm-observer.test.mjs"
+      - ".github/workflows/minswap-preprod-v2-tusdm-observer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minswap-preprod-v2-tusdm-observer-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  observe:
+    name: Observe exact Preprod V2 pool asset identities
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Test exact Minswap LP/token identity matching
+        run: node --test audit/cardano-integration/minswap-preprod-v2-tusdm-observer.test.mjs
+
+      - name: Read current Preprod Minswap pool UTxOs from public Koios
+        run: node audit/cardano-integration/minswap-preprod-v2-tusdm-observer.mjs
+
+      - name: Upload read-only observation
+        uses: actions/upload-artifact@v4
+        with:
+          name: minswap-preprod-v2-tusdm-pool-observation
+          path: audit/preprod-evidence/minswap-preprod-v2-tusdm-pool-observation.json
+          if-no-files-found: error
+          retention-days: 30
