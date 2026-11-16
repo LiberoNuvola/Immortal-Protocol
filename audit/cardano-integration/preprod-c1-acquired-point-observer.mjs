@@ -113,7 +113,7 @@ export function decodePreprodScriptAddress(address, expectedPaymentCredentialHas
   let accumulator = 0
   let bits = 0
   for (const word of data) {
-    accumulator = (accumulator << 5) | word
+    accumulator = ((accumulator << 5) | word) & 0xfff
     bits += 5
     while (bits >= 8) {
       bits -= 8
@@ -134,6 +134,13 @@ export function decodePreprodScriptAddress(address, expectedPaymentCredentialHas
   }
   if (![1, 3, 5, 7].includes(addressType)) {
     throw new Error('C1_IDENTITY_ADDRESS_PAYMENT_CREDENTIAL_NOT_SCRIPT')
+  }
+  const validPayloadLength =
+    (addressType === 1 || addressType === 3) ? bytes.length === 57 :
+    addressType === 5 ? bytes.length >= 32 :
+    bytes.length === 29
+  if (!validPayloadLength) {
+    throw new Error('C1_IDENTITY_ADDRESS_SHELLEY_PAYLOAD_LENGTH_INVALID')
   }
 
   const paymentCredentialHash = Buffer.from(bytes.slice(1, 29)).toString('hex')
