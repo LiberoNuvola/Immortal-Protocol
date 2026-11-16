@@ -241,6 +241,7 @@ try {
     'Deployment-specific R1 E1-E10 and VC1-VC6 viability certificate is independently verified',
     'ProtectedCapital PA1-PA7 profile completeness and current-source authority are verified',
     'Live signed Issue authority response is verified against current Preprod references',
+    'Issue authority public key is bound to an authorized GOV-30 mandate and role',
   ]) {
     assert.ok(baseline.report.blockers.some(item => item.label === label), label)
   }
@@ -331,7 +332,7 @@ try {
   ))
   await saveJson(qualificationPath, validQualification)
 
-  console.log('preprod-first-issue-readiness: fails closed without verified Oracle source, R1, full ProtectedCapital, and live signed Issue authority; altered source digests and approval mismatches are also blocked')
+  console.log('preprod-first-issue-readiness: fails closed without verified Oracle source, R1, full ProtectedCapital, governed Issue authority key, and live signed Issue authority; altered source digests and approval mismatches are also blocked')
 } finally {
   await rm(evidenceRoot, { recursive: true, force: true })
 }
