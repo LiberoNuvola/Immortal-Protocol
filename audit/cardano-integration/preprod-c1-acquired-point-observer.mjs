@@ -195,6 +195,7 @@ export function validateC1CandidateIdentityEnvelope(envelope) {
   }
 
   const byId = new Map()
+  const addressOwners = new Map()
   for (const component of envelope.components) {
     const componentId = requiredString(component?.componentId, 'COMPONENT_ID')
     if (!C1_COMPONENT_IDS.includes(componentId)) {
@@ -210,6 +211,13 @@ export function validateC1CandidateIdentityEnvelope(envelope) {
       throw new Error('C1_IDENTITY_SOURCE_COMMIT_MISMATCH:' + componentId)
     }
     const componentAddress = requiredString(component.address, componentId + '_ADDRESS')
+    if (component.address !== componentAddress) {
+      throw new Error('C1_IDENTITY_ADDRESS_WHITESPACE_INVALID:' + componentId)
+    }
+    if (addressOwners.has(componentAddress)) {
+      throw new Error('C1_IDENTITY_ADDRESS_REUSED:' + componentId + ':also-used-by:' + addressOwners.get(componentAddress))
+    }
+    addressOwners.set(componentAddress, componentId)
     if (component.paymentCredentialKind !== 'script') {
       throw new Error('C1_IDENTITY_PAYMENT_CREDENTIAL_KIND_INVALID:' + componentId)
     }
