@@ -8818,3 +8818,41 @@ The repository workflow already includes `preprod-c1-acquired-point-observer.tes
 This validates only the supplied candidate envelope's address syntax and payment-credential consistency. It does not prove that the declared `derivedScriptHash` was actually rebuilt from the source/parameters, authenticate the manifest issuer, establish a GOV-30 trust root, prove state lineage, classify PrizeValidator UTxOs, reconcile B1/V3, or qualify PA1–PA7. C1 remains OPEN and the first real Preprod Issue remains **NO-GO**.
 
 No live observer dispatch, wallet access, signature, transaction, deployment, funding, ledger write, production Issue reader/provider, ABI, validator, MintPolicy, V3, Reveal, 500× or economic constant changed.
+
+
+## 46.37 AGENT A — C1 NETWORK IDENTITY: DISTINGUISH PREPROD FROM PREVIEW (2026-11-16)
+
+**Classification:** READ-ONLY ACQUIRED-SESSION NETWORK IDENTITY CHECK; no ledger write and no Issue admission integration.
+
+### Important correction to §46.36
+
+A Cardano Shelley address does **not** encode the unique name of a public testnet. CIP-19 defines the address network tag as mainnet vs testnet(s), and `addr_test` / tag `0` therefore cannot, by themselves, distinguish Preprod from Preview. The prior §46.36 address parser correctly checked a testnet address and its script payment credential, but its Preprod wording alone would have overclaimed the specificity of that address field.
+
+Official references:
+- [CIP-19 — Cardano Addresses](https://cips.cardano.org/cips/cip19): address header layout and generic testnet network tag.
+- [Cardano Developer Portal — Choose a Network](https://developers.cardano.org/docs/get-started/testnets-and-devnets/): Preprod network magic is `1`; Preview is `2`.
+- [Ogmios GenesisShelley schema](https://ogmios.dev/typescript/api/interfaces/_cardano_ogmios_schema.GenesisShelley.html): Shelley genesis includes `network` and `networkMagic`.
+- [Ogmios ledger-state query protocol](https://ogmios.dev/mini-protocols/local-state-query/): `queryNetwork/*` is supported while a ledger state is acquired.
+
+### Source change
+
+The C1 observer now performs `queryNetwork/genesisConfiguration({ era: 'shelley' })` through the same active Ogmios session before querying any of the five component addresses. It requires:
+- `era === 'shelley'`;
+- `network === 'testnet'`;
+- `networkMagic === 1` (Preprod; Preview's value 2 is rejected).
+
+The acquired point/session state is rechecked immediately after the genesis query. The resulting raw genesis configuration, normalized network identity, query description and canonical JSON digests are retained in the observation packet. The address decoder is now accurately named `decodeTestnetScriptAddress`; it validates Bech32, `addr_test`, network tag 0, script payment credential type and exact payment hash, while the same-session genesis query provides the Preprod-vs-Preview distinction.
+
+Commits:
+- Observer: `81d1f90a81f929c30aa95bf908c0629f708ee386`.
+- Tests and acquired-session fixture updates: `cedf481367998e8c076a35df13623cc0b24d4cdc`, `5c4e04fd50cede7ae63816b6159b60a7c444e93a`, and final terminology/test correction `17c0e5ae47b6125f1e570c348c9b19d8e8c87dd3` (observer terminology correction `42f0cca0b0320d861c7c73be88a8259f60d81239`).
+
+### Tests and remaining scope
+
+The C1 deterministic suite now checks accepted Preprod network magic 1, rejection of Preview magic 2, rejection of mainnet/wrong-era genesis and that the address census is not started when the genesis identity fails. It also checks that the genesis query and all five address queries run through the one acquired session.
+
+The existing `immortal-cardano-preprod.yml` workflow registers this suite on pushes affecting `audit/cardano-integration/**`. **No exact Actions run/log for the final commits has been retrieved. The repository test suite remains PENDING, not CI-PASS.** The standalone Node address-codec harness run earlier was only a focused helper check, not the complete repo suite.
+
+This proves only consistency with a connected Ogmios node that reports Preprod genesis magic 1. It does not authenticate the node/provider endpoint or deployment manifest, create a GOV-30 trust root, re-derive script artifacts, prove component lineage, classify PrizeDatum population, reconcile B1/V3 or qualify PA1–PA7. The result must not be promoted to deployment authority or Issue admission. C1 remains OPEN; first real Preprod Issue remains **NO-GO**.
+
+No workflow dispatch, wallet access, signature, transaction, deployment, funding, live ledger mutation, production Issue reader/provider, ABI, validator, MintPolicy, V3, Reveal, 500× or economic constant changed.
