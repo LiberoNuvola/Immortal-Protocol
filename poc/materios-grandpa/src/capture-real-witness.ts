@@ -43,6 +43,9 @@ import {
   isValidSnapshotStateProbeEvidence,
   sameSubstrateHeader,
 } from "./snapshot-binding.js";
+import {
+  readExactParentAuthorityState,
+} from "./authority-state-source.js";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 
@@ -972,105 +975,77 @@ async function main(): Promise<void> {
     ),
   );
 
-  let authorityStateSource = witness.blockHash;
-  let authorityStateFallback = false;
-  let authorityStateOriginalError: string | null = null;
+  let authorityStateSource = witness.header.parentHash;
   let authoritiesHex: string;
   let setIdHex: string;
 
   try {
-    authoritiesHex = await rpc<string>(
-      "state_call",
-      [
-        "GrandpaApi_grandpa_authorities",
-        "0x",
-        witness.blockHash,
-      ],
-      AUTHORITY_RPC,
+    // GRANDPA authorities for a justification targeting B are read from the
+    // exact parent state B-1. The helper binds the supplied parentHash to the
+    // height lookup and parent header before any historical state call.
+    const parentAuthorityState = await readExactParentAuthorityState(
+      witness.blockNumber,
+      witness.header.parentHash,
+      {
+        chainGetBlockHash: (blockNumber) =>
+          rpc<string>("chain_getBlockHash", [blockNumber], AUTHORITY_RPC),
+        chainGetHeader: (blockHash) =>
+          rpc<SubstrateHeader>("chain_getHeader", [blockHash], AUTHORITY_RPC),
+        stateCall: (method, atBlockHash) =>
+          rpc<string>("state_call", [method, "0x", atBlockHash], AUTHORITY_RPC),
+      },
     );
-    setIdHex = await rpc<string>(
-      "state_call",
-      [
-        "GrandpaApi_current_set_id",
-        "0x",
-        witness.blockHash,
-      ],
-      AUTHORITY_RPC,
+    authorityStateSource = parentAuthorityState.blockHash;
+    authoritiesHex = parentAuthorityState.authoritiesHex;
+    setIdHex = parentAuthorityState.setIdHex;
+  } catch (parentStateError) {
+    const outDir = join(HERE, "..", "out");
+    mkdirSync(outDir, { recursive: true });
+    const diagnostics = {
+      schema_version: "materios-real-grandpa-witness-v1",
+      chain_id: CHAIN_ID,
+      status: "BLOCKED_PARENT_AUTHORITY_STATE_UNAVAILABLE",
+      finalized_head: {
+        block_number: finalizedHeight.toString(),
+        block_hash: finalizedHash,
+        state_root: finalizedHeader.stateRoot,
+      },
+      witness: {
+        block_number: witness.blockNumber.toString(),
+        block_hash: witness.blockHash,
+        parent_hash: witness.header.parentHash,
+        state_root: witness.header.stateRoot,
+        extrinsics_root: witness.header.extrinsicsRoot,
+        justification_engine: GRANDPA_ENGINE_ID,
+        justification_hex: witness.justificationHex,
+        justification_sha256: witness.justificationSha256,
+        justification_round: justification.round.toString(),
+        commit_target_hash: bytesToHex(justification.commit.targetHash),
+        commit_target_number: justification.commit.targetNumber.toString(),
+      },
+      authority_state: {
+        source_block_hash: witness.header.parentHash,
+        source_kind: "EXACT_PARENT_STATE",
+        capture_error:
+          parentStateError instanceof Error
+            ? parentStateError.message
+            : String(parentStateError),
+        fallback_used: false,
+        provenance_verified: false,
+      },
+      b3a_claim: {
+        cryptographic_finality: false,
+        authority_transition_provenance: false,
+        overall_status: "OPEN_PARENT_AUTHORITY_STATE_UNAVAILABLE",
+      },
+    };
+    const outDirPath = join(outDir, "MateriosRealGrandpaWitness.json");
+    writeFileSync(outDirPath, JSON.stringify(diagnostics, null, 2) + "\n", "utf8");
+    console.error(
+      "B3-A OPEN: exact parent authority state unavailable; refusing target/current-head fallback",
     );
-  } catch (historicalError) {
-    authorityStateOriginalError =
-      historicalError instanceof Error
-        ? historicalError.message
-        : String(historicalError);
-    // Public RPC has demonstrated state pruning for historical blocks. A
-    // current-state fallback is diagnostic only: signatures/quorum may be
-    // checked against the returned set, but this does NOT authenticate that
-    // set's historical provenance. Never silently label it as target state.
-    authorityStateSource = finalizedHash;
-    authorityStateFallback = true;
-    try {
-      authoritiesHex = await rpc<string>(
-        "state_call",
-        [
-          "GrandpaApi_grandpa_authorities",
-          "0x",
-          finalizedHash,
-        ],
-        AUTHORITY_RPC,
-      );
-      setIdHex = await rpc<string>(
-        "state_call",
-        [
-          "GrandpaApi_current_set_id",
-          "0x",
-          finalizedHash,
-        ],
-        AUTHORITY_RPC,
-      );
-    } catch (fallbackError) {
-      const outDir = join(HERE, "..", "out");
-      mkdirSync(outDir, { recursive: true });
-      const diagnostics = {
-        schema_version: "materios-real-grandpa-witness-v1",
-        chain_id: CHAIN_ID,
-        status: "BLOCKED_AUTHORITY_STATE_PRUNED",
-        finalized_head: {
-          block_number: finalizedHeight.toString(),
-          block_hash: finalizedHash,
-          state_root: finalizedHeader.stateRoot,
-        },
-        witness: {
-          block_number: witness.blockNumber.toString(),
-          block_hash: witness.blockHash,
-          parent_hash: witness.header.parentHash,
-          state_root: witness.header.stateRoot,
-          extrinsics_root: witness.header.extrinsicsRoot,
-          justification_engine: GRANDPA_ENGINE_ID,
-          justification_hex: witness.justificationHex,
-          justification_sha256: witness.justificationSha256,
-          justification_round: justification.round.toString(),
-          commit_target_hash: bytesToHex(justification.commit.targetHash),
-          commit_target_number: justification.commit.targetNumber.toString(),
-        },
-        authority_state: {
-          target_state_error: authorityStateOriginalError,
-          fallback_state_source: finalizedHash,
-          fallback_state_error:
-            fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-          provenance_verified: false,
-        },
-        b3a_claim: {
-          cryptographic_finality: false,
-          authority_transition_provenance: false,
-          overall_status: "OPEN_AUTHORITY_STATE_UNAVAILABLE",
-        },
-      };
-      const outDirPath = join(outDir, "MateriosRealGrandpaWitness.json");
-      writeFileSync(outDirPath, JSON.stringify(diagnostics, null, 2) + "\n", "utf8");
-      console.error("B3-A OPEN: raw FRNK captured, but no authority state was available for verification");
-      process.exitCode = 1;
-      return;
-    }
+    process.exitCode = 1;
+    return;
   }
 
   const authorities = decodeAuthorityList(authoritiesHex);
@@ -1245,26 +1220,17 @@ async function main(): Promise<void> {
     }
   }
 
-  // Diagnostic only: the authority set visible at the target's post-state
-  // can differ from the set that signed finality for the target if a set change
-  // is enacted at this boundary. Never treat a parent-state match as authenticated
-  // transition provenance; it only helps classify INVALID_SIGNATURE.
-  let parentStateDiagnostic: {
-    status: string;
-    source_block_hash: string;
-    source_kind?: "LOCAL_SNAPSHOT_RPC" | "PUBLIC_RPC";
-    set_id?: string;
-    authority_count?: number;
-    authority_public_keys?: string[];
-    verification_error?: string | null;
-    signed_weight?: string | null;
-    total_weight?: string | null;
-    error?: string;
-    trust_scope: string;
-  } = {
-    status: "NOT_ATTEMPTED",
+  // The exact B-1 state selected above is now the primary authority state.
+  // It remains untrusted until the genesis/transition provenance is authenticated.
+  const parentStateDiagnostic = {
+    status: "PRIMARY_PARENT_STATE_CAPTURED_UNTRUSTED",
     source_block_hash: witness.header.parentHash,
-    trust_scope: "UNTRUSTED DIAGNOSTIC ONLY; parent-state signatures/quorum do not authenticate the authority transition or finality",
+    source_kind: AUTHORITY_RPC === RPC ? "PUBLIC_RPC" : "CONFIGURED_AUTHORITY_RPC",
+    set_id: setId.toString(),
+    authority_count: authorities.length,
+    authority_public_keys: authorities.map(authority => bytesToHex(authority.publicKey)),
+    trust_scope:
+      "EXACT PARENT STATE B-1 USED FOR PRIMARY JUSTIFICATION VERIFICATION; still untrusted until authority-set provenance is authenticated",
   };
 
   const snapshotWindowBindingValid = isValidSnapshotStateProbeEvidence(
@@ -1292,14 +1258,14 @@ async function main(): Promise<void> {
   } = {
     status: "NOT_ATTEMPTED",
     storage_key: GRANDPA_CURRENT_SET_ID_STORAGE_KEY,
-    source_block_hash: witness.blockHash,
-    trust_scope: "Diagnostic comparison only; storage/runtime state is not independently bound to GRANDPA finality.",
+    source_block_hash: witness.header.parentHash,
+    trust_scope: "Diagnostic comparison at the exact parent state; storage/runtime state is not independently bound to GRANDPA finality.",
   };
   if (snapshotWindowBindingValid) {
     try {
       const rawStorageValue = await rpc<string | null>(
         "state_getStorage",
-        [GRANDPA_CURRENT_SET_ID_STORAGE_KEY, witness.blockHash],
+        [GRANDPA_CURRENT_SET_ID_STORAGE_KEY, witness.header.parentHash],
         AUTHORITY_RPC,
       );
       directStorageSetIdDiagnostic.raw_value = rawStorageValue;
@@ -1350,83 +1316,6 @@ async function main(): Promise<void> {
       ? await observeGrandpaRoundState(AUTHORITY_RPC)
       : { status: "NOT_AVAILABLE_NO_VERIFIED_LOCAL_SNAPSHOT" },
   };
-
-  if (cryptoVerification.status === "FAIL") {
-    try {
-      const parentNumber = Number(witness.blockNumber - 1n);
-      if (snapshotWindowBindingValid) {
-        const localParentHash = requireHash(
-          await rpc<unknown>("chain_getBlockHash", [parentNumber], parentStateEndpoint),
-          "local snapshot parent hash",
-        );
-        if (localParentHash !== witness.header.parentHash) {
-          throw new Error("LOCAL_SNAPSHOT_PARENT_HASH_MISMATCH");
-        }
-      }
-      const parentAuthoritiesHex = await rpc<string>(
-        "state_call",
-        [
-          "GrandpaApi_grandpa_authorities",
-          "0x",
-          witness.header.parentHash,
-        ],
-        parentStateEndpoint,
-      );
-      const parentSetIdHex = await rpc<string>(
-        "state_call",
-        [
-          "GrandpaApi_current_set_id",
-          "0x",
-          witness.header.parentHash,
-        ],
-        parentStateEndpoint,
-      );
-      const parentAuthorities = decodeAuthorityList(parentAuthoritiesHex);
-      const parentSetId = decodeSetId(parentSetIdHex);
-      parentStateDiagnostic = {
-        status: "CAPTURED_UNTRUSTED",
-        source_block_hash: witness.header.parentHash,
-        source_kind: snapshotWindowBindingValid ? "LOCAL_SNAPSHOT_RPC" : "PUBLIC_RPC",
-        set_id: parentSetId.toString(),
-        authority_count: parentAuthorities.length,
-        authority_public_keys: parentAuthorities.map(authority => bytesToHex(authority.publicKey)),
-        verification_error: null,
-        signed_weight: null,
-        total_weight: null,
-        trust_scope: "UNTRUSTED DIAGNOSTIC ONLY; parent-state signatures/quorum do not authenticate the authority transition or finality",
-      };
-      try {
-        const parentResult = await verifyFinality(
-          {
-            chainId: CHAIN_ID,
-            genesisHash: hexToBytes(genesisHash, "genesis hash"),
-            blockHash: hexToBytes(witness.blockHash, "witness block hash"),
-            blockNumber: witness.blockNumber,
-          },
-          justification,
-          {
-            chainId: CHAIN_ID,
-            genesisHash: hexToBytes(genesisHash, "genesis hash"),
-            setId: parentSetId,
-            authorities: parentAuthorities,
-          },
-          nobleEd25519,
-          { verifyAncestry: true },
-        );
-        parentStateDiagnostic.status = "SIGNATURE_QUORUM_PASS_UNTRUSTED";
-        parentStateDiagnostic.signed_weight = parentResult.signedWeight.toString();
-        parentStateDiagnostic.total_weight = parentResult.totalWeight.toString();
-      } catch (error) {
-        parentStateDiagnostic.status = "SIGNATURE_QUORUM_FAIL_UNTRUSTED";
-        parentStateDiagnostic.verification_error =
-          error instanceof Error ? error.name + ": " + error.message : String(error);
-      }
-    } catch (error) {
-      parentStateDiagnostic.status = "PARENT_STATE_UNAVAILABLE";
-      parentStateDiagnostic.source_kind = snapshotWindowBindingValid ? "LOCAL_SNAPSHOT_RPC" : "PUBLIC_RPC";
-      parentStateDiagnostic.error = error instanceof Error ? error.message : String(error);
-    }
-  }
 
   const authoritySetStateWindow: Array<{
     block_number: number;
@@ -1557,12 +1446,10 @@ async function main(): Promise<void> {
     grandpa_round_state_diagnostic: grandpaRoundStateDiagnostic,
     authority_state: {
       source_block_hash: authorityStateSource,
-      source_kind: authorityStateFallback ? "CURRENT_FINALIZED_STATE_FALLBACK" : "EXACT_PROOF_TARGET_STATE",
-      target_state_error: authorityStateOriginalError,
+      source_kind: "EXACT_PARENT_STATE",
       provenance_verified: false,
-      note: authorityStateFallback
-        ? "Signatures/quorum are checked against a runtime API set returned at the current finalized head because historical target state was pruned. This is diagnostic cryptographic evidence only; it does not authenticate the authority set at the proof target."
-        : "Runtime API authority state was returned at the exact proof target but remains untrusted until an authenticated authority transition is verified."
+      fallback_used: false,
+      note: "The primary verifier uses GrandpaApi_current_set_id and GrandpaApi_grandpa_authorities at the exact parent hash B-1, because that is the state whose authority set finalizes target block B. The captured state remains untrusted until the authority transition from the authenticated trust anchor is verified."
     },
     witness: {
       block_number: witness.blockNumber.toString(),
