@@ -9287,3 +9287,49 @@ The branch-local `preprod-first-issue-readiness.mjs` is not yet a sufficient fir
 5. Continue R1 E1–E10 / VC1–VC6 and the external signed Issue-authority/GOV-30 path independently. Only after those prerequisites are discharged should the already implemented remote→server→Preprod provider→Haskell→mint composition be exercised for the first Issue.
 
 No EEV workflow was dispatched in this audit. No wallet seed or secret was read; no wallet signing, key generation/rotation, server deployment, transaction, funding, or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry, or economic constant was changed.
+
+
+## 46.45 — AGENT A — FAIL-CLOSED FIRST-ISSUE READINESS GATE (2026-11-16)
+
+**Classification:** Narrow source + regression-test correction on the existing Agent A branch; no workflow dispatch, authority request, wallet, transaction or ledger action.
+
+### 1. Branch and normative contract recheck
+
+The working branch was identical to the §46.44 checkpoint commit before this change. The concrete certification contracts were re-read from this branch:
+
+- `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md` §2–§5: a deployment R1 package binds the concrete `(𝒮, A, Accept, Ω, T, Safe)`, total/deterministic `χ`, `Wit`, bounds, VC1–VC6 and E1–E10. A schema or digest-shaped reference is not the profile instance or its proof.
+- `docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md` §2–§7: PA1–PA7 are profile obligations. In particular, PA2 exhaustiveness and PA7 adversarial omission review cannot be replaced by internal ledger reconciliation.
+- `docs/02-certification/NONVACUITY_AND_INITIAL_STATE_CERTIFICATION.md` §1–§6: the concrete `S₀`, its derivation, the R1 certificate and QNE/non-erosion evidence are deployment-specific.
+- `docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md` §2–§8: Ω completeness is a deployment/environment conformance obligation, not something a Boolean or the absence of observed failures establishes.
+
+The existing `relayer/signedIssueAuthority.js` consumes a signed Issue envelope and checks payload shape, expected transaction references, EEV provenance, ProtectedCapital fields and viability-certificate references. The readiness script did not call that verifier, fetch an envelope, or bind its checks to current live Counter/Control/Pool/Carrier references.
+
+### 2. Readiness checker corrected
+
+Updated `audit/cardano-integration/preprod-first-issue-readiness.mjs` to schema `IMMORTAL-PREPROD-FIRST-ISSUE-READINESS-v0.2`.
+
+The following are now explicit fail-closed blockers because this local preflight does not implement or execute their verifiers:
+
+- independently resolved/verified Oracle external-price evidence; a manifest Boolean and `evidenceReference/evidenceHash` are assertions, not source verification;
+- deployment-specific R1 E1–E10 and VC1–VC6 certificate;
+- full ProtectedCapital PA1–PA7 profile evidence, source authority, snapshot provenance and lifecycle/expiry closure;
+- a live signed Issue-authority response verified against the current Counter, Control, Pool, Carrier and state references.
+
+The local presence of a provider-module path, HTTP(S) URL, parseable PEM key, EEV approval manifest or hash-shaped evidence is no longer allowed to stand in for those checks. The EEV deployment approval is now described accurately as a hash-bound approval manifest, not as a protocol signature, GOV-30 mandate or Issue authority. The report explicitly sets `walletReviewAuthorized=false` and `issueAuthorized=false`.
+
+### 3. Regression test corrected
+
+Updated `audit/cardano-integration/preprod-first-issue-readiness.test.mjs`. Its baseline fixture still contains a synthetically asserted Oracle source (`synthetic://...`), hash-shaped EEV/approval manifests and configured provider/URL/key. The expected result is now exit code 2 / `BLOCKED`, and the test requires all four explicit Oracle/R1/ProtectedCapital/live-authority blockers. Existing negative cases continue to exercise altered source digests, approval binding, stale/missing timestamps and invalid URL/key configuration.
+
+### 4. Commits and verification boundary
+
+- Source correction: `531afe4ebbe413235e32b365f8b96615dda599a9` — [commit](https://github.com/LiberoNuvola/Immortal-Protocol/commit/531afe4ebbe413235e32b365f8b96615dda599a9).
+- Regression correction: `7cbe1e89d074499f275000e18657553ef9bffc46` — [commit](https://github.com/LiberoNuvola/Immortal-Protocol/commit/7cbe1e89d074499f275000e18657553ef9bffc46).
+- Compare against §46.44 base: working branch is **2 commits ahead / 0 behind**; only the readiness source and its test changed before this checkpoint update.
+- **Tests not executed in this environment.** A local clone/test run could not start because the runtime could not resolve `github.com`; no successful CI run is claimed. The test source was updated and its remote blob/commit re-fetched for integrity review only.
+
+### 5. Current decision
+
+The checker is intentionally fail-closed: it cannot return `READY_FOR_WALLET_REVIEW` until actual verifiers for the blocked deployment evidence are integrated and run. This is a guard against a false-positive preflight, **not a claim that R1, ProtectedCapital, Oracle source truth or Issue authority have been certified**.
+
+First real Preprod Issue remains **NO-GO**. No workflow was dispatched; no authority endpoint was contacted; no secret or wallet seed was read; no wallet signing, key operation, server deployment, transaction, funding or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry or economic constant was changed.
