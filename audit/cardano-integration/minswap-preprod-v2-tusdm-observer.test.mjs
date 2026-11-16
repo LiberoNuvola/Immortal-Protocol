@@ -81,6 +81,22 @@ test("a Masumi 16a55 tUSDM pool is never classified as the PRE-RICH e675 asset",
   assert.equal(result.matches[0].candidate, "MASUMI_TUSDM");
 });
 
+test("a third tUSDM-labelled CIP-68 asset is identified but not promoted to an approved candidate", () => {
+  const thirdParty = {
+    label: "UNRELATED_TUSDM_POLICY",
+    policyId: "11c93226aabf1e9157620857d9ac013ba111680bd837f62a7ca90214",
+    tokenName: "0014df10745553444d",
+  };
+  const result = classifyMinswapV2PoolRows([fixture(thirdParty)]);
+  assert.equal(result.matches.length, 0);
+  assert.equal(result.tUsdmLikePools.length, 1);
+  assert.equal(
+    result.tUsdmLikePools[0].exactUnit,
+    "11c93226aabf1e9157620857d9ac013ba111680bd837f62a7ca902140014df10745553444d",
+  );
+  assert.equal(result.tUsdmLikePools[0].datumValueReservesMatch, true);
+});
+
 test("lookalike payment credentials, missing auth tokens and wrong datum pairs are rejected", () => {
   const wrongScript = fixture(E675);
   wrongScript.payment_cred = "f".repeat(56);
