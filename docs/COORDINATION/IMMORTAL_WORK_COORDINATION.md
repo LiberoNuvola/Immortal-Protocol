@@ -10117,3 +10117,45 @@ These runs verify the checked-in code/test and document boundaries only. They do
 This corrects neither the governance model nor any prior authority statement. It prevents a category error: the project owner's current specification role cannot be re-labelled as a production signer mandate or a deployed Issue authority. A future issuer/key binding requires the applicable canonical decision and deployment evidence; Agent A cannot create that authority through a source patch.
 
 **Non-effects:** no Notion page edited; no GOV-30 option selected; no issuer or custodian invented; no key generated/read/rotated; no authority endpoint contacted; no workflow dispatched; no wallet signature, transaction, funding, deployment or ledger mutation. No V3, Reveal, ABI, 500× or economic semantics changed.
+
+
+## 46.57 — AGENT A — FIRST-ISSUE READINESS REGRESSION NOW IN EXACT-HEAD CI (2026-11-16)
+
+**Classification:** CI wiring for an existing fail-closed regression only; no readiness source, admission decision, Oracle, authority, deployment or protocol behavior changed.
+
+### 1. Bounded CI change
+
+The existing `.github/workflows/pre-rich-action-refinement-conformance.yml` now:
+- triggers when `audit/cardano-integration/preprod-first-issue-readiness.mjs` or its test changes;
+- runs `node --test audit/cardano-integration/preprod-first-issue-readiness.test.mjs` immediately after `npm ci`.
+
+Only the CI path/step was changed. The readiness producer and its expected fail-closed contract were not weakened or rewritten. Commit: `08ad91b85ed4df7f0f33145ffda641cc851bb95c`.
+
+### 2. Exact-head execution
+
+[PRE-RICH Action Refinement Conformance #43826294286](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43826294286) completed **SUCCESS** on exact SHA `08ad91b85ed4df7f0f33145ffda641cc851bb95c`; job `action-refinement` (`133160818259`) is SUCCESS.
+
+Exact test log:
+- `preprod-first-issue-readiness.test.mjs`: **1/1 PASS**, 0 failures. Its terminal output confirms synthetic Oracle assertions, digest-shaped manifests, configured URL/key/provider path remain `BLOCKED` without verified Oracle source, R1, full ProtectedCapital, governed Issue authority key and live signed response; altered source digests and approval mismatches are also blocked.
+- Koios ProtectedCapital source-census pagination suite: **19/19 PASS**.
+- C1 acquired-point item-ledger projection: **5/5 PASS**.
+- The same workflow's issue/expiry refinement, Genesis Treasury admission and PRE-RICH typecheck steps completed under the overall successful job.
+
+### 3. What this closes — and what it does not
+
+| Gate | Result |
+|---|---|
+| Fail-closed readiness source regression on exact SHA | **PASS — 1/1** |
+| Synthetic Oracle/approval/provider fixture must not become ready | **PASS — remains BLOCKED** |
+| Koios source-census pagination software tests | **PASS — 19/19** |
+| C1 item-ledger projection software tests | **PASS — 5/5** |
+| Live C1 five-component census / deployment authority | **OPEN / NOT RUN** |
+| Oracle live-source truth and freshness | **OPEN / FAIL — current quote remains stale** |
+| PA1–PA7 and deployment-bound R1/Kc/Ω | **OPEN / NOT CERTIFIED** |
+| GOV-30 issuer/key mandate and live signed response | **OPEN / NOT QUALIFIED** |
+| Counter lookalike MintPolicy P0 | **OPEN — Agent B-owned remediation/review** |
+| First real Preprod Issue | **NO-GO** |
+
+This is software regression evidence, not a live readiness result. The test deliberately uses synthetic fixtures and does not contact the authority endpoint or Preprod. It proves the preflight cannot claim readiness from those fixtures; it does not prove the missing external evidence exists.
+
+**Non-effects:** no privileged workflow dispatch; no endpoint request; no secret, key or wallet seed read; no wallet signature, transaction, funding, deployment or ledger mutation. No Oracle datum, GOV-30 decision, V3, Reveal, ABI, 500× or economic semantics changed.
