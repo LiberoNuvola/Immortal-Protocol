@@ -33,7 +33,7 @@ function fixture(token, tokenQuantity = "1000000") {
 test("Minswap SHA3-256 LP pair identity is fixed for PRE-RICH e675 tUSDM/ADA", () => {
   assert.equal(
     computeMinswapV2LpUnit(E675.policyId, E675.tokenName),
-    "d6aae2059baee188f74917493cf7637e679cd219bdfbbf4dcbeb1d00588872bdae51b478556cbcd2ba87ed1f9d4e2b4713c77d8e4fa8d9cebcebe19",
+    "d6aae2059baee188f74917493cf7637e679cd219bdfbbf4dcbeb1d0b0588872bdae51b478556cbcd2ba87ed1f9d4e2b4713c77d8e4fa8d9cebcebe19",
   );
 });
 
@@ -43,7 +43,7 @@ test("Masumi tUSDM has a different Minswap V2 LP identity from PRE-RICH e675", (
   assert.notEqual(e675Lp, masumiLp);
   assert.equal(
     masumiLp,
-    "d6aae2059baee188f74917493cf7637e679cd219bdfbbf4dcbeb1d004c959a67d91376b25886e66ed86604cbb5cb9885ce0c48195ed64cb0e59306d",
+    "d6aae2059baee188f74917493cf7637e679cd219bdfbbf4dcbeb1d0b04c959a67d91376b25886e66ed86604cbb5cb9885ce0c48195ed64cb0e59306d",
   );
 });
 
