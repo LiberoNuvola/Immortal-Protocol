@@ -161,7 +161,7 @@ test('rejects mixed deployment generations', () => {
   assert.throws(() => validateC1CandidateIdentityEnvelope(input), /GENERATION_MISMATCH:counter/)
 })
 
-test('decodes a valid Preprod enterprise script address and binds its payment credential', () => {
+test('decodes a valid testnet enterprise script address and binds its payment credential', () => {
   const hash = 'a'.repeat(56)
   const address = enterpriseScriptAddress(hash)
   assert.deepEqual(decodeTestnetScriptAddress(address, hash), {
@@ -171,7 +171,7 @@ test('decodes a valid Preprod enterprise script address and binds its payment cr
   })
 })
 
-test('rejects mainnet, non-Preprod network id, key credentials and invalid checksum', () => {
+test('rejects mainnet network id, key credentials and invalid checksum', () => {
   const hash = 'a'.repeat(56)
   assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_TESTNET/)
   assert.throws(() => decodeTestnetScriptAddress(enterpriseScriptAddress(hash, 0, 6), hash), /PAYMENT_CREDENTIAL_NOT_SCRIPT/)
