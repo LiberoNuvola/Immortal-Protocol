@@ -9503,3 +9503,78 @@ Run #41581487013 is a **2026-11-03** observation and is later than the 2026-11-0
 - Full PA1–PA7, R1 E1–E10 / VC1–VC6, Ω completeness, GOV-30 key authorization and first Issue remain OPEN / **NO-GO**.
 
 No source or test code changed in this pass. No test or workflow was run or dispatched. No authority endpoint was contacted; no key was created, replaced or rotated; no wallet, signature, transaction, deployment, funding or ledger mutation occurred. No V3, Reveal, ABI, 500×, payout, expiry or economic constant changed.
+
+
+## 46.48 — AGENT A — NOVEMBER 16 ACQUIRED PREPROD POINT + YACI LAB EVIDENCE RECONCILIATION
+
+**Classification:** READ-ONLY EVIDENCE RECONCILIATION / HISTORICAL-STATEMENT CORRECTION; no production source or protocol semantics changed.
+
+### 1. Correction to §46.47: a successful 16 November live Preprod observation exists
+
+The statement in §46.47 that no successful 2026-11-16 live Pool read had been obtained is superseded by the subsequently inspected workflow artifact:
+
+- Workflow: [IMMORTAL Cardano Preprod Context #43798562115](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43798562115).
+- Workflow source/test checkout: `cff1def95c6f6a69d2dbe24f19a302b2fe55f8bd`; run completed **SUCCESS**.
+- Acquired Preprod point: slot `139116604`, block/id `a2e6355d7d97cf2324e4dfdb96e3cffcee7f76ea3a236d6aa0da5a21985218aa`, Shelley genesis `networkMagic=1`.
+- Exact B1 Pool candidate: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`, returned as the only UTxO at the queried B1 Pool address within the acquired session; the query sequence recorded a stable acquired point.
+- Exact accepted Preprod tUSDM unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`, quantity `1,000,000,000` atomic units. The Pool singleton NFT quantity is one.
+- The decoded eight-field B1 datum records `ppTotalLiquidity=100000`, pending liabilities `0`, unresolved reserve `0`, unresolved ticket count `0`, locked Jackpot `0`, threshold `10000`, suspended-class mask `0`, and PrizeValidator hash `93ec2ed27121c8b0b54bf1804b29d46cd71148c54128e8e68f7cffb2`.
+- The separate `preprod-b1-script-provenance` job completed **SUCCESS** with **21/21** checks, including equality between the direct physical tUSDM conversion (`100000` USDM sub-units) and the observed B1 datum `ppTotalLiquidity`.
+
+The archived run artifact IDs are `14194954717` (Preprod context) and `14196055380` (B1 script provenance). The first artifact was downloaded and inspected; its point, address, UTxO, value, datum and query-consistency records match the summary above.
+
+### 2. Strict scope of the live observation
+
+This corrects the date-of-last-observation statement only. It does **not** close the broader admission gates:
+
+- The acquired-session context queried the wallet, PrizeValidator address and B1 Pool; it did not execute the complete five-component C1 census over PrizeValidator, Counter, B1, V3 Carrier and B2 Control at the same point.
+- The PrizeValidator result is an address population observation at this candidate address, not global R7 L6 emptiness, lifetime Claim/Expire history or a full PA1–PA7 census.
+- The separate script-provenance report positively matches the B1 Pool and PrizeValidator payment credentials to the inspected parameterized Plutus V2 artifacts. It does not authenticate the full five-component deployment trust root or GOV-30 issuer authority.
+- The read-only workflow did **not** regenerate EV1–EV7 qualification and did **not** create/renew deployment approval. The historical 21-Oct approval remains hash-bound to its own source/qualification snapshot; it cannot be spliced to this observation.
+- The same run's Oracle evidence still reports the configured Oracle State datum timestamp `2026-10-08T17:38:50.142Z`, older than the configured one-hour maximum. It is a stale compatibility quote, not a newly sourced market quote. The other jobs `direct-usdm-preprod-bootstrap`, `preprod-v3-carrier-observation`, `preprod-deploy` and `real-preprod-reveal` were **SKIPPED**.
+- The acquired-point binding explicitly keeps `ledger_aligned_evaluator_run=false` and `full_end_to_end_equivalence_claim=false`.
+
+The 16-Nov observation therefore supersedes the older statement that no same-day Pool observation existed, but it does not authorize Issue or prove that a wallet transaction, deployment or Reveal occurred.
+
+### 3. Independent Yaci local-devnet result — candidate V3, not production Reveal
+
+The replacement [IMMORTAL Cardano Integration Lab #43798562073](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43798562073) completed **SUCCESS** on the same checkout `cff1def...`. Its artifact `14197115550` identifies its network as **local Yaci devnet / Conway**, not Cardano Preprod.
+
+The artifact contains a positive local-ledger characterization of the isolated Aiken V3 Reveal candidate:
+- win and loss Reveal transactions were accepted;
+- the negative twin was rejected by the local ledger;
+- candidate Reveal script size was reported as `12,584` bytes;
+- the test uses a **94-byte B1 Pool stub** and labels the canonical production B1 validator as not used;
+- `productionMigration=NOT_AUTHORIZED`.
+
+The same artifact reports the parameterized canonical Haskell Plutus V2 PrizeValidator at `16,443` bytes against the configured `16,384` transaction-size ceiling. This is a script-size provenance warning, not a measured production Reveal transaction or a successful native-ledger publication of that Haskell script. Do not conflate the V3 fixture's smaller size with closure of the canonical Haskell V2 / production B1 path.
+
+The local Yaci Claim and FundTreasury traces likewise use synthetic state/Oracle fixtures and explicitly do not claim a production-qualified Oracle. They are local transition characterizations, not Preprod Issue/Claim/FundTreasury evidence.
+
+### 4. Branch/source reconciliation
+
+At this checkpoint the shared branch is `work/immortal-green-closure` @ `23b68bfaeb6aa93b633baf81f4518052ba7e3e69`. It is 16 commits ahead and zero behind the Preprod/Yaci run source `cff1def...`; the intervening diff changes only:
+- `audit/cardano-integration/preprod-first-issue-readiness.mjs`;
+- `audit/cardano-integration/preprod-first-issue-readiness.test.mjs`;
+- this coordination document.
+
+The Preprod observer, B1 provenance producer, Yaci harness and candidate Reveal sources exercised by the two runs are therefore unchanged in that branch delta. The readiness checker changes are fail-closed guard/test updates; no exact-head CI PASS for those later readiness changes is claimed here.
+
+### 5. Release disposition and next action
+
+| Gate | Current evidence classification |
+|---|---|
+| Same-day Preprod B1 Pool / physical tUSDM observation | **PASS — acquired point slot 139116604** |
+| Direct physical tUSDM ↔ B1 datum equality | **PASS — 21/21 provenance checks** |
+| Fresh EV1–EV7 requalification + approval bound to the current point | **OPEN / NOT PRODUCED** |
+| Oracle external USD/USDM source and freshness | **OPEN / NOT QUALIFIED; configured datum stale** |
+| C1 five-component acquired-point census / GOV-30 deployment trust | **OPEN / NOT QUALIFIED** |
+| Full ProtectedCapital PA1–PA7 and history/L6 | **OPEN / NOT QUALIFIED** |
+| R1 E1–E10 / VC1–VC6, `χ`, `Wit`, authoritative Ω and QNE | **OPEN / NOT CERTIFIED** |
+| Issue-authority mandate/key custody and live signed decision | **OPEN / NOT QUALIFIED** |
+| B1 Registry identity P0 | **BLOCKED; Agent B ownership unchanged** |
+| Real Preprod Issue / production Reveal | **NOT EXECUTED / NO-GO** |
+
+No source code, validator, ABI, Oracle datum, B1 datum/redeemer, V3, Reveal semantics, 500× rule, economic constant or deployment was changed. No workflow was dispatched by this reconciliation; no endpoint authority request, wallet signing, transaction submission, funding or ledger mutation was performed.
+
+The R1 historical-material search also rechecked the V25/V27 archive and Notion source registry: the numerical V25 grid and `K*=1482` remain available, but the dedicated V25 transition generator/relation remains unrecovered. The existing V23 lineage and the 372 differential variants are not a substitute. Do not tune a reconstructed transition to force the historical fixed-point count; recover the contemporaneous generator or pursue a separately governed exact deployment model under the normative certification contract.
