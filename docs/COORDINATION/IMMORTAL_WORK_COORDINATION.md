@@ -8856,3 +8856,69 @@ The existing `immortal-cardano-preprod.yml` workflow registers this suite on pus
 This proves only consistency with a connected Ogmios node that reports Preprod genesis magic 1. It does not authenticate the node/provider endpoint or deployment manifest, create a GOV-30 trust root, re-derive script artifacts, prove component lineage, classify PrizeDatum population, reconcile B1/V3 or qualify PA1–PA7. The result must not be promoted to deployment authority or Issue admission. C1 remains OPEN; first real Preprod Issue remains **NO-GO**.
 
 No workflow dispatch, wallet access, signature, transaction, deployment, funding, live ledger mutation, production Issue reader/provider, ABI, validator, MintPolicy, V3, Reveal, 500× or economic constant changed.
+
+## 46.38 — AGENT A — C1 EXACT CI RESULT AND PARTIAL LIVE PREPROD CENSUS — 2026-11-16
+
+**Classification:** VERIFIED CI + READ-ONLY PREPROD OBSERVATION; NOT C1 DEPLOYMENT CERTIFICATION.  
+**Branch HEAD at this follow-up:** `c0ed37ac727f7a15e61393a5140a040edb7591fa`.  
+**Executed source/test commit:** `00112e93152bc060642ca8c609f8c38300a87e26`. The later branch HEAD changes only this coordination document's terminology note; the observer and test blobs used by the run are unchanged.
+
+### 1. Exact CI result
+
+GitHub Actions run [#43796391852](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43796391852) completed **SUCCESS** for `IMMORTAL Cardano Preprod Context` at commit `00112e9`.
+
+The `preprod-context` job executed all three C1/read-session test commands successfully:
+
+| Test command | Result |
+|---|---:|
+| `ogmios-ledger-state-session.test.mjs` | **5 / 5 passed** |
+| `preprod-c1-acquired-point-observer.test.mjs` | **16 / 16 passed** |
+| `preprod-c1-cardinality-decoder.test.mjs` | **8 / 8 passed** |
+
+The observer suite includes the Preprod Shelley genesis magic 1 acceptance, Preview magic 2 rejection before address census, and deterministic one-acquired-point/five-address query behavior. The cardinality suite checks the component-specific cardinalities, including Counter as one UTxO and PrizeValidator as a population census rather than an invented singleton.
+
+This supersedes the earlier §46.35–§46.37 wording that the exact-head C1 test execution was still pending. It closes the deterministic CI-test subgate only; it does not promote C1 to qualified.
+
+### 2. What actually ran live on Preprod
+
+In the same workflow run, `preprod-ogmios-context.mjs` performed a read-only Preprod observation. The acquired ledger point was:
+
+- slot: `139115320`
+- block/point id: `f6d02e02f996b589e3f8d4ac6351554d71e76e61cd635fc9a21fa8526f22b7e0`
+- network reported by the probe: `cardano-preprod`
+
+The probe kept one Ogmios websocket/acquired-state session and observed the wallet UTxOs, the complete PrizeValidator address census, and the B1 PrizePool candidate at that same acquired point. The query logs show a stable tip before/after the PrizeValidator and Pool observations, followed by release of the acquired state. The script queried the Shelley genesis configuration but its live census remains the existing three-address context probe.
+
+**It did not call** `observeC1ComponentsAtAcquiredPoint` for the five-component C1 set. Counter, Registry, V3 Carrier and B2 Control were not live-censused together with PrizeValidator and B1 Pool in that run. The deterministic test's five-address fixture is not a live observation.
+
+### 3. Additional live script provenance result
+
+The separate `preprod-b1-script-provenance` job in the same run completed **SUCCESS**. Its 20 checks produced:
+
+- classification: `CURRENT_PARAMETERIZED_SCRIPT_PROVENANCE_MATCHED`;
+- derived B1 Pool payment hash = observed B1 Pool payment hash: `ee3e164b3cb7a7bc8adfd6e8bdf82af9ec4a8be132ef7c4fc9941f51`;
+- derived PrizeValidator payment hash = observed PrizeValidator payment hash: `93ec2ed27121c8b0b54bf1804b29d46cd71148c54128e8e68f7cffb2`.
+
+This is positive source-to-live-address evidence for those two scripts at the observed candidate addresses. It does not rederive or authenticate all five C1 components, prove the provenance/trust root of the full deployment manifest, certify the initial Registry identity, or establish GOV-30.
+
+Artifacts preserved by the run:
+- `immortal-cardano-preprod-context`, artifact ID `14193799077`, ZIP SHA-256 `4e45977635e78f34327c0c76f64683aee14856ab924994afaf988715df145937`;
+- `immortal-preprod-b1-script-provenance`, artifact ID `14194641124`, ZIP SHA-256 `8bf38c86789b3e9e0bf6e0d143a35233f7be077f70192c6782e04450d5b61ce7`.
+
+### 4. Updated gate classification
+
+| Subgate | Result |
+|---|---|
+| C1 deterministic observer tests | **PASS — 16/16** |
+| C1 cardinality decoder tests | **PASS — 8/8** |
+| Ogmios acquired-state lifecycle tests | **PASS — 5/5** |
+| Live Preprod three-address context observation | **PASS — read-only, same acquired point** |
+| Live source-to-address provenance for B1 Pool + PrizeValidator | **PASS — 20 checks** |
+| Live five-component C1 census | **NOT RUN** |
+| Full deployment trust root / GOV-30 | **OPEN** |
+| Counter / Registry / V3 Carrier / B2 Control identity and lineage | **NOT QUALIFIED** |
+| PA1–PA7 and C1 certification | **OPEN / NOT QUALIFIED** |
+
+**First real Issue remains NO-GO.** The independent B1 Registry identity P0 and Agent A R1/Kc/authoritative-Ω blockers remain unchanged. The local Cardano Integration Lab run `#43796391787` is a separate Yaci devnet execution and was still in progress at this follow-up; its unfinished Claim/expiry queue is not counted as a completed lab result.
+
+**Non-effects:** this update records existing workflow evidence only. No workflow was dispatched, and no wallet was signed, no transaction submitted, no script deployed, no funds moved, and no Preprod/Mainnet ledger state changed. No V3, Reveal, 500×, ABI, validator, or economic rule was modified.
