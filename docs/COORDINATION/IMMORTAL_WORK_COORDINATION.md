@@ -9740,3 +9740,67 @@ Public Charli3 material is also not a substitute for observed liveness: the Prep
 Next bounded work is to obtain a fresh, independently authenticated ADA/USD + USD/USDM source path (or a separately approved direct ADA/USDM quote), bind the exact runtime Oracle identity without exposing secrets, and close the source-admission/registry authority and Option-B consumer contract before any wallet or Issue action. The existing bootstrap's reuse behavior must not be treated as a quote refresh: on an existing singleton it preserves the on-chain timestamp. Do not solve this by rewriting the old datum with a new timestamp.
 
 No workflow was dispatched by this audit; no secret, seed or private key was read; no quote was rewritten; no wallet signed; no transaction, funding, deployment or ledger mutation occurred. No Oracle schema, MintPolicy, B1 validator, ABI, V3, Reveal, 500× rule or economic constant changed.
+
+
+## 46.51 — AGENT A — ORCFAX OPTION-B PAIR RECHECK: MAINNET PATH EXISTS, PREVIEW/PREPROD LIVENESS NOT QUALIFIED (2026-11-16)
+
+**Classification:** READ-ONLY PUBLIC CONFIGURATION + EXPLORER/STATUS RECHECK; no source/consumer, feed, Oracle, deployment or ledger state changed.
+
+### 1. The Option-B pair path is structurally coherent, not a fresh Preprod source
+
+The current public Orcfax feed schema documents base/quote CER feeds and identifies whether a quote is CEX- or DEX-derived. The repository's Option-B derivation remains:
+
+`USD per USDM = (USD per ADA) / (USDM per ADA)`.
+
+This uses:
+- `ADA-USD`: 1 ADA expressed in USD;
+- `ADA-USDM`: 1 ADA expressed in USDM.
+
+The formula is dimensionally correct, but both legs must refer to exact, fresh observations with governed integer precision and an approved timestamp-skew rule. The pair names must not be reinterpreted as `USD-USDM` or a direct `USDM/USD` feed.
+
+### 2. Mainnet feed configuration and data status
+
+The official public Mainnet CER configuration is version `2026.05.18.0001`. It lists both exact feed pairs as `sponsored`:
+- `ADA-USD`: 3,600-second interval, 1% deviation, CEX source, median aggregation;
+- `ADA-USDM`: 3,600-second interval, 2% deviation, DEX source, weighted-mean aggregation.
+
+This is a real configured pair path, unlike the previously rejected Pyth/Charli3 candidates. However, the official Orcfax feed-specific pages still expose old facts:
+- `CER/ADA-USDM/3`: latest displayed value `0.1628`, with the selected archived fact dated `2026-06-14 14:00:22 UTC`, `1 ADA = 0.1684 USDM`;
+- `CER/ADA-USD/3`: latest displayed value `0.1633`, with the selected archived fact dated `2026-06-18 21:02:22 UTC`, `1 ADA = 0.1633 USD`.
+
+The selected facts are over four days apart, much greater than a one-hour nominal feed interval. The latest-value labels on the pages also show ages beyond the configured one-hour cadence (the captured pages show 27 days and about two months respectively). These exact displayed facts cannot be paired into a settlement quote: they are stale and not time-coherent. Do not calculate a production USD/USDM rate from these historical display values.
+
+The public status dashboard does report Mainnet infrastructure as active (23 configured feeds and 8/8 oracle nodes), but reports **zero new facts today (UTC)** in the current captured status result. An active node/network is not proof that these two particular feed records are being published freshly.
+
+### 3. Preview is not Preprod
+
+The official Preview feed configuration is version `2025.10.09.0002`. It lists:
+- `ADA-USD`: CEX median, 3,600 seconds, 1% deviation, **showcase**;
+- `ADA-USDM`: DEX weighted mean, 3,600 seconds, 2% deviation, **showcase**.
+
+The official Preview Explorer currently reports the last displayed feed facts as roughly six months old and states that **node data and source data are unavailable for this network**. The public network-status dashboard likewise reports Preview's 38 configured feeds but no source or oracle-node population. This is not a current Preprod witness; the protocol's target is Cardano **Preprod**, not the separate Cardano **Preview** network.
+
+Orcfax documentation explicitly distinguishes sponsored feeds from showcase feeds: sponsored publication depends on the integrator's subscription, while showcase feeds may be changed or removed without notice. Thus the Preview entries are candidate metadata, not a production-quality liveness guarantee.
+
+### 4. Correct disposition
+
+| Candidate | Pair/configuration | Actual evidence | Disposition for PRE-RICH Preprod |
+|---|---|---|---|
+| Orcfax Mainnet `ADA-USD` + `ADA-USDM` | Correct cross-rate legs; CEX median + DEX weighted mean; both sponsored | Feed facts from June 2026, stale and >4 days apart; dashboard currently reports 0 new facts today | **CANDIDATE ONLY — NOT USABLE FOR SETTLEMENT** |
+| Orcfax Preview `ADA-USD` + `ADA-USDM` | Same pair names; both showcase | Last shown facts roughly six months old; node/source data unavailable | **NOT QUALIFIED; NOT CARDANO PREPROD** |
+| Orcfax Cardano Preprod | No exact Preprod feed deployment/configuration or acquired-point fact evidence found | No configured Preprod network path established by the checked Mainnet/Preview config and status records | **NOT EVIDENCED / OPEN** |
+
+This refines §45.00–§45.01: Orcfax does have a concrete Mainnet two-pair configuration, and the cross-rate direction is already derivable. It does **not** have a currently evidenced Preprod publication path for this Issue, and its captured pair observations remain stale. Do not say Orcfax is shut down: the current status page reports active Mainnet infrastructure. The operational blocker is the absent fresh, same-network, time-coherent pair evidence, not a categorical provider shutdown.
+
+### 5. Minimum next step before any Oracle implementation
+
+If Orcfax is to remain the chosen provider candidate, obtain a provider-supported exact Preprod (or separately approved network) publication path for both feeds, then recover at one acquired point:
+1. exact two feed/script identities and UTxO out-references;
+2. raw fact-statement CBOR, value, precision/scale and base/quote identity;
+3. publisher/validator/source and archival proof material sufficient for independent verification;
+4. both timestamps, expiry and exact within-policy time skew;
+5. same-network ledger finality and a transaction-bound evidence package.
+
+Only then can the existing Option-B rational conversion be implemented and cross-tested against Haskell/TypeScript. No direct parity assumption, off-chain displayed decimal, Mainnet-to-Preprod substitution, single-pool fallback, or feed timestamp rewrite is permitted.
+
+No workflow was dispatched by this audit; no feed update was requested; no credential, wallet seed or private key was read; no Oracle datum, source code, datum schema, MintPolicy, B1 validator, V3, Reveal, EEV approval, transaction, funding, deployment or ledger state was changed.
