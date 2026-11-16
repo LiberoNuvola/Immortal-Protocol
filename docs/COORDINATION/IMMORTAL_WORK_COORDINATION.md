@@ -9445,7 +9445,8 @@ The Notion Control Center records a later source-qualification run than the 2026
 - Artifact: `preprod-eev-qualified-source-257c90fffe02c6157e236150a57da6c6ef8fd145`, ID `13205288872`.
 - GitHub registered ZIP digest: `sha256:0b286fd0435de292d0da884b498884dd9462ad6dd16a4bf5a79fcd5455244114`.
 - Artifact was downloaded in this audit; independent local ZIP SHA-256 equals the GitHub digest exactly.
-- The ZIP contains five JSON files. All four files with `evidenceHash` (deployment, qualification, source-set and Oracle State) recompute to the exact embedded digest. The PC census has no separate `evidenceHash`; it is included within the GitHub-digest-bound artifact ZIP.
+- The ZIP contains five JSON files.
+- Fourteen explicit cross-binding checks were recomputed against the extracted JSON: deployment/source-set exact Pool reference; exact direct-USDM asset identity; atomic quantity and FLOOR-derived sub-units; source-set approval PENDING; EV1–EV7 qualified; qualification approval null; exact qualification Pool source reference; exact run/SHA verification reference; PC census links to the deployment and Oracle manifest hashes; ticket-only census scope; Oracle external-price flag false; full PC flag false; R7 L6 emptiness unproven; and L5/history replay flags retained. **All 14 checks matched.** These checks establish consistency of this bounded evidence packet, not independent source authority or full ProtectedCapital qualification. All four files with `evidenceHash` (deployment, qualification, source-set and Oracle State) recompute to the exact embedded digest. The PC census has no separate `evidenceHash`; it is included within the GitHub-digest-bound artifact ZIP.
 
 The 2026-11-03 source observation records:
 - Koios Preprod block `5367465`, slot `137998892`, block hash `ea7b8e620fb9e7bcef9d14da6e49e96fc99156bf2868b7c11f5a54cb006a90b0`;
