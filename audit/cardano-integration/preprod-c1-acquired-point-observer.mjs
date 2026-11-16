@@ -74,7 +74,7 @@ function bech32HrpExpand(hrp) {
 
 /**
  * Decode only the address fields needed for the C1 payment-credential check.
- * This verifies Bech32 syntax/checksum, Preprod HRP/network id, Shelley script
+ * This verifies Bech32 syntax/checksum, testnet HRP/network tag, Shelley script
  * payment credential type, and exact 28-byte payment credential. It does not
  * authenticate the deployment manifest or prove that the script bytes were
  * independently rebuilt from the declared source.
@@ -94,7 +94,7 @@ export function decodeTestnetScriptAddress(address, expectedPaymentCredentialHas
   }
   const hrp = normalized.slice(0, separator)
   if (hrp !== 'addr_test') {
-    throw new Error('C1_IDENTITY_ADDRESS_NOT_PREPROD')
+    throw new Error('C1_IDENTITY_ADDRESS_NOT_TESTNET')
   }
 
   const encoded = normalized.slice(separator + 1)
@@ -130,7 +130,7 @@ export function decodeTestnetScriptAddress(address, expectedPaymentCredentialHas
   const addressType = bytes[0] >>> 4
   const networkId = bytes[0] & 0x0f
   if (networkId !== 0) {
-    throw new Error('C1_IDENTITY_ADDRESS_NETWORK_ID_NOT_PREPROD')
+    throw new Error('C1_IDENTITY_ADDRESS_NETWORK_ID_NOT_TESTNET')
   }
   if (![1, 3, 5, 7].includes(addressType)) {
     throw new Error('C1_IDENTITY_ADDRESS_PAYMENT_CREDENTIAL_NOT_SCRIPT')
