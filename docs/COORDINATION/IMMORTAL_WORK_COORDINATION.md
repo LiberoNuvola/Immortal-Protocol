@@ -8782,3 +8782,39 @@ The workflow is configured for push on `work/immortal-green-closure` when `audit
 C1 remains OPEN. The five input identities are still candidate identities; GOV-30 trust root and authorized deployment attestation, script re-derivation, current live five-surface same-point observation, PrizeDatum population classification, B1/V3 reconciliation, state lineage and PA1–PA7 evidence are not certified by this read-only primitive.
 
 No production Issue reader/provider, Haskell admission, ABI, validator, V3, Reveal, 500×, economic constant, workflow dispatch, wallet, signature, transaction, deployment, funding or ledger state changed. First real Preprod Issue remains **NO-GO**.
+
+
+## 46.36 AGENT A — C1 CANDIDATE ADDRESS BECH32 / PREPROD CREDENTIAL BINDING (2026-11-16)
+
+**Classification:** READ-ONLY IDENTITY-CONSISTENCY HARDENING + DETERMINISTIC TEST ADDITIONS; no deployment authority, script re-derivation, or Issue admission change.
+
+### Gap closed in the candidate-envelope parser
+
+The previous C1 candidate-envelope validator compared the declared `paymentCredentialHash` with the declared `derivedScriptHash`, but did not decode the supplied Cardano address. A malformed address, a Mainnet HRP, a non-Preprod network ID, or an address whose actual payment credential differed from both declared fields could therefore pass the envelope's structural checks.
+
+The current parser now decodes Shelley Bech32 address bytes and checks:
+- Bech32 case, character set, and checksum;
+- exact Preprod HRP `addr_test`;
+- network ID `0`;
+- script payment-credential address types (1, 3, 5, or 7), rejecting key-payment addresses;
+- expected payload lengths for base, pointer and enterprise address types;
+- exact first 28-byte payment credential equality with the declared derived script hash.
+
+It also rejects reused addresses across the five component IDs and whitespace-padded address values. The independent script artifact digest, parameter digest, source commit, deployment generation and exact deployment materialization out-reference remain separately required.
+
+### Source and test commits
+
+- Observer address-decoder commit: `3f1d2b7a7b9b0dd162b89d0b15dbfc02a975b80c`.
+- Accumulator correction: `32685d9d819e2ec84f27098a97007d8fa4381313`.
+- Address canonicality / duplicate-address checks: `f43e32e1ff1028f9c9a9f79ce9e6ece079f588e3`.
+- Final test additions and fixture corrections: `0980c285802439803c838fdc9f9dc3b05bae9f8c` (plus test-fixture follow-up `fb62ab2bdf5ef21ace172f4278d98059edbb2ad6)).
+
+The test fixture now generates checksummed Preprod enterprise script addresses rather than placeholder strings. Negative assertions cover wrong network ID, Mainnet HRP, key-payment address type, checksum corruption, short Shelley payload, actual address/credential mismatch, duplicate addresses and whitespace padding. A 12-bit accumulator mask was applied to the Bech32 convert-bits paths to prevent JavaScript 32-bit shift overflow on full address payloads; a standalone Node harness reproduced five valid addresses and rejected the network/type/HRP negative cases.
+
+### Qualification boundary
+
+The repository workflow already includes `preprod-c1-acquired-point-observer.test.mjs` on the push path. **The full repository test suite has not yet been observed running for these latest commits; do not label it CI-PASS.** The standalone codec harness is only a focused arithmetic sanity check, not a substitute for the workflow's complete tests or a live Ogmios observation.
+
+This validates only the supplied candidate envelope's address syntax and payment-credential consistency. It does not prove that the declared `derivedScriptHash` was actually rebuilt from the source/parameters, authenticate the manifest issuer, establish a GOV-30 trust root, prove state lineage, classify PrizeValidator UTxOs, reconcile B1/V3, or qualify PA1–PA7. C1 remains OPEN and the first real Preprod Issue remains **NO-GO**.
+
+No live observer dispatch, wallet access, signature, transaction, deployment, funding, ledger write, production Issue reader/provider, ABI, validator, MintPolicy, V3, Reveal, 500× or economic constant changed.
