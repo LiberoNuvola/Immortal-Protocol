@@ -291,7 +291,7 @@ test('rejects a bad singleton or altered raw-result digest rather than projectin
   altered.observations.counter.rawOgmiosUtxoResultCanonicalJsonSha256 = '0'.repeat(64)
   await assert.rejects(
     buildC1ProtectedCapitalItemLedger({ observation: altered, identityEnvelope: env }),
-    /RAW_COMPONENT_OBSERVATION_INVALID:counter/,
+    /RAW_COMPONENT_DIGEST_MISMATCH:counter/,
   )
 })
 
