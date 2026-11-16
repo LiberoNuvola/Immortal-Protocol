@@ -44,6 +44,8 @@ on:
       - "PRE-RICH/src/PreRichProtectedCapitalItemLedger.ts"
       - "audit/cardano-integration/preprod-c1-item-ledger-adapter.mjs"
       - "audit/cardano-integration/preprod-c1-item-ledger-adapter.test.mjs"
+      - "audit/cardano-integration/preprod-first-issue-readiness.mjs"
+      - "audit/cardano-integration/preprod-first-issue-readiness.test.mjs"
       - "PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts"
       - "src/__tests__/preRichCertifiedSettlement.test.ts"
       - "src/__tests__/preRich-gamerules-distribution.test.ts"
@@ -74,6 +76,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Run fail-closed first Issue readiness regression
+        run: node --test audit/cardano-integration/preprod-first-issue-readiness.test.mjs
       - name: Run Issue and Expire refinement conformance
         run: npx vitest run src/__tests__/differentialActionReplay.test.ts src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts PRE-RICH/tests/conformance/PC-item-ledger-source-census.conformance.test.ts
       
