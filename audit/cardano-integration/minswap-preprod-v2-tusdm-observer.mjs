@@ -151,6 +151,7 @@ export function classifyMinswapV2PoolRows(rows) {
   );
   const authenticatedPools = [];
   const decodeErrors = [];
+  const pairMap = new Map();
   let authenticatedPoolUtxoCount = 0;
   for (const row of onPoolScript) {
     if (!Array.isArray(row.asset_list)) {
@@ -167,6 +168,16 @@ export function classifyMinswapV2PoolRows(rows) {
     let poolDatum;
     try {
       poolDatum = decodePoolV2DatumAssetUnits(row.inline_datum);
+      const pairUnits = [poolDatum.assetA, poolDatum.assetB].sort();
+      const pairKey = pairUnits.join("|");
+      const summary = pairMap.get(pairKey) ?? {
+        assetA: pairUnits[0],
+        assetB: pairUnits[1],
+        poolCount: 0,
+        sampleOutRef: String(row.tx_hash) + "#" + String(row.tx_index),
+      };
+      summary.poolCount += 1;
+      pairMap.set(pairKey, summary);
     } catch (error) {
       decodeErrors.push({
         outRef: String(row.tx_hash) + "#" + String(row.tx_index),
@@ -236,6 +247,7 @@ export function classifyMinswapV2PoolRows(rows) {
     authenticatedPoolUtxoCount,
     datumDecodeErrorCount: decodeErrors.length,
     datumDecodeErrorSamples: decodeErrors.slice(0, 10),
+    observedDatumPairs: [...pairMap.values()].sort((a, b) => b.poolCount - a.poolCount),
     matches: authenticatedPools,
   };
 }
@@ -378,7 +390,10 @@ async function main() {
       finalContentRange: observation.contentRange ?? null,
       poolScriptUtxoCount: classification.poolScriptUtxoCount,
       authenticatedPoolUtxoCount: classification.authenticatedPoolUtxoCount,
+      datumDecodeErrorCount: classification.datumDecodeErrorCount,
+      distinctDatumPairCount: classification.observedDatumPairs.length,
     },
+    observedDatumPairs: classification.observedDatumPairs,
     pools: classification.matches,
     chainTip: {
       slot: Number(tip.abs_slot ?? tip.absolute_slot),
