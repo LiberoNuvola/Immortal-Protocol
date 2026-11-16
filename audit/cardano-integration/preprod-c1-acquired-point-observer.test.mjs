@@ -138,7 +138,7 @@ test('rejects mainnet, non-Preprod network id, key credentials and invalid check
   assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 1), hash), /NETWORK_ID_NOT_PREPROD/)
   assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 6), hash), /PAYMENT_CREDENTIAL_NOT_SCRIPT/)
   assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash, 0, 7, 'addr'), hash), /NOT_PREPROD/)
-  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash.slice(0, 54), hash), hash), /SHELLEY_PAYLOAD/)
+  assert.throws(() => decodePreprodScriptAddress(enterpriseScriptAddress(hash.slice(0, 54)), hash), /SHELLEY_PAYLOAD/)
   const validAddress = enterpriseScriptAddress(hash)
   const replacement = validAddress.endsWith('q') ? 'p' : 'q'
   const damaged = validAddress.slice(0, -1) + replacement
