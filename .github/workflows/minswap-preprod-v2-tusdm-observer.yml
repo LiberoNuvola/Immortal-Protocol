@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: minswap-preprod-v2-tusdm-observer-\${{ github.ref }}
+  group: minswap-preprod-v2-tusdm-observer-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
