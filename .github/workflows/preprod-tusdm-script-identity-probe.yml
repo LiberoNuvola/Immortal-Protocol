@@ -1,0 +1,41 @@
+name: PRE-RICH Preprod tUSDM Script Identity Probe
+
+on:
+  push:
+    branches: [work/immortal-green-closure]
+    paths:
+      - 'scripts/observe-preprod-tusdm-script-identities.mjs'
+      - 'scripts/observe-preprod-tusdm-script-identities.test.mjs'
+      - '.github/workflows/preprod-tusdm-script-identity-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preprod-tusdm-script-identity-probe-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test pinned candidate identities and read-only boundaries
+        run: node --test scripts/observe-preprod-tusdm-script-identities.test.mjs
+      - name: Retrieve exact Preprod script bytes, redeemer history and source UTxO rechecks
+        run: node scripts/observe-preprod-tusdm-script-identities.mjs
+      - name: Upload script identity and redeemer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-tusdm-script-identity-\${{ github.run_id }}
+          path: audit/preprod-evidence/tusdm-script-identity-probe.json
+          if-no-files-found: warn
+          retention-days: 30
