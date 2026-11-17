@@ -13,32 +13,36 @@ The B1 datum, claimedAmount, and Economic.poolUsdmValue are denominated in **USD
 
 There are 100 USDM sub-units per IMMORTAL reference unit (RU). A CEK test must therefore compare the Direct-USDM delta and ProtectedCapital delta on one consistent basis before reporting RU. The test suite returns Direct-USDM **sub-units** from its conversion helper and divides by 100 only when expressing the result in RU.
 
-## 2. Claim counterexample
+## 2. Claim settlement-medium characterization
 
-The new test evaluates both the compiled PrizeValidator Claim predicate and the compiled B1 TicketClaimed predicate against the same synthetic TxInfo.
+The current test evaluates the compiled PrizeValidator Claim predicate and the compiled B1 TicketClaimed predicate against the same balanced synthetic TxInfo.
 
 ### Inputs and outputs
 
-- Exact Pool input: Pool singleton 1, approved tUSDM 4,000,000 atomic units, ADA 10,000,000 lovelace. Physical Direct-USDM = 400 sub-units = 4 RU.
-- Pool input datum: ppTotalLiquidity=400, ppPendingLiabilities=200.
-- Claim amount: 200 sub-units = 2 RU.
-- Pool continuing output: Pool singleton 1, tUSDM 0, one foreign native asset, ADA 10,000,000. The configured Oracle values the foreign asset at 200 sub-units; output ppTotalLiquidity=200, liabilities 0.
-- Ticket owner input carries the ticket NFT and is a transaction signatory.
-- Owner payment contains the ticket NFT, 2,000,000 tUSDM atomic units and ADA. The same tUSDM Oracle quote values this payout at 200 sub-units. The PrizeDatum continues as Claimed, preserving its own Value.
-- Remaining 2,000,000 tUSDM atomic units are returned as source change. The foreign asset is transferred from the source input into the Pool output. All assets and ADA are balanced across inputs and outputs.
+- Pool input: the exact Pool singleton, 4,000,000 approved tUSDM atomic units and 10,000,000 lovelace. Direct-USDM EEV is 400 sub-units.
+- Pool continuing output: the same singleton, 2,000,000 approved tUSDM atomic units and the same ADA. Direct-USDM EEV is 200 sub-units.
+- The Pool datum moves from `ppTotalLiquidity=400`, `ppPendingLiabilities=200` to `ppTotalLiquidity=200`, liabilities 0.
+- The source input contains one foreign native asset. That asset is paid to the ticket owner; the remaining 2,000,000 tUSDM atomic units are returned as source change.
+- The ticket owner receives no physical tUSDM. The foreign-asset Oracle quote makes the owner output worth exactly 200 USDM sub-units.
+- Pool/ticket singleton NFTs continue and all ADA/native-asset quantities balance across the shared TxInfo.
 
-### Accepted validator predicates and economic result
+### Accepted predicates and correct R1 interpretation
 
-The B1 Oracle-valued Pool delta is 400 − 200 = 200 sub-units, equal to the claimed amount. PrizeValidator values the owner's settlement at exactly 200 sub-units and verifies owner identity/signature, ticket status, expiry and PrizeDatum continuation. The fixture is constructed so that both compiled validator predicates can accept the same transaction context.
+Both compiled validator predicates accept the same transaction context. The Pool's Oracle-valued amount decreases from 400 to 200 sub-units, matching the crystallized Claim amount of 200.
 
-The Direct-USDM physical Pool balance, however, falls from 400 to 0 sub-units:
+The physical Direct-USDM delta is:
+```text
+ΔEEV_direct = 200 − 400 = −200 sub-units
+ΔProtectedCapital = −200 sub-units
+Δb = ΔEEV_direct − ΔProtectedCapital = 0
+```
 
-- ΔEEV_direct = −400 sub-units = −4 RU.
-- ΔProtectedCapital = −200 sub-units = −2 RU.
-- Therefore ΔEEV_direct < ΔProtectedCapital: the margin erodes by 200 sub-units = 2 RU.
+Therefore this particular Claim fixture **does not violate the local R1 non-erosion inequality**. It demonstrates a separate settlement-medium fact: the owner can receive an Oracle-equivalent foreign asset rather than physical tUSDM while the Pool's direct tUSDM EEV decreases by exactly the liability released. Whether Claim must pay a particular physical asset is a separate application settlement-policy decision; this test does not establish such a rule.
 
-This is a synthetic CEK characterization of the current accepted predicate surface, not a submitted Cardano transaction. It shows that the current Oracle-valued delta does not entail the physical Direct-USDM bound.
+**Interpretation correction:** the current test's printed label `OBSERVED GAP` / `Claim counterexample` is broader than the numeric result supports. The Claim fixture is a balanced settlement-medium characterization, not a direct-EEV margin-breach counterexample. Do not cite it as evidence that Claim fails `ΔEEV_direct ≥ ΔProtectedCapital`.
 
+This remains a synthetic CEK characterization, not a submitted Cardano transaction or proof of deployed Preprod behavior.
+ 
 ## 3. FundTreasury counterexample
 
 The new test evaluates the compiled B1 PrizePool validator with FundTreasury.
@@ -69,7 +73,7 @@ Files:
 
 The Claim test evaluates the compiled PrizeValidator and B1PrizePool validators over one shared TxInfo. The FundTreasury test evaluates the compiled B1PrizePool validator. The source file expressly labels both as synthetic CEK-only, not native-ledger, Yaci or Preprod tests.
 
-**CI status:** exact-head Haskell workflow completion has not been independently observed. Do not describe either new case as executed or PASS until the workflow completes successfully on the final branch head.
+**CI status (updated 2026-11-17):** Haskell Semantic Conformance [run #43761278779, attempt 2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43761278779) completed **SUCCESS**; job `haskell-conformance` (`133453250596`) passed all 33 steps, including `b1-direct-usdm-transition-characterization-tests`, `b1-reveal-headroom-tests`, and `mint-policy-b1-value-preservation-tests`. The run executed on test-source SHA `453871b1d9e79370f76ed1583d3c256fc7bf3aba`. The current shared branch HEAD is `d249501e70c2f852f50a96a611140233e3d04f43`; the 70-commit comparison contains no changes under `plutus/` and no change to `.github/workflows/immortal-haskell-conformance.yml`, so the tested Plutus/test/Cabal/workflow source remains unchanged at that HEAD. This is successful compiled CEK evidence only, not native-ledger, Yaci, Preprod or exploitability evidence.
 
 ## 5. Correction to the earlier Reveal unit description
 
@@ -78,7 +82,7 @@ The existing B1RevealHeadroomTest.hs formula returns USDM sub-units, not RU. Its
 ## 6. Disposition
 
 - Reveal: existing compiled dual-validator CEK characterization demonstrates accepted ΔEEV_direct=−501 sub-units against ΔProtectedCapital=−500 sub-units.
-- Claim: new balanced shared-TxInfo compiled CEK counterexample characterizes accepted −400 sub-units direct EEV against −200 sub-units ProtectedCapital.
+- Claim: the balanced shared-TxInfo compiled CEK characterization passes with ΔEEV_direct = −200 sub-units and ΔProtectedCapital = −200 sub-units; it shows an Oracle-equivalent foreign-asset payout, not an R1 margin breach.
 - FundTreasury: new balanced compiled CEK counterexample characterizes accepted Oracle-value increase while direct EEV falls by 100 sub-units and ProtectedCapital is unchanged.
 - Expire remains the Value-preserving positive control from the source audit.
 - Issue remains the exact Pool-Value-preserving control in the compiled MintPolicy suite.
