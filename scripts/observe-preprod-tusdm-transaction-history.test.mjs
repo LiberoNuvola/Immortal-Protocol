@@ -49,7 +49,8 @@ test('summarizes exact input/output tUSDM and candidate-script transitions', () 
       datum_hash: 'dd'.repeat(32), inline_datum: { value: { int: '43' } },
     }, {
       tx_hash: hash, tx_index: 1, value: '2000000',
-      payment_addr: { bech32: 'addr_test1wallet', cred: 'ee'.repeat(28) }, asset_list: [],
+      payment_addr: { bech32: 'addr_test1wallet', cred: 'ee'.repeat(28) },
+      asset_list: [{ policy_id: TUSDM_UNIT.slice(0, 56), asset_name: TUSDM_UNIT.slice(56), quantity: '1000000' }],
     }],
     reference_inputs: [], collateral_inputs: [],
     plutus_contracts: [{
@@ -66,6 +67,10 @@ test('summarizes exact input/output tUSDM and candidate-script transitions', () 
   assert.equal(summary.netTusdmAtomic, '-1000000')
   assert.equal(summary.candidateScriptInputs.length, 1)
   assert.equal(summary.candidateScriptOutputs.length, 1)
+  assert.equal(summary.relevantInputEndpoints.length, 1)
+  assert.equal(summary.relevantOutputEndpoints.length, 2)
+  assert.equal(summary.relevantOutputEndpoints.find(x => !x.isCandidateScript).approvedTusdmAtomic, '1000000')
+  assert.equal(summary.relevantOutputEndpoints.find(x => !x.isCandidateScript).paymentCredential, 'ee'.repeat(28))
   assert.equal(summary.plutusContracts[0].validContract, true)
   assert.equal(summary.plutusContracts[0].spentDatumHash, 'cc'.repeat(32))
   assert.equal(summary.metadataKeys[0], '674')

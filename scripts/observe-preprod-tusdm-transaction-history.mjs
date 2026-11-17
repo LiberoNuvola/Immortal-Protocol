@@ -216,6 +216,11 @@ export function summarizeTransaction(row, targetHashes = new Set(CANDIDATE_GROUP
     netTusdmAtomic: (outputTusdm - inputTusdm).toString(),
     candidateScriptInputs: inputs.filter(x => x.isCandidateScript),
     candidateScriptOutputs: outputs.filter(x => x.isCandidateScript),
+    // Preserve every non-candidate endpoint that holds the approved tUSDM.
+    // This makes the recipient side visible when a candidate escrow closes,
+    // without retaining unrelated wallet UTxOs or claiming a market swap.
+    relevantInputEndpoints: inputs.filter(x => x.isCandidateScript || BigInt(x.approvedTusdmAtomic) > 0n),
+    relevantOutputEndpoints: outputs.filter(x => x.isCandidateScript || BigInt(x.approvedTusdmAtomic) > 0n),
     otherInputCount: inputs.filter(x => !x.isCandidateScript).length,
     plutusContracts: contracts,
     metadataKeys: row.metadata && typeof row.metadata === 'object' ? Object.keys(row.metadata) : [],
