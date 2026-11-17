@@ -93,5 +93,5 @@ test('tx_info probe is read-only, bounded and binds responses to requested hashe
   assert.equal(manifest.txInfo.returnedTransactions, manifest.selection.requestedTransactions)
   assert.equal(manifest.mode.transactionSubmitted, false)
   assert.ok(calls.some(x => x.url.endsWith('/tx_info') && x.method === 'POST' && x.body._scripts === true))
-  assert.equal(calls.some(x => /submit|tx\\/submit/i.test(x.url)), false)
+  assert.equal(calls.some(x => x.url.includes('/submit') || x.url.includes('tx/submit')), false)
 })
