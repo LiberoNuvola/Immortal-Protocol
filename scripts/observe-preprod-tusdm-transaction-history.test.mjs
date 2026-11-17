@@ -3,12 +3,17 @@ import assert from 'node:assert/strict'
 import { CANDIDATE_GROUPS, TUSDM_UNIT } from './observe-preprod-tusdm-script-identities.mjs'
 import {
   TARGET_ORDER_SCRIPT, HIGH_ACTIVITY_SCRIPT,
-  selectRelevantTransactions, summarizeTransaction, observe,
+  scriptHash, selectRelevantTransactions, summarizeTransaction, observe,
 } from './observe-preprod-tusdm-transaction-history.mjs'
 
 const txHash = n => n.toString(16).padStart(64, '0')
 const response = value => new Response(JSON.stringify(value), {
   status: 200, headers: { 'content-type': 'application/json', date: 'Tue, 17 Nov 2026 05:35:00 GMT' },
+})
+
+test('validates Plutus script hashes as 28-byte hashes, separately from 32-byte transaction hashes', () => {
+  assert.equal(scriptHash(TARGET_ORDER_SCRIPT), TARGET_ORDER_SCRIPT)
+  assert.throws(() => scriptHash(txHash(1)), /SCRIPT_HASH_INVALID/)
 })
 
 test('selects all target-order spends and stratifies high-activity datum versions', () => {

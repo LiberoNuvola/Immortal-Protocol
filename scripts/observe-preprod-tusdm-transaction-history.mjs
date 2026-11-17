@@ -28,6 +28,10 @@ function txHash(value, label = 'TX_HASH') {
   if (typeof value !== 'string' || !/^[0-9a-f]{64}$/i.test(value)) throw new Error(label + '_INVALID')
   return value.toLowerCase()
 }
+export function scriptHash(value) {
+  if (typeof value !== 'string' || !/^[0-9a-f]{56}$/i.test(value)) throw new Error('SCRIPT_HASH_INVALID')
+  return value.toLowerCase()
+}
 function sourceTxHashes(groups) {
   const hashes = []
   for (const group of groups) {
@@ -52,7 +56,7 @@ export function selectRelevantTransactions(redeemerHistory, groups = CANDIDATE_G
   }
   for (const hash of sourceTxHashes(groups)) add(hash, 'CURRENT_CANDIDATE_UTXO_CREATION')
   for (const group of redeemerHistory) {
-    const script = txHash(group.scriptHash, 'SCRIPT_HASH')
+    const script = scriptHash(group.scriptHash)
     const entries = Array.isArray(group.redeemers) ? group.redeemers : []
     const unique = new Map()
     for (const item of entries) {
