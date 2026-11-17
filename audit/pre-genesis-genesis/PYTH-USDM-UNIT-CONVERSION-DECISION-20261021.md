@@ -1084,3 +1084,17 @@ The resulting artifact [14300829359](https://github.com/LiberoNuvola/Immortal-Pr
 - Deployment-manifest integrity is a self-hash match, not cryptographic authentication of the manifest authority. The Oracle State datum is read-only evidence, not proof of its external price source.
 
 **Disposition:** direct-USDM EV1–EV7 = mechanically qualified for this exact Preprod source reference and exact source SHA; source set = `OBSERVED_NOT_QUALIFIED`; Oracle State = `STALE`; ProtectedCapital PA1–PA7 / source completeness / R1-Kc-Ω certification = not established; Deployment Approval = not created; first real Preprod Issue = **NO-GO**. This does not qualify Option B USD/USDM conversion and does not change any production validator, V3, Reveal, 500× rule, ABI or economic constant.
+
+### 47.10 — Live Preprod tUSDM script transaction reconstruction: sampled escrow-like distributions, no qualified market quote (2026-11-17)
+
+Read-only workflow [#44025754575](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44025754575) completed SUCCESS on source commit `6ad6fdc097f07312651d6468870b0e430e971c5d`; artifact ID `14301924656`; evidence hash `81b0777068e3d4f4b92a4b952fef0a1063ba422eea193ae23cd53f8876746de8`.
+
+The observer selected 56 transaction bodies from five exact Preprod script credentials and returned 56/56 with no blocked lookups. The tip moved by one block (slot 139,210,817 → 139,210,851) during the collection; the result is historical/bounded evidence, not an atomic same-slot snapshot. The observer performed no wallet access, transaction construction, signing or submission.
+
+For candidate script `23dd4b7985eed99dd312068598488095a71d089f022593458755f702`, 13 spending records were reconstructed. Six transactions consumed the script UTxO without a continuing output, six preserved a continuing output under redeemer constructor 0, and one additional continuing transition used constructor 1. All sampled transactions conserved the approved Preprod tUSDM quantity at 2,000,000 atomic units input and output.
+
+The six close transactions distribute those same 2,000,000 atomic units as follows: four cases of 1,940,000 / 58,200 / 1,800 (97% / 2.91% / 0.09%); one case of 2,000,000 to one credential; and one case of 1,960,000 / 38,800 / 1,200 (98% / 1.94% / 0.06%). The extended evidence preserves all input/output endpoint ADA and native-asset Values and payment credentials. The sampled transactions do not identify a separate ADA trade consideration or a continuing price-bearing liquidity pool. Their visible shape is consistent with payment/escrow-like distribution, but the deployed script's identity and constructor semantics remain unproved. **Do not classify this as a named marketplace/escrow, DEX or quote source on that basis alone.**
+
+The other sampled scripts likewise do not yet establish a Preprod USD/USDM source. The exact Danogo census remains negative (1,003 approved-tUSDM UTxOs scanned, zero matching the pinned Danogo Preprod pool credential). Pyth Pro ADA/USD remains blocked by HTTP 403 entitlement denial for feed ID 16 before a signed payload is fetched.
+
+**Disposition:** source-set `OBSERVED_NOT_QUALIFIED`; Option B `NOT QUALIFIED`; no USD/USDM quote or EV approval produced; no Oracle State refresh; ProtectedCapital PA1–PA7 / R1-Kc-Ω remain unproved; Deployment Approval NOT CREATED; first real Preprod Issue **NO-GO**. The analysis did not alter production validators, V3, Reveal, 500×, ABI or any economic constant.

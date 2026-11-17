@@ -10488,3 +10488,47 @@ The Direct-USDM profile is physical tUSDM in the exact Pool UTxO. It does not ap
 ### 4. Disposition
 
 Direct-USDM EV1–EV7 = **PASS for this exact source/verification reference only**. Source set remains unqualified; Oracle State stale; PA1–PA7 / ProtectedCapital completeness / deployment-bound R1-Kc-Ω certification not established; Deployment Approval NOT CREATED. First real Preprod Issue remains **NO-GO**. The run is a source-qualification-only workflow and does not authorize a wallet signature, Issue transaction, deployment or any change to V3, Reveal, 500×, ABI or economic constants.
+
+## 46.64 — AGENT A — LIVE PREPROD tUSDM SCRIPT TRANSACTION FLOW RECONSTRUCTION (2026-11-17)
+
+### 1. Exact-head read-only execution
+
+The bounded transaction-history observer completed successfully on exact source SHA `6ad6fdc097f07312651d6468870b0e430e971c5d`:
+
+- Workflow [PRE-RICH Preprod tUSDM Transaction History Reconstruction #44025754575](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44025754575) — **SUCCESS**.
+- Evidence artifact ID `14301924656`: [transaction history reconstruction](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44025754575/artifacts/14301924656).
+- Evidence hash: `81b0777068e3d4f4b92a4b952fef0a1063ba422eea193ae23cd53f8876746de8`.
+- Selection: 56 historical/current-source transactions (27 source-UTxO creation transactions, 13 spends for target script `23dd4b79…`, 7 spends for high-activity script `2025f0de…`, plus other sampled source spends).
+- Koios returned 56/56 requested transaction records; 0 were blocked or missing.
+- The runner is read-only: no wallet, signing, submission or on-chain mutation.
+
+Observation interval: 2026-11-17 05:40:44.176–05:41:03.306 UTC. Koios tip moved from block 5,422,017 / slot 139,210,817 / hash `2fc146465a7d6b5496fe3a27e0c9d77b1b251176198a57c93fcf869ac7c55ef1` to block 5,422,018 / slot 139,210,851 / hash `d294a85aa3f48de8e364c2130cc04ee2220ac049c2d632b6ce22f5e057796a75`. The collection is therefore a bounded historical reconstruction, **not an atomic same-slot snapshot**.
+
+### 2. Target candidate script `23dd4b7985eed99dd312068598488095a71d089f022593458755f702`
+
+The bounded sample contains 13 Plutus spending records for this script. All 13 script-contract records expose `validContract=true` in the Koios response; the overall transaction field is not treated as a substitute for per-redeemer evidence.
+
+- 6 transitions consume the candidate script input without a continuing output at the same script.
+- 6 transitions preserve a continuing script output (redeemer constructor 0 in this sample).
+- 1 further continuing transition uses redeemer constructor 1.
+- Every sampled transaction conserves the aggregate approved Preprod tUSDM quantity at 2,000,000 atomic units input → 2,000,000 atomic units output (net 0).
+- Of the six script-closing spends, four distribute 1,940,000 / 58,200 / 1,800 atomic units (97% / 2.91% / 0.09%) to three output credentials; one returns the full 2,000,000 atomic units to one credential; one distributes 1,960,000 / 38,800 / 1,200 (98% / 1.94% / 0.06%).
+
+The complete endpoint extension records every transaction input/output ADA and native-asset Value, as well as the address and payment credential of each endpoint. For the sampled close transactions, ADA is present in the tUSDM-bearing outputs and wallet-change outputs; the traces do not identify a separate ADA payment as trade consideration for the tUSDM. The selected spends therefore exhibit a payment/escrow-like distribution pattern, not an observed reserve swap or price-bearing AMM state transition.
+
+This remains a **behavioral classification only**. The deployed script's source identity, datum schema and redeemer constructor semantics have not been independently proved. Do not label it definitively as a named escrow, marketplace, DEX or price source. Its sampled transition flows are not admissible USD/USDM price evidence.
+
+### 3. Other candidate scripts and exact-asset census
+
+- `2025f0de96b0a8f2d29462a3b186cc480e22b14c0ace2490469ad305`: 7 sampled spend transactions, none with the exact approved Preprod tUSDM in the selected transaction input/output totals.
+- `82c7ebfa6f4a42c12de4c0a32a8d4c7641c041eb282e45a835983de2` and `f9f5e152efd44a03e7dd3b35eb9535a7e2890119db42bd7d67924960`: bounded tUSDM continuation/distribution samples; no pool reserve or price semantics established.
+- `f2936eb84c9ef8e151edc9547e93dfc3b526cb5d1ff0a5eba871094d`: three sampled redeemer transactions, insufficient for a script-purpose classification.
+- The preceding exact-asset census found 49 tUSDM+ADA script UTxOs across 11 payment credentials; all 49 exact out-references were independently rechecked. Five deployed candidate script identities were inspected, but no DEX or source contract has been proved.
+
+The separate Danogo census remains `NO_EXACT_DANOGO_PREPROD_TUSDM_POOL_FOUND`: 1,003 exact approved-tUSDM UTxOs scanned, zero under the pinned Danogo Preprod pool credential. Pyth Pro ADA/USD remains blocked before a signed update by HTTP 403 feed-16 entitlement denial.
+
+### 4. First-Issue disposition
+
+No sampled script is qualified as a DEX, independently authenticated price source or USD/USDM conversion leg. Option B remains unqualified. The Direct-USDM EV1–EV7 pass remains scoped to its exact physical PrizePool source reference only; source-set status remains `OBSERVED_NOT_QUALIFIED`, Oracle State remains stale, ProtectedCapital PA1–PA7/source completeness and deployment-bound R1/Kc/Ω remain uncertified, and Deployment Approval remains not created.
+
+**First real Cardano Preprod Issue: NO-GO.** No wallet, signature, transaction, Oracle update, deployment or protocol economic change resulted from this reconstruction. No production validator, V3, Reveal, 500× rule, ABI or economic constant was changed.
