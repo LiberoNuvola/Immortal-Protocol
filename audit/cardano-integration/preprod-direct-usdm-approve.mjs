@@ -3,6 +3,8 @@ import { verifyDirectUsdmBasket } from './preprod-direct-usdm-basket-contract.mj
 import {
   assertArtifactEvidenceHash,
   assertQualificationEvidenceMatchesRepository,
+  assertOracleFreshAgainstSourceTip,
+  assertQualifiedExternalOracleSource,
   digestJson as digest,
 } from './eev-approval-integrity.mjs'
 
@@ -163,6 +165,12 @@ if (oracleConfiguration?.statePolicyId !== oracleIdentity.policyId ||
   throw new Error('deployment Oracle State configuration does not match the hashed Oracle State manifest')
 }
 
+const oracleFreshness = assertOracleFreshAgainstSourceTip(oracleState, sourceSet)
+const oracleSourceQualification = await assertQualifiedExternalOracleSource(
+  oracleState,
+  EVIDENCE_DIR,
+)
+
 if (deployment?.profileCandidate !== PROFILE_VERSION) {
   throw new Error('deployment manifest profileCandidate mismatch')
 }
@@ -226,6 +234,8 @@ const approvalSnapshot = {
   sourceSetEvidenceHash,
   deploymentEvidenceHash,
   oracleEvidenceHash,
+  oracleFreshness,
+  oracleSourceQualification,
   sourceReference: qualification.sourceReference,
   directUsdmUnit: sourceSet.source.directUsdmUnit,
   poolInputReference: sourceSet.source.b1PrizePoolUtxo,
@@ -244,6 +254,8 @@ const deploymentApproval = {
   profileVersion: PROFILE_VERSION,
   evidenceHash: approvalEvidenceHash,
   qualificationEvidenceHash,
+  oracleFreshness,
+  oracleSourceQualification,
   qualifiedProperties: Array.isArray(qualification.qualifiedProperties)
     ? [...qualification.qualifiedProperties]
     : ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'],

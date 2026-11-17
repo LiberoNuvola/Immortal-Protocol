@@ -10,6 +10,8 @@ import {
   EEV_EVIDENCE_REFERENCES,
   EEV_EV3_BASKET_CONTRACT_FILE,
   EEV_REPO_FILES,
+  EEV_ORACLE_SOURCE_QUALIFICATION_FILE,
+  EEV_ORACLE_MAX_AGE_MS,
 } from './eev-approval-integrity.mjs'
 import { canonicalizeDirectUsdmBasket } from './preprod-direct-usdm-basket-contract.mjs'
 
@@ -38,7 +40,7 @@ async function saveJson(path, value) {
   await writeFile(path, JSON.stringify(value, null, 2) + '\n')
 }
 
-async function fixture(directory) {
+async function fixture(directory, options = {}) {
   const evidence = {}
   for (const key of ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7']) {
     const bytes = await readFile(resolve(root, EEV_REPO_FILES[key]))
@@ -48,13 +50,78 @@ async function fixture(directory) {
     }
   }
 
+  const chainTip = {
+    hash: 'e'.repeat(64),
+    epoch_no: 326,
+    era: 'Conway',
+    abs_slot: 100,
+    epoch_slot: 50,
+    block_height: 10,
+    block_no: 10,
+    block_time: '1800000000',
+  }
+  const timestampMs = String(
+    options.timestampMs ?? (BigInt(chainTip.block_time) * 1_000n - 60_000n),
+  )
+  const datumSemantics = {
+    assetPolicyHex: '',
+    assetNameHex: '',
+    priceUsdmSubunitsPerLovelace: '100',
+    scale: '1e6',
+    timestampMs,
+    maxAgeMs: EEV_ORACLE_MAX_AGE_MS.toString(),
+  }
+  const sourceQualification = {
+    schema: 'IMMORTAL-PREPROD-ORACLE-SOURCE-QUALIFICATION-v1',
+    status: 'QUALIFIED_EXTERNAL_SOURCE',
+    network: 'cardano-preprod',
+    externalPriceSourceVerified: true,
+    configuredPublisherTrustIndependentlyEliminated: true,
+    oracleState: { ...oracleIdentity },
+    quote: {
+      assetPolicyHex: datumSemantics.assetPolicyHex,
+      assetNameHex: datumSemantics.assetNameHex,
+      priceUsdmSubunitsPerLovelace: datumSemantics.priceUsdmSubunitsPerLovelace,
+      timestampMs,
+      publisherPkh: oracleIdentity.publisherPkh,
+    },
+    source: {
+      sourceReference: 'https://prices.example.test/cardano-preprod/ada-usdm',
+      verificationReference: 'https://evidence.example.test/verify/fixture-42',
+    },
+    freshness: {
+      maxAgeMs: datumSemantics.maxAgeMs,
+      chainTip: { ...chainTip },
+    },
+  }
+  sourceQualification.evidenceHash = digestJson(sourceQualification)
+  const sourceQualificationBytes = JSON.stringify(sourceQualification, null, 2) + '\\n'
+  const sourceQualificationEvidenceHash = createHash('sha256')
+    .update(sourceQualificationBytes, 'utf8')
+    .digest('hex')
+
   const oracle = seal({
     schema: 'IMMORTAL-PREPROD-ORACLE-STATE-DEPLOYMENT-v0.1',
     status: 'MATERIALIZED',
     network: 'cardano-preprod',
     authorityKind: 'DEPLOYMENT_WALLET_SIGNED',
     oracleState: { ...oracleIdentity },
-    datumSemantics: { fixture: true },
+    datumSemantics,
+    qualification: {
+      externalPriceSourceVerified: options.externalPriceSourceVerified ?? true,
+      configuredPublisherTrustIndependentlyEliminated: options.publisherTrustEliminated ?? true,
+      sourceQualificationStatus: options.sourceQualificationStatus ?? 'QUALIFIED_EXTERNAL_SOURCE',
+      sourceQualificationEvidenceReference: EEV_ORACLE_SOURCE_QUALIFICATION_FILE,
+      sourceQualificationEvidenceHash,
+    },
+    observation: {
+      utxo: oracleIdentity.utxo,
+      address: oracleIdentity.address,
+      chainTip: { ...chainTip },
+      freshnessStatus: 'FRESH',
+      withinMaxAge: true,
+      timestampAgeMs: (BigInt(chainTip.block_time) * 1_000n - BigInt(timestampMs)).toString(),
+    },
   })
 
   const deployment = seal({
@@ -134,7 +201,7 @@ async function fixture(directory) {
       rule: 'fixture-only; exact out-reference must be revalidated at admission',
       stalenessTest: 'fixture-only',
     },
-    chainTip: { block_height: 1 },
+    chainTip: { ...chainTip },
     observedAt: '2026-10-24T00:00:00.000Z',
     deploymentApproval: { status: 'PENDING' },
   })
@@ -178,6 +245,7 @@ async function fixture(directory) {
 
   const dir = resolve(directory, 'audit/preprod-evidence')
   await Promise.all([
+    saveJson(resolve(dir, 'preprod-oracle-source-qualification.json'), sourceQualification),
     saveJson(resolve(dir, 'preprod-oracle-state-deployment.json'), oracle),
     saveJson(resolve(dir, 'preprod-direct-usdm-deployment.json'), deployment),
     saveJson(resolve(dir, 'preprod-direct-usdm-source-set.json'), sourceSet),
@@ -214,6 +282,55 @@ try {
   ))
   assert.equal(approved.deploymentApproval.status, 'DEPLOYMENT_APPROVED')
   assert.equal(approved.deploymentApproval.qualificationEvidenceHash, valid.qualification.evidenceHash)
+
+  const staleOracleRoot = resolve(temp, 'stale-oracle')
+  const staleOracle = await fixture(staleOracleRoot, {
+    timestampMs: (1_800_000_000_000n - EEV_ORACLE_MAX_AGE_MS - 1n).toString(),
+  })
+  const rejectedStaleOracle = runApproval(staleOracle.dir)
+  assert.notEqual(rejectedStaleOracle.status, 0)
+  assert.match(
+    rejectedStaleOracle.stderr + rejectedStaleOracle.stdout,
+    /Oracle State is stale against the source-set chain tip/,
+  )
+
+  const futureOracleRoot = resolve(temp, 'future-oracle')
+  const futureOracle = await fixture(futureOracleRoot, {
+    timestampMs: (1_800_000_000_000n + 1n).toString(),
+  })
+  const rejectedFutureOracle = runApproval(futureOracle.dir)
+  assert.notEqual(rejectedFutureOracle.status, 0)
+  assert.match(
+    rejectedFutureOracle.stderr + rejectedFutureOracle.stdout,
+    /Oracle State timestamp is later than the source-set chain tip/,
+  )
+
+  const unqualifiedOracleRoot = resolve(temp, 'unqualified-oracle')
+  const unqualifiedOracle = await fixture(unqualifiedOracleRoot, {
+    externalPriceSourceVerified: false,
+    publisherTrustEliminated: false,
+    sourceQualificationStatus: 'NOT_PROVEN_BY_DATUM_ALONE',
+  })
+  const rejectedUnqualifiedOracle = runApproval(unqualifiedOracle.dir)
+  assert.notEqual(rejectedUnqualifiedOracle.status, 0)
+  assert.match(
+    rejectedUnqualifiedOracle.stderr + rejectedUnqualifiedOracle.stdout,
+    /Oracle external price source is not independently qualified/,
+  )
+
+  const tamperedOracleSourceRoot = resolve(temp, 'tampered-oracle-source')
+  const tamperedOracleSource = await fixture(tamperedOracleSourceRoot)
+  const externalEvidencePath = resolve(
+    tamperedOracleSource.dir,
+    EEV_ORACLE_SOURCE_QUALIFICATION_FILE,
+  )
+  await writeFile(externalEvidencePath, '{"schema":"tampered"}\\n')
+  const rejectedOracleSource = runApproval(tamperedOracleSource.dir)
+  assert.notEqual(rejectedOracleSource.status, 0)
+  assert.match(
+    rejectedOracleSource.stderr + rejectedOracleSource.stdout,
+    /Oracle source qualification evidence file digest does not match/,
+  )
 
   const tamperedRoot = resolve(temp, 'tampered-manifest')
   const tampered = await fixture(tamperedRoot)
