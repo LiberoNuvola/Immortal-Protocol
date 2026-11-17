@@ -95,7 +95,7 @@ async function fixture(directory, options = {}) {
     },
   }
   sourceQualification.evidenceHash = digestJson(sourceQualification)
-  const sourceQualificationBytes = JSON.stringify(sourceQualification, null, 2) + '\\n'
+  const sourceQualificationBytes = JSON.stringify(sourceQualification, null, 2) + '\n'
   const sourceQualificationEvidenceHash = createHash('sha256')
     .update(sourceQualificationBytes, 'utf8')
     .digest('hex')
