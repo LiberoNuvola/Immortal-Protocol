@@ -84,11 +84,24 @@ function assetMap(row) {
 }
 export function classifyRow(row) {
   const id=outRef(row), credential=String(row.payment_cred??'').toLowerCase(), address=decodeAddress(row.address);
-  if(!address||address.hrp!=='addr_test'||address.networkId!==0||!address.isScript||address.paymentCredential!==credential)throw Error('ADDRESS_CREDENTIAL_NETWORK_MISMATCH');
-  if(credential!==CONFIG.poolScriptHash)return {status:'OTHER_SCRIPT',outRef:id};
+  if(!address||address.hrp!=='addr_test'||address.networkId!==0||address.paymentCredential!==credential)throw Error('ADDRESS_CREDENTIAL_NETWORK_MISMATCH');
+  if(!address.isScript)return {status:'NON_SCRIPT_ADDRESS',outRef:id};
+  const value=assetMap(row);
+  if(credential!==CONFIG.poolScriptHash){
+    const hasApprovedTusdm=(value[TUSDM_UNIT]??0n)>0n,hasAda=value.lovelace>0n;
+    const hasDatum=!!(row.inline_datum?.bytes||row.inline_datum?.hash||row.datum_hash);
+    if(hasApprovedTusdm&&hasAda&&hasDatum)return {
+      status:'OTHER_SCRIPT_TUSDM_ADA_UTXO',outRef:id,address:row.address,paymentCredential:credential,
+      pair:['lovelace',TUSDM_UNIT],assets:Object.fromEntries(Object.entries(value).map(([k,v])=>[k,v.toString()])),
+      datumHash:row.inline_datum?.hash??row.datum_hash??null,
+      datumBytesHash:row.inline_datum?.bytes?sha256(Buffer.from(row.inline_datum.bytes,'hex')):null,
+      classification:'SCRIPT_UTXO_NOT_CLASSIFIED_AS_POOL',
+    };
+    return {status:'OTHER_SCRIPT',outRef:id};
+  }
   const datum=parsePoolDatum(row.inline_datum?.value);
   if(datum.tokenX.unit!==TUSDM_UNIT&&datum.tokenY.unit!==TUSDM_UNIT)return {status:'OTHER_DANOGO_PAIR',outRef:id,pair:[datum.tokenX.unit,datum.tokenY.unit]};
-  const value=assetMap(row),nfts=Object.entries(value).filter(([unit,qty])=>unit.startsWith(CONFIG.poolScriptHash)&&qty===1n);
+  const nfts=Object.entries(value).filter(([unit,qty])=>unit.startsWith(CONFIG.poolScriptHash)&&qty===1n);
   if(nfts.length!==1)throw Error('POOL_NFT_SINGLETON_INVALID');
   if((value[datum.tokenX.unit]??0n)<=0n||(value[datum.tokenY.unit]??0n)<=0n)throw Error('PAIR_ASSET_MISSING');
   return {
@@ -125,35 +138,56 @@ async function scanAsset(base,fetchImpl) {
   const refs=new Set();for(const row of rows){const k=outRef(row);if(refs.has(k))throw Error('DUPLICATE_OUTREF');refs.add(k);}
   return {rows,pages};
 }
-async function recheck(base,candidate,fetchImpl) {
-  const {json,evidence}=await getJson(base,'/utxo_info',{method:'POST',body:{_utxo_refs:[candidate.outRef],_extended:true},fetchImpl});
-  if(!Array.isArray(json))throw Error('UTXO_INFO_NOT_ARRAY');
-  const matches=json.filter(r=>outRef(r)===candidate.outRef&&r.address===candidate.address);
-  if(matches.length!==1)return {status:'BLOCKED_OUTREF_NOT_UNIQUE_LIVE',count:matches.length,evidence};
-  const row=matches[0],v=assetMap(row),assetsMatch=JSON.stringify(Object.entries(candidate.assets).sort())===JSON.stringify(Object.entries(Object.fromEntries(Object.entries(v).map(([k,n])=>[k,n.toString()]))).sort());
-  const raw=row.inline_datum?.bytes,datumBytesHash=raw?sha256(Buffer.from(raw,'hex')):null;
-  const datumMatch=candidate.datumBytesHash?datumBytesHash===candidate.datumBytesHash:!!candidate.datumHash&&(row.inline_datum?.hash??row.datum_hash)===candidate.datumHash;
-  const a=decodeAddress(row.address),credentialMatch=String(row.payment_cred).toLowerCase()===candidate.paymentCredential&&a?.paymentCredential===candidate.paymentCredential&&a.networkId===0&&a.isScript;
-  return {status:assetsMatch&&datumMatch&&credentialMatch?'LIVE_EXACT_UTXO_RECHECKED_NOT_PRICE_QUALIFIED':'BLOCKED_SECOND_READ_MISMATCH',assetsMatch,datumMatch,credentialMatch:!!credentialMatch,evidence};
+async function recheckMany(base,candidates,fetchImpl) {
+  const reads=[];
+  for(let offset=0;offset<candidates.length;offset+=40){
+    const batch=candidates.slice(offset,offset+40);
+    const {json,evidence}=await getJson(base,'/utxo_info',{method:'POST',body:{_utxo_refs:batch.map(c=>c.outRef),_extended:true},fetchImpl});
+    if(!Array.isArray(json))throw Error('UTXO_INFO_NOT_ARRAY');
+    for(const candidate of batch){
+      const matches=json.filter(r=>outRef(r)===candidate.outRef);
+      if(matches.length!==1){reads.push({status:'BLOCKED_OUTREF_NOT_UNIQUE_LIVE',count:matches.length,evidence});continue;}
+      const row=matches[0],v=assetMap(row),assetsMatch=JSON.stringify(Object.entries(candidate.assets).sort())===JSON.stringify(Object.entries(Object.fromEntries(Object.entries(v).map(([k,n])=>[k,n.toString()]))).sort());
+      const raw=row.inline_datum?.bytes,datumBytesHash=raw?sha256(Buffer.from(raw,'hex')):null;
+      const datumMatch=candidate.datumBytesHash?datumBytesHash===candidate.datumBytesHash:!!candidate.datumHash&&(row.inline_datum?.hash??row.datum_hash)===candidate.datumHash;
+      const a=decodeAddress(row.address),credentialMatch=row.address===candidate.address&&String(row.payment_cred).toLowerCase()===candidate.paymentCredential&&a?.paymentCredential===candidate.paymentCredential&&a.networkId===0&&a.isScript;
+      reads.push({status:assetsMatch&&datumMatch&&credentialMatch?'LIVE_EXACT_UTXO_RECHECKED_NOT_PRICE_QUALIFIED':'BLOCKED_SECOND_READ_MISMATCH',assetsMatch,datumMatch,credentialMatch:!!credentialMatch,evidence});
+    }
+  }
+  return reads;
 }
 export async function observe({base=CONFIG.koios,fetchImpl=fetch}={}) {
   const startedAt=new Date().toISOString(),before=await readTip(base,fetchImpl),scan=await scanAsset(base,fetchImpl);
-  const candidates=[],otherPairs=[],unqualified=[];
-  for(const row of scan.rows){if(String(row.payment_cred??'').toLowerCase()!==CONFIG.poolScriptHash)continue;try{const c=classifyRow(row);if(c.status==='EXACT_TUSDM_POOL_CANDIDATE')candidates.push(c);else otherPairs.push(c);}catch(e){unqualified.push({outRef:outRef(row),error:e.message});}}
-  const reads=[];for(const c of candidates)reads.push(await recheck(base,c,fetchImpl));
+  const candidates=[],otherPairs=[],otherScriptCandidates=[],unqualified=[],otherScriptUnqualified=[];
+  for(const row of scan.rows){
+    const credential=String(row.payment_cred??'').toLowerCase();
+    try{
+      const c=classifyRow(row);
+      if(c.status==='EXACT_TUSDM_POOL_CANDIDATE')candidates.push(c);
+      else if(c.status==='OTHER_DANOGO_PAIR')otherPairs.push(c);
+      else if(c.status==='OTHER_SCRIPT_TUSDM_ADA_UTXO')otherScriptCandidates.push(c);
+    }catch(e){
+      const failure={outRef:outRef(row),paymentCredential:credential,error:e.message};
+      if(credential===CONFIG.poolScriptHash)unqualified.push(failure);else otherScriptUnqualified.push(failure);
+    }
+  }
+  const reads=await recheckMany(base,candidates,fetchImpl);
+  const otherReads=await recheckMany(base,otherScriptCandidates,fetchImpl);
   const after=await readTip(base,fetchImpl),confirmed=reads.filter(x=>x.status==='LIVE_EXACT_UTXO_RECHECKED_NOT_PRICE_QUALIFIED').length;
+  const otherConfirmed=otherReads.filter(x=>x.status==='LIVE_EXACT_UTXO_RECHECKED_NOT_PRICE_QUALIFIED').length;
   const unchanged=before.tip.slot===after.tip.slot&&before.tip.hash===after.tip.hash;
   const status=!candidates.length?(unqualified.length?'DANOGO_SCAN_HAS_UNQUALIFIED_ROWS':'NO_EXACT_DANOGO_PREPROD_TUSDM_POOL_FOUND'):confirmed===candidates.length&&!unqualified.length?'EXACT_DANOGO_PREPROD_TUSDM_POOL_UTXOS_OBSERVED_NOT_PRICE_QUALIFIED':'DANOGO_TUSDM_CANDIDATES_NOT_FULLY_RECHECKED';
+  const credentialCounts=Object.entries(otherScriptCandidates.reduce((acc,c)=>{acc[c.paymentCredential]=(acc[c.paymentCredential]??0)+1;return acc;},{})).map(([paymentCredential,count])=>({paymentCredential,count}));
   return {
     schema:'immortal-danogo-preprod-approved-tusdm-discovery-v1',status,
-    classification:'READ_ONLY_ASSET_AND_UTXO_RECHECK_NOT_PRICE_OR_ORACLE_OR_EEV_QUALIFICATION',
+    classification:'READ_ONLY_EXACT_ASSET_SCRIPT_UTXO_DISCOVERY_AND_OUTREF_RECHECK_NOT_PRICE_OR_ORACLE_OR_EEV_QUALIFICATION',
     network:CONFIG.network,asset:TUSDM,source:{provider:'Koios Preprod public API',sdkCommit:CONFIG.sdkCommit,poolScriptHash:CONFIG.poolScriptHash,poolScriptOutRef:CONFIG.poolScriptOutRef,protocolConfigOutRef:CONFIG.protocolConfigOutRef},
     startedAt,completedAt:new Date().toISOString(),tipBefore:before.tip,tipAfter:after.tip,
     snapshotConsistency:{tipUnchanged:unchanged,warning:unchanged?null:'Chain advanced during observation; reads are not an atomic same-slot snapshot'},
     acquisition:{pages:scan.pages,rows:scan.rows.length,paginationComplete:true},
-    summary:{danogoCredentialRows:scan.rows.filter(r=>String(r.payment_cred??'').toLowerCase()===CONFIG.poolScriptHash).length,exactPairCandidates:candidates.length,independentRechecks:reads.length,confirmedRechecks:confirmed,unqualifiedRows:unqualified.length,otherDanogoPairs:otherPairs.length},
-    candidates:candidates.map((c,i)=>({...c,secondRead:reads[i]})),otherPairs,unqualifiedRows:unqualified,
-    guardrails:{approvedPreprodAssetOnly:true,mainnetIdentityUsed:false,usdParityAssumed:false,priceProduced:false,oracleQuoteProduced:false,eevQualificationProduced:false,walletAccessed:false,transactionBuilt:false,signed:false,submitted:false,deploymentAttempted:false},
+    summary:{danogoCredentialRows:scan.rows.filter(r=>String(r.payment_cred??'').toLowerCase()===CONFIG.poolScriptHash).length,exactDanogoPoolCandidates:candidates.length,danogoIndependentRechecks:reads.length,danogoConfirmedRechecks:confirmed,danogoUnqualifiedRows:unqualified.length,otherDanogoPairs:otherPairs.length,otherScriptTusdmAdaOutputs:otherScriptCandidates.length,otherScriptCredentials:credentialCounts.length,otherScriptIndependentRechecks:otherReads.length,otherScriptConfirmedRechecks:otherConfirmed,otherScriptUnqualifiedRows:otherScriptUnqualified.length},
+    danogoCandidates:candidates.map((c,i)=>({...c,secondRead:reads[i]})),otherDanogoPairs:otherPairs,otherScriptCandidates:otherScriptCandidates.map((c,i)=>({...c,secondRead:otherReads[i]})),unqualifiedDanogoRows:unqualified,otherScriptUnqualifiedRows:otherScriptUnqualified,otherScriptCredentialCounts:credentialCounts,
+    guardrails:{approvedPreprodAssetOnly:true,mainnetIdentityUsed:false,usdParityAssumed:false,priceProduced:false,oracleQuoteProduced:false,eevQualificationProduced:false,unknownScriptsClassifiedAsPools:false,walletAccessed:false,transactionBuilt:false,signed:false,submitted:false,deploymentAttempted:false},
   };
 }
 if(process.argv[1]&&resolve(process.argv[1])===resolve(new URL(import.meta.url).pathname)){
