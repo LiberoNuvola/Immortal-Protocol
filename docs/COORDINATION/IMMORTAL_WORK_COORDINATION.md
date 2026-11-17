@@ -10457,3 +10457,34 @@ The preserved deployment manifest records a historical direct-USDM candidate Poo
 ### 4. First-Issue disposition
 
 Keep `EV1–EV7 = NOT REQUALIFIED ON THIS RUN`, `Oracle State = STALE`, `Deployment Approval = NOT CREATED`, and first real Preprod Issue = **NO-GO**. Next permitted action is a fresh, coherent exact-tip census and exact out-reference re-observation; no snapshot-mismatch fallback, cached evidence substitution, stale Oracle refresh, wallet signature, transaction or Issue is authorized by this result.
+
+
+## 46.63 — AGENT A — DIRECT-USDM EV1–EV7 RETRY PASS; SOURCE AND ISSUE GATES REMAIN OPEN (2026-11-17)
+
+### 1. Exact-source workflow result
+
+[PRE-RICH Preprod EEV — Source Qualification Only #44021705856, attempt 2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021705856) completed **SUCCESS** on exact source commit `3780ca6e82dcb8439c1d46fa5464b2b2481d9272`. Attempt 1 stopped at `KOIOS_SNAPSHOT_CHANGED_DURING_CENSUS`; the single failed read-only job was rerun once and completed the live item census, exact Pool re-observation and EV1–EV7 qualification.
+
+Artifact ID `14300829359`: [qualification evidence](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021705856/artifacts/14300829359).
+
+### 2. What the PASS establishes
+
+- `PRE-RICH-EEV-USDM-DIRECT-V1`, contract version 3.0.0, derivation `direct-usdm-v1`.
+- Exact B1 PrizePool out-reference: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- Exact approved Preprod tUSDM physical quantity: 1,000,000,000 atomic units → 100,000 protocol USDM sub-units.
+- EV1–EV7 all mechanically checked against the exact source and repository evidence digests.
+- Qualification evidence hash: `2821b86c606f123a62c177df3f137c65ac0796093384af6d1baf9b5eeef2020c`; source-set evidence hash: `9f597cb30edc2f24da48c5d0c4eb83abe9ef0160dc633edc3e74860c0c721005`.
+
+The Direct-USDM profile is physical tUSDM in the exact Pool UTxO. It does not apply an Oracle conversion or infer USD/USDM parity.
+
+### 3. What remains not qualified
+
+- Source-set status remains `OBSERVED_NOT_QUALIFIED`; deployment approval remains `PENDING`; qualification `deploymentApproval=null`.
+- Oracle State UTxO `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0` is stale: timestamp `1791481130142` ms, max age `3600000` ms, observed age `3410809858` ms. External price source verification = false; configured publisher trust independently eliminated = false.
+- ProtectedCapital census observed 0 PrizeValidator UTxOs and 1 B1 Pool UTxO at slot 139208934, but `providerAttestationVerified=false`, `providerSnapshotPinned=false`, `sameBackendSnapshotVerified=false`, `sourceCompletenessAuthorityVerified=false`, `fullProtectedCapitalQualified=false` and `r7L6EmptinessProven=false`.
+- The L1/L3 item-ledger values reconcile internally to zero in this snapshot, but consumed expiry history requires transaction replay and live L5 items may be present. This is not an authoritative proof of an empty liability population.
+- Deployment manifests are self-hash checked, not cryptographically authenticated by an independent authority.
+
+### 4. Disposition
+
+Direct-USDM EV1–EV7 = **PASS for this exact source/verification reference only**. Source set remains unqualified; Oracle State stale; PA1–PA7 / ProtectedCapital completeness / deployment-bound R1-Kc-Ω certification not established; Deployment Approval NOT CREATED. First real Preprod Issue remains **NO-GO**. The run is a source-qualification-only workflow and does not authorize a wallet signature, Issue transaction, deployment or any change to V3, Reveal, 500×, ABI or economic constants.
