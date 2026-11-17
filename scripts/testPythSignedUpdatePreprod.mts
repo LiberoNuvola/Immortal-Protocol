@@ -80,6 +80,9 @@ async function fetchSignedUpdate(token: string): Promise<Buffer> {
     formats: ['solana'],
     jsonBinaryEncoding: 'hex',
     priceFeedIds: [FEED_ID_ADA_USD],
+    // Pyth Pro's published API schema includes feedUpdateTimestamp; pinned SDK 5.2.0's generated union is stale.
+    // Keep this suppression local so a future SDK type update makes it fail as an unused expect-error.
+    // @ts-expect-error Pyth API-supported feed-level timestamp is missing from the pinned SDK's PriceFeedProperty union.
     properties: [...PYTH_ADA_USD_UPDATE_PROPERTIES],
   })
   const raw = latest.solana?.data
