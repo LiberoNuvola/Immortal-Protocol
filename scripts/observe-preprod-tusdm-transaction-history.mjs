@@ -67,7 +67,7 @@ export function selectRelevantTransactions(redeemerHistory, groups = CANDIDATE_G
     const records = [...unique.entries()]
     let chosen = []
     if (script === TARGET_ORDER_SCRIPT) {
-      chosen = records.slice(0, 20)
+      chosen = records.slice(0, 20).map(([id]) => id)
     } else if (script === HIGH_ACTIVITY_SCRIPT) {
       const byDatum = new Map()
       for (const [id, item] of records) {
