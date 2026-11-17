@@ -1062,3 +1062,25 @@ A read-only observer pinned to the official Danogo CLMM SDK commit `0416dc1f3531
 - Chain tip moved during the 11-second observation: block 5,421,917 / slot 139,208,688 / hash `67cb29a5188864e4a30e77faebe2da8ec3ed478cb2c228337f674bda1145408b` to block 5,421,918 / slot 139,208,710 / hash `2d7d3f07e1dc68abd5973ff33bddb1e120e3d94914456e5cc352de1f0c4d686d`. The responses are therefore not represented as an atomic same-slot snapshot.
 
 **Disposition:** `NO_EXACT_DANOGO_PREPROD_TUSDM_POOL_FOUND`. This is a successful negative finding scoped to the pinned Danogo Preprod pool credential and exact approved tUSDM unit. It does not prove that no other venue exists, does not derive a market price, and does not qualify USD/USDM conversion. The observer made no wallet access, transaction construction, signing, submission, Oracle update or EEV qualification. Danogo is not currently an available exact-asset Option B pool leg on the observed Preprod state.
+
+
+### 47.9 Direct-USDM EV1–EV7 qualification retry PASS — not source-set approval or first-Issue authority (2026-11-17)
+
+The exact-head PRE-RICH source-qualification-only workflow [#44021705856, attempt 2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021705856) completed SUCCESS on source SHA `3780ca6e82dcb8439c1d46fa5464b2b2481d9272`. Attempt 1 on the same run had stopped at the live item census because Koios returned a changed tip; the single-job retry completed the same census and qualification path successfully.
+
+The resulting artifact [14300829359](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021705856/artifacts/14300829359) records:
+
+- Qualification schema `PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1`, `status=qualified`, contract version `3.0.0`, derivation version `direct-usdm-v1`.
+- Exact source reference: `cardano:preprod/utxo/b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- Exact physical asset: approved Preprod tUSDM unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`; 1,000,000,000 atomic units → 100,000 protocol USDM sub-units.
+- EV1–EV7 were all mechanically checked against the exact source and repository digests. Qualification evidence hash: `2821b86c606f123a62c177df3f137c65ac0796093384af6d1baf9b5eeef2020c`; source-set evidence hash: `9f597cb30edc2f24da48c5d0c4eb83abe9ef0160dc633edc3e74860c0c721005`.
+
+**This qualification has a narrow meaning and does not promote the source set or authorize Issue:**
+
+- The qualified direct-USDM profile reads physically present tUSDM from the exact B1 PrizePool UTxO; it applies no ADA liquidation, PRE liquidation, price oracle or USD/USDM parity.
+- The source-set artifact still says `OBSERVED_NOT_QUALIFIED`; deployment approval is `PENDING`, and the qualification artifact has `deploymentApproval=null`.
+- The configured Oracle State remains stale: timestamp `1791481130142` ms, maximum age `3,600,000` ms, observed age `3,410,809,858` ms. Its external source is unverified and its configured publisher trust is not independently eliminated.
+- The ProtectedCapital census contains one B1 Pool UTxO and zero PrizeValidator UTxOs at slot 139208934, but its provider attestation, source-completeness authority, provider snapshot pinning and same-backend snapshot verification are false. `fullProtectedCapitalQualified=false`; `r7L6EmptinessProven=false`; historical consumed EXPIRE outcomes require transaction replay. Therefore the zero PrizeValidator count is an observed census result, not authoritative proof that the complete liability population is empty.
+- Deployment-manifest integrity is a self-hash match, not cryptographic authentication of the manifest authority. The Oracle State datum is read-only evidence, not proof of its external price source.
+
+**Disposition:** direct-USDM EV1–EV7 = mechanically qualified for this exact Preprod source reference and exact source SHA; source set = `OBSERVED_NOT_QUALIFIED`; Oracle State = `STALE`; ProtectedCapital PA1–PA7 / source completeness / R1-Kc-Ω certification = not established; Deployment Approval = not created; first real Preprod Issue = **NO-GO**. This does not qualify Option B USD/USDM conversion and does not change any production validator, V3, Reveal, 500× rule, ABI or economic constant.
