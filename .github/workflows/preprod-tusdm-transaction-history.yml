@@ -1,0 +1,41 @@
+name: PRE-RICH Preprod tUSDM Transaction History Reconstruction
+
+on:
+  push:
+    branches: [work/immortal-green-closure]
+    paths:
+      - 'scripts/observe-preprod-tusdm-transaction-history.mjs'
+      - 'scripts/observe-preprod-tusdm-transaction-history.test.mjs'
+      - '.github/workflows/preprod-tusdm-transaction-history.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preprod-tusdm-transaction-history-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test deterministic transaction selection, parsing and read-only boundary
+        run: node --test scripts/observe-preprod-tusdm-transaction-history.test.mjs
+      - name: Retrieve Koios transaction input/output and Plutus redeemer details
+        run: node scripts/observe-preprod-tusdm-transaction-history.mjs
+      - name: Upload transaction history reconstruction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-tusdm-tx-history-${{ github.run_id }}
+          path: audit/preprod-evidence/tusdm-script-transaction-history.json
+          if-no-files-found: warn
+          retention-days: 30
