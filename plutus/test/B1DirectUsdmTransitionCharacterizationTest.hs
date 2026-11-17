@@ -704,6 +704,8 @@ main = do
       valueOf ownerValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
     ownerOracleEquivalentPayout =
       Economic.totalUsdmValue claimInfo oracleState oraclePublisher ownerValue
+    claimProtectedDelta = negate claimedAmount
+    claimMarginDelta = claimDirectDelta - claimProtectedDelta
 
     claimPrizeAccepted =
       evalAccepts (applyPrizeClaim prizeInputDatum prizeContext)
@@ -809,6 +811,10 @@ main = do
       valueOf canonicalAdaFundInputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
     canonicalAdaFundOutputTusdm =
       valueOf canonicalAdaFundOutputValue (CurrencySymbol tusdmPolicy) (TokenName tusdmName)
+    canonicalAdaFundDirectDelta =
+      directUsdmSubunits canonicalAdaFundOutputTusdm
+        - directUsdmSubunits canonicalAdaFundInputTusdm
+    canonicalAdaFundProtectedDelta = 0
     canonicalAdaFundTotalInputValue =
       foldr ((<>) . txOutValue . txInInfoResolved) mempty
         (txInfoInputs canonicalAdaFundInfo)
