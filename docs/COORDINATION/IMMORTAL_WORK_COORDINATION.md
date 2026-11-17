@@ -10289,3 +10289,98 @@ The Minswap SDK's `getV2PoolPrice` calculates from datum `pool.reserveA/reserveB
 Do not substitute the third-policy token, infer parity or cross-policy equivalence, or feed the raw pool ratio into `OracleQuote`, `totalUsdmValue`, `MintPolicy`, EEV or Issue admission. The accepted `e675...` unit remains the only approved physical tUSDM identity for the B1 Pool observation; it still has no qualified exact-asset Preprod USD/USDM market source from this work.
 
 **Non-effects:** no token, pool, datum, oracle source, price reference, MintPolicy, B1, EEV, approval, economic rule, 500×, V3, Reveal, ABI, wallet or chain state changed. No transaction, signer or deployment was invoked.
+
+
+## 46.60 — AGENT A — DIRECT-USDM CEK RETRY PASS, CLAIM INTERPRETATION CORRECTION AND ORACLE LANDSCAPE (2026-11-17)
+
+**Branch:** `work/immortal-green-closure`  
+**Checkpoint starting HEAD:** `a533bc95de5fb89f65c03b060d7568c83d867142`  
+**Classification:** TEST-ONLY COMPILED PLUTUS CEK CHARACTERIZATION + NON-NORMATIVE SOURCE LANDSCAPE REVIEW. No production validator, economic rule, Oracle configuration, wallet, signature, transaction, deployment or ledger state changed.
+
+### 1. Haskell Semantic Conformance retry completed successfully
+
+Workflow [IMMORTAL Haskell Semantic Conformance #43761278779](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43761278779), attempt 2, completed **SUCCESS**. Job `haskell-conformance` ID `133453250596` completed all 33 steps successfully.
+
+The preceding attempt had stopped before compilation because the Hackage mirror returned HTTP 403 for package downloads. The failed job was retried without source changes; the retry downloaded dependencies and completed the registered suites.
+
+Relevant exact suite results:
+
+- `mint-policy-b1-value-preservation-tests`: **PASS**. Compiled MintPolicy accepts unchanged Pool Value and rejects altered lovelace/native-asset Value. It also characterizes acceptance of a Counter payment ScriptHash at an alternate staking credential, and the compiled CounterValidator accepts an alternate-stake lookalike continuation. The latter remains the separate Agent B-owned Counter P0; it is not a remediation.
+- `b1-reveal-headroom-tests`: **PASS**. The CEK characterization shows both compiled Reveal validators accept a loss Reveal when direct EEV falls by **501 USDM sub-units** against a **500-sub-unit** ProtectedCapital reduction. The boundary case at exactly -500 is also accepted. The -501 case violates the local non-erosion inequality.
+- `b1-direct-usdm-transition-characterization-tests`: **PASS**. This suite characterizes the compiled dual-validator Claim and Reveal predicates, EV3-canonical FundTreasury, the legacy ADA-only Oracle failure case, and a separately labelled historical non-EV3 FundTreasury case.
+- The same run also passed Oracle, Protected Capital, Issue-decision admission, B-R1 bridge scaffold, BeaconRegistry CEK, cross-language Beacon vectors, V3 golden vectors and Cardano-to-Universal boundary conformance.
+
+**Scope boundary:** the suite is compiled CEK over synthetic `TxInfo`. It is not native-ledger execution, Yaci, a submitted Preprod transaction, or proof of deployed-script exploitability. A PASS here means the test successfully observed the stated validator acceptance/rejection behavior; it does not mean every characterized behavior is safe.
+
+### 2. Correct interpretation of the current Claim fixture
+
+The current `B1DirectUsdmTransitionCharacterizationTest.hs` fixture differs from an earlier draft description:
+
+- Pool input carries 4,000,000 approved tUSDM atomic units (400 accounting sub-units); continuing Pool carries 2,000,000 (200 sub-units).
+- The Pool datum moves from liquidity 400 / liabilities 200 to liquidity 200 / liabilities 0.
+- A foreign native asset moves from the source input to the ticket owner. The owner receives no physical tUSDM; its output is valued at 200 sub-units by the synthetic Oracle quote set.
+- The remaining 2,000,000 tUSDM atomic units are returned as source change. Inputs and outputs balance.
+
+The arithmetic is:
+
+```text
+ΔEEV_direct       = 200 − 400 = −200 sub-units
+ΔProtectedCapital = −200 sub-units
+Δb                = 0
+```
+
+Therefore **this Claim fixture does not demonstrate R1 margin erosion**. It demonstrates that the current settlement path can pay an Oracle-equivalent foreign asset rather than physical tUSDM while the Pool's direct EEV decreases by exactly the liability released. A requirement that Claim physically pay tUSDM would be a separate settlement-policy decision; it is not inferred here.
+
+The test's emitted label `OBSERVED GAP` / `Claim counterexample` is broader than the numbers support. The separate Agent A CEK memo was corrected in commit [a533bc9](https://github.com/LiberoNuvola/Immortal-Protocol/commit/a533bc95de5fb89f65c03b060d7568c83d867142). The Haskell test output label itself has not been changed in this tranche.
+
+### 3. The two CEK characterizations that do show a local R1 breach
+
+**Reveal:** the CEK headroom fixture uses a valid loss Reveal with price P=1 and Y=0. The validators accept a continuing Pool that drops from 10,000,000 to 4,990,000 tUSDM atomic units:
+
+- direct EEV change = -501 sub-units;
+- ProtectedCapital change = -500 sub-units;
+- `ΔEEV_direct < ΔProtectedCapital` by one sub-unit.
+
+This is a compiled-predicate counterexample to the local non-erosion condition. It does not change Reveal semantics or authorize a patch.
+
+**FundTreasury (EV3-canonical synthetic context):** the Pool basket contains only the Pool singleton, approved tUSDM and ADA. The Pool loses 1,000,000 tUSDM atoms (100 direct sub-units) and receives 1.1 ADA above the 1.6 ADA minimum-UTxO floor. The synthetic Oracle values the ADA side at 110 sub-units, so the Pool Oracle-valued datum rises from 1,000 to 1,010 while direct EEV falls by 100 sub-units. ProtectedCapital is unchanged. The compiled B1 predicate accepts this balanced context, so `ΔEEV_direct = -100 < 0 = ΔProtectedCapital`.
+
+**Legacy ADA-only Oracle control:** using the documented legacy constructor-0 ADA-only OracleDatum, FundTreasury fails closed when it tries to value non-zero tUSDM without a tUSDM quote. This is a useful control, but it does not erase the EV3-canonical counterexample under a synthetic multi-quote OracleQuoteSet.
+
+**Historical non-EV3 case:** the suite also retains a foreign-asset substitution case explicitly marked non-EV3-canonical. Do not describe that case as an EV3-qualified or live Preprod attack.
+
+### 4. Source qualification: updated external-provider landscape
+
+A further public-source check does not identify a currently qualified Option B source for the exact approved Preprod tUSDM:
+
+- **Pyth:** the current Pyth Terminal reports `Crypto.ADA/USD` as a stable spot feed (feed ID 16, exponent -8, minimum publishers 3). Cardano's published Pyth pull integration verifies signed updates on-chain and requires the consumer to enforce freshness. This can provide a potential ADA/USD leg, but it does not create the missing exact approved-tUSDM/ADA market or a direct tUSDM/USD quote. The previously identified `Crypto.NAV.USDM/RESERVES` remains a reserve/NAV instrument, not a USD-per-tUSDM spot quote. Sources: [Pyth ADA/USD feed](https://app.pyth.com/explore/Crypto.ADA%2FUSD), [Cardano Pyth integration](https://developers.cardano.org/docs/developers/curriculum/dapps/oracles/pyth/), [Pyth feed catalogue](https://docs.pyth.network/pro/price-feed-ids).
+- **DIA Cardano Oracle:** the public implementation includes Aiken Pair/Receiver/Config contracts, a feeder, indexer and example consumer. Its 10 August 2026 close-out report records one continuously published Mainnet pair, ARS/USDT, and 16 Preview feeds including ADA/USD, USDC/USD and USDT/USD; it does not list USDM/USD, and the evidence does not establish deployment on Cardano Preprod for this target. It is a possible separately onboarded provider path, not a live exact-asset source today. Sources: [DIA Cardano Oracle repository](https://github.com/diadata-org/dia-cardano-oracle), [DIA close-out report](https://github.com/diadata-org/dia-cardano-oracle/blob/main/docs/milestones/close-out-report.md).
+- **Charli3:** the previously recorded provider-cessation notice and stale historical Preprod datums remain disqualifying absent independently verifiable evidence of a restarted/successor service.
+- **Mainnet Moneta USDM/ADA:** remains a separate Mainnet market lead and is not a Preprod tUSDM price witness. No cross-network identity or redemption mapping is authorized.
+
+Thus no candidate closes the exact Preprod Option B gate. Do not substitute Mainnet USDM, a lookalike tUSDM policy, reserve NAV, a ticker label, or a quote whose only valid leg is ADA/USD.
+
+### 5. First-Issue gate update
+
+| Gate | Current disposition |
+|---|---|
+| Haskell compiled CEK transition characterization | **PASS — 33/33 workflow steps; synthetic CEK scope only** |
+| Claim local R1 inequality in the current fixture | **PASS / no margin erosion in this fixture; foreign settlement medium observed** |
+| Reveal local R1 inequality | **OPEN / characterized violation at -501 vs -500** |
+| FundTreasury direct-USDM monotonicity | **OPEN / EV3-canonical synthetic counterexample accepted** |
+| Issue exact Pool Value preservation | **PASS in compiled MintPolicy test; Issue still reduces margin by 500×P** |
+| Counter full-address identity P0 | **OPEN — Agent B-owned remediation/review** |
+| USD/USDM Option B exact Preprod source | **NOT QUALIFIED** |
+| Current EV1–EV7 deployment approval | **NOT ESTABLISHED** |
+| C1 five-component identity/deployment authority | **OPEN** |
+| ProtectedCapital PA1–PA7 and deployment-bound R1/Kc/Ω | **MISSING / NOT CERTIFIED** |
+| GOV-30 issuer/key mandate and live signed authority response | **NOT QUALIFIED** |
+| First real Preprod Issue | **NO-GO** |
+
+### 6. Exact-source applicability and non-effects
+
+The successful Haskell run executed on test-source SHA `453871b1d9e79370f76ed1583d3c256fc7bf3aba`. The current branch HEAD at this checkpoint is `d249501e70c2f852f50a96a611140233e3d04f43`. The compare range contains 70 later commits but no changed files under `plutus/` and no change to `.github/workflows/immortal-haskell-conformance.yml`; therefore the tested Plutus/test/Cabal/Haskell-workflow source remains unchanged at the current branch HEAD. This is not represented as a new workflow run directly on that HEAD.
+
+No production validator, MintPolicy, Oracle datum, PriceReference, B1 action, ABI, V3, Reveal semantics, 500× rule, ProtectedCapital definition, EEV profile, economic constant, wallet, signing key, transaction, deployment or ledger state changed.
+
+**Next permissible Agent A work:** keep the CEK evidence as a characterization, derive the exact B1 per-transition Direct-USDM closure requirements without changing protocol behavior, and continue source discovery only where exact network/asset identity and source proof can be established. Implementation of any B1 predicate/ABI change remains a separately authorized decision. Agent B owns the Counter/BeaconRegistry P0 work; do not patch those paths from Agent A.
