@@ -151,7 +151,16 @@ async function recheckMany(base,candidates,fetchImpl) {
       const raw=row.inline_datum?.bytes,datumBytesHash=raw?sha256(Buffer.from(raw,'hex')):null;
       const datumMatch=candidate.datumBytesHash?datumBytesHash===candidate.datumBytesHash:!!candidate.datumHash&&(row.inline_datum?.hash??row.datum_hash)===candidate.datumHash;
       const a=decodeAddress(row.address),credentialMatch=row.address===candidate.address&&String(row.payment_cred).toLowerCase()===candidate.paymentCredential&&a?.paymentCredential===candidate.paymentCredential&&a.networkId===0&&a.isScript;
-      reads.push({status:assetsMatch&&datumMatch&&credentialMatch?'LIVE_EXACT_UTXO_RECHECKED_NOT_PRICE_QUALIFIED':'BLOCKED_SECOND_READ_MISMATCH',assetsMatch,datumMatch,credentialMatch:!!credentialMatch,evidence});
+      const captureDatum = candidate.classification === 'SCRIPT_UTXO_NOT_CLASSIFIED_AS_POOL';
+      reads.push({
+        status:assetsMatch&&datumMatch&&credentialMatch?'LIVE_EXACT_UTXO_RECHECKED_NOT_PRICE_QUALIFIED':'BLOCKED_SECOND_READ_MISMATCH',
+        assetsMatch,datumMatch,credentialMatch:!!credentialMatch,evidence,
+        ...(captureDatum ? {
+          inlineDatumValue:row.inline_datum?.value??null,
+          inlineDatumBytesHex:raw??null,
+          inlineDatumHash:row.inline_datum?.hash??row.datum_hash??null,
+        } : {}),
+      });
     }
   }
   return reads;
