@@ -85,6 +85,55 @@ test('re-observation validates exact source reference, script credential, ADA, t
   assert.throws(() => inspectCurrentUtxo({ ...row, asset_list: [] }, group), /UTXO_NO_LONGER_HAS_ADA_AND_APPROVED_TUSDM/)
 })
 
+test('an unresolved candidate script_info result remains blocked while missing controls are optional', async () => {
+  const allGroups = [...CANDIDATE_GROUPS, ...CONTROL_GROUPS]
+  const info = allGroups.slice(0, CANDIDATE_GROUPS.length + 3).map(group => ({
+    script_hash: group.scriptHash,
+    creation_tx_hash: creationTx,
+    type: 'plutusV3',
+    value: null,
+    bytes: bytesHex,
+    size: 4,
+  }))
+  const utxos = []
+  for (const group of CANDIDATE_GROUPS) {
+    for (const ref of group.previousOutRefs) {
+      const [tx_hash, index] = ref.split('#')
+      utxos.push({
+        tx_hash, tx_index: Number(index), payment_cred: group.scriptHash, value: '2000000',
+        asset_list: [{ policy_id: TUSDM_UNIT.slice(0, 56), asset_name: TUSDM_UNIT.slice(56), quantity: '1' }],
+        inline_datum: { bytes: bytesHex, hash: '66'.repeat(32) },
+      })
+    }
+  }
+  const fetchImpl = async (url, init = {}) => {
+    if (url.endsWith('/tip')) return response([{ abs_slot: '100', hash: 'aa'.repeat(32), block_no: 50 }])
+    if (url.endsWith('/script_info')) return response(info)
+    if (url.includes('/script_redeemers?')) return response([{
+      script_hash: new URL(url).searchParams.get('_script_hash'), redeemers: [],
+    }])
+    if (url.endsWith('/utxo_info')) return response(utxos)
+    throw new Error('Unexpected request: ' + url)
+  }
+  const manifest = await observe({ fetchImpl })
+  assert.equal(manifest.summary.candidateScriptInfoBlocked, 0)
+  assert.equal(manifest.summary.controlScriptInfoMissing, CONTROL_GROUPS.length - 3)
+  const candidateMissing = CANDIDATE_GROUPS[0].scriptHash
+  const controlToDrop = CANDIDATE_GROUPS.length - 1
+  info.splice(controlToDrop, 1)
+  const blocked = await observe({ fetchImpl: async (url, init = {}) => {
+    if (url.endsWith('/tip')) return response([{ abs_slot: '100', hash: 'aa'.repeat(32), block_no: 50 }])
+    if (url.endsWith('/script_info')) return response(info)
+    if (url.includes('/script_redeemers?')) return response([{
+      script_hash: new URL(url).searchParams.get('_script_hash'), redeemers: [],
+    }])
+    if (url.endsWith('/utxo_info')) return response(utxos)
+    throw new Error('Unexpected request: ' + url)
+  }})
+  assert.equal(blocked.summary.candidateScriptInfoBlocked, 1)
+  assert.equal(blocked.classification.scriptIdentityResolved, false)
+})
+
 test('live probe queries script_info, each candidate redeemer history and exact source outrefs read-only', async () => {
   const calls = []
   const allGroups = [...CANDIDATE_GROUPS, ...CONTROL_GROUPS]
@@ -123,7 +172,10 @@ test('live probe queries script_info, each candidate redeemer history and exact 
     throw new Error('Unexpected request: ' + url)
   }
   const manifest = await observe({ fetchImpl })
-  assert.equal(manifest.summary.scriptInfoObserved, allGroups.length)
+  assert.equal(manifest.summary.candidateScriptInfoObserved, CANDIDATE_GROUPS.length)
+  assert.equal(manifest.summary.candidateScriptInfoBlocked, 0)
+  assert.equal(manifest.summary.controlScriptInfoMissing, 3)
+  assert.equal(manifest.summary.scriptInfoObserved, CANDIDATE_GROUPS.length + CONTROL_GROUPS.length - 3)
   assert.equal(manifest.summary.redeemerHistoryBlocked, 0)
   assert.equal(manifest.summary.sourceOutRefsBlocked, 0)
   assert.equal(manifest.summary.sourceOutRefsLive, CANDIDATE_GROUPS.reduce((n, g) => n + g.previousOutRefs.length, 0))

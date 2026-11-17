@@ -302,7 +302,14 @@ export async function observe({ fetchImpl = fetch } = {}) {
   }
 
   const after = await readTip(fetchImpl)
-  const scriptInfoBlocked = scriptInfo.filter(x => x.status !== 'SCRIPT_INFO_OBSERVED').length
+  const candidateScriptHashes = new Set(CANDIDATE_GROUPS.map(x => x.scriptHash))
+  const candidateScriptInfo = scriptInfo.filter(x => candidateScriptHashes.has(x.scriptHash))
+  const controlScriptInfo = scriptInfo.filter(x => !candidateScriptHashes.has(x.scriptHash))
+  // Koios may not retain every unrelated historical control script. Only the
+  // five scripts that actually held the approved tUSDM+ADA candidates are
+  // required for this discovery. Missing optional controls remain visible.
+  const candidateScriptInfoBlocked = candidateScriptInfo.filter(x => x.status !== 'SCRIPT_INFO_OBSERVED').length
+  const controlScriptInfoMissing = controlScriptInfo.filter(x => x.status !== 'SCRIPT_INFO_OBSERVED').length
   const redeemerBlocked = redeemerHistory.filter(x => x.status === 'BLOCKED_REDEEMER_HISTORY').length
   const utxoBlocked = utxoRechecks.filter(x => x.status !== 'LIVE_SOURCE_UTXO_REOBSERVED').length
   const manifest = {
@@ -339,8 +346,12 @@ export async function observe({ fetchImpl = fetch } = {}) {
     },
     summary: {
       candidateScriptCount: CANDIDATE_GROUPS.length,
+      candidateScriptInfoObserved: candidateScriptInfo.filter(x => x.status === 'SCRIPT_INFO_OBSERVED').length,
+      candidateScriptInfoBlocked,
+      controlScriptInfoObserved: controlScriptInfo.filter(x => x.status === 'SCRIPT_INFO_OBSERVED').length,
+      controlScriptInfoMissing,
       scriptInfoObserved: scriptInfo.filter(x => x.status === 'SCRIPT_INFO_OBSERVED').length,
-      scriptInfoBlocked,
+      scriptInfoBlocked: candidateScriptInfoBlocked,
       redeemerHistoryQueried: redeemerHistory.length,
       redeemerHistoryBlocked: redeemerBlocked,
       sourceOutRefsRequested: refs.length,
@@ -367,7 +378,9 @@ async function main() {
   await mkdir(dirname(resolve(OUTPUT)), { recursive: true })
   await writeFile(resolve(OUTPUT), JSON.stringify(manifest, null, 2) + '\n')
   console.log(JSON.stringify(manifest, null, 2))
-  if (manifest.summary.scriptInfoBlocked || manifest.summary.redeemerHistoryBlocked || manifest.summary.sourceOutRefsBlocked) process.exitCode = 1
+  if (manifest.summary.candidateScriptInfoBlocked ||
+      manifest.summary.redeemerHistoryBlocked ||
+      manifest.summary.sourceOutRefsBlocked) process.exitCode = 1
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
