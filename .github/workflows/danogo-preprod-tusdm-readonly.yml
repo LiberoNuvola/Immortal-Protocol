@@ -1,0 +1,41 @@
+name: PRE-RICH Danogo Preprod approved tUSDM read-only discovery
+
+on:
+  push:
+    branches: [work/immortal-green-closure]
+    paths:
+      - 'scripts/observe-danogo-preprod-tusdm.mjs'
+      - 'scripts/observe-danogo-preprod-tusdm.test.mjs'
+      - '.github/workflows/danogo-preprod-tusdm-readonly.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: danogo-preprod-readonly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test pinned asset, Danogo deployment and read-only boundaries
+        run: node --test scripts/observe-danogo-preprod-tusdm.test.mjs
+      - name: Query exact tUSDM census and recheck candidate out-references via Koios
+        run: node scripts/observe-danogo-preprod-tusdm.mjs --out audit/preprod-evidence/danogo-preprod-tusdm-discovery.json
+      - name: Upload read-only observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: danogo-preprod-tusdm-discovery-${{ github.run_id }}
+          path: audit/preprod-evidence/danogo-preprod-tusdm-discovery.json
+          if-no-files-found: warn
+          retention-days: 30
