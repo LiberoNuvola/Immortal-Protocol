@@ -1048,3 +1048,17 @@ The target must not turn a quote publisher into a trusted application signer or 
 5. A provider-set change, signer rotation, policy/validator upgrade or source failure must be versioned and fail closed. It must not silently fall back to an old singleton quote or a weaker source.
 
 **Additional qualification gate:** recover and pin the actual Preprod Oracle State singleton's minting policy, holding/update address, validator or credential path, update transaction and authorized publisher proof. Demonstrate that a malformed datum, publisher-field substitution, unsigned price change, stale update and replayed provider statement cannot become an accepted quote. Until this evidence is produced, classify the current publisher match as a consumer-side identity check, not a complete independent proof of publisher authorization.
+
+### 47.8 Live Danogo Preprod exact-tUSDM pool census — complete, no Danogo credential matches (2026-11-17)
+
+A read-only observer pinned to the official Danogo CLMM SDK commit `0416dc1f3531ce77eec7664ea3947f192a3aca40` executed successfully on the exact branch source commit `13da3ca3612acf262c1aeadf5fed74d7e97cc0e7`:
+
+- Workflow: [PRE-RICH Danogo Preprod approved tUSDM read-only discovery #44021557172](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021557172) — **SUCCESS**.
+- Artifact: [danogo-preprod-tusdm-discovery-44021557172.zip](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021557172/artifacts/14301311601), artifact ID `14301311601`.
+- Exact queried asset: approved Preprod tUSDM policy `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`, asset name hex `0014df10745553444d`.
+- Koios `POST /asset_utxos` returned 1,003 UTxOs containing the exact unit across two pages (1,000 + 3); pagination completed and each returned row was checked against the exact asset unit.
+- Danogo Preprod pool payment credential: `04041c3c6ba87b33f2c9eb7f7dbeae3b26003c3e199d438bb99932a2`. **Zero** of the 1,003 exact-tUSDM UTxOs had that payment credential; exact ADA/tUSDM Danogo candidates: **0**; independent out-reference rechecks: **0** (there was no candidate to recheck).
+- Koios response body SHA-256 values: first page `5b299a85f7b6c63611520cb6a319562c9492ab297acada4c0f437471084d66dc`; second page `548e2e8da3d8c733e2506b62896073d725237ff8db3fc295670a506bb37f10de`.
+- Chain tip moved during the 11-second observation: block 5,421,917 / slot 139,208,688 / hash `67cb29a5188864e4a30e77faebe2da8ec3ed478cb2c228337f674bda1145408b` to block 5,421,918 / slot 139,208,710 / hash `2d7d3f07e1dc68abd5973ff33bddb1e120e3d94914456e5cc352de1f0c4d686d`. The responses are therefore not represented as an atomic same-slot snapshot.
+
+**Disposition:** `NO_EXACT_DANOGO_PREPROD_TUSDM_POOL_FOUND`. This is a successful negative finding scoped to the pinned Danogo Preprod pool credential and exact approved tUSDM unit. It does not prove that no other venue exists, does not derive a market price, and does not qualify USD/USDM conversion. The observer made no wallet access, transaction construction, signing, submission, Oracle update or EEV qualification. Danogo is not currently an available exact-asset Option B pool leg on the observed Preprod state.
