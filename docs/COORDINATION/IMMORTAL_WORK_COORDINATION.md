@@ -10384,3 +10384,43 @@ The successful Haskell run executed on test-source SHA `453871b1d9e79370f76ed158
 No production validator, MintPolicy, Oracle datum, PriceReference, B1 action, ABI, V3, Reveal semantics, 500× rule, ProtectedCapital definition, EEV profile, economic constant, wallet, signing key, transaction, deployment or ledger state changed.
 
 **Next permissible Agent A work:** keep the CEK evidence as a characterization, derive the exact B1 per-transition Direct-USDM closure requirements without changing protocol behavior, and continue source discovery only where exact network/asset identity and source proof can be established. Implementation of any B1 predicate/ABI change remains a separately authorized decision. Agent B owns the Counter/BeaconRegistry P0 work; do not patch those paths from Agent A.
+
+
+## 46.61 — AGENT A — LIVE DANOGO PREPROD EXACT-tUSDM POOL CENSUS (2026-11-17)
+
+### 1. Exact-head read-only execution
+
+On branch `work/immortal-green-closure`, source commit `b3e121cf996bdc69e6487d27519a2d05d2a0b601`, the new read-only workflow completed successfully:
+
+- [PRE-RICH Danogo Preprod approved tUSDM read-only discovery #44021557172](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021557172) — SUCCESS.
+- Artifact ID `14301311601`: [Danogo Preprod discovery evidence](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021557172/artifacts/14301311601).
+- Official Danogo SDK deployment pinned to commit `0416dc1f3531ce77eec7664ea3947f192a3aca40`.
+- Exact approved Preprod tUSDM unit queried: policy `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`, asset name `0014df10745553444d`.
+
+### 2. Exact census result
+
+Koios Preprod `POST /asset_utxos` completed pagination:
+- Page 1: 1,000 rows, HTTP 200.
+- Page 2: 3 rows, HTTP 200.
+- Total exact-asset UTxOs: **1,003**.
+- Danogo pool payment credential `04041c3c6ba87b33f2c9eb7f7dbeae3b26003c3e199d438bb99932a2`: **0** matches.
+- Exact ADA / approved-tUSDM Danogo pool candidates: **0**.
+- Candidate out-reference rechecks: 0, because no candidate existed.
+
+Response body SHA-256:
+- page 1: `5b299a85f7b6c63611520cb6a319562c9492ab297acada4c0f437471084d66dc`
+- page 2: `548e2e8da3d8c733e2506b62896073d725237ff8db3fc295670a506bb37f10de`
+
+### 3. Snapshot qualification and boundaries
+
+Koios tip advanced during the ~11-second scan:
+- before: block 5,421,917 / slot 139,208,688 / hash `67cb29a5188864e4a30e77faebe2da8ec3ed478cb2c228337f674bda1145408b`;
+- after: block 5,421,918 / slot 139,208,710 / hash `2d7d3f07e1dc68abd5973ff33bddb1e120e3d94914456e5cc352de1f0c4d686d`.
+
+The scan is complete for the exact queried tUSDM UTxOs, but the observation is not an atomic same-slot snapshot. The finding is scoped to the pinned Danogo Preprod pool credential and this observation interval only.
+
+**Disposition:** `NO_EXACT_DANOGO_PREPROD_TUSDM_POOL_FOUND`. This does not rule out other DEXes or feed sources. No price, Oracle quote, USD/USDM conversion, EV1–EV7 evidence, EEV approval or Issue authorization was produced. No wallet access, transaction construction, signing or submission occurred.
+
+### 4. Agent A next step
+
+Keep Danogo marked as a completed negative Preprod venue census, not a qualified price source. Continue Option B discovery against exact Preprod asset identity and authenticated raw source data. Pyth ADA/USD remains separately blocked by the configured token's HTTP 403 feed-16 entitlement denial (see Issue #37 comment [`6938883875`](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6938883875)). USD/USDM conversion and first real Issue remain NO-GO. No changes to V3, Reveal, 500×, economic constants, ABI or production validators.
