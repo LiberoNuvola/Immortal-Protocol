@@ -10424,3 +10424,36 @@ The scan is complete for the exact queried tUSDM UTxOs, but the observation is n
 ### 4. Agent A next step
 
 Keep Danogo marked as a completed negative Preprod venue census, not a qualified price source. Continue Option B discovery against exact Preprod asset identity and authenticated raw source data. Pyth ADA/USD remains separately blocked by the configured token's HTTP 403 feed-16 entitlement denial (see Issue #37 comment [`6938883875`](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6938883875)). USD/USDM conversion and first real Issue remain NO-GO. No changes to V3, Reveal, 500×, economic constants, ABI or production validators.
+
+
+## 46.62 — AGENT A — EEV EXACT-HEAD RETRY BLOCKED BY MOVING KOIOS SNAPSHOT; ORACLE STATE STILL STALE (2026-11-17)
+
+### 1. Source-qualification workflow outcome
+
+[PRE-RICH Preprod EEV — Source Qualification Only #44021705856](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021705856) ran on exact source commit `3780ca6e82dcb8439c1d46fa5464b2b2481d9272` and completed **FAILURE** at step 12, `Run live read-only PrizeValidator and B1 Pool item census`.
+
+- Oracle State decoding and deployment-identity tests passed.
+- The item census failed closed with `KOIOS_SNAPSHOT_CHANGED_DURING_CENSUS`.
+- Consequently, the exact Pool re-observation and EV1–EV7 requalification were skipped.
+- The workflow did not create deployment approval. This is a census-consistency block, not a validator rejection or a new qualification result.
+
+### 2. Oracle State exact observation
+
+The workflow artifact [14300634344](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021705856/artifacts/14300634344) records the configured Oracle State singleton as physically present and decodable, but its datum is stale:
+
+- Oracle State UTxO: `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`.
+- Datum timestamp: `1791481130142` ms.
+- Maximum permitted age: `3,600,000` ms.
+- Observed age: `3,410,809,858` ms.
+- `freshnessStatus = STALE`; `withinMaxAge = false`.
+- `externalPriceSourceVerified = false`, `configuredPublisherTrustIndependentlyEliminated = false`, and `sourceQualificationStatus = NOT_PROVEN_BY_DATUM_ALONE`.
+
+This is a read-only observation. The stale timestamp was recorded, not refreshed or replaced. The datum's presence, configured publisher field and deployment wallet signature are not an independently qualified external market-price source.
+
+### 3. Deployment manifest versus current qualification
+
+The preserved deployment manifest records a historical direct-USDM candidate Pool out-reference `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` and physical amount 1,000,000,000 atomic tUSDM → 100,000 USDM sub-units. That manifest was reused by the workflow; because the live item census failed, this run did **not** re-observe that Pool out-reference and did **not** requalify EV1–EV7 against the current exact HEAD.
+
+### 4. First-Issue disposition
+
+Keep `EV1–EV7 = NOT REQUALIFIED ON THIS RUN`, `Oracle State = STALE`, `Deployment Approval = NOT CREATED`, and first real Preprod Issue = **NO-GO**. Next permitted action is a fresh, coherent exact-tip census and exact out-reference re-observation; no snapshot-mismatch fallback, cached evidence substitution, stale Oracle refresh, wallet signature, transaction or Issue is authorized by this result.
