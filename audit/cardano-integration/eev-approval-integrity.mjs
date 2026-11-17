@@ -140,7 +140,7 @@ export const EEV_ORACLE_SOURCE_QUALIFICATION_FILE =
 
 function nonNegativeInteger(value, label) {
   const raw = typeof value === 'bigint' ? value.toString() : String(value ?? '')
-  if (!/^\\d+$/.test(raw)) throw new Error(label + ' must be a non-negative integer')
+  if (!/^\d+$/.test(raw)) throw new Error(label + ' must be a non-negative integer')
   return BigInt(raw)
 }
 
