@@ -712,7 +712,7 @@ main = do
 
   assert
     (claimPrizeAccepted && claimPoolAccepted)
-    ("OBSERVED GAP: compiled PrizeValidator and B1 accept balanced Claim; prizeAccepted="
+    ("Both compiled PrizeValidator and B1 predicates accept the balanced synthetic Claim; prizeAccepted="
       ++ show claimPrizeAccepted ++ ", poolAccepted=" ++ show claimPoolAccepted)
 
   assert
@@ -723,9 +723,11 @@ main = do
 
   assert
     (claimDirectDelta == -200
+      && claimProtectedDelta == -200
+      && claimMarginDelta == 0
       && ownerPhysicalTusdmPaid == 0
       && ownerOracleEquivalentPayout == claimedAmount)
-    "Claim counterexample: EV3-canonical Pool loses 200 direct subunits while owner receives zero tUSDM and an Oracle-equivalent foreign payout"
+    "Claim settlement-medium characterization: direct EEV and ProtectedCapital both fall by 200 subunits; owner receives no tUSDM and an Oracle-equivalent foreign payout"
 
   let
     (revealPrizeContext, revealPoolContext) = makeRevealDrainContexts
@@ -821,6 +823,8 @@ main = do
     (canonicalAdaFundInputOracleValue == 1_000
       && canonicalAdaFundOutputOracleValue == 1_010
       && canonicalAdaFundInputTusdm - canonicalAdaFundOutputTusdm == 1_000_000
+      && canonicalAdaFundDirectDelta == -100
+      && canonicalAdaFundDirectDelta < canonicalAdaFundProtectedDelta
       && canonicalAdaFundTotalInputValue == canonicalAdaFundTotalOutputValue)
     "Canonical FundTreasury counterexample: Pool loses 1,000,000 tUSDM atoms, receives 1.1 ADA above min-UTxO, Oracle datum rises 10, and Value balances"
 
