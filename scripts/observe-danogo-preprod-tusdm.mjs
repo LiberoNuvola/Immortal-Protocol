@@ -101,7 +101,7 @@ export function classifyRow(row) {
 }
 async function getJson(base,path,{method='GET',body,fetchImpl=fetch}={}) {
   const url=base+path,res=await fetchImpl(url,{method,headers:{accept:'application/json',...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(TIMEOUT_MS)});
-  const raw=await res.text(),evidence={url,method,status:res.status,date:res.headers.get('date'),bodyBytes:Buffer.byteLength(raw),bodySha256:sha256(raw)};
+  const raw=await res.text(),evidence={url,method,status:res.status,date:res.headers.get('date'),bodyBytes:Buffer.byteLength(raw),bodySha256:sha256(raw),...(res.ok?{}:{responseBodyExcerpt:raw.slice(0,3000)})};
   if(!res.ok)throw Object.assign(Error('KOIOS_HTTP_'+res.status),{evidence});
   let json;try{json=JSON.parse(raw);}catch{throw Object.assign(Error('KOIOS_JSON_INVALID'),{evidence});}
   return {json,evidence};
@@ -115,7 +115,7 @@ async function readTip(base,fetchImpl) {
 async function scanAsset(base,fetchImpl) {
   const rows=[],pages=[];let complete=false;
   for(let offset=0;offset<LIMIT*MAX_PAGES;offset+=LIMIT){
-    const {json,evidence}=await getJson(base,'/asset_utxos?_extended=true&limit='+LIMIT+'&offset='+offset,{method:'POST',body:{_asset_list:[[TUSDM.policyId,TUSDM.assetNameHex]]},fetchImpl});
+    const {json,evidence}=await getJson(base,'/asset_utxos?limit='+LIMIT+'&offset='+offset,{method:'POST',body:{_asset_list:[[TUSDM.policyId,TUSDM.assetNameHex]],_extended:true},fetchImpl});
     if(!Array.isArray(json))throw Error('ASSET_UTXOS_NOT_ARRAY');
     pages.push({...evidence,rows:json.length,offset});
     for(const row of json){if(!(row.asset_list??[]).some(a=>String(a.policy_id).toLowerCase()+String(a.asset_name).toLowerCase()===TUSDM_UNIT))throw Error('ASSET_QUERY_RETURNED_FOREIGN_ROW');rows.push(row);}
@@ -157,5 +157,5 @@ export async function observe({base=CONFIG.koios,fetchImpl=fetch}={}) {
   };
 }
 if(process.argv[1]&&resolve(process.argv[1])===resolve(new URL(import.meta.url).pathname)){
-  (async()=>{const i=process.argv.indexOf('--out'),out=resolve(i>=0?process.argv[i+1]:'audit/preprod-evidence/danogo-preprod-tusdm-discovery.json'),e=await observe();await mkdir(dirname(out),{recursive:true});await writeFile(out,JSON.stringify(e,null,2)+'\n');console.log(JSON.stringify({status:e.status,summary:e.summary,out},null,2));})().catch(e=>{console.error(JSON.stringify({status:'DANOGO_READ_ONLY_FAILED_CLOSED',error:e.message,transactionBuilt:false,walletAccessed:false,signed:false,submitted:false}));process.exitCode=1;});
+  (async()=>{const i=process.argv.indexOf('--out'),out=resolve(i>=0?process.argv[i+1]:'audit/preprod-evidence/danogo-preprod-tusdm-discovery.json');try{const e=await observe();await mkdir(dirname(out),{recursive:true});await writeFile(out,JSON.stringify(e,null,2)+'\n');console.log(JSON.stringify({status:e.status,summary:e.summary,out},null,2));}catch(e){const diagnostic={schema:'immortal-danogo-preprod-approved-tusdm-discovery-v1',status:'DANOGO_READ_ONLY_FAILED_CLOSED',error:e.message,evidence:e.evidence??null,observedAt:new Date().toISOString(),source:{provider:'Koios Preprod public API',sdkCommit:CONFIG.sdkCommit,poolScriptHash:CONFIG.poolScriptHash},guardrails:{walletAccessed:false,transactionBuilt:false,signed:false,submitted:false,priceProduced:false,oracleQuoteProduced:false,eevQualificationProduced:false}};await mkdir(dirname(out),{recursive:true});await writeFile(out,JSON.stringify(diagnostic,null,2)+'\n');console.error(JSON.stringify({...diagnostic,out},null,2));process.exitCode=1;}})();
 }
