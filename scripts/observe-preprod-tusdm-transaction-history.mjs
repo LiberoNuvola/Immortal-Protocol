@@ -216,6 +216,11 @@ export function summarizeTransaction(row, targetHashes = new Set(CANDIDATE_GROUP
     netTusdmAtomic: (outputTusdm - inputTusdm).toString(),
     candidateScriptInputs: inputs.filter(x => x.isCandidateScript),
     candidateScriptOutputs: outputs.filter(x => x.isCandidateScript),
+    // All endpoint summaries retain exact ADA/native-asset Values and public
+    // destination credentials so counterpart flows can be audited without
+    // inferring them from aggregate transaction totals.
+    allInputEndpoints: inputs,
+    allOutputEndpoints: outputs,
     // Preserve every non-candidate endpoint that holds the approved tUSDM.
     // This makes the recipient side visible when a candidate escrow closes,
     // without retaining unrelated wallet UTxOs or claiming a market swap.
