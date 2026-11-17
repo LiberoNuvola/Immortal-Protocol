@@ -8,6 +8,12 @@
 export const PYTH_PRO_PREPROD_POLICY_ID =
   'c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45'
 
+export const PYTH_ADA_USD_UPDATE_PROPERTIES = [
+  'price',
+  'exponent',
+  'feedUpdateTimestamp',
+] as const
+
 export const PYTH_PRO_CONTRACT_ADDRESSES_SOURCE =
   'https://docs.pyth.network/price-feeds/pro/contract-addresses'
 

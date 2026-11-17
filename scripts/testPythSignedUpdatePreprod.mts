@@ -29,6 +29,7 @@ import {
 import { Client, preprod } from '@evolution-sdk/evolution'
 import { PythLazerClient } from '@pythnetwork/pyth-lazer-sdk'
 import {
+  PYTH_ADA_USD_UPDATE_PROPERTIES,
   PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
   validatePythPreprodPolicyId,
 } from './pythPreprodConfig.mts'
@@ -79,7 +80,7 @@ async function fetchSignedUpdate(token: string): Promise<Buffer> {
     formats: ['solana'],
     jsonBinaryEncoding: 'hex',
     priceFeedIds: [FEED_ID_ADA_USD],
-    properties: ['price', 'exponent'],
+    properties: [...PYTH_ADA_USD_UPDATE_PROPERTIES],
   })
   const raw = latest.solana?.data
   if (!raw || !/^[0-9a-f]+$/i.test(raw) || raw.length % 2 !== 0) {

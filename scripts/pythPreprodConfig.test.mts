@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict'
 import {
+  PYTH_ADA_USD_UPDATE_PROPERTIES,
   PYTH_PRO_PREPROD_POLICY_ID,
   validatePythPreprodPolicyId,
 } from './pythPreprodConfig.mts'
+
+assert.deepEqual(
+  [...PYTH_ADA_USD_UPDATE_PROPERTIES],
+  ['price', 'exponent', 'feedUpdateTimestamp'],
+)
 
 assert.equal(
   validatePythPreprodPolicyId(PYTH_PRO_PREPROD_POLICY_ID),
