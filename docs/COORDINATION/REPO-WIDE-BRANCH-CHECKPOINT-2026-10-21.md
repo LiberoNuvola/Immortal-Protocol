@@ -1421,3 +1421,62 @@ Read-only review found that the intermediate `SIGNED_READY_TO_SUBMIT` marker had
 [M1-A PRE Snapshot Index and WAL Tests #42481336005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/42481336005) on exact SHA `7f8005fef23ff64ba88f1e97606b255c02adc802`: **SUCCESS**, 79/79 tests passed; all listed M1-A source syntax checks passed.
 
 **M1-A status remains:** software regression gate PASS; private Cardano runtime and dual-node/Ogmios/Kupo acceptance OPEN. The serializer hardening does not convert a software test into runtime evidence.
+
+
+## 2026-11-21 — Agent A PRE-RICH first-Issue gate reconciliation
+
+**Branch / exact inspected HEAD:** `work/immortal-green-closure` / `565e65848b9cd9479269f849e56220c7a78d4e95`.  
+**Scope:** read-only source, archived-workflow artifact and current Preprod GET reconciliation. No production source, validator, ABI, economics, wallet, signature, transaction, Oracle datum, deployment or ledger state changed.
+
+### 1. Corrected historical EEV approval record
+
+The archived artifact `immortal-preprod-eev-approved` from workflow run [39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679) contains a genuine `DEPLOYMENT_APPROVED` record dated 2026-10-21 for the exact direct-USDM candidate:
+
+`PRE-RICH-EEV-USDM-DIRECT-V1:b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+
+Its explicit validity rule is `LIVE_UTXO_REVALIDATION`. It records EV1–EV7 for the physical direct-tUSDM B1 Pool profile. This corrects later shorthand saying that no Deployment Approval exists: the **historical EEV approval exists**; the 17 Nov read-only source-qualification run did not create a new approval and no Issue admission has been created.
+
+The original approval workflow was pinned to `0e5fa575f84e3759655b6d0a3492b2f0b79aa446`. Its approval snapshot includes the Oracle deployment-manifest hash, but not Oracle freshness or external-source qualification fields. The archived Oracle manifest has `timestampMs=null` and no datum observation. The historical EEV approval therefore must not be interpreted as proof of a fresh ADA quote or current USD/USDM source eligibility. Its own governance text requires exact live-UTxO revalidation plus separate ProtectedCapital and Issue-admission evidence.
+
+### 2. Latest same-tip direct-USDM and census evidence remains narrow
+
+[PRE-RICH Preprod EEV Source Qualification #44021705856, attempt 2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021705856), exact source SHA `3780ca6e82dcb8439c1d46fa5464b2b2481d9272`, artifact `14300829359`, observed at slot `139208934`, block `5421936`, hash `3b1a7ae59ecc2139377dc0594d62289f9f12848cfc882872c0068be6d9c0fa9b`:
+
+- Re-observed exact B1 Pool out-ref `b84fce...#0`, exact pool singleton, and `1,000,000,000` atomic units of approved Preprod tUSDM.
+- Direct-USDM derivation `floor(1,000,000,000 × 100 / 1,000,000) = 100,000` USDM sub-units.
+- The census shared the same tip, with one B1 Pool UTxO and zero PrizeValidator UTxOs; pool inline datum bytes and BLAKE2B-256 datum hash matched.
+- EV1–EV7 qualification is bound to that exact source/verification reference. It does not certify full ProtectedCapital completeness: provider attestation, provider snapshot pinning, same-backend verification, source-completeness authority, full ProtectedCapital qualification, R7-L6 emptiness and consumed EXPIRE lifecycle remain false/unproven.
+
+This is a dated, coherent 17 Nov observation; it is not a fresh 21 Nov POST provider census and it is not Issue admission.
+
+### 3. Oracle settlement remains a separate hard blocker
+
+The latest exact datum observation retained in the 17 Nov package is the legacy ADA Oracle quote at `2026-10-08T17:38:50.142Z`, with a one-hour maximum age. The 21 Nov Preprod tip read at `2026-11-21T04:28:39Z` implies an age of `3,754,188,858 ms` (about 43.45 days) if the datum is unchanged. Current read-only GET identity queries still show the singleton held at the configured publisher address and only its original mint transaction; a fresh exact datum/out-ref POST observation was not available in this pass.
+
+Source trace confirms that a tUSDM-only economic basket does **not** bypass the ADA quote:
+- `src/issueSettlement.ts::buildIssueSettlementAssets` adds the ADA min-UTxO floor to the Treasury output and requires a quote for every output asset before excluding that floor from economic ADA.
+- `deriveIssueSettlementValidityUpperBoundMs` checks every asset quote and derives the transaction TTL from the earliest quote expiry.
+- `plutus/Economic.hs::totalUsdmValue` calls `oraclePriceFor` for every non-zero asset before subtracting the ADA min-UTxO floor; `validOracleTimestamp` checks the quote against the transaction validity upper bound and the one-hour maximum age.
+- `plutus/MintPolicy.hs::atomicTreasuryPaymentValid` enforces the canonical Oracle-valued equality on-chain.
+
+Thus the first TicketSale still needs a fresh, publisher-matched ADA quote (and any selected non-ADA asset quote). The old singleton contains only the legacy ADA quote; the external source and publisher trust are not independently qualified. Direct-USDM EEV is a B1 Pool valuation profile, not a substitute USD/USDM or settlement-asset oracle.
+
+### 4. Read-only revalidation utility has two schema mismatches
+
+A static comparison of `audit/cardano-integration/preprod-eev-approval-live-revalidation.mjs` with the real 17 Nov emitted artifacts found:
+1. The utility calls `assertArtifactEvidenceHash(currentCensus)`, but `preprod-protected-capital-census.mjs` currently emits no top-level `evidenceHash`; its output has a nested `sourceManifestDigest` only.
+2. It reads `currentQualification.profileVersion`, but the real qualification JSON has no top-level `profileVersion`; the field is on `currentSourceSet.profileVersion`.
+
+The utility has no dedicated test and is not wired to a workflow. No `HISTORICAL_APPROVAL_REVALIDATED_EXACT_LIVE_SOURCE` artifact is claimed. Fixing and testing this small evidence-pipeline defect is a distinct read-only tooling task; it cannot turn the EEV record into Issue admission.
+
+### 5. Current Agent A disposition and next bounded work
+
+- Historical direct-USDM EEV deployment approval: **EXISTS**, exact candidate, subject to `LIVE_UTXO_REVALIDATION`.
+- 17 Nov live direct-USDM candidate observation: **PASS at that recorded tip**.
+- Fresh ADA Oracle quote for Sale settlement: **STALE / NO-GO**.
+- External USD/USDM source qualification: **NOT QUALIFIED**.
+- ProtectedCapital completeness, consumed EXPIRE lifecycle/R7-L6 and deployment-bound R1/Kc/Ω: **NOT ESTABLISHED**.
+- Treasury legacy `Distribute` spend capability and unsafe manual-deposit datum path remain a separate #41 blocker. Do not seed the current Treasury to bypass the issue.
+- First real PRE-RICH Issue: **NO-GO**.
+
+**Coordination boundary:** the last recorded shared-branch slot in this checkpoint assigns Agent B the M1-A `audit/cardano-integration/**` lane. Agent A has not modified those paths in this pass. The revalidation-script and census-envelope fixes are recorded as a specific follow-up defect; coordinate/return the write slot before changing those files. No V3, Reveal, 500×, economics, ABI, treasury validator, oracle state, wallet, signature, transaction or deployment changes.
