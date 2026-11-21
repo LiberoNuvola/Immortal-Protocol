@@ -1505,3 +1505,33 @@ This is a new provider query at the recorded tip; it does not establish lifetime
 **Disposition:** do not use the current manual deposit UI to bootstrap the first Issue. Treasury is a distinct first-Issue blocker even though no UTxO is presently observed under the two tracked hashes. A reviewed replacement must secure full Value conservation, outputs and authorization on-chain, provide an authenticated first-output datum, migrate both Issue and deposit producers to the new identity, and decide an explicit legacy-spend/migration posture. A permanent no-spend sink is not presumed acceptable.
 
 No source, test, validator artifact, datum/redeemer ABI, wallet, signature, transaction, deposit, deployment or ledger state changed. Oracle freshness, USD/USDM source qualification, ProtectedCapital completeness and deployment-bound R1/Kc/Ω remain independent Issue #37 blockers.
+
+
+## 2026-11-21 — Agent A Charli3 USDM/USD Preprod candidate classified inactive
+
+**Issue update:** [#37 — Charli3 USDM/USD exact Preprod feed identity and liveness](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057498709).  
+**Provider tip:** slot `139553247`, block `5437393`, hash `d6abc8603b264df20a2096505ac36055a4493dfa41c73f85f2e7a28e0c320426`, `2026-11-21T06:07:27Z`.
+
+### Exact official feed identity retained
+
+Charli3's official Preprod network page documents USDM/USD at:
+- address `addr_test1wr0q3fr83cr0zv4gfdvzcquqzy242hgmvt7ey2d938rtwugyc76x9`;
+- Feed NFT policy `424f268a65632944ddfe17967208178082058cbe9044f53aee28697d`;
+- token name `4f7261636c6546656564` (`OracleFeed`);
+- expected 5 nodes / 3-of-5 update threshold, one-hour data freshness and one-hour feed cadence, 5-minute aggregate transaction lifetime, two-signatory pool / one required signature.
+
+### Exact-asset Preprod read
+
+Koios current reads for this exact policy/name show:
+- `asset_addresses`: one singleton at the documented address;
+- `asset_txs`: only two transactions — initial mint `eff4800f…` on 2023-11-28 and latest exact NFT transaction `a71629ca…` on 2024-02-21 03:00:49 UTC;
+- the 21 Feb transaction carries the OracleFeed singleton through to the same feed address in output #1;
+- Cexplorer's current address summary reports last activity at that address on 2024-03-08 05:02:13 UTC.
+
+The exact-NFT history therefore has no update transaction for about 1,004 days at the 21 Nov 2026 tip. Address-level activity after the last NFT tx is not treated as evidence of a feed update. Koios extended `asset_utxos` returned `CRAWL_NOT_FOUND` in this pass, so the current inline datum was not decoded; no datum-level quote, feed ID, base/quote asset identity or source provenance is claimed.
+
+### Disposition
+
+**Charli3 USDM/USD Preprod: CONFIGURATION DOCUMENTED; EXACT NFT PRESENT; FEED NOT LIVE / NOT QUALIFIED FOR CURRENT ISSUE.** A one-hour freshness/cadence expectation and an NFT's continued presence do not establish a current rate. Do not copy this feed into the protocol Oracle or refresh the existing Oracle State from this candidate. It can only be reconsidered after a fresh exact-NFT UTxO/datum observation plus independent source/publisher qualification.
+
+First-Issue Oracle freshness, external USD/USDM source qualification, ProtectedCapital completeness, Treasury migration and deployment-bound R1/Kc/Ω remain separate blockers. No provider contact, wallet/signature, oracle datum update, transaction, code or deployment occurred.
