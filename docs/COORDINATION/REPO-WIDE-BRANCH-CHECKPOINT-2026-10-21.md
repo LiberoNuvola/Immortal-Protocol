@@ -1714,3 +1714,42 @@ Before Option B can be called qualified on Preprod, protocol authority must choo
 No equivalence or parity is assumed. The already-open ADA Oracle freshness, Treasury datum authority, ProtectedCapital, and deployment-bound R1/Kc/Ω gates remain separate. First real Issue remains NO-GO under current economic/settlement claims.
 
 No code, EEV artifact, policy parameter, Oracle datum, wallet, signature, transaction, deployment or ledger state changed.
+
+ 
+## 2026-11-21 — Agent A tUSDM test-token purpose confirmed; existing Preprod eligibility decision retained
+
+**Issue clarification:** [#37 — Moneta official tUSDM faucet and reconciliation with 24 Oct authority decision](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057803956).  
+**Branch HEAD before this entry:** `3c611f76a5ba77feb33044d646818fd7904fc956`.
+
+### Official issuer/distributor statement
+
+The official Moneta testnet faucet https://tusdm.moneta.global describes tUSDM as:
+- the test version of USDM;
+- inspired by Moneta's fiat-backed stablecoin ecosystem;
+- intended for campaign, onboarding, distribution and wallet-flow testing;
+- explicitly “not mainnet USDM”.
+
+The site accepts only Cardano testnet `addr_test1...` addresses. VIA Labs' official Cardano↔Midnight guide independently links to that same tUSDM faucet for Preprod and separately describes Mainnet USDM as Moneta's fiat-backed stablecoin:
+https://developer.vialabs.tech/docs/examples/guides/usdm-cardano-midnight/
+
+Moneta's production token remains a separate Mainnet asset:
+- policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`;
+- name `0014df105553444d`;
+- official developer page explicitly says Cardano Mainnet: https://moneta.global/developers/;
+- production reserve/proof-of-reserves page: https://moneta.global/transparency/.
+
+### Exact current Preprod asset observations
+
+Koios Preprod current GET for `e675...0014df10745553444d` confirms the exact already-approved asset identity, CIP-68 label `tUSDM`, fingerprint `asset13vxxx5fuzj88pqvwad5t8tna9h6hcw7d6fmzjw`, minting transaction `17c01db02b7ebaf34528188e6007c7beefa118c4b2a74d4a766a8fa4fc73e297` at 2026-02-06 22:35:20 UTC with metadata `USDM Mint`, total supply `20,120,457,000,000` atomic units, 39 mint records and 4 burn records. The exact asset transaction history also has recent Preprod activity at the 21 Nov tip. This establishes the test-token issuance/ledger history, not a USD reserve or redemption entitlement.
+
+### Reconciliation — do not reopen the 24 October authority decision
+
+The specification authority had already decided on 24 October (comment [#6387213299](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6387213299)) that this exact `e675...` token is **ACCEPTED for Cardano Preprod only** and may count by physically present quantity as `VerifiedUSDM` in the qualified B1 PrizePool UTxO. That narrow physical testnet eligibility remains valid and is not withdrawn.
+
+The decision expressly does not establish Mainnet identity, issuer redemption, guaranteed USD parity, or a USD conversion. The new Moneta faucet statement clarifies why: this is the test version, not Mainnet USDM.
+
+Option B (“verify USD/USDM separately”) remains the selected but unqualified conversion method. The Preprod test profile may use the accepted tUSDM identity for its governed physical-accounting purpose; any USD conversion/price claim still needs a source or an explicitly authorized test-only valuation parameter scoped to this token. Mainnet Moneta reserve statements and Mainnet DEX/Oracle observations cannot be silently imported as the tUSDM price.
+
+The previous checkpoint entry's “Test-environment conformance vs economic USDM equivalence” is therefore clarified: **the physical tUSDM eligibility question is already decided; the outstanding question is only the separately selected USD/USDM conversion semantics and evidence.**
+
+No source, EEV artifact, policy parameter, Oracle datum, wallet, signature, transaction, deployment or ledger state changed. Fresh ADA quote, Treasury datum authority, ProtectedCapital and deployment-bound R1/Kc/Ω remain independent first-Issue blockers.
