@@ -1847,3 +1847,32 @@ The docs state that ODV is still being tested and some operator configuration is
 **Disposition:** ODV ADA/USD and USDM-ADA deployments are present on Preprod but last observed C3AS aggregates are from April 2026, not fresh at the 21 Nov tip. A fresh ODV request may be technically possible only after discovering current C3CS-authorized signer configuration and reachable node endpoints, obtaining fresh signed node values, checking the exact pair/source identity and verifying the resulting aggregation transaction. No signed request or new ODV transaction was performed. The existing Charli3 Push and ODV data is therefore not a current qualified source for the first Issue.
 
 No code, provider/node, wallet, signature, ODV transaction, Oracle datum, deployment or ledger state changed. First real Issue remains NO-GO.
+
+
+## 2026-11-21 — Agent A ODV node endpoint / signer configuration boundary
+
+**Issue update:** [#37 — generic ODV node example does not bind to current Preprod ADA/USD policy](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057901948).  
+**Branch before checkpoint update:** `cadc1356e39b16e8d649664acb7a93156736e2f4`.
+
+The official ODV client repository's `config.example.yaml` lists three illustrative node root URLs and public keys, but binds them to a different example deployment:
+- sample policy `b00f27e5c2284f87b29c2b877dd341e3f0c3d06e1e0b02bb9c458f13`;
+- sample oracle address `addr_test1wpgjxstaqc8am88c89zd72j5rw065ex8l5j7ln4pzngxt8qr4tzdj`.
+
+These do not match the Preprod ADA/USD ODV policy `886dcb2363e160c944e63cf544ce6f6265b22ef7c4e2478dd975078e` or address `addr_test1wq3pacs7jcrlwehpuy3ryj8kwvsqzjp9z6dpmx8txnr0vkq6vqeuu`.
+
+Official docs state that:
+- Pull/ODV node status is Alpha;
+- the Pull Oracle node Docker image is not yet published;
+- the detailed Pull node config/operations remain work in progress;
+- request endpoints include `/odv/feed` and `/odv/sign`, but a network-specific public Preprod node directory/signer mapping is not documented.
+
+Sources:
+- https://github.com/Charli3-Official/charli3-pull-oracle-client/blob/main/config.example.yaml
+- https://github.com/Charli3-Official/charli3-pull-oracle-node
+- https://docs.charli3.io/oracles/node-operators
+- https://docs.charli3.io/oracles/node-operators/installation
+- https://docs.charli3.io/oracles/node-operators/pull-oracle/configuration
+
+Read-only retrieval of the example `oracle-node-1/2/3.testnet.charli3.io` endpoints was unavailable in this pass. Their example credentials are not matched to the current `886dcb...` ODV C3CS datum, so they must not be substituted as current signers.
+
+**Reactivation gate:** retrieve the live ADA/USD ODV C3CS datum, verify its exact authorized node public-key set and threshold, match a reachable node endpoint to those keys, obtain fresh signed feed responses, and validate the resulting aggregate transaction and timestamp/expiry. No node feed/sign request, endpoint authentication, wallet, signature, transaction or ODV update occurred.
