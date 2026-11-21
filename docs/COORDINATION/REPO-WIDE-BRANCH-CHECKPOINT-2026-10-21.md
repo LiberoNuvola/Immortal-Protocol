@@ -1662,3 +1662,55 @@ Thus Pyth ADA/USD feed ID 16 remains blocked by **provider entitlement**, in add
 **Disposition:** no exact Minswap V2 or Danogo ADA/approved-tUSDM pool was established in the cited scans; the same-name third-policy pool cannot be substituted. Pyth's current known entitlement denies feed 16. No qualified USD/USDM price source currently results from these candidates. First real Issue remains NO-GO.
 
 No code, provider entitlement, wallet, signature, transaction, Oracle datum, deployment or ledger state changed.
+
+
+## 2026-11-21 — Agent A critical Preprod tUSDM vs Moneta Mainnet USDM identity boundary
+
+**Issue update:** [#37 — exact token identity and Option B denomination boundary](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057785912).  
+**Inspected branch HEAD:** `17ba6e28303a8df3df64308c76ea80c32d014522`.
+
+### Exact network-specific asset identity is now explicitly confirmed by external protocol documentation
+
+The current x402 Cardano exact-payment specification publishes the complete network-specific token units and explicitly states that **both policy and asset name differ** on Preprod:
+- Mainnet Moneta USDM: `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d`.
+- Preprod SDK tUSDM: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
+
+The same specification decodes the asset name as CIP-68 label plus `USDM` on Mainnet and `tUSDM` on Preprod. The Cardano Foundation x402 demo further states that Preprod has two distinct tUSDM assets: SDK Preprod tUSDM under `e675...` and Masumi-dispenser tUSDM under `16a55b2a...`; the same ticker does not make them interchangeable.
+
+Official Moneta developer/product pages list `c48...` / `0014df105553444d` as its USDM token and identify its network as Cardano Mainnet. Moneta's 1:1 reserve-backed description is tied to that issuer asset identity.
+
+Sources:
+- https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_cardano.md
+- https://github.com/cardano-foundation/x402-cardano-demo
+- https://moneta.global/developers/
+- https://moneta.global/products/usdm/
+
+### Consequence for EEV and Option B
+
+The approved PRE-RICH Preprod token `e675...` is the SDK's test tUSDM, not the Moneta Mainnet reserve-backed USDM asset. The historical direct-Pool EEV approval and EV1–EV7 observation remain evidence for the exact physical Preprod tUSDM Pool candidate and its recorded profile arithmetic only; they do not establish Moneta issuer reserve backing or a USD redemption right for that test token.
+
+The repo's broader current-market collectors and derived `D = USD per USDM` cross-reference are Mainnet-only and hard-code Moneta's `c48...0014df105553444d` asset:
+- `collectMinswapUsdmReadOnly.mjs`
+- `collectDexScreenerCardanoUsdmReadOnly.mjs`
+- `collectGeckoTerminalCardanoUsdmReadOnly.mjs`
+- `collectSuperCardanoUsdmReadOnly.mjs`
+- `collectFloatUsdmReadOnly.mjs`
+- `observeCswapUsdmPoolReadOnly.mjs`
+- `observeDanogoClmmUsdmReadOnly.mjs`
+- `observeMuesliSwapUsdmUtxosReadOnly.mjs`
+- `observeSundaeSwapV3UsdmUtxosReadOnly.mjs`
+- `observeWingRidersV2UsdmReadOnly.mjs`
+- `observeSaturnSwapUsdmOrderbookReadOnly.mjs`
+- `deriveUsdmUsdCrossReferenceReadOnly.mjs`
+
+The `agent-a-usdm-market-snapshot.yml` also sets `KOIOS_MAINNET_URL` and captures the exact Moneta Mainnet token. These files cannot supply a price or redemption ratio for the different Preprod `e675...` asset. The cross-reference script itself labels output indicative only and warns that ADA/USD and ADA/USDM legs are separate, non-atomic observations and do not establish peg or Oracle suitability.
+
+### Explicit decision required
+
+Before Option B can be called qualified on Preprod, protocol authority must choose one of two distinct scopes:
+1. **Testnet mechanics only:** tUSDM is a test denomination; explicitly label economic amounts/parity/reserve claims as test fixtures, not real USDM economics.
+2. **Economic USDM equivalence:** an authorized and verifiable source must establish the exact `e675...` token's relationship to Moneta Mainnet USDM/USD, including issuer authority, conversion/redemption basis, ratio, validity and conditions.
+
+No equivalence or parity is assumed. The already-open ADA Oracle freshness, Treasury datum authority, ProtectedCapital, and deployment-bound R1/Kc/Ω gates remain separate. First real Issue remains NO-GO under current economic/settlement claims.
+
+No code, EEV artifact, policy parameter, Oracle datum, wallet, signature, transaction, deployment or ledger state changed.
