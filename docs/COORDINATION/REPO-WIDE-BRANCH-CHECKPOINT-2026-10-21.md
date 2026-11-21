@@ -1753,3 +1753,56 @@ Option B (“verify USD/USDM separately”) remains the selected but unqualified
 The previous checkpoint entry's “Test-environment conformance vs economic USDM equivalence” is therefore clarified: **the physical tUSDM eligibility question is already decided; the outstanding question is only the separately selected USD/USDM conversion semantics and evidence.**
 
 No source, EEV artifact, policy parameter, Oracle datum, wallet, signature, transaction, deployment or ledger state changed. Fresh ADA quote, Treasury datum authority, ProtectedCapital and deployment-bound R1/Kc/Ω remain independent first-Issue blockers.
+
+
+## 2026-11-21 — Agent A Charli3 Push Oracle aggregation freshness corrected using exact Feed NFT history
+
+**Issue correction:** [#37 — Charli3 Feed UTxO architecture and exact NFT update chronology](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057847401).  
+**Branch before checkpoint update:** `46e6c8d36b6c054ecb826824846d8f974296e46a`.
+
+### Architecture resolves the prior NFT-history caveat
+
+An earlier note correctly cautioned that a node update may occur without refreshing the aggregated price. The official Charli3 Push Oracle documentation now resolves the distinction:
+- the unique `OracleFeed` NFT marks the sole Feed UTxO;
+- that Feed UTxO contains the latest aggregated feed and is populated/updated after each aggregation;
+- NodeFeed UTxOs are separate and update when individual nodes submit new data.
+
+Official sources:
+- https://docs.charli3.io/oracles/products/push-oracle/infrastructure
+- https://docs.charli3.io/oracles/open-source-project/sdk-and-platform-tools/push-oracle/deployment-guide
+- https://docs.charli3.io/oracles/open-source-project/sdk-and-platform-tools/push-oracle/platform-operations
+- https://docs.charli3.io/oracles/resources/networks/preprod
+
+This means the exact `OracleFeed` NFT transaction history is relevant to identifying the last aggregated Feed UTxO update. Address-level activity alone is not sufficient because it may be NodeFeed or other UTxOs at the same script address.
+
+### ADA/USD Preprod — last aggregate update 2025-12-14
+
+Official Preprod identity:
+- address `addr_test1wzn5ee2qaqvly3hx7e0nk3vhm240n5muq3plhjcnvx9ppjgf62u6a`;
+- policy `1116903479e7320b8e4592207aaebf627898267fcd80e2d9646cbf07`;
+- token `OracleFeed` (`4f7261636c6546656564`);
+- official settings: 5 nodes, 3-of-5 threshold, 30-minute node freshness and 30-minute aggregation cadence.
+
+Exact-asset Koios history has two NFT transactions; latest is `6f518a1d46d9bcb00ca0a62cf467e111fe27a66deaf294db4472b0fe46014f52` at `2025-12-14 10:17 UTC`. Cexplorer transaction evidence shows the `OracleFeed 1` input and `OracleFeed 1` output at the same script address in this aggregation.
+
+The address has later overall activity: `6723f6b30c1d9dd33d4521cbbf0ba82807accda76d0618902264342a418ffa60` at `2026-05-15 23:42 UTC`. The input/output in that transaction are specifically `NodeFeed 1`, not `OracleFeed`; it is a node refresh, not an aggregate price refresh. Therefore the last verified aggregate update remains 14 Dec 2025, outside the documented 30-minute window.
+
+### USDM/USD Preprod — last aggregate update 2024-02-21
+
+Official Preprod identity:
+- address `addr_test1wr0q3fr83cr0zv4gfdvzcquqzy242hgmvt7ey2d938rtwugyc76x9`;
+- policy `424f268a65632944ddfe17967208178082058cbe9044f53aee28697d`;
+- token `OracleFeed`;
+- official settings: 5 nodes, 3-of-5 threshold, one-hour node freshness and one-hour aggregation cadence.
+
+Exact-asset Koios history has only initial mint `eff4800fffb266af97639ee7a3ed77f2c7488bc59e84dc643342b5516ca6eeed` and one subsequent `OracleFeed` transaction `a71629ca1ef04971c27856830d5f4d5517462783df6c214357ca45e7be1777e5` at `2024-02-21 03:00:49 UTC`. Cexplorer corroborates that transaction consumes/recreates `OracleFeed 1`.
+
+The address's last overall activity `cd1951f5d25f1b528110754acac1f39184eb759cd387a7a5f86d9963c11b452b` at `2024-03-08 05:02 UTC` is specifically a `NodeFeed 1` update, not an OracleFeed update. Therefore the last known aggregate update remains 21 Feb 2024, outside the documented one-hour window.
+
+### Corrected disposition and evidence limit
+
+Both Charli3 Preprod ADA/USD and USDM/USD Feed UTxOs are **STALE / NOT QUALIFIED** for current PRE-RICH Oracle settlement. The earlier cautious caveat is resolved by the official unique Feed NFT/Feed UTxO architecture. The later ADA/USD May transaction is specifically NodeFeed-only and cannot reset the aggregated price timestamp.
+
+The current inline Feed datum was not decoded in this pass because Koios exact `asset_utxos` and address UTxO datum reads were unavailable. Thus the exact current `price_map.timestamp` and `expiry` values are not reproduced; the disposition is based on the exact unique Feed NFT's last aggregation transaction plus the official update semantics and configured cadence.
+
+No Charli3 refresh, Oracle datum, wallet, signature, transaction, source, code, deployment or ledger state changed. First real Issue remains NO-GO.
