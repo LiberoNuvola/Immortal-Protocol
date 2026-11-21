@@ -1631,3 +1631,34 @@ The POC's exact-rational conversion helper requires explicit `D = USD per USDM` 
 **Disposition:** Pyth Pro Preprod deployment **PRESENT**; ADA/USD feed ID 16 **DOCUMENTED**; current trusted-signer expiry/reference script **NOT OBSERVED**; genuine signed-update native-ledger Gate A **NOT PROVEN**; USD/USDM ratio D **NOT QUALIFIED**; production MintPolicy binding **NOT IMPLEMENTED**. Do not update production Oracle, use isolated carrier as Issue authority, or infer USDM parity from ADA/USD.
 
 No code, validator, Oracle datum, wallet, signature, transaction, deployment or ledger state changed. First-Issue NO-GO and the independent Treasury, ProtectedCapital and deployment-bound R1/Kc/Ω blockers remain.
+
+
+## 2026-11-21 — Agent A source-path reconciliation: Minswap exact asset, Danogo negative, Pyth 403
+
+**Issue update:** [#37 — current Option B source reconciliation](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057757561).  
+**Inspected branch:** `work/immortal-green-closure` @ `1159b119959749d1cf5d019fe7bd90c2c4e591a3`.
+
+### Minswap V2 exact-asset pool census
+
+The read-only observation run [#43860230287](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/43860230287), artifact `14222913241`, at Preprod slot `139146204` / block `5419069` / `2026-11-16T11:44:46Z`, enumerated **472** official Minswap V2 authenticated pool UTxOs; all 472 had the expected Pool ScriptHash, unique auth token quantity 1 and decoded 10-field datum (0 decode errors).
+
+Exact pair result:
+- PRE-RICH approved tUSDM `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9 + 0014df10745553444d`: **0 pools**.
+- Masumi tUSDM `16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde + 0014df10745553444d`: **0 pools**.
+- One same-name-suffix ADA pair is a distinct policy `11c93226aabf1e9157620857d9ac013ba111680bd837f62a7ca90214`, not the approved unit. Its Minswap pool auth token is valid, but pool datum reports `datumValueReservesMatch=false` (379,848 lovelace discrepancy) and Koios asset info has no token-registry metadata. No normalized quote is qualified.
+
+A current 21 Nov Koios GET at tip slot `139554655` / block `5437449` / hash `edd02277e2761bf2ad79efd9ffecf6bacec63db3d48fdc47c3271917c4b608bf` still lists the third-policy lookalike at the same Minswap address with quantity `238532670269`. This current holder list does not re-read the inline datum/out-ref; a separate exact-asset `e675...` GET timed out. The reliable exact Minswap zero-pool conclusion remains scoped to the 16 Nov 472-pool decoded artifact, not a full 21 Nov rescan.
+
+### Danogo exact-asset negative retained
+
+The successful live Danogo run [#44021557172](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44021557172), artifact `14301311601`, scanned 1,003 exact approved-tUSDM UTxOs and found **0** under the official Danogo Preprod pool credential and 0 exact ADA/tUSDM Danogo pool candidates. Its later discovery artifact [#44022980895](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44022980895), ID `14301518451`, reports 0 Danogo candidates and 49 exact tUSDM+ADA outputs under other scripts; all were independently rechecked but explicitly not classified as pools/prices.
+
+### Pyth provider entitlement correction
+
+The Pyth native probe did not merely lack a configured API token. The token was configured, but prior run [#44020345499](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44020345499) failed during signed update retrieval with HTTP 403: `Not entitled: feed 16 (crypto / spot)`. Its evidence class was `BLOCKED_PYTH_FEED_ENTITLEMENT`; no signed update was fetched, Pyth State was not resolved in that run, and no wallet/transaction path was used. The separate synthetic/software workflow [#44020345773](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/44020345773) passed 27 checks but did not prove a real signed payload.
+
+Thus Pyth ADA/USD feed ID 16 remains blocked by **provider entitlement**, in addition to the unobserved current State datum/signer expiry, missing `D = USD per USDM` source/authority, and missing production MintPolicy binding. A future entitled update is not implicitly granted by the Pyth State NFT being present on Preprod.
+
+**Disposition:** no exact Minswap V2 or Danogo ADA/approved-tUSDM pool was established in the cited scans; the same-name third-policy pool cannot be substituted. Pyth's current known entitlement denies feed 16. No qualified USD/USDM price source currently results from these candidates. First real Issue remains NO-GO.
+
+No code, provider entitlement, wallet, signature, transaction, Oracle datum, deployment or ledger state changed.
