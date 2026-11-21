@@ -1480,3 +1480,28 @@ The utility has no dedicated test and is not wired to a workflow. No `HISTORICAL
 - First real PRE-RICH Issue: **NO-GO**.
 
 **Coordination boundary:** the last recorded shared-branch slot in this checkpoint assigns Agent B the M1-A `audit/cardano-integration/**` lane. Agent A has not modified those paths in this pass. The revalidation-script and census-envelope fixes are recorded as a specific follow-up defect; coordinate/return the write slot before changing those files. No V3, Reveal, 500×, economics, ABI, treasury validator, oracle state, wallet, signature, transaction or deployment changes.
+
+
+## 2026-11-21 — Agent A Treasury bootstrap guard recheck
+
+**Issue:** [#41 — Treasury validator / legacy Distribute exposure](https://github.com/LiberoNuvola/Immortal-Protocol/issues/41#issuecomment-7057484356).  
+**Inspected branch HEAD:** `68f22fb1db35d64ef587ac3415e09d8e192aeeac`.  
+**Fresh Preprod Koios tip:** slot `139552119`, block `5437337`, hash `96c0dfa5dec70aed48c6e999433ed136492c2c549fd6f0fc772b6ae49856f371`, block time `2026-11-21T05:48:39Z`.
+
+### Read-only ledger recheck
+
+- Current Treasury script hash `7a2a58b992e29d10eae279ae8fa93bb44d854ff832f0823b09b19708`: extended `script_utxos` response `[]`.
+- Historical Treasury script hash `6348d72e4de673a1bc643ca8d9e63e7b66b789a0c306dc675473317c`: extended `script_utxos` response `[]`.
+
+This is a new provider query at the recorded tip; it does not establish lifetime emptiness, authenticated provider snapshot completeness, untracked deployments, or future-deposit safety.
+
+### First-Issue dependency confirmed in current source
+
+- `src/mint.ts::getTreasuryDatum` requires at least one Treasury UTxO at the canonical address to obtain its datum; the TicketSale does not spend that Treasury input.
+- The TicketSale creates its Treasury output by `payToContract` and reuses the selected existing datum.
+- `src/treasuryPage.ts::treasuryDatum` still creates threshold 0, four repeated zero ScriptHashes and 25% for each destination.
+- `plutus/Treasury.hs::mkValidator` still exposes legacy `Distribute`; `paidToScriptHash` checks only a minimum ADA amount, not the complete Value or recipient uniqueness. Therefore the current manual deposit route would seed the datum implicated by the source-level weakness.
+
+**Disposition:** do not use the current manual deposit UI to bootstrap the first Issue. Treasury is a distinct first-Issue blocker even though no UTxO is presently observed under the two tracked hashes. A reviewed replacement must secure full Value conservation, outputs and authorization on-chain, provide an authenticated first-output datum, migrate both Issue and deposit producers to the new identity, and decide an explicit legacy-spend/migration posture. A permanent no-spend sink is not presumed acceptable.
+
+No source, test, validator artifact, datum/redeemer ABI, wallet, signature, transaction, deposit, deployment or ledger state changed. Oracle freshness, USD/USDM source qualification, ProtectedCapital completeness and deployment-bound R1/Kc/Ω remain independent Issue #37 blockers.
