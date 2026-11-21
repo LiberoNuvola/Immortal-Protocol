@@ -1552,3 +1552,33 @@ Current exact-asset Koios reads:
 The exact NFT has no later transaction for approximately 342 days by the 21 Nov 2026 tip, far beyond the documented 30-minute update/freshness expectation. The exact current datum was not decoded in this pass, so no price is claimed. **Charli3 ADA/USD Preprod is NOT LIVE / NOT QUALIFIED for settlement**, and cannot be combined with the already-inactive Charli3 USDM/USD feed.
 
 No protocol Oracle, source set, wallet, signature, transaction, code or deployment was changed. The first-Issue Oracle freshness/source blocker remains open.
+
+
+## 2026-11-21 — Agent A Treasury datum-poisoning refinement
+
+**Issue update:** [#41 — arbitrary canonical Treasury datum is not authority-authenticated](https://github.com/LiberoNuvola/Immortal-Protocol/issues/41#issuecomment-7057521228).  
+**Source SHA checked:** `81c9a5608a12937193fa545e315dbccf112805ce` (same production source content as the current docs-only branch head).
+
+### New source boundary identified
+
+The legacy risk is not limited to the current manual-deposit UI:
+- Any sender can pay to a public Cardano script address with an inline datum; the Treasury spending validator is not invoked merely to create a script output.
+- `src/treasuryIdentity.ts::selectConsistentTreasuryDatum` checks address equality, unique out-refs, datum presence/canonical encodability and equality among all returned datums. It does not decode or compare against a deployment-authorized nine-field TreasuryDatum.
+- `canonicalDatumEncoding` is byte/shape canonicalization only. Its own source comment explicitly says consistency is not authentication and that the legacy category-balance carrier is unimplemented.
+- `src/mint.ts::getTreasuryDatum` passes the selected raw datum through to the TicketSale's `payToContract` output; it does not spend the old Treasury UTxO or establish datum authority.
+- `plutus/Treasury.hs` retains the unauthenticated `Distribute` transition; the output helper constrains minimum lovelace at a ScriptCredential, not full Value conservation or a trusted recipient configuration.
+
+Consequently a sender can seed a syntactically valid but adversarial legacy `TreasuryDatum` without using the UI. If that datum is the only Treasury UTxO, the current reader can select and propagate it. Multiple conflicting datums fail closed as an availability/DoS condition, but the matching-datum rule is not a trust/authenticity boundary.
+
+The current Koios check at slot `139552119` returned no UTxOs for either tracked current/historical Treasury hash, so this remains a **future-seed/bootstrap attack surface**, not a claim of an observed funded input or successful spend.
+
+### Required security posture
+
+Removing/hiding the manual deposit buttons alone is insufficient. The first-Issue migration must:
+1. bind the Treasury datum schema/configuration to an immutable deployment authority or on-chain commitment;
+2. make the Issue reader decode and verify that exact schema/configuration before propagation;
+3. enforce complete Cardano `Value` conservation and authorized outputs in the on-chain spend path;
+4. align all bootstrap, manual-deposit and TicketSale producers to the same approved new Treasury identity/datum;
+5. specify a deliberate migration/legacy policy before any funds are seeded.
+
+No source, test, validator, ABI, wallet, signature, transaction, deposit, deployment or ledger state changed.
