@@ -1806,3 +1806,44 @@ Both Charli3 Preprod ADA/USD and USDM/USD Feed UTxOs are **STALE / NOT QUALIFIED
 The current inline Feed datum was not decoded in this pass because Koios exact `asset_utxos` and address UTxO datum reads were unavailable. Thus the exact current `price_map.timestamp` and `expiry` values are not reproduced; the disposition is based on the exact unique Feed NFT's last aggregation transaction plus the official update semantics and configured cadence.
 
 No Charli3 refresh, Oracle datum, wallet, signature, transaction, source, code, deployment or ledger state changed. First real Issue remains NO-GO.
+
+
+## 2026-11-21 — Agent A second Charli3 route: Preprod ODV feeds found, but last on-chain aggregates are from April
+
+**Issue update:** [#37 — Charli3 Preprod ODV ADA/USD and USDM-ADA candidates](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057883460).  
+**Branch before checkpoint update:** `51778bc8b932dc70cbf9ed70e957eaff289c7d8d`.
+
+### Separate Preprod ODV deployments found in official Charli3 reader config
+
+Official repository `Charli3-Official/datum-demo-v3` added ODV support in commit `2f669d6f400b8a1bffb1b097a9e548b10a9a1788` on 2026-04-16. Its committed `preprod-c3-networks.yaml` lists three ODV data sets at `addr_test1wq3pacs7jcrlwehpuy3ryj8kwvsqzjp9z6dpmx8txnr0vkq6vqeuu`, each with its own C3AS minting policy:
+- ADA-USD: `886dcb2363e160c944e63cf544ce6f6265b22ef7c4e2478dd975078e`.
+- USDM-ADA: `fcc738fa9ae006bc8de82385ff3457a2817ccc4eaa5ce53a61334674`.
+- BTC-USD: `43d766bafc64c96754353e9686fac6130990a4f8568b3a2f76e2643f`.
+
+Official config: https://github.com/Charli3-Official/datum-demo-v3/blob/main/preprod-c3-networks.yaml  
+Reader source: https://github.com/Charli3-Official/datum-demo-v3/blob/main/network_feed_demo/charli3_network_info_reader.py
+
+### Exact Preprod C3AS state history
+
+At Koios tip slot `139554655`, block `5437449`, hash `edd02277e2761bf2ad79efd9ffecf6bacec63db3d48fdc47c3271917c4b608bf`, `2026-11-21T06:30:55Z`, current exact asset reads show the C3AS token name `43334153` (ASCII `C3AS`), supply 10 and the common ODV address for each policy.
+
+- ADA/USD ODV `886dcb...`: 11 policy-asset transactions; latest `bd0255caf836d4dd0eaf02ec992a10094d766a45cc5a147a254c2a59a268c907`, block 4,630,630, `2026-04-21 16:45:43 UTC`. CardanoScan current address summary reports last activity at the same time. Age at current tip ≈ **213.5 days**.
+- USDM-ADA ODV `fcc738...`: two policy-asset transactions; latest `f687ba2b91e93087f90f01623726587f7d3f800438f8e4af6559ac2abb669aa4`, block 4,619,629, `2026-04-18 06:26:04 UTC`. Transaction view shows a C3AS input and continuation output. Age ≈ **216.95 days**.
+- BTC-USD ODV `43d766...`: latest C3AS transaction `d651b7ffca904fca3fd2cc123d97f59bfd3bff2bdc820a3576b3502611551321` at `2026-04-18 07:00:54 UTC`.
+
+The official ODV reader scans C3AS UTxOs, decodes `GenericData.price_data`, and requires non-empty price, timestamp and expiry. The exact current inline datum was not retrieved, so the raw on-chain timestamp/expiry values are not asserted. The last C3AS history writes are months outside any plausible current Oracle settlement window.
+
+### Reactivation is possible in principle but not demonstrated
+
+Official Charli3 documentation classifies ODV as pull/on-demand. A DApp requests values from node operators; each node supplies a signed value/timestamp/policy ID; the client aggregates a median; a transaction consumes/recreates Aggregation State and Reward Account UTxOs; on-chain validation checks timestamps, signatures, consensus and outlier rules.
+
+Sources:
+- https://docs.charli3.io/oracles/products/pull-oracle/infrastructure
+- https://docs.charli3.io/oracles/products/pull-oracle/summary
+- https://docs.charli3.io/oracles/node-operators/pull-oracle/configuration
+
+The docs state that ODV is still being tested and some operator configuration is unfinished. The committed Preprod YAML lists address and policy labels but does not expose current node API endpoints. The generic C3AS price datum contains price, timestamp and expiry; the sample reader itself does not authenticate the underlying base/quote asset identity from the datum. Thus the `USDM-ADA` label does not yet prove that it uses the exact approved Preprod tUSDM asset `e675...0014df10745553444d`.
+
+**Disposition:** ODV ADA/USD and USDM-ADA deployments are present on Preprod but last observed C3AS aggregates are from April 2026, not fresh at the 21 Nov tip. A fresh ODV request may be technically possible only after discovering current C3CS-authorized signer configuration and reachable node endpoints, obtaining fresh signed node values, checking the exact pair/source identity and verifying the resulting aggregation transaction. No signed request or new ODV transaction was performed. The existing Charli3 Push and ODV data is therefore not a current qualified source for the first Issue.
+
+No code, provider/node, wallet, signature, ODV transaction, Oracle datum, deployment or ledger state changed. First real Issue remains NO-GO.
