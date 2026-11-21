@@ -1876,3 +1876,41 @@ Sources:
 Read-only retrieval of the example `oracle-node-1/2/3.testnet.charli3.io` endpoints was unavailable in this pass. Their example credentials are not matched to the current `886dcb...` ODV C3CS datum, so they must not be substituted as current signers.
 
 **Reactivation gate:** retrieve the live ADA/USD ODV C3CS datum, verify its exact authorized node public-key set and threshold, match a reachable node endpoint to those keys, obtain fresh signed feed responses, and validate the resulting aggregate transaction and timestamp/expiry. No node feed/sign request, endpoint authentication, wallet, signature, transaction or ODV update occurred.
+
+
+## 2026-11-21 — Agent A first-Issue Treasury bootstrap design candidate
+
+**Design artifact:** [AGENT-A-TREASURY-FIRST-ISSUE-BOOTSTRAP-AND-DATUM-AUTHORITY-DESIGN-2026-11-21.md](AGENT-A-TREASURY-FIRST-ISSUE-BOOTSTRAP-AND-DATUM-AUTHORITY-DESIGN-2026-11-21.md).  
+**Issue update:** [#41 — non-normative Treasury bootstrap design and gate list](https://github.com/LiberoNuvola/Immortal-Protocol/issues/41#issuecomment-7057959269).  
+**Inspected source baseline:** `0b677353241848539b25c42ac77191c9d975ffed`.  
+**Artifact commit:** `9b0bf1b9a23ec3425878c89b25de696f2d5a0db7` (exactly one new documentation path).
+
+### Source-derived dependency
+
+The existing TicketSale builder has a circular bootstrap:
+- `src/mint.ts::getTreasuryDatum` requires a pre-existing Treasury UTxO to select a datum;
+- the TicketSale does not spend that UTxO; it creates one Treasury payment output with the selected datum;
+- `MintPolicy.atomicTreasuryPaymentValid` authenticates the exact output's Oracle-valued payment but not its datum/configuration;
+- `selectConsistentTreasuryDatum` checks canonical byte/shape equality across all UTxOs, not datum authority;
+- the public script address can receive arbitrary-datum outputs without invoking the spending validator;
+- the legacy `Distribute` validator is not a full-Value-conserving PRE-RICH accounting mechanism.
+
+Manual deposit remains prohibited as a bootstrap workaround.
+
+### Design candidate recorded
+
+The note proposes retaining one logical Treasury and separating:
+1. the **one exact physical TicketSale receipt output** at the Treasury custody/payment identity; and
+2. an **authenticated singleton accounting-state carrier** at a distinct script/address with its own marker token, immutable config commitment and monotonic sequence.
+
+This preserves the current `MintPolicy.singleScriptOutputValue` one-Treasury-output contract. Two bootstrap paths are left as alternatives, neither authorized: (A) create the one-time state marker/carrier atomically in the first TicketSale using a deployment-pinned one-shot reference; or (B) use an explicitly authorized state-only initialization transaction before first sale. Later Issues consume and continue exactly one canonical state UTxO; a reference input alone is not a concurrency lock.
+
+The Counter remains a useful transaction-level ordering anchor (one consumed input and a successor n+1), but its current checks are not asserted to prove global singleton uniqueness or authenticate the new Treasury state marker.
+
+### Accounting and non-regression boundary
+
+A first sale may record a receipt as unclassified/pending classification until an explicit PRE-RICH posting rule exists. It does not credit gross ticket proceeds automatically to Prize and does not revive legacy percentages, UI placeholders or historical relayer thresholds. Treasury Reserve, `ReserveProtection`, B1 `ppUnresolvedReserve` and WCE remain distinct.
+
+The design requires adversarial tests for no-prior-Treasury first Issue, unauthorized/public datums, one-time marker creation, canonical continuation, duplicate/stale state, complete Value conservation, Counter concurrency, legacy isolation and the existing 16,384-byte transaction ceiling.
+
+**Classification remains design-only.** No source, test, validator, policy, datum/redeemer ABI, economic allocation, workflow, wallet, signature, transaction or ledger state changed. Agent B's `audit/cardano-integration/**` ownership remains untouched. First real Issue remains NO-GO pending design/authority review and the independent Oracle, EEV, ProtectedCapital and deployment-bound R1/Kc/Ω gates.
