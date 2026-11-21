@@ -1535,3 +1535,20 @@ The exact-NFT history therefore has no update transaction for about 1,004 days a
 **Charli3 USDM/USD Preprod: CONFIGURATION DOCUMENTED; EXACT NFT PRESENT; FEED NOT LIVE / NOT QUALIFIED FOR CURRENT ISSUE.** A one-hour freshness/cadence expectation and an NFT's continued presence do not establish a current rate. Do not copy this feed into the protocol Oracle or refresh the existing Oracle State from this candidate. It can only be reconsidered after a fresh exact-NFT UTxO/datum observation plus independent source/publisher qualification.
 
 First-Issue Oracle freshness, external USD/USDM source qualification, ProtectedCapital completeness, Treasury migration and deployment-bound R1/Kc/Ω remain separate blockers. No provider contact, wallet/signature, oracle datum update, transaction, code or deployment occurred.
+
+
+## 2026-11-21 — Agent A Charli3 ADA/USD Preprod component also stale
+
+**Issue update:** [#37 — exact ADA/USD OracleFeed transaction-history check](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057507539).  
+**Same Koios Preprod tip:** slot `139553247`, block `5437393`, hash `d6abc8603b264df20a2096505ac36055a4493dfa41c73f85f2e7a28e0c320426`, `2026-11-21T06:07:27Z`.
+
+The official Charli3 Preprod page documents ADA/USD at `addr_test1wzn5ee2qaqvly3hx7e0nk3vhm240n5muq3plhjcnvx9ppjgf62u6a`, policy `1116903479e7320b8e4592207aaebf627898267fcd80e2d9646cbf07`, token `OracleFeed`, 5 nodes, 3-of-5 threshold, 30-minute data freshness and 30-minute feed generation.
+
+Current exact-asset Koios reads:
+- `asset_addresses`: one singleton at the official ADA/USD address.
+- `asset_txs`: two exact NFT transactions only; latest `6f518a1d…` on 2025-12-14 10:17 UTC.
+- Cexplorer's transaction page corroborates the exact NFT was carried through in the 14 Dec 2025 transaction. The address itself has later collateral/node activity (including 15 May 2026) but this is not a transaction carrying the OracleFeed NFT.
+
+The exact NFT has no later transaction for approximately 342 days by the 21 Nov 2026 tip, far beyond the documented 30-minute update/freshness expectation. The exact current datum was not decoded in this pass, so no price is claimed. **Charli3 ADA/USD Preprod is NOT LIVE / NOT QUALIFIED for settlement**, and cannot be combined with the already-inactive Charli3 USDM/USD feed.
+
+No protocol Oracle, source set, wallet, signature, transaction, code or deployment was changed. The first-Issue Oracle freshness/source blocker remains open.
