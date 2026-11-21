@@ -1582,3 +1582,52 @@ Removing/hiding the manual deposit buttons alone is insufficient. The first-Issu
 5. specify a deliberate migration/legacy policy before any funds are seeded.
 
 No source, test, validator, ABI, wallet, signature, transaction, deposit, deployment or ledger state changed.
+
+
+## 2026-11-21 — Agent A Pyth Pro Preprod candidate and existing POC boundary
+
+**Issue update:** [#37 — Pyth Pro Preprod deployment verified; production Issue gates remain open](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-7057723216).  
+**Inspected branch:** `work/immortal-green-closure` @ `db67e856a74ac41f45ec50c11bad889b9a6e9272`.
+
+### Exact Preprod deployment identity and ledger observations
+
+Official Pyth contract-address documentation publishes the Cardano Preprod Pyth Pro policy ID:
+`c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45`.
+
+The official Pyth JS SDK resolves the State singleton under the asset name `Pyth State` (hex `50797468205374617465`) and decodes governance, an Ed25519 `trusted_signers` map with expiry bounds, and the configured withdrawal-script hash.
+
+Current Koios Preprod GET observations returned exactly one singleton at:
+`addr_test1wpz2mpc7etnqx9n37g0qrds7ays4ta5dpgaltfn97a8exps0v759t`.
+Its exact NFT history has two transactions:
+- mint `4c2f977e3c310945bdb38f49d4c4f76f1765bbc6d5fa743d08dffc796888befd` at 2026-07-30 07:33 UTC;
+- state transition `aaef2ae911b8ba527ade5079f16351598e0a58d55b00f2177aab397397b25638` at 2026-07-30 08:19 UTC, consuming/recreating the singleton at the same address.
+
+Pyth Pro verifies signed updates inside each consuming transaction and stores no price. Therefore the State NFT's lack of later transactions is not itself a price-freshness failure. The current inline datum and trusted-signer expiries were not decoded in this pass: Koios datum/UTxO GET attempts were unavailable. Do not infer active signer status or current withdrawal-script reference from token presence alone.
+
+### Feed / consumer contract
+
+- Official Cardano Pyth consumer documentation identifies ADA/USD as feed ID `16`.
+- The consuming transaction must include the Pyth State reference input and a zero-withdrawal with the signed payload; Pyth's deployed withdrawal verifier checks signature integrity.
+- Pyth does not enforce timestamp freshness or reject replay of an otherwise valid signed update. Consumers must enforce finite validity upper-bound freshness.
+- The payload `feedUpdateTimestamp` is necessary to distinguish a price freshly generated in the latest update from a previously carried-forward value. The isolated IMMORTAL POC checks both the global update timestamp and the per-feed timestamp against the existing one-hour maximum and the transaction upper bound.
+
+### Existing IMMORTAL POC — code present, not Issue authority
+
+The branch already contains:
+- `poc/aiken-pyth-ada-usd/` isolated Aiken Plutus V3 ADA/USD consumer and quote-carrier;
+- `plutus/PythQuoteCarrierBinding.hs` and `plutus/PythAdaUsdConversion.hs` additive Haskell candidate helpers;
+- candidate tests `plutus/test/PythQuoteCarrierBindingTest.hs` and `PythAdaUsdConversionTest.hs`;
+- guarded workflows `.github/workflows/pyth-ada-usd-probe.yml` and `.github/workflows/pyth-native-ledger-probe.yml`;
+- pinned Pyth library commit `217b5917228b17f015719b27dd616a75ad6bd800` and official Pro Preprod policy guard.
+
+The POC README/QUOTE-CARRIER explicitly classify this as feasibility code, not a production oracle. Historical synthetic Aiken and TypeScript tests/build results are software evidence only. There is no committed `audit/preprod-issue/pyth-native-ledger-probe.json` positive ledger result in this branch state. The manual native-ledger workflow and POC files are absent from the default `main` branch; the workflow requires the Pyth Lazer entitlement token and, only for explicit submission mode, a dedicated Preprod test wallet and Blockfrost project ID. No secrets or wallet operations were accessed.
+
+### Production integration and economic gate remain open
+
+Production `plutus/MintPolicy.hs::atomicTreasuryPaymentValid` still calls `Economic.totalUsdmValue` with the current Oracle State/OracleQuote path. It does not consume the isolated Pyth quote-carrier output. A separate valid Pyth zero-withdrawal in a transaction would not by itself prove that the existing Treasury valuation was derived from the signed Pyth quote.
+
+The POC's exact-rational conversion helper requires explicit `D = USD per USDM` numerator/denominator; it intentionally does not default to 1:1. No authoritative Preprod source/governance parameter for `D` has been qualified, and no direct Pyth USDM/USD feed was established in this pass.
+
+**Disposition:** Pyth Pro Preprod deployment **PRESENT**; ADA/USD feed ID 16 **DOCUMENTED**; current trusted-signer expiry/reference script **NOT OBSERVED**; genuine signed-update native-ledger Gate A **NOT PROVEN**; USD/USDM ratio D **NOT QUALIFIED**; production MintPolicy binding **NOT IMPLEMENTED**. Do not update production Oracle, use isolated carrier as Issue authority, or infer USDM parity from ADA/USD.
+
+No code, validator, Oracle datum, wallet, signature, transaction, deployment or ledger state changed. First-Issue NO-GO and the independent Treasury, ProtectedCapital and deployment-bound R1/Kc/Ω blockers remain.
