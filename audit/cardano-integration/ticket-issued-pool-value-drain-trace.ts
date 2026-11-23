@@ -209,6 +209,7 @@ const prize = txHash ? prizeUtxos.find(u=>u.txHash===txHash && (u.assets[drainUn
 const observedFailure = errorText + '\n' + (negativeEvalError ?? '')
 const budgetFailure = /execution went over budget|execution budget|budget (?:exceeded|exhausted)|execution units? (?:limit|budget)|exceeded.{0,30}budget/i.test(observedFailure)
 const scriptFailure = /PlutusFailure|PlutusV[12] script failed|failed script execution|validator failure|script failure|script failed|physical pool value changed/i.test(observedFailure)
+const physicalPoolValueGuardObserved = /B1PrizePool: physical pool value changed/i.test(observedFailure)
 let assertions: Record<string,boolean> = {}
 let classification: string
 if (accepted && continuing && prize) {
@@ -224,13 +225,25 @@ if (accepted && continuing && prize) {
   classification = Object.values(assertions).every(Boolean)
     ? 'CONFIRMED_B1_TICKETISSUED_POOL_VALUE_DRAIN'
     : 'ACCEPTED_BUT_EVIDENCE_ASSERTIONS_INCOMPLETE'
+} else if (!accepted && stage==='submit' && originalStillUnspent &&
+           physicalPoolValueGuardObserved && !budgetFailure) {
+  assertions = {
+    physicalPoolValueGuardObserved,
+    originalPoolStillUnspent:originalStillUnspent,
+    originalPoolValueUnchanged:after.some(u=>ref(u)===ref(pool) && sameAssets(u.assets,pool.assets)),
+    walletDidNotReceiveLiquidity:walletLiquidity===0n,
+    prizeTicketOutputNotCreated:!prize,
+  }
+  classification = Object.values(assertions).every(Boolean)
+    ? 'REJECTED_BY_B1_POOL_VALUE_GUARD'
+    : 'REJECTION_EVIDENCE_INCOMPLETE'
 } else if (!accepted && stage==='submit' && originalStillUnspent && scriptFailure && !budgetFailure) {
   classification = 'REJECTED_BY_LEDGER_SCRIPT_FAILURE'
 } else {
   classification = 'INCONCLUSIVE_PRE_SUBMISSION_OR_PROVIDER_FAILURE'
 }
 const evidence = {
-  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.2',
+  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.3',
   environment:'local-yaci-devnet-only',networkProvider:API,classification,
   scope:'B1PrizePool TicketIssued; synthetic native liquidity token; native all(sig) test ticket policy',
   exclusions:{productionMintPolicy:false,counterInput:false,treasuryReceipt:false,EEVAdmission:false,preprodOrMainnet:false,V3OrReveal:false},
@@ -245,10 +258,9 @@ const evidence = {
     continuingPoolDatum:continuing?.datum??null,
     walletLiquidity:walletLiquidity.toString(),prizeTicketOutputFound:Boolean(prize),
     originalPoolStillUnspent:originalStillUnspent,assertions},
-  budget:{reusedControlBudgetForNegative:reusedControlBudget,negativeEvalError},
+  budget:{reusedControlBudgetForNegative:reusedControlBudget,negativeEvalError,physicalPoolValueGuardObserved},
   evidenceDigest:hashJson({bootstrapHash,controlHash,txHash,accepted,stage,errorText,classification,assertions}),
 }
 writeFileSync(OUT+'/ticket-issued-pool-value-drain.json',JSON.stringify(evidence,null,2))
 console.log(JSON.stringify({event:'AGENT_A_POOL_VALUE_DRAIN_EVIDENCE',...evidence},null,2))
-if (classification==='INCONCLUSIVE_PRE_SUBMISSION_OR_PROVIDER_FAILURE') process.exitCode=2
-if (classification==='ACCEPTED_BUT_EVIDENCE_ASSERTIONS_INCOMPLETE') process.exitCode=3
+if (classification!=='REJECTED_BY_B1_POOL_VALUE_GUARD') process.exitCode=3
