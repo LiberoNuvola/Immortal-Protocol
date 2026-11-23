@@ -705,6 +705,14 @@ mkValidator
                "B1PrizePool: price must be positive"
                (priceUsdm > 0)
 
+          -- Ticket issuance changes accounting reservations, not the
+          -- Pool's physical Value. Enforce this at the spending boundary
+          -- even when a transaction supplies a non-production ticket policy.
+          && traceIfFalse
+               "B1PrizePool: physical pool value changed"
+               (txOutValue (ownInputResolved ctx)
+                 == ownOutputValue ctx)
+
           && traceIfFalse
                "B1PrizePool: continuing output missing"
                (isJust nextDatum)
