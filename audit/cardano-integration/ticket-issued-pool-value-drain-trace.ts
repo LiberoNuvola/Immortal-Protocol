@@ -161,8 +161,14 @@ const controlHash = await controlSigned.submit()
 await lucid.awaitTx(controlHash)
 pools = await lucid.utxosAt(scripts.b1PrizePoolAddress)
 const controlPool = pools.find(u => u.txHash === controlHash && u.assets[poolUnit] === 1n)
+const controlPrizeUtxos = await lucid.utxosAt(scripts.prizeAddress)
+const controlPrize = controlPrizeUtxos.find(
+  u => u.txHash === controlHash && (u.assets[controlUnit] ?? 0n) === 1n,
+)
 if (!controlPool || (controlPool.assets[liquidityUnit] ?? 0n) !== LIQUIDITY ||
-    !sameAssets(controlPool.assets,pool.assets)) throw new Error('Positive control failed full Value preservation')
+    !sameAssets(controlPool.assets,pool.assets) || !controlPrize) {
+  throw new Error('Positive control failed: Pool Value preservation or Ticket output missing')
+}
 pool = controlPool
 
 // Adversarial attempt: marker and stale accounting datum stay; all physical liquidity exits.
@@ -243,13 +249,15 @@ if (accepted && continuing && prize) {
   classification = 'INCONCLUSIVE_PRE_SUBMISSION_OR_PROVIDER_FAILURE'
 }
 const evidence = {
-  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.3',
+  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.4',
   environment:'local-yaci-devnet-only',networkProvider:API,classification,
   scope:'B1PrizePool TicketIssued; synthetic native liquidity token; native all(sig) test ticket policy',
   exclusions:{productionMintPolicy:false,counterInput:false,treasuryReceipt:false,EEVAdmission:false,preprodOrMainnet:false,V3OrReveal:false},
   bootstrapHash,initialPoolReference,testPolicyId:policyId,poolUnit,liquidityUnit,
   liquiditySubunits:LIQUIDITY.toString(),priceSubunits:PRICE.toString(),
-  positiveControl:{txHash:controlHash,fullValuePreserved:JSON.stringify(controlInputValue)===JSON.stringify(sortedAssets(controlPool.assets)),
+  positiveControl:{txHash:controlHash,ticketUnit:controlUnit,
+    poolOutputFound:Boolean(controlPool),ticketOutputFound:Boolean(controlPrize),
+    fullValuePreserved:sameAssets(controlInputValue,controlPool.assets),
     inputValue:controlInputValue,outputValue:sortedAssets(controlPool.assets)},
   drain:{txHash,accepted,stage,error:errorText,originalPoolInputValue:inputValue,
     intendedPoolOutputValue:sortedAssets(drainPoolValue),
