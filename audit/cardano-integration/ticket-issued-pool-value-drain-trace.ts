@@ -206,8 +206,9 @@ const walletUtxos = await lucid.utxosAt(address)
 const walletLiquidity = walletUtxos.reduce((n,u)=>n+(u.assets[liquidityUnit]??0n),0n)
 const prizeUtxos = await lucid.utxosAt(scripts.prizeAddress)
 const prize = txHash ? prizeUtxos.find(u=>u.txHash===txHash && (u.assets[drainUnit]??0n)===1n) : undefined
-const budgetFailure = /execution went over budget|execution budget|budget (?:exceeded|exhausted)|execution units? (?:limit|budget)|exceeded.{0,30}budget/i.test(errorText)
-const scriptFailure = /PlutusFailure|PlutusV[12] script failed|failed script execution|validator failure|script failure|script failed/i.test(errorText)
+const observedFailure = errorText + '\n' + (negativeEvalError ?? '')
+const budgetFailure = /execution went over budget|execution budget|budget (?:exceeded|exhausted)|execution units? (?:limit|budget)|exceeded.{0,30}budget/i.test(observedFailure)
+const scriptFailure = /PlutusFailure|PlutusV[12] script failed|failed script execution|validator failure|script failure|script failed|physical pool value changed/i.test(observedFailure)
 let assertions: Record<string,boolean> = {}
 let classification: string
 if (accepted && continuing && prize) {
