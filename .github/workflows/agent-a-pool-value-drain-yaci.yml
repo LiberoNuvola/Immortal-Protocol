@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - agent-a/pool-value-drain-yaci-2026-11-23
+      - agent-a/pool-value-drain-guard-2026-11-23
     paths:
+      - plutus/B1PrizePool.hs
       - audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
       - .github/workflows/agent-a-pool-value-drain-yaci.yml
 
