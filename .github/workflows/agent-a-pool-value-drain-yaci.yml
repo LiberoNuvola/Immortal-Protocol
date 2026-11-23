@@ -9,6 +9,7 @@ on:
       - plutus/B1PrizePool.hs
       - audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
       - .github/workflows/agent-a-pool-value-drain-yaci.yml
+      - .github/workflows/agent-a-pool-value-drain-yaci.yml
 
 permissions:
   contents: read
