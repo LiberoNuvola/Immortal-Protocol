@@ -25,6 +25,7 @@ const PRIZE_ADA = 3_000_000n
 const POOL_TOKEN_NAME = '504f4f4c'
 const ORACLE_TOKEN_NAME = '4f5241434c45'
 const ZERO32 = new Uint8Array(32)
+const GAME_VERSION = Buffer.from('V1').toString('hex')
 const OUT = 'audit/yaci-evidence'
 const c = (index: number, fields: any[] = []): any => new Constr(index, fields)
 const ref = (u: UTxO): string => u.txHash + '#' + u.outputIndex
@@ -118,8 +119,8 @@ if (!scripts.b1PrizePoolAddress || !scripts.prizeAddress || !scripts.b1PrizePool
 }
 function prizeDatum(name: string, now: bigint): any {
   return c(0,[
-    policyId,name,'22'.repeat(32),PRICE,'33'.repeat(32),'56',1n,0n,'','',c(0),'',0n,
-    c(0,[0n,0n,Buffer.from(ZERO32).toString('hex'),'56']),
+    policyId,name,'22'.repeat(32),PRICE,'33'.repeat(32),GAME_VERSION,1n,0n,'','',c(0),'',0n,
+    c(0,[0n,0n,Buffer.from(ZERO32).toString('hex'),GAME_VERSION]),
     c(1),'','44'.repeat(32),Buffer.from(ZERO32).toString('hex'),scripts.b1PrizePoolHash,
     now,now+86_400_000n,0n,0n,
   ])
@@ -234,7 +235,7 @@ const evidence = {
   exclusions:{productionMintPolicy:false,counterInput:false,treasuryReceipt:false,EEVAdmission:false,preprodOrMainnet:false,V3OrReveal:false},
   bootstrapHash,initialPoolReference,testPolicyId:policyId,poolUnit,liquidityUnit,
   liquiditySubunits:LIQUIDITY.toString(),priceSubunits:PRICE.toString(),
-  positiveControl:{txHash:controlHash,fullValuePreserved:sameAssets(controlPool.assets,pool.assets),
+  positiveControl:{txHash:controlHash,fullValuePreserved:JSON.stringify(controlInputValue)===JSON.stringify(sortedAssets(controlPool.assets)),
     inputValue:controlInputValue,outputValue:sortedAssets(controlPool.assets)},
   drain:{txHash,accepted,stage,error:errorText,originalPoolInputValue:inputValue,
     intendedPoolOutputValue:sortedAssets(drainPoolValue),
@@ -242,7 +243,7 @@ const evidence = {
     continuingPoolActualValue:continuing?sortedAssets(continuing.assets):null,
     continuingPoolDatum:continuing?.datum??null,
     walletLiquidity:walletLiquidity.toString(),prizeTicketOutputFound:Boolean(prize),
-    originalPoolStillUnspent,assertions},
+    originalPoolStillUnspent:originalStillUnspent,assertions},
   budget:{reusedControlBudgetForNegative:reusedControlBudget,negativeEvalError},
   evidenceDigest:hashJson({bootstrapHash,controlHash,txHash,accepted,stage,errorText,classification,assertions}),
 }
