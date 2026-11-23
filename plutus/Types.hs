@@ -1,9 +1,11 @@
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ViewPatterns        #-}
+{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 #-}
 
 module Types
   ( PrizeStatus (..)
@@ -22,6 +24,7 @@ module Types
 
 import PlutusLedgerApi.V2
 import PlutusTx
+import qualified PlutusTx.Builtins as Builtins
 import PlutusTx.Prelude
 
 -- | Ticket / prize economic state (constitution state machine).
@@ -148,9 +151,10 @@ PlutusTx.unstableMakeIsData ''PrizeDatum
 -- | SyncBeacon: copy R from registry ref input.
 --   Reveal playerSecret
 --   Claim: pay once, keep NFT, status → Claimed (no mandatory burn)
---   Expire: consume the Pending PrizeDatum at/after pdExpiresAt.
---     No continuing PrizeDatum is produced; the ticket NFT itself is not
---     required to be burned and may remain with its holder.
+--   Expire: consume a Pending or Revealed PrizeDatum at/after pdExpiresAt.
+--     Pending releases unresolved reserve/count; Revealed Loss closes without
+--     a pool delta; an unclaimed Revealed Win releases its pending liability.
+--     No continuing PrizeDatum is produced; the ticket NFT may remain held.
 --
 -- Constructor indices are compatibility API: SyncBeacon=0, Reveal=1,
 -- Claim=2, Expire=3.
@@ -213,7 +217,107 @@ data B1PrizePoolDatum = B1PrizePoolDatum
   --   Used to locate and validate PrizeDatum outputs in ticket actions.
   }
 
-PlutusTx.unstableMakeIsData ''B1PrizePoolDatum
+{-# INLINABLE b1PrizePoolDatumToBuiltinData #-}
+b1PrizePoolDatumToBuiltinData :: B1PrizePoolDatum -> BuiltinData
+b1PrizePoolDatumToBuiltinData d =
+  Builtins.mkConstr
+    0
+    [ toBuiltinData (ppTotalLiquidity d)
+    , toBuiltinData (ppPendingLiabilities d)
+    , toBuiltinData (ppUnresolvedReserve d)
+    , toBuiltinData (ppUnresolvedTicketCount d)
+    , toBuiltinData (ppLockedJackpot d)
+    , toBuiltinData (ppJackpotThreshold d)
+    , toBuiltinData (ppSuspendedClasses d)
+    , toBuiltinData (ppPrizeHash d)
+    ]
+
+{-# INLINABLE b1PrizePoolDatumFromFields #-}
+b1PrizePoolDatumFromFields
+  :: [BuiltinData]
+  -> Maybe B1PrizePoolDatum
+b1PrizePoolDatumFromFields fields =
+  case fields of
+    [f0, f1, f2, f3, f4, f5, f6, f7] ->
+      case fromBuiltinData f0 of
+        Just v0 ->
+          case fromBuiltinData f1 of
+            Just v1 ->
+              case fromBuiltinData f2 of
+                Just v2 ->
+                  case fromBuiltinData f3 of
+                    Just v3 ->
+                      case fromBuiltinData f4 of
+                        Just v4 ->
+                          case fromBuiltinData f5 of
+                            Just v5 ->
+                              case fromBuiltinData f6 of
+                                Just v6 ->
+                                  case fromBuiltinData f7 of
+                                    Just v7 ->
+                                      Just
+                                        (B1PrizePoolDatum
+                                          v0 v1 v2 v3 v4 v5 v6 v7)
+                                    Nothing -> Nothing
+                                Nothing -> Nothing
+                            Nothing -> Nothing
+                        Nothing -> Nothing
+                    Nothing -> Nothing
+                Nothing -> Nothing
+            Nothing -> Nothing
+        Nothing -> Nothing
+    _ -> Nothing
+
+{-# INLINABLE b1PrizePoolDatumUnsafeFromFields #-}
+b1PrizePoolDatumUnsafeFromFields
+  :: [BuiltinData]
+  -> B1PrizePoolDatum
+b1PrizePoolDatumUnsafeFromFields fields =
+  case fields of
+    [f0, f1, f2, f3, f4, f5, f6, f7] ->
+      B1PrizePoolDatum
+        (unsafeFromBuiltinData f0)
+        (unsafeFromBuiltinData f1)
+        (unsafeFromBuiltinData f2)
+        (unsafeFromBuiltinData f3)
+        (unsafeFromBuiltinData f4)
+        (unsafeFromBuiltinData f5)
+        (unsafeFromBuiltinData f6)
+        (unsafeFromBuiltinData f7)
+    _ -> traceError "B1PrizePoolDatum: invalid field count"
+
+instance ToData B1PrizePoolDatum where
+  {-# INLINABLE toBuiltinData #-}
+  toBuiltinData = b1PrizePoolDatumToBuiltinData
+
+instance FromData B1PrizePoolDatum where
+  {-# INLINABLE fromBuiltinData #-}
+  fromBuiltinData d =
+    Builtins.matchData
+      d
+      (\tag fields ->
+        if tag == 0
+          then b1PrizePoolDatumFromFields fields
+          else Nothing)
+      (\_ -> Nothing)
+      (\_ -> Nothing)
+      (\_ -> Nothing)
+      (\_ -> Nothing)
+
+instance UnsafeFromData B1PrizePoolDatum where
+  {-# INLINABLE unsafeFromBuiltinData #-}
+  unsafeFromBuiltinData d =
+    Builtins.matchData
+      d
+      (\tag fields ->
+        if tag == 0
+          then b1PrizePoolDatumUnsafeFromFields fields
+          else traceError "B1PrizePoolDatum: invalid constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
+
 
 
 -- | Actions that modify the PrizePool accounting state.
@@ -235,9 +339,10 @@ PlutusTx.unstableMakeIsData ''B1PrizePoolDatum
 -- TicketClaimed: claimedAmount must match the crystallised payout.
 -- Cannot claim more than once because status transitions to Claimed.
 --
--- TicketExpired: B1PrizePool computes reserveRelease deterministically
--- from the consumed PrizeDatum's pdPriceUsdm. NOT an average across
--- unresolved tickets.
+-- TicketExpired: Pending releases its exact pdPriceUsdm reserve and
+-- decrements unresolved count. Revealed Loss leaves pool accounting unchanged;
+-- Revealed Win releases only its unpaid pdPrizeAmount liability. The PrizePool
+-- physical value is preserved. No average across unresolved tickets is used.
 data B1PrizePoolAction
   = FundTreasury
   -- ^ Treasury deposits funds. Actual value increase verified on-chain.
@@ -251,9 +356,9 @@ data B1PrizePoolAction
   | TicketClaimed Integer
   -- ^ Ticket claimed. claimedAmount > 0, matches crystallised payout.
   | TicketExpired
-  -- ^ Ticket expired unrevealed. Decreases count and reserve by the
-  --   deterministic reserve derived from the ticket's pdPriceUsdm.
-  --   NOT an average across unresolved tickets.
+  -- ^ Ticket expiry after pdExpiresAt. Pending releases its exact ticket-price
+  --   reserve/count; Revealed Loss has no accounting delta; Revealed Win
+  --   releases only its unpaid crystallized liability. Pool assets are preserved.
 
 PlutusTx.unstableMakeIsData ''B1PrizePoolAction
 
