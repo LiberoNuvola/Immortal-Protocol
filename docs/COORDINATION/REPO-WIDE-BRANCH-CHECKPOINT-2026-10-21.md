@@ -2033,3 +2033,26 @@ The source-derived status of Issues #53/#54 is unchanged until the relevant loca
 - Dedicated B1/Yaci run [45940359618](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940359618): PENDING; the older B1 run [45938998484](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45938998484) is still marked IN PROGRESS at Plutus artifact compilation, so the new adversarial Yaci trace has not run.
 
 No no-ticket EXPIRE or caller-controlled TicketIssued ledger result is claimed at this time.
+
+
+## 2026-11-27 — Agent A: adversarial harness classification and B1 workflow queue hardening
+
+Audit branch follow-on commits (same existing branch; no new branch):
+- `5f868e0da7d64e1092b5edc1b1e0594ea6448232`: EXPIRE no-ticket negative test now captures rejections during complete/evaluate, sign/evaluate, and submit/confirm. It distinguishes an explicit ticket-identity guard from unrelated Plutus/evaluation failures and provider/builder/network failures. Non-identity or infrastructure failures remain CI failures/inconclusive. Accepted missing-NFT EXPIRE still writes a security finding and fails.
+- `bdfa2cdda70ea8181e9e8ca75e3cb0c95bc12693`: fixed the identity-trace matcher to match actual text.
+- `ef5d90f48f1225bf52b2ed56d6ad1502cf6fdc83`: introduced per-source-branch B1 concurrency with stale-run cancellation.
+- `deeb80a267ff3ebf76c543f52527a3c37dd6dcf3`: normalized the group expression to `github.head_ref || github.ref_name`, so push and pull_request events for one PR source branch share the key.
+- `1a5f6dcd5031aaf1047d5266278b5ed926555d5e`: narrowed expected EXPIRE evidence to `REJECTED_BY_TICKET_IDENTITY_GUARD`; the trace no longer overstates that one reported evaluation error proves both PrizeValidator and B1PrizePool independently emitted the guard.
+
+The accepted no-ticket evidence packet now contains the correct CBOR byte count and full transaction CBOR. Rejection evidence records the stage and message, and a pass is allowed only for a specifically ticket-identity-related guard. Generic Plutus failure is not accepted as proof of identity protection.
+
+### CI state at latest review
+
+- Audit branch HEAD: `1a5f6dcd5031aaf1047d5266278b5ed926555d5e`.
+- PR #52 remains OPEN and DRAFT.
+- The B1 run on intermediate SHA `ef5d90f48f1225bf52b2ed56d6ad1502cf6fdc83` ([45940752073](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940752073)) remains in progress at canonical Plutus setup; it has not reached Yaci.
+- The B1 run on `deeb80a267ff3ebf76c543f52527a3c37dd6dcf3` ([45940799217](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940799217)) was cancelled by the subsequent commit during setup, before any Yaci trace.
+- The B1 run on latest HEAD `1a5f6dcd5031aaf1047d5266278b5ed926555d5e` ([45940886401](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940886401)) is pending.
+- Prior to the last two documentation/harness-only refinements, declaration conformance and Algorithmic Governability passed on SHA `ef5d90f48f1225bf52b2ed56d6ad1502cf6fdc83`. This does not substitute for latest-head checks or ledger evidence.
+
+No ticket-identity attack or rejection is yet ledger-qualified. The EXPIRE identity and TicketIssued policy-binding findings remain source-derived. No Plutus V3, Reveal semantics, 500× multiplier, economic constants, or B2 carrier behavior were changed; no Preprod/Mainnet actions were performed.
