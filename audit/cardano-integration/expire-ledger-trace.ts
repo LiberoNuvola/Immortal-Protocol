@@ -998,7 +998,7 @@ function handleNoTicketExpireFailure(stage: string, error: unknown): never {
   const errorName = error instanceof Error ? error.name : typeof error
   const errorMessage = (error instanceof Error ? error.message : String(error)).slice(0, 6000)
   const identityGuardObserved =
-    /ticket[\\s\\S]{0,100}(?:identity|nft|asset|policy)[\\s\\S]{0,100}(?:missing|invalid|mismatch|unauthori[sz]ed|not found|quantity)|(?:identity|nft|asset|policy)[\\s\\S]{0,100}(?:ticket)[\\s\\S]{0,100}(?:missing|invalid|mismatch|unauthori[sz]ed|not found|quantity)/i
+    /ticket[\s\S]{0,100}(?:identity|nft|asset|policy)[\s\S]{0,100}(?:missing|invalid|mismatch|unauthori[sz]ed|not found|quantity)|(?:identity|nft|asset|policy)[\s\S]{0,100}(?:ticket)[\s\S]{0,100}(?:missing|invalid|mismatch|unauthori[sz]ed|not found|quantity)/i
       .test(errorMessage)
   const plutusFailureObserved =
     /PlutusFailure|PlutusV[12] script failed|failed script execution|validator failure|script failure|execution units|evaluation failed/i
