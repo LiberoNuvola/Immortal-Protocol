@@ -45,6 +45,7 @@ const SEED =
 const PRICE_USDM = 100n
 const TOTAL_LIQUIDITY_USDM = 100_000n
 const EXPIRE_CASE = process.env.IMMORTAL_EXPIRE_CASE ?? 'pending'
+const OMIT_TICKET_NFT = process.env.IMMORTAL_EXPIRE_OMIT_TICKET_NFT === '1'
 if (!['pending', 'revealed-loss', 'revealed-win'].includes(EXPIRE_CASE)) {
   throw new Error('Unsupported IMMORTAL_EXPIRE_CASE: ' + EXPIRE_CASE)
 }
@@ -829,7 +830,7 @@ const bootstrap = await traceExpireBuilder('bootstrap-mint-and-fixture-outputs',
     {
       [poolUnit]: 1n,
       [liquidityUnit]: TOTAL_LIQUIDITY_USDM,
-      [ticketUnit]: 1n,
+      ...(OMIT_TICKET_NFT ? {} : { [ticketUnit]: 1n }),
     },
     Data.void(),
   )
@@ -848,7 +849,10 @@ const bootstrap = await traceExpireBuilder('bootstrap-mint-and-fixture-outputs',
     { kind: 'inline', value: Data.to(prePrizeDatum) },
     { lovelace: 3_000_000n },
   )
-  .pay.ToAddress(address, { lovelace: 2_000_000n, [ticketUnit]: 1n })
+  .pay.ToAddress(address, {
+    lovelace: 2_000_000n,
+    ...(OMIT_TICKET_NFT ? {} : { [ticketUnit]: 1n }),
+  })
   .addSigner(address)
   .complete())
 
@@ -871,8 +875,14 @@ const poolUtxos = await waitFor(
   'bootstrapped B1PrizePool UTxO',
 )
 const walletUtxos = await lucid.utxosAt(address)
-if (!walletUtxos.some((u) => u.assets[ticketUnit] === 1n)) {
-  throw new Error('ticket NFT was not delivered to the holder')
+const walletTicketQuantityBefore = walletUtxos.reduce(
+  (sum, u) => sum + (u.assets[ticketUnit] ?? 0n),
+  0n,
+)
+if (OMIT_TICKET_NFT ? walletTicketQuantityBefore !== 0n : walletTicketQuantityBefore !== 1n) {
+  throw new Error(
+    'unexpected ticket NFT quantity before EXPIRE: ' + walletTicketQuantityBefore.toString(),
+  )
 }
 
 const prizeUtxo = prizeUtxos.find(
@@ -1092,8 +1102,61 @@ const ticketQuantity = walletAfter.reduce(
   (sum, u) => sum + (u.assets[ticketUnit] ?? 0n),
   0n,
 )
-if (ticketQuantity !== 1n) {
+if (OMIT_TICKET_NFT ? ticketQuantity !== 0n : ticketQuantity !== 1n) {
   throw new Error('EXPIRE changed ticket NFT ownership/quantity')
+}
+
+if (OMIT_TICKET_NFT) {
+  const negativeEvidence = {
+    schema: 'immortal.cardano.expire-ticket-identity-negative.v1',
+    classification: 'UNAUTHORIZED_EXPIRE_ACCEPTED_WITHOUT_TICKET_NFT',
+    expected: 'REJECTED_BY_PRIZE_AND_B1_IDENTITY_GUARDS',
+    observed: 'ACCEPTED_BY_LOCAL_YACI_LEDGER',
+    environment: 'local-yaci-devnet',
+    expireBackend: EXPIRE_BACKEND,
+    expireCase: EXPIRE_CASE,
+    bootstrapHash,
+    transactionRef: txHash,
+    transactionCborBytes: Buffer.from(txCbor, 'hex').length,
+    prizeInput: {
+      outRef: ref(prizeUtxo),
+      ticketUnit,
+      ticketAssetQuantity: prizeUtxo.assets[ticketUnit]?.toString() ?? '0',
+      datumPolicyId: testPolicyId,
+      datumTicketNameHex: TICKET_NAME_HEX,
+    },
+    walletBefore: {
+      targetTicketQuantity: walletTicketQuantityBefore.toString(),
+    },
+    walletAfter: {
+      targetTicketQuantity: ticketQuantity.toString(),
+    },
+    poolInput: ref(poolUtxo),
+    poolOutput: ref(postPool),
+    accountingBefore: {
+      pendingLiabilities: EXPIRE_PRE_LIABILITIES.toString(),
+      unresolvedReserve: EXPIRE_PRE_RESERVE.toString(),
+      unresolvedTicketCount: EXPIRE_PRE_COUNT.toString(),
+    },
+    accountingAfter: {
+      pendingLiabilities: postLiability.toString(),
+      unresolvedReserve: postReserve.toString(),
+      unresolvedTicketCount: postCount.toString(),
+    },
+    physicalPoolValuePreserved: true,
+    scripts: {
+      prizeValidatorHash: validatorToScriptHash(scripts.prizeValidator as Script),
+      b1PrizePoolHash: validatorToScriptHash(scripts.b1PrizePool as Script),
+    },
+  }
+  writeFileSync(
+    'audit/yaci-evidence/expire-ticket-identity-negative.json',
+    JSON.stringify(negativeEvidence, null, 2),
+  )
+  console.error(JSON.stringify(negativeEvidence, null, 2))
+  throw new Error(
+    'SECURITY_FINDING: EXPIRE accepted a PrizeDatum without its identified ticket NFT',
+  )
 }
 
 const postStateFingerprint = hashJson({
