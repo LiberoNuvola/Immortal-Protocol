@@ -2003,3 +2003,22 @@ On HEAD `74782746cb1ab182cbc6ac162fb36bf26377cdbf`:
 - General Cardano Integration Lab run `45939505793` remained in progress at fresh Plutus artifact generation.
 - B1 Pool Value/EXPIRE run `45939505792` remained pending behind the earlier serialized B1 run `45938998484`, still compiling fresh Plutus artifacts.
 - Therefore the no-ticket EXPIRE ledger result is still unknown. A pending or compile-only run is not security evidence.
+
+
+## 2026-11-27 — Agent A: distinct caller-controlled TicketIssued policy probe added
+
+At audit branch commit `575852d1978419e6a1b7f040192d1a8b89d69832`, the existing `audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts` was strengthened to mint the ticket under a distinct caller-controlled native `any(sig)` policy, separate from the Pool authority token policy. The new PrizeDatum names that attacker policy ID. The direct B1 `TicketIssued` transaction omits the canonical Plutus MintPolicy, Counter input and Treasury receipt while attempting the same complete physical Pool Value preservation check.
+
+The evidence packet records the Pool and ticket policy IDs, their distinctness, the transaction reference, and whether full Pool Value was preserved. The existing drain-negative case remains separate. No Plutus validator, MintPolicy, Reveal, V3 or economic behavior was modified.
+
+**Expected classification if ledger execution accepts the transition:** B1 `TicketIssued` accepts a caller-controlled native policy at the B1 validator boundary. This is strong local-Yaci evidence of the missing authoritative policy binding, but it is not yet evidence of a full production sale path, Reveal/Claim, or payout extraction. If it rejects, the Yaci logs must identify which on-chain guard caused rejection; setup/provider failure is inconclusive.
+
+### CI after the probe commit
+
+- Audit branch HEAD: `575852d1978419e6a1b7f040192d1a8b89d69832`.
+- New B1 workflow run [45940359618](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940359618): pending; no ledger result yet.
+- New general Cardano lab [45940359490](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940359490): pending.
+- Older B1 run [45938998484](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45938998484) is still marked in progress at fresh Plutus compilation; older general lab [45939505793](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45939505793) remains in progress at fresh Plutus artifact generation. The new B1 run has not started its job yet.
+- Declaration conformance, algorithmic governability and GitGuardian passed on the preceding SHA `74782746cb1ab182cbc6ac162fb36bf26377cdbf`; the latest SHA's static checks are still running/queued.
+
+The source-derived status of Issues #53/#54 is unchanged until the relevant local-Yaci steps actually execute.
