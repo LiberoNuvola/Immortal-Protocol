@@ -30,8 +30,8 @@ permissions:
   contents: read
 concurrency:
   # Isolate runs by source branch and cancel stale commits from the same branch.
-  # push and pull_request events for the same PR head share one concurrency key.
-  group: b1-pool-value-expiry-yaci-${{ github.head_ref || github.ref }}
+  # Use the source branch name for both push and pull_request events.
+  group: b1-pool-value-expiry-yaci-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
