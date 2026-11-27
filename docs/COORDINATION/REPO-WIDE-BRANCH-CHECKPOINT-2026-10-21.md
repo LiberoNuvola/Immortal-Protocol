@@ -1979,3 +1979,27 @@ Before implementation, specify carrier creation/upgrades, immutable ticket-polic
 - No Preprod/Mainnet transaction, wallet signature, deployment, or on-chain action was performed.
 - First real PRE-RICH Issue remains independently blocked by Issue #37 source/approval/R1-Kc gates.
 
+
+## 2026-11-27 — Agent A: broadened ticket identity and issuance-policy review
+
+A follow-on source audit of the existing `audit/claim-b1-conformance` HEAD (`74782746cb1ab182cbc6ac162fb36bf26377cdbf`) shows that the ticket identity question is not isolated to EXPIRE:
+
+- `SyncBeacon` preserves the datum identity through `identityFieldsEq`, but does not prove an NFT is present or that its policy is the canonical ticket policy.
+- `Reveal` derives the commitment/result from datum-supplied ticket fields and checks the Prize/Pool transition; the source path does not authenticate the datum's ticket NFT against an authoritative policy identity.
+- `Claim` looks for an input asset using the datum-supplied policy/name and requires its owner signature. This proves control of the asset selected by the datum, not that the asset belongs to the protocol's canonical ticket collection.
+- B1 `TicketRevealed` and `TicketClaimed` compare or reuse the policy/name from PrizeDatum, but do not establish an authoritative ticket-policy anchor. B1 `TicketExpired` uses the PrizeDatum for expiry accounting without checking that its named asset is authentic.
+- B1 `TicketIssued` calls `ticketMinted(info, pdTicketPolicy, pdTicketName)`, which checks quantity 1 under the policy/name supplied by the PrizeDatum. B1PrizePool is not parameterized with the canonical ticket MintPolicy ID. In contrast, the canonical MintPolicy pins `pdTicketPolicy == ownCsBytes` and expected serial name, and checks Counter advancement, Treasury payment and B1 reservation—but those checks execute only when that MintPolicy is actually invoked. The B1 branch itself does not require its invocation.
+
+This creates a **source-derived hypothesis** that a caller-controlled native policy could satisfy B1 `TicketIssued` with a forged datum-selected token while bypassing the canonical atomic-sale policy's Counter/Treasury requirements. The existing Pool Value guard still constrains physical Pool Value; this finding is not evidence of a physical drain or a paid-out exploit. The full unauthorized issuance transaction has not yet been reproduced on local Yaci.
+
+Tracked separately in [Issue #54 — Bind B1 TicketIssued to the authoritative ticket MintPolicy](https://github.com/LiberoNuvola/Immortal-Protocol/issues/54), while [Issue #53](https://github.com/LiberoNuvola/Immortal-Protocol/issues/53) remains focused on EXPIRE's missing ticket-identity proof. Required tests: canonical atomic-sale positive control, attacker-controlled native-policy negative twin with no canonical MintPolicy/Counter/Treasury, then isolated lifecycle follow-through only if issuance succeeds.
+
+**Non-regression:** No Plutus V3, Reveal semantics, 500× multiplier, economic constants, or Agent B B2 carrier changes. No Preprod/Mainnet transaction or deployment.
+
+### Exact-head CI status at this review
+
+On HEAD `74782746cb1ab182cbc6ac162fb36bf26377cdbf`:
+- `no-result-dependent-authority` and `declaration-conformance` passed.
+- General Cardano Integration Lab run `45939505793` remained in progress at fresh Plutus artifact generation.
+- B1 Pool Value/EXPIRE run `45939505792` remained pending behind the earlier serialized B1 run `45938998484`, still compiling fresh Plutus artifacts.
+- Therefore the no-ticket EXPIRE ledger result is still unknown. A pending or compile-only run is not security evidence.
