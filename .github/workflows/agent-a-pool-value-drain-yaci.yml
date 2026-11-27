@@ -217,7 +217,7 @@ jobs:
             echo "scope=B1 TicketIssued Pool Value guard + Haskell Plutus V2 Pending/Revealed EXPIRE characterization; local Yaci only"
             echo "v3_tests=not_run"
             echo "reveal_tests=not_run"
-            echo "expire_cases=pending,revealed-loss,revealed-win"
+            echo "expire_cases=pending,revealed-loss,revealed-win;negative=no-ticket-pending"
             echo "expire_backend=haskell-v2"
             echo "preprod_transactions=none"
             echo "mainnet_transactions=none"
@@ -238,10 +238,11 @@ jobs:
           IMMORTAL_EXPIRE_AIKEN_V3: "0"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
-      - name: Execute Haskell V2 Revealed Win EXPIRE trace
+      - name: Execute adversarial EXPIRE without ticket NFT (must reject)
         env:
-          IMMORTAL_EXPIRE_CASE: revealed-win
+          IMMORTAL_EXPIRE_CASE: pending
           IMMORTAL_EXPIRE_AIKEN_V3: "0"
+          IMMORTAL_EXPIRE_OMIT_TICKET_NFT: "1"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
       - name: Preserve ledger result and Yaci diagnostics
