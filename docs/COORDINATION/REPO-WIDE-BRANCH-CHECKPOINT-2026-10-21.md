@@ -2056,3 +2056,14 @@ The accepted no-ticket evidence packet now contains the correct CBOR byte count 
 - Prior to the last two documentation/harness-only refinements, declaration conformance and Algorithmic Governability passed on SHA `ef5d90f48f1225bf52b2ed56d6ad1502cf6fdc83`. This does not substitute for latest-head checks or ledger evidence.
 
 No ticket-identity attack or rejection is yet ledger-qualified. The EXPIRE identity and TicketIssued policy-binding findings remain source-derived. No Plutus V3, Reveal semantics, 500× multiplier, economic constants, or B2 carrier behavior were changed; no Preprod/Mainnet actions were performed.
+
+
+### Latest exact-head check refresh — `1a5f6dcd5031aaf1047d5266278b5ed926555d5e`
+
+- `declaration-conformance`: PASS.
+- `no-result-dependent-authority`: PASS.
+- GitGuardian: PASS.
+- Dedicated B1/Yaci [run 45940891049](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940891049): IN PROGRESS at canonical Plutus setup; the adversarial trace steps have not started.
+- General Cardano lab [run 45940890946](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940890946): IN PROGRESS at Haskell toolchain setup.
+
+The cancelled intermediate attempts were cancelled during setup after newer commits; they are not validator or ledger failures. Exact-head static checks are green, while the two Yaci-backed security cases remain unexecuted. PR #52 stays DRAFT.
