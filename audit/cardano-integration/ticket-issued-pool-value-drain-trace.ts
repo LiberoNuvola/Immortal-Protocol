@@ -151,7 +151,8 @@ let pool = pools.find(u => u.assets[poolUnit] === 1n)
 if (!pool) throw new Error('Bootstrapped Pool UTxO not found')
 const initialPoolReference = ref(pool)
 
-// Positive control: direct B1 TicketIssued, preserving every Pool asset.
+// Adversarial policy-boundary probe: B1 TicketIssued is asked to accept a
+// caller-controlled ticket policy distinct from the Pool authority policy.
 const controlName = '4147454e5441434f4e54524f4c3031'
 const controlUnit = attackerTicketPolicyId + controlName
 const controlInputValue = sortedAssets(pool.assets)
@@ -258,14 +259,14 @@ if (accepted && continuing && prize) {
   classification = 'INCONCLUSIVE_PRE_SUBMISSION_OR_PROVIDER_FAILURE'
 }
 const evidence = {
-  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.5',
+  schema:'AGENT-A-B1-TICKETISSUED-POOL-VALUE-DRAIN-v0.6',
   environment:'local-yaci-devnet-only',networkProvider:API,classification,
   scope:'B1PrizePool TicketIssued; attacker-controlled native ticket policy distinct from Pool authority; canonical MintPolicy/Counter/Treasury absent',
   exclusions:{productionMintPolicy:false,counterInput:false,treasuryReceipt:false,EEVAdmission:false,preprodOrMainnet:false,V3OrReveal:false},
   bootstrapHash,initialPoolReference,testPolicyId:policyId,poolUnit,liquidityUnit,
   liquiditySubunits:LIQUIDITY.toString(),priceSubunits:PRICE.toString(),
   ticketPolicyBoundary:{
-    outcome:controlPool && controlPrize ? 'B1_ACCEPTED_DATUM_SELECTED_CALLER_CONTROLLED_NATIVE_POLICY' : 'NOT_ACCEPTED_OR_INCOMPLETE',
+    outcome:controlPool && controlPrize ? 'B1_ACCEPTED_CALLER_CONTROLLED_TICKET_POLICY_WITHOUT_CANONICAL_MINT_POLICY' : 'NOT_ACCEPTED_OR_INCOMPLETE',
     poolAuthorityPolicyId:policyId,
     attackerTicketPolicyId,
     ticketPolicyDiffersFromPoolAuthority:attackerTicketPolicyId !== policyId,
@@ -279,10 +280,19 @@ const evidence = {
     poolOutputReserve:PRICE.toString(),
     poolOutputUnresolvedTicketCount:'1',
   },
-  positiveControl:{txHash:controlHash,ticketUnit:controlUnit,
+  callerPolicyProbe:{txHash:controlHash,ticketUnit:controlUnit,
     poolOutputFound:Boolean(controlPool),ticketOutputFound:Boolean(controlPrize),
     fullValuePreserved:sameAssets(controlInputValue,controlPool.assets),
     inputValue:controlInputValue,outputValue:sortedAssets(controlPool.assets)},
+  securityGate:{
+    expected:'REJECTED_BY_CANONICAL_TICKET_POLICY_BINDING',
+    observed:controlPool && controlPrize
+      ? 'B1_ACCEPTED_CALLER_CONTROLLED_TICKET_POLICY_WITHOUT_CANONICAL_MINT_POLICY'
+      : 'NOT_ACCEPTED_OR_INCOMPLETE',
+    canonicalMintPolicyAttached:false,
+    counterInputPresent:false,
+    treasuryReceiptPresent:false,
+  },
   drain:{txHash,accepted,stage,error:errorText,originalPoolInputValue:inputValue,
     intendedPoolOutputValue:sortedAssets(drainPoolValue),
     continuingPoolReference:continuing?ref(continuing):null,
@@ -296,3 +306,7 @@ const evidence = {
 writeFileSync(OUT+'/ticket-issued-pool-value-drain.json',JSON.stringify(evidence,null,2))
 console.log(JSON.stringify({event:'AGENT_A_POOL_VALUE_DRAIN_EVIDENCE',...evidence},null,2))
 if (classification!=='REJECTED_BY_B1_POOL_VALUE_GUARD') process.exitCode=3
+if (controlPool && controlPrize) {
+  console.error('SECURITY_FINDING: B1 TicketIssued accepted a caller-controlled ticket policy without the canonical MintPolicy, Counter input, or Treasury receipt')
+  process.exitCode = 4
+}
