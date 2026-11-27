@@ -1186,7 +1186,7 @@ if (OMIT_TICKET_NFT) {
   const negativeEvidence = {
     schema: 'immortal.cardano.expire-ticket-identity-negative.v1',
     classification: 'UNAUTHORIZED_EXPIRE_ACCEPTED_WITHOUT_TICKET_NFT',
-    expected: 'REJECTED_BY_PRIZE_AND_B1_IDENTITY_GUARDS',
+    expected: 'REJECTED_BY_TICKET_IDENTITY_GUARD',
     observed: 'ACCEPTED_BY_LOCAL_YACI_LEDGER',
     environment: 'local-yaci-devnet',
     expireBackend: EXPIRE_BACKEND,
