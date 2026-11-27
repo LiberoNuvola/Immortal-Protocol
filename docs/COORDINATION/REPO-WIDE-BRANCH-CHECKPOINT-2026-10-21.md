@@ -2067,3 +2067,23 @@ No ticket-identity attack or rejection is yet ledger-qualified. The EXPIRE ident
 - General Cardano lab [run 45940890946](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940890946): IN PROGRESS at Haskell toolchain setup.
 
 The cancelled intermediate attempts were cancelled during setup after newer commits; they are not validator or ledger failures. Exact-head static checks are green, while the two Yaci-backed security cases remain unexecuted. PR #52 stays DRAFT.
+
+
+## 2026-11-27 — Agent A: TicketIssued caller-policy probe now fails closed
+
+At audit branch commit `8c6b80ab72fabef3bd12cbe87c5a20904ee5cc52`, `audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts` was changed to make the ticket-identity/policy boundary a real CI gate:
+
+- The source comment now identifies the transaction as an adversarial caller-policy probe, not a legitimate-sale positive control.
+- Evidence schema is v0.6; the packet has a separate `securityGate` outcome and renames the field to `callerPolicyProbe`.
+- If the local ledger accepts a ticket NFT under the distinct caller-controlled native policy without canonical MintPolicy, Counter input or Treasury receipt, the trace writes its evidence and exits with dedicated code 4 / `SECURITY_FINDING`. This prevents CI from appearing green while reproducing the unauthorized B1 acceptance.
+- The physical Pool Value drain result remains separately classified and preserved in the same evidence packet.
+
+### Latest exact-head CI
+
+- Audit branch HEAD: `8c6b80ab72fabef3bd12cbe87c5a20904ee5cc52`.
+- PR #52 remains OPEN/DRAFT.
+- Current B1/Yaci run [45941120705](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45941120705): in progress; the transaction has not yet reached Yaci at the time of this checkpoint.
+- Current general Cardano lab [45941120637](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45941120637): in progress.
+- On preceding SHA `1a5f6dcd5031aaf1047d5266278b5ed926555d5e`, declaration conformance, no-result-dependent-authority and GitGuardian passed. The Yaci run for that SHA was canceled during setup by a subsequent commit, so it provides no ledger evidence.
+
+The fake-policy TicketIssued boundary and no-ticket EXPIRE boundary are still awaiting exact-head local-Yaci execution. Neither is described as ledger-confirmed yet. No Plutus V3, Reveal semantics, 500× multiplier, economic constants, or B2 carrier changes; no Preprod/Mainnet action.
