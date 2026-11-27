@@ -1965,7 +1965,11 @@ At `74782746cb1ab182cbc6ac162fb36bf26377cdbf`, the existing `.github/workflows/a
 
 The existing MintPolicy issuance predicate already checks `pdTicketPolicy == ownCsBytes` and the expected serial name. However, `src/loadValidator.ts::buildScriptsFromLucid` builds PrizeValidator first, hashes it, and then builds MintPolicy with that PrizeValidator hash. Passing the MintPolicy currency symbol directly as a PrizeValidator parameter would create a circular script-hash dependency.
 
-A remediation therefore needs an authenticated, deployment-bound identity source that does not depend circularly on the PrizeValidator/MintPolicy hashes (for example, a governed singleton/config carrier or equivalent authority binding). Checking only for an asset under a datum-supplied policy is insufficient. Script identity and deployment-migration consequences must be explicitly reviewed before a production change.
+A source-backed non-circular precedent exists in `PRE-RICH/onchain/PreRichControlCarrier.hs` and `PreRichControlCarrierMintPolicy.hs`: a one-shot-seed singleton marker, configured marker identity, authorized transitions, exact marker continuity, full carrier Value preservation, and monotonic state version/nonce. This is a structural precedent only; it does not authorize changing Agent B's B2 carrier.
+
+A dedicated TicketIdentity carrier could independently pin the approved ticket MintPolicy ID/version. PrizeValidator could be parameterized with that independent carrier identity, then require a unique authenticated carrier reference input and a reference input containing the exact `policyId + ticketName` NFT. The NFT need not be consumed during permissionless EXPIRE. The topology order would be: independent carrier/marker identity → PrizeValidator → B1PrizePool → MintPolicy, so no PrizeValidator/MintPolicy hash cycle is introduced. The existing MintPolicy issuance predicate (`pdTicketPolicy == ownCsBytes` plus serial-name check) remains intact.
+
+Before implementation, specify carrier creation/upgrades, immutable ticket-policy commitment, network/version binding, exact reference-input cardinality, missing/duplicate/mismatch behavior, migration and all lifecycle branches that consume datum-supplied ticket identity (not EXPIRE alone). Checking only for an asset under a datum-supplied policy remains insufficient.
 
 ### Current disposition and non-regression boundaries
 
