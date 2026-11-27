@@ -2022,3 +2022,14 @@ The evidence packet records the Pool and ticket policy IDs, their distinctness, 
 - Declaration conformance, algorithmic governability and GitGuardian passed on the preceding SHA `74782746cb1ab182cbc6ac162fb36bf26377cdbf`; the latest SHA's static checks are still running/queued.
 
 The source-derived status of Issues #53/#54 is unchanged until the relevant local-Yaci steps actually execute.
+
+
+### Latest CI refresh — exact SHA `575852d1978419e6a1b7f040192d1a8b89d69832`
+
+- `declaration-conformance`: PASS.
+- `no-result-dependent-authority`: PASS.
+- GitGuardian: PASS (4 commits scanned, no secrets reported).
+- General `devnet-integration`: IN PROGRESS at [run 45940359490](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940359490).
+- Dedicated B1/Yaci run [45940359618](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45940359618): PENDING; the older B1 run [45938998484](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45938998484) is still marked IN PROGRESS at Plutus artifact compilation, so the new adversarial Yaci trace has not run.
+
+No no-ticket EXPIRE or caller-controlled TicketIssued ledger result is claimed at this time.
