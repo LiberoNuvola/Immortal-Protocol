@@ -993,7 +993,67 @@ console.log(JSON.stringify({
   latestBlockSlot: latestBlock.slot,
   latestBlockTimeMs,
 }))
-const expireTx = await completeWithReferenceScriptWitnesses(
+
+function handleNoTicketExpireFailure(stage: string, error: unknown): never {
+  const errorName = error instanceof Error ? error.name : typeof error
+  const errorMessage = (error instanceof Error ? error.message : String(error)).slice(0, 6000)
+  const identityGuardObserved =
+    /ticket[\\s\\S]{0,100}(?:identity|nft|asset|policy)[\\s\\S]{0,100}(?:missing|invalid|mismatch|unauthori[sz]ed|not found|quantity)|(?:identity|nft|asset|policy)[\\s\\S]{0,100}(?:ticket)[\\s\\S]{0,100}(?:missing|invalid|mismatch|unauthori[sz]ed|not found|quantity)/i
+      .test(errorMessage)
+  const plutusFailureObserved =
+    /PlutusFailure|PlutusV[12] script failed|failed script execution|validator failure|script failure|execution units|evaluation failed/i
+      .test(errorMessage)
+  const classification = identityGuardObserved
+    ? 'REJECTED_BY_TICKET_IDENTITY_GUARD'
+    : plutusFailureObserved
+      ? 'REJECTED_BY_UNRELATED_VALIDATOR_OR_EVALUATION_GUARD'
+      : 'INCONCLUSIVE_PROVIDER_BUILDER_OR_NETWORK_FAILURE'
+  const negativeEvidence = {
+    schema: 'immortal.cardano.expire-ticket-identity-negative.v2',
+    classification,
+    expected: 'REJECTED_BY_TICKET_IDENTITY_GUARD',
+    environment: 'local-yaci-devnet',
+    expireBackend: EXPIRE_BACKEND,
+    expireCase: EXPIRE_CASE,
+    failureStage: stage,
+    errorName,
+    errorMessage,
+    prizeInput: {
+      outRef: ref(prizeUtxo),
+      ticketUnit,
+      ticketAssetQuantity: prizeUtxo.assets[ticketUnit]?.toString() ?? '0',
+      datumPolicyId: testPolicyId,
+      datumTicketNameHex: TICKET_NAME_HEX,
+    },
+    walletBefore: {
+      targetTicketQuantity: walletTicketQuantityBefore.toString(),
+    },
+    poolInput: ref(poolUtxo),
+    accountingBefore: {
+      pendingLiabilities: EXPIRE_PRE_LIABILITIES.toString(),
+      unresolvedReserve: EXPIRE_PRE_RESERVE.toString(),
+      unresolvedTicketCount: EXPIRE_PRE_COUNT.toString(),
+    },
+    scripts: {
+      prizeValidatorHash: validatorToScriptHash(scripts.prizeValidator as Script),
+      b1PrizePoolHash: validatorToScriptHash(scripts.b1PrizePool as Script),
+    },
+  }
+  writeFileSync(
+    'audit/yaci-evidence/expire-ticket-identity-negative.json',
+    JSON.stringify(negativeEvidence, null, 2),
+  )
+  console.error(JSON.stringify(negativeEvidence, null, 2))
+  if (classification !== 'REJECTED_BY_TICKET_IDENTITY_GUARD') {
+    throw new Error('SECURITY_TEST_NOT_QUALIFIED: ' + classification)
+  }
+  console.log('EXPECTED_SECURITY_GUARD_REJECTION: EXPIRE rejected the missing ticket NFT by identity')
+  process.exit(0)
+}
+
+let expireTx: any
+try {
+  expireTx = await completeWithReferenceScriptWitnesses(
   [
     validatorToScriptHash(scripts.prizeValidator as Script),
     validatorToScriptHash(scripts.b1PrizePool as Script),
@@ -1020,21 +1080,37 @@ const expireTx = await completeWithReferenceScriptWitnesses(
       .validFrom(Number(expiresAt + 1_000n))
       .complete({ localUPLCEval: false }),
   ),
-)
+  )
+} catch (error) {
+  if (OMIT_TICKET_NFT) handleNoTicketExpireFailure('build/evaluate', error)
+  throw error
+}
 
 // This fixture qualifies the on-chain EXPIRE transition only. It does not
 // claim an authoritative production Issue-admission witness or bypass that gate.
-const signedExpire = await traceExpireBuilder(
-  `expire-spend-${EXPIRE_BACKEND}-${EXPIRE_CASE}`,
-  'sign',
-  () => expireTx.sign.withWallet().complete(),
-)
-const txHash = await signedExpire.submit()
+let signedExpire: any
+try {
+  signedExpire = await traceExpireBuilder(
+    `expire-spend-${EXPIRE_BACKEND}-${EXPIRE_CASE}`,
+    'sign',
+    () => expireTx.sign.withWallet().complete(),
+  )
+} catch (error) {
+  if (OMIT_TICKET_NFT) handleNoTicketExpireFailure('sign/evaluate', error)
+  throw error
+}
+let txHash: string
+try {
+  txHash = await signedExpire.submit()
+  await lucid.awaitTx(txHash)
+} catch (error) {
+  if (OMIT_TICKET_NFT) handleNoTicketExpireFailure('submit/confirm', error)
+  throw error
+}
 const txCbor = recordExpireCborSerialization(
   `expire-spend-${EXPIRE_BACKEND}-${EXPIRE_CASE}`,
   signedExpire.toCBOR(),
 )
-await lucid.awaitTx(txHash)
 
 const postPoolUtxos = await waitFor(
   () => lucid.utxosAt(scripts.b1PrizePoolAddress as string),
@@ -1117,7 +1193,8 @@ if (OMIT_TICKET_NFT) {
     expireCase: EXPIRE_CASE,
     bootstrapHash,
     transactionRef: txHash,
-    transactionCborBytes: Buffer.from(txCbor, 'hex').length,
+    transactionCborBytes: cborHexByteLength(txCbor),
+    transactionCbor: txCbor,
     prizeInput: {
       outRef: ref(prizeUtxo),
       ticketUnit,
