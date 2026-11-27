@@ -1914,3 +1914,64 @@ A first sale may record a receipt as unclassified/pending classification until a
 The design requires adversarial tests for no-prior-Treasury first Issue, unauthorized/public datums, one-time marker creation, canonical continuation, duplicate/stale state, complete Value conservation, Counter concurrency, legacy isolation and the existing 16,384-byte transaction ceiling.
 
 **Classification remains design-only.** No source, test, validator, policy, datum/redeemer ABI, economic allocation, workflow, wallet, signature, transaction or ledger state changed. Agent B's `audit/cardano-integration/**` ownership remains untouched. First real Issue remains NO-GO pending design/authority review and the independent Oracle, EEV, ProtectedCapital and deployment-bound R1/Kc/Ω gates.
+
+## 2026-11-27 — Agent A: B1 Pool Value guard, Yaci workflow repair, and EXPIRE ticket-identity gate
+
+**Working review vehicle:** [PR #52 — B1 Pool Value guard and expiry conformance](https://github.com/LiberoNuvola/Immortal-Protocol/pull/52), draft, from existing branch `audit/claim-b1-conformance` to `main`. No new branch created.
+
+**Latest branch HEAD:** `74782746cb1ab182cbc6ac162fb36bf26377cdbf`.
+
+### B1 Pool physical-Value guard
+
+The proposed `TicketIssued` branch now checks that the complete Cardano `Value` of the consumed B1 Pool UTxO equals the continuing Pool output Value. The exact-head local-Yaci positive and adversarial trace on the earlier PR #51 head demonstrated:
+- a legitimate TicketIssued transition preserves the complete Pool Value and creates the expected ticket output;
+- a direct Pool-drain attempt is rejected with `B1PrizePool: physical pool value changed`.
+
+This is a bounded spending-boundary guard result. It is not production MintPolicy, EEV admission, Treasury receipt, deployment approval, or first-Issue authorization.
+
+### Yaci general integration workflow repair
+
+At `58699f1aa28b5360bc45a73b56e89322dfae3bca`, the existing audit branch received a workflow-only correction in `.github/workflows/immortal-cardano-lab.yml`:
+- removed the second `yaci-devkit info` invocation that exits local-cluster mode and takes down the active Yaci process;
+- replaced it with passive runtime/process capture and a direct epoch-endpoint liveness check;
+- recorded the actual source branch name;
+- redacted ephemeral local-devnet signing-key strings before emitting/uploading logs.
+
+The exact-head general lab has been re-triggered; completion is not yet established at the time of this checkpoint.
+
+### EXPIRE positive conformance and newly discovered identity boundary
+
+The combined local-Yaci Haskell V2 workflow on exact SHA `6b70d2995765699023515bcbd1484d6d06b7924a` passed:
+- B1 TicketIssued full-Value guard;
+- Pending EXPIRE;
+- Revealed Loss EXPIRE;
+- Revealed Win EXPIRE.
+
+The revealed fixtures characterize EXPIRE pre-states; they are not end-to-end Reveal transactions.
+
+A separate source review found that `PrizeValidator.validateExpire` and B1 `TicketExpired` use the decoded PrizeDatum to select the ticket identity/accounting delta, but do not authenticate that the datum's `pdTicketPolicy` + `pdTicketName` corresponds to an actual ticket asset. Since the Prize script address accepts public datum-bearing outputs without executing its spending validator, a fabricated datum may be able to request a reserve/count or pending-liability release against the real Pool.
+
+**Evidence classification:** source-derived attack hypothesis; not yet ledger-reproduced as of this entry.
+
+Tracked in [Issue #53 — Authenticate ticket NFT identity on EXPIRE](https://github.com/LiberoNuvola/Immortal-Protocol/issues/53), with the cross-reference also recorded in [Issue #20](https://github.com/LiberoNuvola/Immortal-Protocol/issues/20). Required negative twins include no NFT, forged policy/name, wrong NFT, duplicate NFT, plus genuine ticket controls.
+
+### Adversarial no-ticket trace added
+
+At `1ce4abf88c1ff92530c1c7e34ffba779a8512d5d`, `audit/cardano-integration/expire-ledger-trace.ts` gained an opt-in `IMMORTAL_EXPIRE_OMIT_TICKET_NFT=1` fixture that bootstraps an expired Pending PrizeDatum and matching Pool reserve/count without minting/delivering the datum-identified ticket NFT.
+
+At `74782746cb1ab182cbc6ac162fb36bf26377cdbf`, the existing `.github/workflows/agent-a-pool-value-drain-yaci.yml` invokes this as a fourth scenario. If the ledger accepts the EXPIRE transaction, the trace writes `audit/yaci-evidence/expire-ticket-identity-negative.json` and exits with `SECURITY_FINDING`. The workflow run is queued behind an earlier serialized Plutus compile; no result is claimed yet.
+
+### Non-circular identity constraint
+
+The existing MintPolicy issuance predicate already checks `pdTicketPolicy == ownCsBytes` and the expected serial name. However, `src/loadValidator.ts::buildScriptsFromLucid` builds PrizeValidator first, hashes it, and then builds MintPolicy with that PrizeValidator hash. Passing the MintPolicy currency symbol directly as a PrizeValidator parameter would create a circular script-hash dependency.
+
+A remediation therefore needs an authenticated, deployment-bound identity source that does not depend circularly on the PrizeValidator/MintPolicy hashes (for example, a governed singleton/config carrier or equivalent authority binding). Checking only for an asset under a datum-supplied policy is insufficient. Script identity and deployment-migration consequences must be explicitly reviewed before a production change.
+
+### Current disposition and non-regression boundaries
+
+- PR #52 remains **DRAFT**; do not promote the combined EXPIRE expansion while ticket identity is unauthenticated.
+- The independent B1 TicketIssued physical-Value guard can be reviewed separately from the unresolved EXPIRE identity boundary.
+- No Plutus V3, Reveal semantics, 500× multiplier, economic constants, Oracle/EEV admission, or Treasury allocation rules were changed in this pass.
+- No Preprod/Mainnet transaction, wallet signature, deployment, or on-chain action was performed.
+- First real PRE-RICH Issue remains independently blocked by Issue #37 source/approval/R1-Kc gates.
+
