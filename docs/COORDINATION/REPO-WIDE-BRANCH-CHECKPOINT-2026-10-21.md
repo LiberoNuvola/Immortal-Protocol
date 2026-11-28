@@ -2087,3 +2087,43 @@ At audit branch commit `8c6b80ab72fabef3bd12cbe87c5a20904ee5cc52`, `audit/cardan
 - On preceding SHA `1a5f6dcd5031aaf1047d5266278b5ed926555d5e`, declaration conformance, no-result-dependent-authority and GitGuardian passed. The Yaci run for that SHA was canceled during setup by a subsequent commit, so it provides no ledger evidence.
 
 The fake-policy TicketIssued boundary and no-ticket EXPIRE boundary are still awaiting exact-head local-Yaci execution. Neither is described as ledger-confirmed yet. No Plutus V3, Reveal semantics, 500× multiplier, economic constants, or B2 carrier changes; no Preprod/Mainnet action.
+
+
+## 2026-11-28 — Agent A: B1 TicketIssued policy-binding gap reproduced on local Yaci ledger
+
+**Status upgrade for Issue #54:** the caller-controlled ticket-policy case is no longer source-only. The exact B1 local-Yaci run [45941120705](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45941120705), from PR source head `8c6b80ab72fabef3bd12cbe87c5a20904ee5cc52` (workflow manifest merge commit `6d0bcfd00db789d2351556fbc97270e5722a659b`), accepted an actual TicketIssued transaction on ephemeral Yaci DevKit `0.12.0-beta5` using the freshly compiled Haskell Plutus V2 B1 PrizePool validator.
+
+### Observed transaction and output state
+
+- Accepted transaction: `ef61fbba5460ab85422d935dc917782ea52580a8271344459fb3a563a39a9b09`.
+- Pool authority policy ID: `89234e0f20373cde0c7b0644edeb3cfc1dbca4005fd98b731518d235`.
+- Caller-controlled ticket policy ID: `091c886bc56413a22aa465da8bc74480fb74ed83c08c5f68cb8bac4b`, distinct from the Pool authority policy.
+- Canonical MintPolicy attached: false; Counter input present: false; Treasury receipt present: false.
+- Ticket token and Prize script output were observed; a continuing B1 Pool output from the same transaction was observed.
+- Pool datum advanced unresolved reserve to 100 sub-units and unresolved ticket count to 1.
+- Complete physical Pool Value remained unchanged: marker NFT 1, synthetic liquidity asset 400000, lovelace 30000000.
+
+**Finding:** B1 `TicketIssued` accepted a datum-selected NFT under a caller-controlled policy without the canonical atomic-sale MintPolicy, Counter advancement or Treasury payment. This is a ledger-reproduced **unauthorized ticket/accounting admission boundary** in the local test topology.
+
+### Independent physical Pool guard also passed
+
+The same trace's separate drain attempt was rejected with `B1PrizePool: physical pool value changed`. The original Pool UTxO remained unspent with its entire Value; wallet liquidity stayed zero and no drain Prize ticket was created. The test packet therefore demonstrates the distinction: fake ticket admission was accepted, physical Pool-value drainage was rejected.
+
+Evidence artifact: [B1/Yaci run #45941120705](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45941120705), artifact `b1-pool-value-expiry-yaci-45941120705`, archive SHA-256 `e0988147879c487441935515f5d1ff13049f622460f194f6bf98aa9917ccbb91`; evidence JSON digest `5c555665340f67baa12983f0744632ae22eb7800b1acdd9cc5fe3a6a2e88a933`. Tracked in [Issue #54](https://github.com/LiberoNuvola/Immortal-Protocol/issues/54), now marked as a local-Yaci confirmed boundary finding.
+
+**Impact qualification:** this does not yet prove that the forged PrizeDatum can pass SyncBeacon/Reveal/Claim or extract a payout. Those remain independent follow-through tests. Do not describe this as confirmed fund theft or a demonstrated winning ticket.
+
+### EXPIRE test independence fixed
+
+The first combined B1 run stopped after the TicketIssued security gate exited with code 4, so the subsequent Pending/Loss/no-ticket EXPIRE steps were skipped. This is not a negative EXPIRE result. At commit `6ed4a56967fcc1f758676831ce6da84138458a43`, the existing B1 workflow was changed so each of the four scenarios has an ID and `continue-on-error: true`; a final aggregate gate fails the job after all available evidence packets are generated and uploaded. The new exact-head run [46109380743](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/46109380743) is in progress at canonical Plutus setup; the EXPIRE cases have not yet executed in this run.
+
+### Separate general-lab blocker (no V3 change)
+
+The older general Cardano Integration Lab [run 45941120637](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/45941120637) passed validator artifact compilation, Yaci startup, ledger smoke transaction, and current cost-model probe, then failed in the later V3-carrier test path. The captured failure is in Lucid Evolution's provider evaluator parser: `Cannot use 'in' operator to search for 'EvaluationResult' in undefined`. Reveal and later economic tests were skipped. This is a provider/evaluator integration failure from the lab evidence, not a demonstrated Plutus V3 validator rejection. Agent A did not modify V3.
+
+### Guardrails and disposition
+
+- PR #52 remains OPEN/DRAFT.
+- No source validator, MintPolicy, PrizeValidator, Reveal behavior, V3 behavior, 500× multiplier, economic constants or Agent B B2 carrier were changed in this follow-on.
+- No Preprod/Mainnet transaction, deployment, signature or ledger action occurred.
+- First-issue production authorization remains NO-GO pending identity-bound design, full lifecycle evidence, EEV/R1/Kc gates and deployment approval.
