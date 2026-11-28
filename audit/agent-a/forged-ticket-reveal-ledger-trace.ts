@@ -80,9 +80,9 @@ function callerControlledTicketPolicy(lucid: any, keyHash: string): Script {
 }
 
 function sameAssetsForAudit(a: Record<string, bigint>, b: Record<string, bigint>): boolean {
-  const normalize = (value: Record<string, bigint>) => Object.fromEntries(
-    Object.entries(value).map(([k, v]) => [k, v.toString()]).sort(([a], [b]) => a.localeCompare(b)),
-  )
+  const normalize = (value: Record<string, bigint>) => Object.entries(value)
+    .map(([k, v]) => [k, v.toString()] as [string, string])
+    .sort(([left], [right]) => left.localeCompare(right))
   return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b))
 }
 
@@ -743,7 +743,6 @@ writeFileSync(
       row2Tier,
       prizeTier,
     },
-    },
     observedCardanoTransitionEvidence: evidence,
     replay: {
       rejected: replayRejected,
@@ -765,7 +764,6 @@ console.log(JSON.stringify({
   payout: payout.toString(),
   replayRejected,
   payoutPositive: payout > 0n,
-  payout: payout.toString(),
 }, null, 2))
 
 if (payout > 0n) {
