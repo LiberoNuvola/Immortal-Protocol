@@ -427,11 +427,12 @@ const issue = await lucid
   .payToContract(
     scripts.prizeAddress as string,
     { inline: Data.to(prePrizeDatum) },
-    {
-      lovelace: 3_000_000n,
-      [ticketUnit]: 1n,
-    },
+    { lovelace: 3_000_000n },
   )
+  .payToAddress(address, {
+    lovelace: 3_000_000n,
+    [ticketUnit]: 1n,
+  })
   .addSigner(address)
   .complete()
 const issueSigned = await issue.sign().complete()
@@ -440,8 +441,13 @@ await lucid.awaitTx(issueHash)
 
 const prizeUtxos = await waitFor(
   () => lucid.utxosAt(scripts.prizeAddress as string),
-  (xs) => xs.some((u) => u.txHash === issueHash && u.assets[ticketUnit] === 1n),
-  'caller-policy Prize UTxO from TicketIssued',
+  (xs) => xs.some((u) => u.txHash === issueHash && u.assets.lovelace === 3_000_000n),
+  'caller-policy PrizeDatum UTxO from TicketIssued',
+)
+const callerTicketUtxos = await waitFor(
+  () => lucid.utxosAt(address),
+  (xs) => xs.some((u) => u.assets[ticketUnit] === 1n),
+  'caller-owned fake ticket NFT from TicketIssued',
 )
 const poolUtxos = await waitFor(
   () => lucid.utxosAt(scripts.b1PrizePoolAddress as string),
@@ -449,13 +455,16 @@ const poolUtxos = await waitFor(
   'continuing B1PrizePool UTxO from TicketIssued',
 )
 const prizeUtxo = prizeUtxos.find(
-  (u) => u.txHash === issueHash && u.assets[ticketUnit] === 1n,
+  (u) => u.txHash === issueHash && u.assets.lovelace === 3_000_000n,
+) as UTxO
+const callerTicketUtxo = callerTicketUtxos.find(
+  (u) => u.assets[ticketUnit] === 1n,
 ) as UTxO
 const poolUtxo = poolUtxos.find(
   (u) => u.txHash === issueHash && u.assets[poolUnit] === 1n,
 ) as UTxO
-if (!sameAssetsForAudit(initialPoolUtxo.assets, poolUtxo.assets)) {
-  throw new Error('TicketIssued changed the physical Pool Value in the forged-ticket Reveal fixture')
+if (!callerTicketUtxo || !sameAssetsForAudit(initialPoolUtxo.assets, poolUtxo.assets)) {
+  throw new Error('TicketIssued failed to deliver the caller-owned fake NFT or changed the physical Pool Value')
 }
 
 // Real-ledger executable-liquidity correlation witness.
@@ -604,15 +613,20 @@ await lucid.awaitTx(txHash)
 
 const postPrizeUtxos = await waitFor(
   () => lucid.utxosAt(scripts.prizeAddress as string),
-  (xs) => xs.some((u) => u.txHash === txHash && u.assets[ticketUnit] === 1n),
-  'revealed Prize UTxO',
+  (xs) => xs.some((u) => u.txHash === txHash && u.assets.lovelace === 3_000_000n),
+  'revealed PrizeDatum UTxO',
 )
 const postPoolUtxos = await waitFor(
   () => lucid.utxosAt(scripts.b1PrizePoolAddress as string),
   (xs) => xs.some((u) => u.txHash === txHash && u.assets[poolUnit] === 1n),
   'revealed B1PrizePool UTxO',
 )
-const postPrize = postPrizeUtxos.find((u) => u.txHash === txHash && u.assets[ticketUnit] === 1n) as UTxO
+const postPrize = postPrizeUtxos.find((u) => u.txHash === txHash && u.assets.lovelace === 3_000_000n) as UTxO
+const callerTicketAfterReveal = await lucid.utxosAt(address)
+const callerStillOwnsTicket = callerTicketAfterReveal.some(
+  (u) => u.assets[ticketUnit] === 1n,
+)
+if (!callerStillOwnsTicket) throw new Error('Reveal unexpectedly consumed caller-owned ticket NFT')
 const postPool = postPoolUtxos.find((u) => u.txHash === txHash && u.assets[poolUnit] === 1n) as UTxO
 
 const postStateFingerprint = hashJson({
@@ -695,6 +709,10 @@ writeFileSync(
       treasuryReceiptPresent: false,
       ticketAssetUnit: ticketUnit,
       prizeOutputCreatedByTicketIssued: true,
+      ticketDeliveredToCallerWallet: true,
+      callerTicketReference: ref(callerTicketUtxo),
+      callerStillOwnsTicketAfterReveal: callerStillOwnsTicket,
+      prizeOutputCarriesTicketNft: false,
       poolOutputCreatedByTicketIssued: true,
       physicalPoolValuePreserved: sameAssetsForAudit(initialPoolUtxo.assets, poolUtxo.assets),
       beaconStateSetToReadyAtIssue: true,
@@ -725,6 +743,8 @@ writeFileSync(
     },
     consumedUtxos: [ref(prizeUtxo), ref(poolUtxo)],
     producedUtxos: [ref(postPrize), ref(postPool)],
+    callerTicketReference: ref(callerTicketUtxo),
+    callerStillOwnsTicketAfterReveal: callerStillOwnsTicket,
     executableLiquidityCorrelation: {
       observationReference: executableLiquidityObservation.observationReference,
       poolInputReference: poolRef,
