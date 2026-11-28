@@ -2147,3 +2147,12 @@ The B1 workflow now runs five independent gates: caller-policy TicketIssued/Pool
 At the time of this entry the forged-ticket Reveal trace is newly wired but has not yet produced Yaci ledger evidence. #54 remains locally confirmed for fake TicketIssued acceptance; #53 remains source-derived pending the no-ticket EXPIRE result.
 
 Non-regression remains unchanged: no Plutus V3, Reveal semantics, 500× multiplier, economic constants, Agent B B2 carrier, Preprod/Mainnet transaction or deployment was modified/performed.
+
+
+### Reveal follow-through fixture refinement — commit `b886d298ffb0567bdda2e8c2046536a396021092`
+
+The new Agent A forged-ticket-to-Reveal trace now delivers the caller-controlled ticket NFT to the caller's PubKey wallet while keeping the PrizeDatum output at the Prize script address. Reveal consumes the Prize and Pool UTxOs but leaves the NFT in the wallet; the trace asserts caller ownership after Reveal. This makes a subsequent Claim test structurally meaningful because Claim resolves the ticket owner from a PubKey input and requires that signature. The previous fixture incorrectly held the NFT at the Prize script and would not have been a suitable Claim precondition.
+
+No Claim or payout test has been added yet. The trace attempts only the positive-liability Reveal transition and will fail closed if it is accepted. Exact-head run [46109960704](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/46109960704) is currently in progress; no Yaci Reveal result is available yet.
+
+Latest audit branch HEAD: `b886d298ffb0567bdda2e8c2046536a396021092`; PR #52 remains OPEN/DRAFT. Static declaration/security/algorithmic checks are currently in progress for this head; GitGuardian has passed.
