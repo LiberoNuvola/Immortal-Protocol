@@ -589,11 +589,26 @@ validateExpire datum ctx =
         Just poolOut ->
           let
             poolIn = readPoolInput info prizePoolBs
-            expectedReserve =
-              ppUnresolvedReserve poolIn
-                - pdPriceUsdm datum
-            expectedCount =
-              ppUnresolvedTicketCount poolIn - 1
+            pendingExpiry =
+                 pdStatus datum == Pending
+              && ppUnresolvedReserve poolIn >= pdPriceUsdm datum
+              && ppUnresolvedTicketCount poolIn > 0
+              && ppPendingLiabilities poolOut == ppPendingLiabilities poolIn
+              && ppUnresolvedReserve poolOut
+                   == ppUnresolvedReserve poolIn - pdPriceUsdm datum
+              && ppUnresolvedTicketCount poolOut
+                   == ppUnresolvedTicketCount poolIn - 1
+            revealedExpiry =
+                 pdStatus datum == Revealed
+              && pdBeaconStatus datum == BeaconReady
+              && pdPrizeAmount datum >= 0
+              && ppPendingLiabilities poolIn >= pdPrizeAmount datum
+              && ppPendingLiabilities poolOut
+                   == ppPendingLiabilities poolIn - pdPrizeAmount datum
+              && ppUnresolvedReserve poolOut
+                   == ppUnresolvedReserve poolIn
+              && ppUnresolvedTicketCount poolOut
+                   == ppUnresolvedTicketCount poolIn
           in
                traceIfFalse "Prize: pool prize hash mismatch"
                  (ppPrizeHash poolOut == ownPrizeHash)
@@ -603,14 +618,8 @@ validateExpire datum ctx =
                  (ppPrizeHash poolOut == ppPrizeHash poolIn)
             && traceIfFalse "Prize: pool liquidity changed on expire"
                  (ppTotalLiquidity poolOut == ppTotalLiquidity poolIn)
-            && traceIfFalse "Prize: pool liabilities changed on expire"
-                 (ppPendingLiabilities poolOut == ppPendingLiabilities poolIn)
-            && traceIfFalse "Prize: pool reserve release"
-                 (ppUnresolvedReserve poolOut == expectedReserve)
-            && traceIfFalse "Prize: pool reserve non-negative"
-                 (expectedReserve >= 0)
-            && traceIfFalse "Prize: pool count release"
-                 (ppUnresolvedTicketCount poolOut == expectedCount)
+            && traceIfFalse "Prize: expiry accounting transition invalid"
+                 (pendingExpiry || revealedExpiry)
             && traceIfFalse "Prize: pool locked Jackpot changed"
                  (ppLockedJackpot poolOut == ppLockedJackpot poolIn)
             && traceIfFalse "Prize: pool Jackpot floor changed"
@@ -624,12 +633,18 @@ validateExpire datum ctx =
        traceIfFalse "Prize: multi input" (countOwnScriptInputs ctx == 1)
     && traceIfFalse "Prize: no continuing PrizeDatum on expire"
          (countOwnScriptOutputs ctx == 0)
-    && traceIfFalse "Prize: not pending" (pdStatus datum == Pending)
+    && traceIfFalse "Prize: invalid expiry status"
+         (pdStatus datum == Pending || pdStatus datum == Revealed)
     && traceIfFalse "Prize: beacon state invalid"
-         (pdBeaconStatus datum == BeaconPending
-            || pdBeaconStatus datum == BeaconReady)
+         (if pdStatus datum == Pending
+            then pdBeaconStatus datum == BeaconPending
+              || pdBeaconStatus datum == BeaconReady
+            else pdBeaconStatus datum == BeaconReady)
     && traceIfFalse "Prize: invalid ticket price" (pdPriceUsdm datum > 0)
-    && traceIfFalse "Prize: prize amount must be zero" (pdPrizeAmount datum == 0)
+    && traceIfFalse "Prize: prize amount invalid for status"
+         (if pdStatus datum == Pending
+            then pdPrizeAmount datum == 0
+            else pdPrizeAmount datum >= 0)
     && traceIfFalse "Prize: expiry not reached"
          (expireAtOrAfter (pdExpiresAt datum) info)
     && traceIfFalse "Prize: pool input count" (countPoolInputs info prizePoolBs == 1)

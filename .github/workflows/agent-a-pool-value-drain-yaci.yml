@@ -1,0 +1,305 @@
+name: B1 Pool Value and Expire lifecycle conformance (local Yaci)
+
+on:
+  push:
+    branches:
+      - audit/claim-b1-conformance
+    paths:
+      - plutus/B1PrizePool.hs
+      - plutus/PrizeValidator.hs
+      - plutus/Types.hs
+      - audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
+      - audit/cardano-integration/expire-ledger-trace.ts
+      - audit/agent-a/forged-ticket-reveal-ledger-trace.ts
+      - .github/actions/setup-plutus/action.yml
+      - .github/actions/setup-legacy-lucid/action.yml
+      - .github/workflows/agent-a-pool-value-drain-yaci.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - plutus/B1PrizePool.hs
+      - plutus/PrizeValidator.hs
+      - plutus/Types.hs
+      - audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
+      - audit/cardano-integration/expire-ledger-trace.ts
+      - audit/agent-a/forged-ticket-reveal-ledger-trace.ts
+      - .github/actions/setup-plutus/action.yml
+      - .github/actions/setup-legacy-lucid/action.yml
+      - .github/workflows/agent-a-pool-value-drain-yaci.yml
+
+permissions:
+  contents: read
+concurrency:
+  # Isolate runs by source branch and cancel stale commits from the same branch.
+  # Use the source branch name for both push and pull_request events.
+  group: b1-pool-value-expiry-yaci-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  b1-pool-value-drain:
+    name: B1 TicketIssued Pool Value guard + Pending/Revealed Expire on ephemeral Yaci
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install isolated Lucid/Yaci trace dependencies
+        run: npm install --prefix audit/cardano-integration
+
+      - name: Restore Cabal/Plutus build state
+        id: plutus-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+            plutus/dist-newstyle
+          key: plutus-build-v2-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
+          restore-keys: |
+            plutus-build-v2-${{ runner.os }}-
+            plutus-build-${{ runner.os }}-
+
+      - name: Setup canonical Plutus CI
+        uses: ./.github/actions/setup-plutus
+        with:
+          update-hackage: ${{ steps.plutus-cache.outputs.cache-matched-key == '' }}
+
+      - name: Compile fresh Plutus validator artifacts from this commit
+        run: cabal run exe:export-scripts
+
+      - name: Bind generated artifacts to the B1 trace
+        run: |
+          set -euo pipefail
+          mkdir -p src/plutusScripts audit/yaci-evidence
+          cp plutus/out/treasury.plutus.json src/plutusScripts/treasury.plutus.json
+          cp plutus/out/counterValidator.plutus.json src/plutusScripts/counterValidator.plutus.json
+          cp plutus/out/b1PrizePoolFactory.plutus.json src/plutusScripts/b1PrizePoolFactory.plutus.json
+          cp plutus/out/mintPolicyFactory.plutus.json src/plutusScripts/mintPolicyFactory.plutus.json
+          cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
+          cp plutus/out/beaconRegistry.plutus.json src/plutusScripts/beaconRegistry.plutus.json
+          sha256sum plutus/out/b1PrizePoolFactory.plutus.json | tee audit/yaci-evidence/b1-validator-artifact.sha256
+
+      - name: Setup legacy Lucid ESM runtime
+        uses: ./.github/actions/setup-legacy-lucid
+
+      - name: Install pinned Yaci DevKit
+        run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
+
+      - name: Start isolated local Cardano devnet
+        run: |
+          set -euo pipefail
+          mkdir -p audit/yaci-evidence
+          nohup yaci-devkit up --enable-yaci-store > audit/yaci-evidence/yaci.log 2>&1 &
+          echo $! > audit/yaci-evidence/yaci.pid
+
+      - name: Wait for initial Yaci Store
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest.json; then
+              echo "YACI_STORE_INITIAL_READY=1" | tee audit/yaci-evidence/bootstrap.txt
+              exit 0
+            fi
+            sleep 2
+          done
+          tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
+          exit 1
+
+      - name: Start and qualify Ogmios evaluator before Yaci Store
+        run: |
+          set -euo pipefail
+          store_config="$HOME/.yaci-cli/components/store/config/application.properties"
+          if [ ! -f "$store_config" ]; then
+            echo "Yaci Store configuration not found: $store_config"
+            find "$HOME/.yaci-cli" -path '*/store/config/application.properties' -print || true
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --request POST \
+            http://localhost:10000/local-cluster/api/admin/yaci-store/stop \
+            -o audit/yaci-evidence/yaci-store-stop.json
+
+          port_free() { ! timeout 1 bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null; }
+          store_stopped=0
+          for i in $(seq 1 60); do
+            if port_free; then store_stopped=1; break; fi
+            sleep 1
+          done
+          if [ "$store_stopped" -ne 1 ]; then
+            echo "Yaci Store did not release port 8080"
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
+            exit 1
+          fi
+
+          ogmios_started=0
+          for i in $(seq 1 60); do
+            if curl --fail --silent --show-error --request POST \
+              http://localhost:10000/local-cluster/api/admin/ogmios/start-ogmios \
+              -o audit/yaci-evidence/ogmios-start.json; then
+              ogmios_started=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ogmios_started" -ne 1 ]; then
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
+            exit 1
+          fi
+
+          ogmios_ready=0
+          for i in $(seq 1 60); do
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/1337' 2>/dev/null; then
+              ogmios_ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ogmios_ready" -ne 1 ]; then
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
+            exit 1
+          fi
+
+          store_started=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent --show-error --request POST \
+              http://localhost:10000/local-cluster/api/admin/yaci-store/start \
+              -o audit/yaci-evidence/yaci-store-restart.json; then
+              store_started=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$store_started" -ne 1 ]; then
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
+            exit 1
+          fi
+
+          store_ready=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-rebound.json; then
+              store_ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$store_ready" -ne 1 ]; then
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
+            exit 1
+          fi
+
+          grep -Eq '^store\.submit\.tx-evaluator-mode=ogmios$' "$store_config"
+          {
+            echo "YACI_STORE_EVALUATOR=ogmios"
+            grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config"
+          } | tee audit/yaci-evidence/evaluator-mode.txt
+
+      - name: Derive ephemeral funded test wallet
+        run: node audit/cardano-integration/create-test-wallet.mjs
+
+      - name: Record execution manifest
+        run: |
+          {
+            echo "branch=$GITHUB_REF_NAME"
+            echo "commit=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "yaci=0.12.0-beta5"
+            echo "endpoint=http://127.0.0.1:8080/api/v1"
+            echo "scope=B1 TicketIssued policy boundary + forged-ticket Reveal follow-through + Haskell Plutus V2 Pending/Revealed EXPIRE characterization; local Yaci only"
+            echo "v3_tests=not_run"
+            echo "reveal_tests=forged-ticket-reveal-haskell-v2-only"
+            echo "expire_cases=pending,revealed-loss,revealed-win;negative=no-ticket-pending"
+            echo "expire_backend=haskell-v2"
+            echo "preprod_transactions=none"
+            echo "mainnet_transactions=none"
+          } | tee audit/yaci-evidence/manifest.txt
+
+      # Keep each independent ledger scenario running even if another one
+      # correctly fails a security gate. The aggregate gate below fails the
+      # job after all evidence packets have been generated.
+      - name: Execute isolated B1 TicketIssued policy and Pool Value probes
+        id: ticket-issued-probe
+        continue-on-error: true
+        run: node --import tsx/esm audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
+
+      - name: Execute caller-policy forged ticket through Haskell V2 Reveal
+        id: forged-ticket-reveal
+        continue-on-error: true
+        run: node --import tsx/esm audit/agent-a/forged-ticket-reveal-ledger-trace.ts
+
+      - name: Execute Haskell V2 Pending EXPIRE trace
+        id: expire-pending
+        continue-on-error: true
+        env:
+          IMMORTAL_EXPIRE_CASE: pending
+          IMMORTAL_EXPIRE_AIKEN_V3: "0"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Execute Haskell V2 Revealed Loss EXPIRE trace
+        id: expire-revealed-loss
+        continue-on-error: true
+        env:
+          IMMORTAL_EXPIRE_CASE: revealed-loss
+          IMMORTAL_EXPIRE_AIKEN_V3: "0"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Execute adversarial EXPIRE without ticket NFT (must reject)
+        id: expire-no-ticket
+        continue-on-error: true
+        env:
+          IMMORTAL_EXPIRE_CASE: pending
+          IMMORTAL_EXPIRE_AIKEN_V3: "0"
+          IMMORTAL_EXPIRE_OMIT_TICKET_NFT: "1"
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Enforce independent B1 security and lifecycle gates
+        if: always()
+        env:
+          TICKET_ISSUED_OUTCOME: ${{ steps.ticket-issued-probe.outcome }}
+          FORGED_TICKET_REVEAL_OUTCOME: ${{ steps.forged-ticket-reveal.outcome }}
+          EXPIRE_PENDING_OUTCOME: ${{ steps.expire-pending.outcome }}
+          EXPIRE_REVEALED_LOSS_OUTCOME: ${{ steps.expire-revealed-loss.outcome }}
+          EXPIRE_NO_TICKET_OUTCOME: ${{ steps.expire-no-ticket.outcome }}
+        run: |
+          set -euo pipefail
+          failed=0
+          for item in \
+            "TicketIssued policy boundary:$TICKET_ISSUED_OUTCOME" \
+            "Forged-ticket Reveal:$FORGED_TICKET_REVEAL_OUTCOME" \
+            "Pending EXPIRE:$EXPIRE_PENDING_OUTCOME" \
+            "Revealed Loss EXPIRE:$EXPIRE_REVEALED_LOSS_OUTCOME" \
+            "EXPIRE without ticket NFT:$EXPIRE_NO_TICKET_OUTCOME"; do
+            echo "$item"
+            case "$item" in
+              *:failure) failed=1 ;;
+              *:skipped) echo "::error::Independent scenario was skipped: $item"; failed=1 ;;
+            esac
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more independent B1 security/lifecycle gates failed or were skipped. Inspect the uploaded Yaci evidence."
+            exit 1
+          fi
+
+      - name: Preserve ledger result and Yaci diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b1-pool-value-expiry-yaci-${{ github.run_id }}
+          path: |
+            audit/yaci-evidence/
+            plutus/out/b1PrizePoolFactory.plutus.json
+          if-no-files-found: warn
+          retention-days: 14
