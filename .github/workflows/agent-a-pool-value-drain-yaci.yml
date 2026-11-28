@@ -225,27 +225,64 @@ jobs:
             echo "mainnet_transactions=none"
           } | tee audit/yaci-evidence/manifest.txt
 
-      - name: Execute isolated B1 TicketIssued Pool Value drain trace
+      # Keep each independent ledger scenario running even if another one
+      # correctly fails a security gate. The aggregate gate below fails the
+      # job after all evidence packets have been generated.
+      - name: Execute isolated B1 TicketIssued policy and Pool Value probes
+        id: ticket-issued-probe
+        continue-on-error: true
         run: node --import tsx/esm audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
 
       - name: Execute Haskell V2 Pending EXPIRE trace
+        id: expire-pending
+        continue-on-error: true
         env:
           IMMORTAL_EXPIRE_CASE: pending
           IMMORTAL_EXPIRE_AIKEN_V3: "0"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
       - name: Execute Haskell V2 Revealed Loss EXPIRE trace
+        id: expire-revealed-loss
+        continue-on-error: true
         env:
           IMMORTAL_EXPIRE_CASE: revealed-loss
           IMMORTAL_EXPIRE_AIKEN_V3: "0"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
       - name: Execute adversarial EXPIRE without ticket NFT (must reject)
+        id: expire-no-ticket
+        continue-on-error: true
         env:
           IMMORTAL_EXPIRE_CASE: pending
           IMMORTAL_EXPIRE_AIKEN_V3: "0"
           IMMORTAL_EXPIRE_OMIT_TICKET_NFT: "1"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Enforce independent B1 security and lifecycle gates
+        if: always()
+        env:
+          TICKET_ISSUED_OUTCOME: ${{ steps.ticket-issued-probe.outcome }}
+          EXPIRE_PENDING_OUTCOME: ${{ steps.expire-pending.outcome }}
+          EXPIRE_REVEALED_LOSS_OUTCOME: ${{ steps.expire-revealed-loss.outcome }}
+          EXPIRE_NO_TICKET_OUTCOME: ${{ steps.expire-no-ticket.outcome }}
+        run: |
+          set -euo pipefail
+          failed=0
+          for item in \
+            "TicketIssued policy boundary:$TICKET_ISSUED_OUTCOME" \
+            "Pending EXPIRE:$EXPIRE_PENDING_OUTCOME" \
+            "Revealed Loss EXPIRE:$EXPIRE_REVEALED_LOSS_OUTCOME" \
+            "EXPIRE without ticket NFT:$EXPIRE_NO_TICKET_OUTCOME"; do
+            echo "$item"
+            case "$item" in
+              *:failure) failed=1 ;;
+              *:skipped) echo "::error::Independent scenario was skipped: $item"; failed=1 ;;
+            esac
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more independent B1 security/lifecycle gates failed or were skipped. Inspect the uploaded Yaci evidence."
+            exit 1
+          fi
 
       - name: Preserve ledger result and Yaci diagnostics
         if: always()
