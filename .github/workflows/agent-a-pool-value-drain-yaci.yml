@@ -10,6 +10,7 @@ on:
       - plutus/Types.hs
       - audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
       - audit/cardano-integration/expire-ledger-trace.ts
+      - audit/agent-a/forged-ticket-reveal-ledger-trace.ts
       - .github/actions/setup-plutus/action.yml
       - .github/actions/setup-legacy-lucid/action.yml
       - .github/workflows/agent-a-pool-value-drain-yaci.yml
@@ -22,6 +23,7 @@ on:
       - plutus/Types.hs
       - audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
       - audit/cardano-integration/expire-ledger-trace.ts
+      - audit/agent-a/forged-ticket-reveal-ledger-trace.ts
       - .github/actions/setup-plutus/action.yml
       - .github/actions/setup-legacy-lucid/action.yml
       - .github/workflows/agent-a-pool-value-drain-yaci.yml
@@ -216,9 +218,9 @@ jobs:
             echo "node=$(node --version)"
             echo "yaci=0.12.0-beta5"
             echo "endpoint=http://127.0.0.1:8080/api/v1"
-            echo "scope=B1 TicketIssued Pool Value guard + Haskell Plutus V2 Pending/Revealed EXPIRE characterization; local Yaci only"
+            echo "scope=B1 TicketIssued policy boundary + forged-ticket Reveal follow-through + Haskell Plutus V2 Pending/Revealed EXPIRE characterization; local Yaci only"
             echo "v3_tests=not_run"
-            echo "reveal_tests=not_run"
+            echo "reveal_tests=forged-ticket-reveal-haskell-v2-only"
             echo "expire_cases=pending,revealed-loss,revealed-win;negative=no-ticket-pending"
             echo "expire_backend=haskell-v2"
             echo "preprod_transactions=none"
@@ -232,6 +234,11 @@ jobs:
         id: ticket-issued-probe
         continue-on-error: true
         run: node --import tsx/esm audit/cardano-integration/ticket-issued-pool-value-drain-trace.ts
+
+      - name: Execute caller-policy forged ticket through Haskell V2 Reveal
+        id: forged-ticket-reveal
+        continue-on-error: true
+        run: node --import tsx/esm audit/agent-a/forged-ticket-reveal-ledger-trace.ts
 
       - name: Execute Haskell V2 Pending EXPIRE trace
         id: expire-pending
@@ -262,6 +269,7 @@ jobs:
         if: always()
         env:
           TICKET_ISSUED_OUTCOME: ${{ steps.ticket-issued-probe.outcome }}
+          FORGED_TICKET_REVEAL_OUTCOME: ${{ steps.forged-ticket-reveal.outcome }}
           EXPIRE_PENDING_OUTCOME: ${{ steps.expire-pending.outcome }}
           EXPIRE_REVEALED_LOSS_OUTCOME: ${{ steps.expire-revealed-loss.outcome }}
           EXPIRE_NO_TICKET_OUTCOME: ${{ steps.expire-no-ticket.outcome }}
@@ -270,6 +278,7 @@ jobs:
           failed=0
           for item in \
             "TicketIssued policy boundary:$TICKET_ISSUED_OUTCOME" \
+            "Forged-ticket Reveal:$FORGED_TICKET_REVEAL_OUTCOME" \
             "Pending EXPIRE:$EXPIRE_PENDING_OUTCOME" \
             "Revealed Loss EXPIRE:$EXPIRE_REVEALED_LOSS_OUTCOME" \
             "EXPIRE without ticket NFT:$EXPIRE_NO_TICKET_OUTCOME"; do
