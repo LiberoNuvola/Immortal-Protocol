@@ -2127,3 +2127,23 @@ The older general Cardano Integration Lab [run 45941120637](https://github.com/L
 - No source validator, MintPolicy, PrizeValidator, Reveal behavior, V3 behavior, 500× multiplier, economic constants or Agent B B2 carrier were changed in this follow-on.
 - No Preprod/Mainnet transaction, deployment, signature or ledger action occurred.
 - First-issue production authorization remains NO-GO pending identity-bound design, full lifecycle evidence, EEV/R1/Kc gates and deployment approval.
+
+
+## 2026-11-28 — Agent A: forged-ticket Reveal follow-through trace added
+
+At audit branch commit `a03e949a97113b33aff0cf971f96ba6b6528655e`, added dedicated trace `audit/agent-a/forged-ticket-reveal-ledger-trace.ts`, then wired it into the existing B1/Yaci workflow (same branch; no new branch).
+
+The trace does not modify any validator or Reveal semantics. In a fresh local-Yaci fixture it:
+1. bootstraps only the B1 Pool;
+2. executes real B1 `TicketIssued` with a caller-controlled native ticket policy distinct from the Pool authority policy, without canonical MintPolicy, Counter or Treasury receipt;
+3. uses a caller-authored PrizeDatum whose BeaconStatus is `BeaconReady`, with commitment/player secret/beacon fields computed consistently;
+4. attempts Haskell Plutus V2 Reveal and B1 `TicketRevealed` without first executing SyncBeacon and without a BeaconRegistry reference input;
+5. records the Issue and Reveal transaction references, policy IDs, Pool Value conservation, outputs, CBOR, result tiers and pending-liability transition.
+
+The trace searches up to 256 nonce candidates for a positive payout fixture. If Yaci accepts Reveal and crystallizes a positive liability, it writes `audit/yaci-evidence/reveal-transition.json` and exits with `SECURITY_FINDING` code 4. This would qualify an unauthorized path from fake ticket admission to a positive pending liability, **not a successful Claim or fund extraction**.
+
+The B1 workflow now runs five independent gates: caller-policy TicketIssued/Pool Value probe, forged-ticket Reveal follow-through, Pending EXPIRE, Revealed Loss EXPIRE and no-ticket Pending EXPIRE. Each is `continue-on-error`; the final aggregate step applies fail-closed after all evidence generation, and artifact upload remains unconditional. This prevents one security finding from skipping evidence for later cases.
+
+At the time of this entry the forged-ticket Reveal trace is newly wired but has not yet produced Yaci ledger evidence. #54 remains locally confirmed for fake TicketIssued acceptance; #53 remains source-derived pending the no-ticket EXPIRE result.
+
+Non-regression remains unchanged: no Plutus V3, Reveal semantics, 500× multiplier, economic constants, Agent B B2 carrier, Preprod/Mainnet transaction or deployment was modified/performed.
